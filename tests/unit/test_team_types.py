@@ -67,3 +67,29 @@ class TestTeamOrchestratorProtocol:
 
         methods = [n for n in dir(TeamOrchestrator) if not n.startswith("_") and callable(getattr(TeamOrchestrator, n, None))]
         assert len(methods) <= 5
+
+    def test_resumable_extension_protocol(self) -> None:
+        from cognitia.orchestration.team_protocol import ResumableTeamOrchestrator
+
+        class FakeResumableTeam:
+            async def start(self, config, task):
+                _ = (config, task)
+                return "id"
+
+            async def stop(self, team_id):
+                _ = team_id
+
+            async def get_team_status(self, team_id):
+                _ = team_id
+                return None
+
+            async def send_message(self, team_id, message):
+                _ = (team_id, message)
+
+            async def pause_agent(self, team_id, agent_id):
+                _ = (team_id, agent_id)
+
+            async def resume_agent(self, team_id, agent_id):
+                _ = (team_id, agent_id)
+
+        assert isinstance(FakeResumableTeam(), ResumableTeamOrchestrator)

@@ -79,10 +79,14 @@ class TestDeepAgentsTeamOrchestrator:
 
     async def test_isinstance_protocol(self, mock_sub_orch) -> None:
         from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
-        from cognitia.orchestration.team_protocol import TeamOrchestrator
+        from cognitia.orchestration.team_protocol import (
+            ResumableTeamOrchestrator,
+            TeamOrchestrator,
+        )
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         assert isinstance(orch, TeamOrchestrator)
+        assert isinstance(orch, ResumableTeamOrchestrator)
 
 
 class TestClaudeTeamOrchestrator:
@@ -92,6 +96,9 @@ class TestClaudeTeamOrchestrator:
         orch = ClaudeTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
         assert isinstance(team_id, str)
+        first_worker_task = mock_sub_orch.spawn.await_args_list[0].args[1]
+        assert "lead" in first_worker_task
+        assert "worker 'w1'" in first_worker_task
 
     async def test_isinstance_protocol(self, mock_sub_orch) -> None:
         from cognitia.orchestration.claude_team import ClaudeTeamOrchestrator
@@ -148,3 +155,28 @@ class TestTeamManager:
         await mgr.resume_agent(team_id, "a1")
 
         assert orch._teams[team_id].worker_ids["w1"] == "a3"
+
+    async def test_resume_agent_noop_for_non_resumable_orchestrator(self) -> None:
+        from cognitia.orchestration.team_manager import TeamManager
+
+        class NonResumableOrchestrator:
+            async def start(self, config, task):
+                _ = (config, task)
+                return "team-1"
+
+            async def stop(self, team_id):
+                _ = team_id
+
+            async def get_team_status(self, team_id):
+                from cognitia.orchestration.team_types import TeamStatus
+
+                return TeamStatus(team_id=team_id)
+
+            async def send_message(self, team_id, message):
+                _ = (team_id, message)
+
+            async def pause_agent(self, team_id, agent_id):
+                _ = (team_id, agent_id)
+
+        mgr = TeamManager(NonResumableOrchestrator())  # type: ignore[arg-type]
+        await mgr.resume_agent("team-1", "agent-1")

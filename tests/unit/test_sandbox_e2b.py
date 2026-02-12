@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -11,7 +12,13 @@ from cognitia.tools.types import SandboxConfig
 
 @pytest.fixture()
 def config() -> SandboxConfig:
-    return SandboxConfig(root_path="/tmp", user_id="u1", topic_id="t1", timeout_seconds=5)
+    return SandboxConfig(
+        root_path="/tmp",
+        user_id="u1",
+        topic_id="t1",
+        timeout_seconds=5,
+        denied_commands=frozenset({"rm"}),
+    )
 
 
 class TestE2BSandboxProvider:
@@ -48,6 +55,14 @@ class TestE2BSandboxProvider:
         assert result.stdout == "output"
         assert result.exit_code == 0
         assert result.timed_out is False
+
+    async def test_execute_denied_command(self, config) -> None:
+        from cognitia.tools.sandbox_e2b import E2BSandboxProvider
+        from cognitia.tools.types import SandboxViolation
+
+        provider = E2BSandboxProvider(config, _sandbox=AsyncMock())
+        with pytest.raises(SandboxViolation):
+            await provider.execute("rm -rf /")
 
     async def test_list_dir(self, config) -> None:
         from cognitia.tools.sandbox_e2b import E2BSandboxProvider
@@ -86,3 +101,39 @@ class TestE2BSandboxProvider:
         mock_sandbox = AsyncMock()
         provider = E2BSandboxProvider(config, _sandbox=mock_sandbox)
         assert isinstance(provider, SandboxProvider)
+
+    async def test_dependency_missing_raises_runtime_error(self, config) -> None:
+        from cognitia.tools.sandbox_e2b import E2BSandboxProvider
+
+        provider = E2BSandboxProvider(config)
+        with pytest.raises(RuntimeError):
+            await provider.read_file("a.txt")
+
+    async def test_execute_timeout(self, config) -> None:
+        from cognitia.tools.sandbox_e2b import E2BSandboxProvider
+
+        mock_sandbox = AsyncMock()
+
+        async def slow_start(*args, **kwargs):
+            await asyncio.sleep(0.2)
+            return MagicMock(stdout="", stderr="", exit_code=0)
+
+        tiny_timeout = SandboxConfig(
+            root_path=config.root_path,
+            user_id=config.user_id,
+            topic_id=config.topic_id,
+            timeout_seconds=0,
+            denied_commands=config.denied_commands,
+        )
+        mock_sandbox.process.start.side_effect = slow_start
+        provider = E2BSandboxProvider(tiny_timeout, _sandbox=mock_sandbox)
+        result = await provider.execute("echo hi")
+        assert result.timed_out is True
+
+    async def test_close_calls_kill_or_close(self, config) -> None:
+        from cognitia.tools.sandbox_e2b import E2BSandboxProvider
+
+        sandbox = AsyncMock()
+        provider = E2BSandboxProvider(config, _sandbox=sandbox)
+        await provider.close()
+        assert sandbox.kill.called or sandbox.close.called

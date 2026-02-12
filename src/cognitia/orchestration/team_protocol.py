@@ -33,3 +33,12 @@ class TeamOrchestrator(Protocol):
     async def pause_agent(self, team_id: str, agent_id: str) -> None:
         """Приостановить конкретного worker'а."""
         ...
+
+
+@runtime_checkable
+class ResumableTeamOrchestrator(TeamOrchestrator, Protocol):
+    """Расширение TeamOrchestrator с поддержкой resume lifecycle."""
+
+    async def resume_agent(self, team_id: str, agent_id: str) -> None:
+        """Возобновить ранее приостановленного worker'а."""
+        ...

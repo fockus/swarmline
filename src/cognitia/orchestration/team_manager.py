@@ -5,7 +5,7 @@ DIP: зависит от TeamOrchestrator Protocol.
 
 from __future__ import annotations
 
-from cognitia.orchestration.team_protocol import TeamOrchestrator
+from cognitia.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
 from cognitia.orchestration.team_types import TeamConfig, TeamMessage, TeamStatus
 
 
@@ -14,6 +14,9 @@ class TeamManager:
 
     def __init__(self, orchestrator: TeamOrchestrator) -> None:
         self._orch = orchestrator
+        self._resumable_orch: ResumableTeamOrchestrator | None = None
+        if isinstance(orchestrator, ResumableTeamOrchestrator):
+            self._resumable_orch = orchestrator
         self._teams: dict[str, TeamConfig] = {}
         self._paused: set[tuple[str, str]] = set()  # (team_id, agent_id)
 
@@ -46,8 +49,8 @@ class TeamManager:
         self._paused.add((team_id, agent_id))
 
     async def resume_agent(self, team_id: str, agent_id: str) -> None:
-        """Возобновить приостановленного worker'а через orchestrator (если поддерживается)."""
-        resume = getattr(self._orch, "resume_agent", None)
-        if callable(resume):
-            await resume(team_id, agent_id)
+        """Возобновить приостановленного worker'а через типобезопасный контракт."""
+        if self._resumable_orch is None:
+            return
+        await self._resumable_orch.resume_agent(team_id, agent_id)
         self._paused.discard((team_id, agent_id))
