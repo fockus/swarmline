@@ -151,3 +151,6 @@ async for event in runtime.run(
 - [Runtimes](runtimes.md) — сравнение runtime
 - [Configuration](configuration.md) — настройка через конфиги
 - [Examples](examples.md) — примеры для разных доменов
+
+> Примечание по readiness: orchestration-команды `/plan_*` и `/team_*` доступны на уровне приложения.
+> Для `team` включай `CAP_TEAM_ENABLED=1`; для `planning` — `CAP_PLANNING_ENABLED=1`.

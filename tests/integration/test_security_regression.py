@@ -11,6 +11,8 @@ import pytest
 from cognitia.memory_bank.types import MemoryBankConfig, MemoryBankViolation
 from cognitia.tools.types import SandboxConfig, SandboxViolation
 
+pytestmark = pytest.mark.security
+
 
 class TestPathIsolationPrefixBypass:
     """P0: prefix-bypass через startswith → is_relative_to."""

@@ -13,6 +13,7 @@ from cognitia.config.role_router import RoleRouterConfig
 from cognitia.config.role_skills import YamlRoleSkillsLoader
 from cognitia.context import DefaultContextBuilder
 from cognitia.policy import DefaultToolIdCodec, DefaultToolPolicy
+from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
 from cognitia.protocols import LocalToolResolver
 from cognitia.routing import KeywordRoleRouter
 from cognitia.runtime.factory import RuntimeFactory
@@ -183,6 +184,57 @@ class TestCognitiaStackCreate:
         assert stack.memory_bank_provider is provider
         assert stack.memory_bank_prompt is not None
         assert "Memory Bank" in stack.memory_bank_prompt
+
+    def test_tool_budget_config_applies_to_capability_tools(self, tmp_path: Path) -> None:
+        """tool_budget_config реально ограничивает набор capability tools."""
+        project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
+
+        class _Sandbox:
+            async def read_file(self, path: str):  # pragma: no cover - contract-only
+                _ = path
+                return ""
+
+            async def write_file(self, path: str, content: str):  # pragma: no cover - contract-only
+                _ = (path, content)
+                return None
+
+            async def execute(self, command: str):  # pragma: no cover - contract-only
+                _ = command
+                return None
+
+            async def list_dir(self, path: str = "."):  # pragma: no cover - contract-only
+                _ = path
+                return []
+
+            async def glob_files(self, pattern: str):  # pragma: no cover - contract-only
+                _ = pattern
+                return []
+
+        class _Web:
+            async def fetch(self, url: str):  # pragma: no cover - contract-only
+                _ = url
+                return ""
+
+            async def search(self, query: str):  # pragma: no cover - contract-only
+                _ = query
+                return []
+
+        budget = ToolBudgetConfig(
+            max_tools=2,
+            group_priority=[ToolGroup.WEB, ToolGroup.ALWAYS],
+        )
+        stack = CognitiaStack.create(
+            prompts_dir=prompts_dir,
+            skills_dir=skills_dir,
+            project_root=project_root,
+            sandbox_provider=_Sandbox(),
+            web_provider=_Web(),
+            thinking_enabled=True,
+            tool_budget_config=budget,
+        )
+
+        assert len(stack.capability_specs) <= 2
+        assert set(stack.capability_specs.keys()) <= {"web_fetch", "web_search", "thinking"}
 
 
 class TestLocalToolResolverProtocol:

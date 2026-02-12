@@ -1,5 +1,14 @@
 # Orchestration — Planning, Subagents, Team Mode
 
+## Статус готовности
+
+| Компонент | Статус | Комментарий |
+|-----------|--------|-------------|
+| Planning API (`PlanManager`) | staged | Базовый flow готов, storage пока InMemory |
+| Subagents | ready | Thin/DeepAgents/Claude orchestrators с unified protocol |
+| Team Mode core | ready | `TeamManager` + `DeepAgents/ClaudeTeamOrchestrator` |
+| Team command surface (app layer) | staged | `/team_*` команды доступны при включённом `CAP_TEAM_ENABLED` |
+
 ## Planning Mode
 
 Агент декомпозирует сложную задачу на шаги и выполняет последовательно.

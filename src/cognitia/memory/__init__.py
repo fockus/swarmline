@@ -22,11 +22,15 @@ from cognitia.memory.types import (
 with contextlib.suppress(ImportError):
     from cognitia.memory.postgres import PostgresMemoryProvider
 
+with contextlib.suppress(ImportError):
+    from cognitia.memory.sqlite import SQLiteMemoryProvider
+
 __all__ = [
     "GoalState",
     "InMemoryMemoryProvider",
     "MemoryMessage",
     "PhaseState",
+    "SQLiteMemoryProvider",
     "ToolEvent",
     "UserProfile",
 ]

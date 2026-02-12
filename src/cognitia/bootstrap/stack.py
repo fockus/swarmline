@@ -50,6 +50,7 @@ class CognitiaStack:
     capability_executors: dict[str, Callable] = field(default_factory=dict)
     memory_bank_provider: Any | None = None
     memory_bank_prompt: str | None = None
+    tool_budget_config: ToolBudgetConfig | None = None
 
     @classmethod
     def create(
@@ -149,6 +150,7 @@ class CognitiaStack:
             plan_user_id=plan_user_id,
             plan_topic_id=plan_topic_id,
             thinking_enabled=thinking_enabled,
+            tool_budget_config=tool_budget_config,
         )
 
         if memory_bank_prompt is None and memory_bank_provider is not None:
@@ -174,4 +176,5 @@ class CognitiaStack:
             capability_executors=cap_executors,
             memory_bank_provider=memory_bank_provider,
             memory_bank_prompt=memory_bank_prompt,
+            tool_budget_config=tool_budget_config,
         )

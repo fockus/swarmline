@@ -73,5 +73,8 @@ packages = ["src/cognitia"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "security: security regression и изоляция провайдеров",
+]
 
 # Ruff конфиг — в корневом pyproject.toml (единый для monorepo)

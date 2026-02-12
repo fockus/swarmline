@@ -2,6 +2,17 @@
 
 Cognitia предоставляет 6 независимых capability. Каждая включается отдельным toggle — подключай только нужное.
 
+## Статус готовности
+
+| Capability | Статус | Комментарий |
+|-----------|--------|-------------|
+| Sandbox | ready | Local/Docker/E2B c timeout, denied commands, path isolation |
+| Web | partial | HTTPX provider реализует базовый fetch/search MVP |
+| Todo | ready | InMemory/Filesystem/Database (Postgres + SQLite) |
+| Memory Bank | ready | Filesystem + Database backend, auto-load `MEMORY.md` |
+| Planning | staged | Workflow стабилен, persistence пока только InMemory PlanStore |
+| Thinking | ready | standalone tool без внешних зависимостей |
+
 ## Обзор
 
 | Capability | Toggle | Tools | Extras |
@@ -234,3 +245,7 @@ config = ToolBudgetConfig(
 
 Приоритет: ALWAYS → MCP → MEMORY → PLANNING → SANDBOX → WEB.
 Если бюджет исчерпан — низкоприоритетные группы обрезаются.
+
+`tool_budget_config` применяется в wiring:
+- на этапе `CognitiaStack.create()` для capability-инструментов;
+- в `SessionFactory` для итогового `active_tools` перед запуском runtime.

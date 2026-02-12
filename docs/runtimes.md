@@ -15,6 +15,12 @@ Cognitia поддерживает три runtime. Все реализуют ед
 | **Extras** | `cognitia[claude]` | `cognitia[thin]` | `cognitia[deepagents]` |
 | **Offline** | Нет | Да (через base_url) | Да |
 
+## Runtime parity (текущее покрытие)
+
+- `memory/todo/planning` capability-flow покрыт e2e-матрицей для `thin`, `deepagents`, `claude_sdk`.
+- `team` покрыт app-layer orchestration сценарием для всех трёх runtime-конфигураций.
+- Thin runtime для полноценного team execution остаётся в backlog, поэтому в таблице помечен как `(backlog)`.
+
 ## Claude SDK Runtime
 
 Использует Claude Agent SDK subprocess. Нативная поддержка MCP, tools, subagents.
