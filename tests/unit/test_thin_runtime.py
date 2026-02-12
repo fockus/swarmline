@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import pytest
 
 from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
-
+from cognitia.runtime.types import Message, RuntimeEvent, ToolSpec
 
 # ---------------------------------------------------------------------------
 # Mock LLM — возвращает заранее заданные ответы
@@ -93,7 +91,7 @@ class TestThinRuntimeReact:
         assert "tool_call_finished" in types
         assert "final" in types
 
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
         assert "42" in final.data["text"]
 
     @pytest.mark.asyncio
@@ -145,7 +143,7 @@ class TestThinRuntimeReact:
         runtime = ThinRuntime(llm_call=llm)
 
         events = await collect(runtime, "Посчитай", mode_hint="react")
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
         assert "Какой доход?" in final.data["text"]
 
     @pytest.mark.asyncio
@@ -183,7 +181,7 @@ class TestThinRuntimeConversational:
         types = [e.type for e in events]
         assert "final" in types
 
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
         assert final.data["text"] == "Привет! Как дела?"
 
     @pytest.mark.asyncio
@@ -212,7 +210,7 @@ class TestThinRuntimeConversational:
         runtime = ThinRuntime(llm_call=llm)
 
         events = await collect(runtime, "test", mode_hint="conversational")
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
         assert final.data["text"] == "Ок"
 
 
@@ -236,5 +234,5 @@ class TestThinRuntimeReactFallback:
         assert "final" in types
         assert "error" not in types
 
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
         assert "Итог" in final.data["text"] or "вклад" in final.data["text"]

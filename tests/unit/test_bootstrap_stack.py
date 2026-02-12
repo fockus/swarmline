@@ -163,6 +163,27 @@ class TestCognitiaStackCreate:
         assert stack.runtime_config.base_url == "https://example.test"
         assert stack.local_tool_resolver is resolver
 
+    def test_memory_bank_prompt_autoloaded_when_provider_passed(self, tmp_path: Path) -> None:
+        """При memory_bank_provider stack подгружает default_prompt.md."""
+        project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
+
+        class DummyMemoryProvider:
+            async def read_file(self, path: str) -> str | None:  # pragma: no cover - contract-only
+                _ = path
+                return None
+
+        provider = DummyMemoryProvider()
+        stack = CognitiaStack.create(
+            prompts_dir=prompts_dir,
+            skills_dir=skills_dir,
+            project_root=project_root,
+            memory_bank_provider=provider,
+        )
+
+        assert stack.memory_bank_provider is provider
+        assert stack.memory_bank_prompt is not None
+        assert "Memory Bank" in stack.memory_bank_prompt
+
 
 class TestLocalToolResolverProtocol:
     """LocalToolResolver Protocol — contract tests."""

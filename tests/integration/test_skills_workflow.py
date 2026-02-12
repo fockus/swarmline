@@ -4,14 +4,19 @@
 собрать MCP-серверы и allowlist, проверить через ToolPolicy.
 """
 
-import pytest
 from pathlib import Path
 
+import pytest
+
+from cognitia.policy.tool_id_codec import DefaultToolIdCodec
+from cognitia.policy.tool_policy import (
+    DefaultToolPolicy,
+    PermissionAllow,
+    PermissionDeny,
+    ToolPolicyInput,
+)
 from cognitia.skills.loader import YamlSkillLoader
 from cognitia.skills.registry import SkillRegistry
-from cognitia.policy.tool_policy import DefaultToolPolicy, PermissionAllow, PermissionDeny, ToolPolicyInput
-from cognitia.policy.tool_id_codec import DefaultToolIdCodec
-
 
 SKILLS_DIR = Path(__file__).parent.parent.parent.parent.parent / "skills"
 

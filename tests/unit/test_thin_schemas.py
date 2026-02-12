@@ -5,12 +5,8 @@ from pydantic import ValidationError
 
 from cognitia.runtime.thin.schemas import (
     ActionEnvelope,
-    ClarifyAction,
-    ClarifyQuestion,
-    FinalAction,
     PlanSchema,
     PlanStep,
-    ToolCallAction,
 )
 
 

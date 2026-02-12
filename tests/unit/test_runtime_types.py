@@ -4,19 +4,16 @@ import pytest
 
 from cognitia.runtime.types import (
     DEFAULT_MODEL,
+    RUNTIME_ERROR_KINDS,
+    RUNTIME_EVENT_TYPES,
     Message,
     RuntimeConfig,
     RuntimeErrorData,
     RuntimeEvent,
     ToolSpec,
     TurnMetrics,
-    RUNTIME_ERROR_KINDS,
-    RUNTIME_EVENT_TYPES,
-    VALID_MODEL_NAMES,
-    VALID_RUNTIME_NAMES,
     resolve_model_name,
 )
-
 
 # ---------------------------------------------------------------------------
 # Message

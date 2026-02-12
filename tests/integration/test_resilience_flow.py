@@ -4,7 +4,6 @@
 model escalation из-за tool failures.
 """
 
-import pytest
 import time
 
 from cognitia.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry, CircuitState

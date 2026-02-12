@@ -1,6 +1,5 @@
 """Тесты для YamlSkillLoader и SkillRegistry."""
 
-import tempfile
 from pathlib import Path
 
 import pytest

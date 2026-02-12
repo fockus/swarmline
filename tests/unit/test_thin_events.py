@@ -154,7 +154,7 @@ class TestFinalContainsNewMessages:
         runtime = ThinRuntime(llm_call=llm)
 
         events = await collect(runtime)
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
 
         assert "new_messages" in final.data
         assert len(final.data["new_messages"]) >= 1
@@ -166,7 +166,7 @@ class TestFinalContainsNewMessages:
         runtime = ThinRuntime(llm_call=llm)
 
         events = await collect(runtime)
-        final = [e for e in events if e.type == "final"][0]
+        final = next(e for e in events if e.type == "final")
 
         assert "metrics" in final.data
         assert "latency_ms" in final.data["metrics"]

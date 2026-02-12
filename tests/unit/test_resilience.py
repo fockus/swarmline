@@ -6,10 +6,7 @@ CircuitBreaker per server_id:
 - closes after cooldown + successful probe
 """
 
-import asyncio
 import time
-
-import pytest
 
 from cognitia.resilience.circuit_breaker import CircuitBreaker, CircuitState
 

@@ -6,9 +6,14 @@
 
 import pytest
 
-from cognitia.policy.tool_id_codec import DefaultToolIdCodec
-from cognitia.policy.tool_policy import DefaultToolPolicy, PermissionAllow, PermissionDeny, ToolPolicyInput
 from cognitia.policy.tool_budget import ToolBudget
+from cognitia.policy.tool_id_codec import DefaultToolIdCodec
+from cognitia.policy.tool_policy import (
+    DefaultToolPolicy,
+    PermissionAllow,
+    PermissionDeny,
+    ToolPolicyInput,
+)
 
 
 @pytest.fixture

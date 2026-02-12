@@ -2,7 +2,7 @@
 
 import re
 
-from cognitia.runtime.thin.modes import detect_mode, VALID_MODES
+from cognitia.runtime.thin.modes import VALID_MODES, detect_mode
 
 
 class TestDetectModeHint:
@@ -97,4 +97,4 @@ class TestValidModes:
     """Множество допустимых режимов."""
 
     def test_all_modes(self) -> None:
-        assert VALID_MODES == {"conversational", "react", "planner"}
+        assert {"conversational", "react", "planner"} == VALID_MODES

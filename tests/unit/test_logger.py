@@ -1,9 +1,9 @@
 """Тесты для AgentLogger и configure_logging — покрытие observability."""
 
-import pytest
-from unittest.mock import MagicMock, patch
 
-from cognitia.observability.logger import AgentLogger, configure_logging, _level_to_int
+import pytest
+
+from cognitia.observability.logger import AgentLogger, _level_to_int, configure_logging
 
 
 class TestConfigureLogging:

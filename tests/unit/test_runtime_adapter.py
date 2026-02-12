@@ -1,7 +1,8 @@
 """Тесты для RuntimeAdapter — обёртка SDK для stream_reply."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 
 from cognitia.runtime.adapter import RuntimeAdapter, StreamEvent
 
@@ -115,7 +116,7 @@ class TestStreamReply:
             text_block.__class__.__name__ = "TextBlock"
 
             # Мок AssistantMessage
-            from cognitia.runtime.adapter import TextBlock, AssistantMessage
+            from cognitia.runtime.adapter import AssistantMessage
             assistant_msg = MagicMock(spec=AssistantMessage)
             assistant_msg.content = [text_block]
 

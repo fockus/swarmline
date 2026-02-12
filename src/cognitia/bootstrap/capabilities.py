@@ -1,0 +1,92 @@
+"""Capabilities wiring — сборка tools из независимых capability.
+
+6 capability с отдельными toggle:
+sandbox, web, todo, memory_bank, planning, thinking.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any
+
+from cognitia.runtime.types import ToolSpec
+
+
+def collect_capability_tools(
+    *,
+    sandbox_provider: Any | None = None,
+    web_provider: Any | None = None,
+    todo_provider: Any | None = None,
+    memory_bank_provider: Any | None = None,
+    plan_manager: Any | None = None,
+    plan_user_id: str = "",
+    plan_topic_id: str = "",
+    thinking_enabled: bool = True,
+) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
+    """Собрать tools из всех включённых capability.
+
+    Args:
+        sandbox_provider: SandboxProvider → bash, read, write, edit, ...
+        web_provider: WebProvider → web_fetch, web_search.
+        todo_provider: TodoProvider → todo_read, todo_write.
+        memory_bank_provider: MemoryBankProvider → memory_read, memory_write, ...
+        plan_manager: PlanManager → plan_create, plan_status, plan_execute.
+        plan_user_id: user_id для namespace планов.
+        plan_topic_id: topic_id для namespace планов.
+        thinking_enabled: → thinking tool (standalone).
+
+    Returns:
+        Tuple: (merged specs, merged executors).
+    """
+    all_specs: dict[str, ToolSpec] = {}
+    all_executors: dict[str, Callable] = {}
+
+    # Sandbox tools
+    if sandbox_provider is not None:
+        from cognitia.tools.builtin import create_sandbox_tools
+
+        specs, executors = create_sandbox_tools(sandbox_provider)
+        all_specs.update(specs)
+        all_executors.update(executors)
+
+    # Web tools
+    if web_provider is not None:
+        from cognitia.tools.builtin import create_web_tools
+
+        specs, executors = create_web_tools(web_provider)
+        all_specs.update(specs)
+        all_executors.update(executors)
+
+    # Todo tools
+    if todo_provider is not None:
+        from cognitia.todo.tools import create_todo_tools
+
+        specs, executors = create_todo_tools(todo_provider)
+        all_specs.update(specs)
+        all_executors.update(executors)
+
+    # Plan tools
+    if plan_manager is not None:
+        from cognitia.orchestration.plan_tools import create_plan_tools
+
+        specs, executors = create_plan_tools(plan_manager, plan_user_id, plan_topic_id)
+        all_specs.update(specs)
+        all_executors.update(executors)
+
+    # Memory Bank tools
+    if memory_bank_provider is not None:
+        from cognitia.memory_bank.tools import create_memory_bank_tools
+
+        specs, executors = create_memory_bank_tools(memory_bank_provider)
+        all_specs.update(specs)
+        all_executors.update(executors)
+
+    # Thinking tool (standalone)
+    if thinking_enabled:
+        from cognitia.tools.thinking import create_thinking_tool
+
+        spec, executor = create_thinking_tool()
+        all_specs[spec.name] = spec
+        all_executors[spec.name] = executor
+
+    return all_specs, all_executors

@@ -1,5 +1,7 @@
 """Тесты для DefaultContextBuilder и ContextBudget."""
 
+from pathlib import Path
+
 import pytest
 
 from cognitia.context import (
@@ -10,8 +12,7 @@ from cognitia.context import (
     truncate_to_budget,
 )
 from cognitia.memory.types import UserProfile
-from cognitia.skills.types import LoadedSkill, McpServerSpec, SkillSpec
-from pathlib import Path
+from cognitia.skills.types import LoadedSkill, SkillSpec
 
 
 @pytest.fixture

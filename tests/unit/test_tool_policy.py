@@ -103,6 +103,59 @@ class TestLocalTools:
         assert isinstance(result, PermissionDeny)
 
 
+class TestAllowedSystemTools:
+    """Тесты на whitelist system tools (0.3.0-5)."""
+
+    def test_bash_allowed_via_whitelist(self) -> None:
+        """Bash разрешён если в allowed_system_tools."""
+        policy = DefaultToolPolicy(allowed_system_tools={"Bash"})
+        state = _make_state(local_tools={"Bash"})
+        result = policy.can_use_tool("Bash", {}, state)
+        assert isinstance(result, PermissionAllow)
+
+    def test_read_write_allowed(self) -> None:
+        """Read и Write разрешены через whitelist."""
+        policy = DefaultToolPolicy(allowed_system_tools={"Read", "Write"})
+        state = _make_state(local_tools={"Read", "Write"})
+
+        assert isinstance(policy.can_use_tool("Read", {}, state), PermissionAllow)
+        assert isinstance(policy.can_use_tool("Write", {}, state), PermissionAllow)
+
+    def test_other_denied_tools_still_blocked(self) -> None:
+        """Whitelist не влияет на другие denied tools."""
+        policy = DefaultToolPolicy(allowed_system_tools={"Bash"})
+        state = _make_state()
+        # Edit НЕ в whitelist — должен быть заблокирован
+        result = policy.can_use_tool("Edit", {}, state)
+        assert isinstance(result, PermissionDeny)
+
+    def test_none_whitelist_backward_compat(self) -> None:
+        """allowed_system_tools=None → всё как раньше."""
+        policy = DefaultToolPolicy(allowed_system_tools=None)
+        state = _make_state()
+        result = policy.can_use_tool("Bash", {}, state)
+        assert isinstance(result, PermissionDeny)
+
+    def test_empty_set_whitelist_backward_compat(self) -> None:
+        """allowed_system_tools=set() → всё как раньше."""
+        policy = DefaultToolPolicy(allowed_system_tools=set())
+        state = _make_state()
+        result = policy.can_use_tool("Bash", {}, state)
+        assert isinstance(result, PermissionDeny)
+
+    def test_whitelist_with_extra_denied(self) -> None:
+        """Whitelist + extra_denied — whitelist имеет приоритет."""
+        policy = DefaultToolPolicy(
+            allowed_system_tools={"Bash"},
+            extra_denied={"CustomTool"},
+        )
+        state = _make_state(local_tools={"Bash"})
+        # Bash разрешён через whitelist
+        assert isinstance(policy.can_use_tool("Bash", {}, state), PermissionAllow)
+        # CustomTool запрещён через extra_denied
+        assert isinstance(policy.can_use_tool("CustomTool", {}, state), PermissionDeny)
+
+
 class TestAgentLoggerIntegration:
     """GAP-4: AgentLogger.tool_policy_event() вызывается в DefaultToolPolicy."""
 

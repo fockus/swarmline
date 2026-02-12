@@ -1,79 +1,154 @@
-"""Тесты для ToolBudget (секция 6.3 архитектуры).
+"""Тесты ToolBudgetConfig + ToolSelector — TDD."""
 
-Лимиты: max_tool_calls=8, max_mcp_calls=6 per turn.
-"""
+from __future__ import annotations
 
 import pytest
 
-from cognitia.policy.tool_budget import ToolBudget
+from cognitia.runtime.types import ToolSpec
 
 
-class TestToolBudget:
-    """ToolBudget — счётчик вызовов инструментов за turn."""
+def _spec(name: str) -> ToolSpec:
+    return ToolSpec(name=name, description="d", parameters={"type": "object", "properties": {}})
 
-    def test_initial_state(self) -> None:
-        """Начальное состояние — 0 вызовов, бюджет не исчерпан."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        assert budget.total_calls == 0
-        assert budget.mcp_calls == 0
-        assert budget.is_exhausted() is False
 
-    def test_record_local_tool(self) -> None:
-        """Локальный вызов увеличивает total, но не mcp."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        budget.record_call(is_mcp=False)
-        assert budget.total_calls == 1
-        assert budget.mcp_calls == 0
+class TestToolBudgetConfig:
+    """Конфиг выносит настройки из хардкода."""
 
-    def test_record_mcp_tool(self) -> None:
-        """MCP вызов увеличивает и total, и mcp."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        budget.record_call(is_mcp=True)
-        assert budget.total_calls == 1
-        assert budget.mcp_calls == 1
+    def test_defaults(self) -> None:
+        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
-    def test_total_limit_exhausted(self) -> None:
-        """Лимит 8: после 7 вызовов — ещё можно, после 8 — exhausted."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        for _ in range(7):
-            budget.record_call(is_mcp=False)
-        assert budget.is_exhausted() is False  # 7 из 8 — ОК
-        assert budget.can_call(is_mcp=False) is True
-        budget.record_call(is_mcp=False)  # 8-й
-        assert budget.is_exhausted() is True
-        assert budget.can_call(is_mcp=False) is False  # 9-й — нет
+        cfg = ToolBudgetConfig()
+        assert cfg.max_tools == 30
+        assert cfg.group_priority[0] == ToolGroup.ALWAYS
+        assert cfg.group_priority[-1] == ToolGroup.WEB
+        assert cfg.group_limits == {}
 
-    def test_mcp_limit_exhausted(self) -> None:
-        """7-й MCP вызов → mcp exhausted (но total ещё нет)."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        for _ in range(6):
-            budget.record_call(is_mcp=True)
-        assert budget.can_call(is_mcp=True) is False
-        # Но локальный ещё можно
-        assert budget.can_call(is_mcp=False) is True
+    def test_custom_max_tools(self) -> None:
+        from cognitia.policy.tool_selector import ToolBudgetConfig
 
-    def test_can_call_before_limit(self) -> None:
-        """До лимита can_call=True."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        budget.record_call(is_mcp=True)
-        assert budget.can_call(is_mcp=True) is True
-        assert budget.can_call(is_mcp=False) is True
+        cfg = ToolBudgetConfig(max_tools=15)
+        assert cfg.max_tools == 15
 
-    def test_reset(self) -> None:
-        """reset() обнуляет счётчики."""
-        budget = ToolBudget(max_tool_calls=8, max_mcp_calls=6)
-        for _ in range(5):
-            budget.record_call(is_mcp=True)
-        budget.reset()
-        assert budget.total_calls == 0
-        assert budget.mcp_calls == 0
+    def test_custom_priority(self) -> None:
+        """Пользователь может переопределить порядок приоритетов."""
+        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
-    def test_timeout_default(self) -> None:
-        """Дефолтный timeout 30s (GAP-3, §6.3)."""
-        budget = ToolBudget()
-        assert budget.timeout_per_call_ms == 30_000
+        cfg = ToolBudgetConfig(
+            group_priority=[ToolGroup.MCP, ToolGroup.ALWAYS, ToolGroup.SANDBOX],
+        )
+        assert cfg.group_priority[0] == ToolGroup.MCP
 
-    def test_timeout_custom(self) -> None:
-        """Кастомный timeout."""
-        budget = ToolBudget(timeout_per_call_ms=10_000)
-        assert budget.timeout_per_call_ms == 10_000
+    def test_group_limits(self) -> None:
+        """Per-group лимиты."""
+        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
+
+        cfg = ToolBudgetConfig(group_limits={ToolGroup.SANDBOX: 3, ToolGroup.MCP: 10})
+        assert cfg.group_limits[ToolGroup.SANDBOX] == 3
+
+    def test_frozen(self) -> None:
+        from cognitia.policy.tool_selector import ToolBudgetConfig
+
+        cfg = ToolBudgetConfig()
+        with pytest.raises(AttributeError):
+            cfg.max_tools = 99  # type: ignore[misc]
+
+
+class TestToolSelector:
+    """ToolSelector — отбирает tools по конфигу."""
+
+    def test_always_tools_included(self) -> None:
+        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+
+        selector = ToolSelector(max_tools=5)
+        selector.add_group(ToolGroup.ALWAYS, [_spec("thinking"), _spec("todo_read"), _spec("todo_write")])
+        selector.add_group(ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write")])
+
+        selected = selector.select()
+        names = {s.name for s in selected}
+        assert "thinking" in names
+        assert "todo_read" in names
+
+    def test_budget_limits_total(self) -> None:
+        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+
+        selector = ToolSelector(max_tools=3)
+        selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
+        selector.add_group(ToolGroup.SANDBOX, [_spec(f"s{i}") for i in range(10)])
+
+        selected = selector.select()
+        assert len(selected) <= 3
+
+    def test_mcp_gets_priority_after_always(self) -> None:
+        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+
+        selector = ToolSelector(max_tools=5)
+        selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
+        selector.add_group(ToolGroup.MCP, [_spec("mcp_search"), _spec("mcp_get")])
+        selector.add_group(ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write"), _spec("edit")])
+
+        selected = selector.select()
+        names = [s.name for s in selected]
+        assert "thinking" in names
+        assert "mcp_search" in names
+        assert "mcp_get" in names
+        assert len(selected) == 5
+
+    def test_config_based_selector(self) -> None:
+        """ToolSelector с явным config."""
+        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
+
+        cfg = ToolBudgetConfig(max_tools=4, group_limits={ToolGroup.SANDBOX: 2})
+        selector = ToolSelector(config=cfg)
+        selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
+        selector.add_group(ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write"), _spec("edit")])
+
+        selected = selector.select()
+        names = [s.name for s in selected]
+        # thinking (1) + sandbox limited to 2 = 3 total
+        assert "thinking" in names
+        assert len([n for n in names if n.startswith(("bash", "read", "write", "edit"))]) <= 2
+
+    def test_custom_priority_order(self) -> None:
+        """Кастомный порядок: SANDBOX перед MCP."""
+        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
+
+        cfg = ToolBudgetConfig(
+            max_tools=3,
+            group_priority=[ToolGroup.SANDBOX, ToolGroup.MCP],
+        )
+        selector = ToolSelector(config=cfg)
+        selector.add_group(ToolGroup.MCP, [_spec("mcp_a"), _spec("mcp_b")])
+        selector.add_group(ToolGroup.SANDBOX, [_spec("bash"), _spec("read")])
+
+        selected = selector.select()
+        names = [s.name for s in selected]
+        # Sandbox первый по кастомному приоритету
+        assert names[0] == "bash"
+        assert names[1] == "read"
+        assert len(selected) == 3
+
+    def test_empty_groups(self) -> None:
+        from cognitia.policy.tool_selector import ToolSelector
+
+        selector = ToolSelector(max_tools=10)
+        assert selector.select() == []
+
+    def test_priority_order(self) -> None:
+        from cognitia.policy.tool_selector import ToolGroup
+
+        assert ToolGroup.ALWAYS.value < ToolGroup.MCP.value
+        assert ToolGroup.MCP.value < ToolGroup.MEMORY.value
+        assert ToolGroup.MEMORY.value < ToolGroup.PLANNING.value
+        assert ToolGroup.PLANNING.value < ToolGroup.SANDBOX.value
+        assert ToolGroup.SANDBOX.value < ToolGroup.WEB.value
+
+    def test_all_fit_in_budget(self) -> None:
+        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+
+        selector = ToolSelector(max_tools=50)
+        selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
+        selector.add_group(ToolGroup.MCP, [_spec("mcp_a"), _spec("mcp_b")])
+        selector.add_group(ToolGroup.SANDBOX, [_spec("bash"), _spec("read")])
+
+        selected = selector.select()
+        assert len(selected) == 5

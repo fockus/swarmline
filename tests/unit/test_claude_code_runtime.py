@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from typing import Any, AsyncIterator
+from typing import Any
 
 import pytest
 
 from cognitia.runtime.claude_code import ClaudeCodeRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
-
+from cognitia.runtime.types import Message, RuntimeEvent
 
 # ---------------------------------------------------------------------------
 # Фейковый StreamEvent (совместим с cognitia.runtime.adapter.StreamEvent)
@@ -164,7 +164,7 @@ class TestClaudeCodeRuntimeStreaming:
         assert "final" in types
 
         # tool_call_started
-        started = [e for e in events if e.type == "tool_call_started"][0]
+        started = next(e for e in events if e.type == "tool_call_started")
         assert started.data["name"] == "mcp__iss__get_bonds"
         assert started.data["args"] == {"q": "obligs"}
 

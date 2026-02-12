@@ -7,13 +7,12 @@ from unittest.mock import patch
 import pytest
 
 from cognitia.runtime.deepagents import (
-    DeepAgentsRuntime,
     _DEEPAGENTS_BUILTIN_TOOLS,
+    DeepAgentsRuntime,
     _check_langchain_available,
     create_langchain_tool,
 )
 from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
-
 
 # ---------------------------------------------------------------------------
 # Built-in tools filtering
@@ -142,7 +141,7 @@ class TestDeepAgentsRuntimeRun:
 
         async def _fake_stream(**kwargs):
             return
-            yield  # noqa: E115  # сделать async generator
+            yield  # сделать async generator
 
         with patch.object(runtime, "_stream_langchain", side_effect=_fake_stream):
             events = []
@@ -163,7 +162,7 @@ class TestDeepAgentsRuntimeRun:
 
         async def _failing_stream(**kwargs):
             raise RuntimeError("LLM fail")
-            yield  # noqa: E115  # сделать async generator
+            yield  # сделать async generator
 
         with patch.object(runtime, "_stream_langchain", side_effect=_failing_stream):
             events = []

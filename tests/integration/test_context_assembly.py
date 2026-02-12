@@ -4,11 +4,12 @@
 Проверяем слои, бюджет, truncation.
 """
 
-import pytest
 from pathlib import Path
 
+import pytest
+
+from cognitia.context.budget import ContextBudget
 from cognitia.context.builder import BuiltContext, ContextInput, DefaultContextBuilder
-from cognitia.context.budget import ContextBudget, estimate_tokens
 from cognitia.memory.types import UserProfile
 from cognitia.skills.types import LoadedSkill, McpServerSpec, SkillSpec
 

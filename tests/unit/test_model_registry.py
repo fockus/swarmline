@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from textwrap import dedent
 
 import pytest
 import yaml
 
 from cognitia.runtime.model_registry import ModelRegistry, get_registry, reset_registry
-
 
 # ---------------------------------------------------------------------------
 # Fixture: temp config

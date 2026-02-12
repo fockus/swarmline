@@ -90,6 +90,8 @@ class DefaultContextBuilder:
         recall_facts: dict[str, str] | None = None,
         summary: str | None = None,
         last_messages: list[MemoryMessage] | None = None,
+        memory_bank_content: str | None = None,
+        memory_bank_prompt: str | None = None,
     ) -> BuiltContext:
         """Собрать system_prompt с учётом бюджета (§10.1-10.3).
 
@@ -113,6 +115,20 @@ class DefaultContextBuilder:
             role_pack = f"\n## Текущая роль: {inp.role_id}\n{role_text}"
             remaining -= estimate_tokens(role_pack)
             packs.append(role_pack)
+
+        # P_MEMORY: Memory Bank prompt + auto-loaded MEMORY.md (между Role и Goal)
+        if memory_bank_prompt and remaining > 0:
+            mem_pack = f"\n{memory_bank_prompt}"
+            if memory_bank_content:
+                mem_pack += f"\n\n## Текущий банк памяти (MEMORY.md)\n{memory_bank_content}"
+            mem_tokens = estimate_tokens(mem_pack)
+            if mem_tokens > remaining:
+                mem_pack = truncate_to_budget(mem_pack, remaining)
+                truncated.append("memory_bank")
+            remaining -= estimate_tokens(mem_pack)
+            packs.append(mem_pack)
+        elif memory_bank_prompt:
+            truncated.append("memory_bank")
 
         # P1: Goal text (drop при remaining <= 0)
         if goal_text and remaining > 0:

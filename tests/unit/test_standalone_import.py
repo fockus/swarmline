@@ -8,8 +8,6 @@ from __future__ import annotations
 import subprocess
 import sys
 
-import pytest
-
 
 class TestStandaloneImport:
     """cognitia можно импортировать без freedom_agent."""
@@ -60,7 +58,7 @@ class TestStandaloneImport:
                     violations.append(f"{py_file.relative_to(cognitia_src)}:{i}: {stripped}")
 
         assert violations == [], (
-            f"Найдены обратные зависимости cognitia → freedom_agent:\n"
+            "Найдены обратные зависимости cognitia → freedom_agent:\n"
             + "\n".join(violations)
         )
 
@@ -85,6 +83,6 @@ class TestStandaloneImport:
                         )
 
         assert violations == [], (
-            f"Найдены domain-specific утечки в cognitia:\n"
+            "Найдены domain-specific утечки в cognitia:\n"
             + "\n".join(violations)
         )

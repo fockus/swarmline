@@ -4,12 +4,12 @@
 """
 
 import json
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
-from cognitia.memory.postgres import PostgresMemoryProvider, _json_or_none, _USER_ID_SUB
-from cognitia.memory.types import GoalState, MemoryMessage
+from cognitia.memory.postgres import _USER_ID_SUB, PostgresMemoryProvider, _json_or_none
+from cognitia.memory.types import GoalState
 
 
 def _mock_session_factory():

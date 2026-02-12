@@ -19,20 +19,17 @@ _log = structlog.get_logger(component="tool_policy")
 
 
 # Инструменты, которые ВСЕГДА запрещены (file-system, shell, etc.)
+# Содержит ОБА варианта именования: PascalCase (SDK) и snake_case (builtin)
 ALWAYS_DENIED_TOOLS: frozenset[str] = frozenset(
     {
-        "Bash",
-        "Read",
-        "Write",
-        "Edit",
-        "MultiEdit",
-        "Glob",
-        "Grep",
-        "LS",
-        "TodoRead",
-        "TodoWrite",
-        "WebFetch",
-        "WebSearch",
+        # PascalCase (Claude SDK naming)
+        "Bash", "Read", "Write", "Edit", "MultiEdit",
+        "Glob", "Grep", "LS", "TodoRead", "TodoWrite",
+        "WebFetch", "WebSearch",
+        # snake_case (builtin canonical naming)
+        "bash", "read", "write", "edit", "multi_edit",
+        "glob", "grep", "ls", "todo_read", "todo_write",
+        "web_fetch", "web_search",
     }
 )
 
@@ -76,8 +73,11 @@ class DefaultToolPolicy:
         extra_denied: set[str] | None = None,
         codec: ToolIdCodec | None = None,
         agent_logger: AgentLogger | None = None,
+        allowed_system_tools: set[str] | None = None,
     ) -> None:
-        self._denied = ALWAYS_DENIED_TOOLS | (extra_denied or set())
+        # Whitelist: убираем из deny-list разрешённые system tools
+        base_denied = ALWAYS_DENIED_TOOLS - (allowed_system_tools or set())
+        self._denied = base_denied | (extra_denied or set())
         if codec is None:
             from cognitia.policy.tool_id_codec import DefaultToolIdCodec
 

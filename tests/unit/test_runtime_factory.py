@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from cognitia.runtime.factory import RuntimeFactory, _ErrorRuntime
-from cognitia.runtime.types import RuntimeConfig, RuntimeEvent
+from cognitia.runtime.types import RuntimeConfig
 
 
 @pytest.fixture

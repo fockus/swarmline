@@ -1,13 +1,11 @@
 """Тесты для ClaudeOptionsBuilder и _spec_to_sdk_config — фабрика опций SDK."""
 
-import pytest
-from unittest.mock import MagicMock, patch
 
 from cognitia.runtime.options_builder import (
     ClaudeOptionsBuilder,
-    _build_url_config,
     _build_sse_config,
     _build_stdio_config,
+    _build_url_config,
     _spec_to_sdk_config,
 )
 from cognitia.skills.types import McpServerSpec

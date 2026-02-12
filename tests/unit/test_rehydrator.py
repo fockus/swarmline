@@ -6,19 +6,20 @@
 ISP: конструктор принимает 5 мелких протоколов, а не монолитный MemoryProvider.
 """
 
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+
+from cognitia.memory.types import GoalState, MemoryMessage, PhaseState
 from cognitia.session.rehydrator import DefaultSessionRehydrator
 from cognitia.types import TurnContext
-from cognitia.memory.types import GoalState, MemoryMessage, PhaseState
 
 
 def _make_ctx(**kwargs) -> TurnContext:
-    defaults = dict(
-        user_id="u1", topic_id="t1", role_id="coach",
-        model="sonnet", active_skill_ids=(),
-    )
+    defaults = {
+        "user_id": "u1", "topic_id": "t1", "role_id": "coach",
+        "model": "sonnet", "active_skill_ids": (),
+    }
     defaults.update(kwargs)
     return TurnContext(**defaults)
 

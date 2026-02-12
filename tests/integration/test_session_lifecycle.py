@@ -3,16 +3,17 @@
 Сценарий: создание сессии → определение роли → выбор модели → rehydration.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
+import pytest
+
+from cognitia.memory.types import GoalState, MemoryMessage
 from cognitia.routing.role_router import KeywordRoleRouter
 from cognitia.runtime.model_policy import ModelPolicy
 from cognitia.session.manager import InMemorySessionManager
 from cognitia.session.rehydrator import DefaultSessionRehydrator
 from cognitia.session.types import SessionKey, SessionState
 from cognitia.types import TurnContext
-from cognitia.memory.types import GoalState, MemoryMessage
 
 
 def _mock_adapter(connected: bool = True) -> MagicMock:

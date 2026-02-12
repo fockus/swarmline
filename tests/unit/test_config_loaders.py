@@ -7,13 +7,11 @@ Testing Trophy: unit + integration (fixture YAML).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from cognitia.config.role_router import RoleRouterConfig, load_role_router_config
 from cognitia.config.role_skills import YamlRoleSkillsLoader
-
 
 # ---------------------------------------------------------------------------
 # YamlRoleSkillsLoader tests

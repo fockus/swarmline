@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from cognitia.memory.inmemory import InMemoryMemoryProvider
-from cognitia.memory.types import GoalState, PhaseState, ToolEvent
+from cognitia.memory.types import GoalState, ToolEvent
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from cognitia.skills.registry import SkillRegistry
-from cognitia.skills.types import LoadedSkill, McpServerSpec, SkillSpec
+from cognitia.skills.types import LoadedSkill, SkillSpec
 
 
 def _make_skill(skill_id: str, tools: list[str]) -> LoadedSkill:
