@@ -187,6 +187,84 @@ class AgentLogger:
             recovery_action=recovery_action,
         )
 
+    # --- Delegation events (orchestrator) ---
+
+    def role_selected(
+        self,
+        user_id: str,
+        topic_id: str,
+        role_id: str,
+        source: str = "",
+    ) -> None:
+        """Роль выбрана для turn'а.
+
+        source: explicit / intent / router / orchestrator / delegation / auto_return.
+        """
+        self._log.info(
+            "role_selected",
+            user_id=user_id,
+            topic_id=topic_id,
+            role_id=role_id,
+            source=source,
+        )
+
+    def delegation_start(
+        self,
+        user_id: str,
+        topic_id: str,
+        from_role: str,
+        to_role: str,
+        context: str = "",
+    ) -> None:
+        """Делегирование начато (orchestrator → доменная роль)."""
+        self._log.info(
+            "delegation_start",
+            user_id=user_id,
+            topic_id=topic_id,
+            from_role=from_role,
+            to_role=to_role,
+            context=context[:200],
+        )
+
+    def delegation_done(
+        self,
+        user_id: str,
+        topic_id: str,
+        from_role: str,
+        to_role: str,
+        turns: int = 0,
+        trigger: str = "",
+    ) -> None:
+        """Делегирование завершено (доменная роль → orchestrator).
+
+        trigger: return_tool / auto_return / intent_change.
+        """
+        self._log.info(
+            "delegation_done",
+            user_id=user_id,
+            topic_id=topic_id,
+            from_role=from_role,
+            to_role=to_role,
+            turns=turns,
+            trigger=trigger,
+        )
+
+    def delegation_failed(
+        self,
+        user_id: str,
+        topic_id: str,
+        role_id: str,
+        error: str,
+    ) -> None:
+        """Ошибка при делегировании."""
+        self._log.error(
+            "delegation_failed",
+            user_id=user_id,
+            topic_id=topic_id,
+            role_id=role_id,
+            error=error,
+        )
+
     def memory_persist(
         self,
         user_id: str,

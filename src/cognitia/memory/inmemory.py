@@ -149,12 +149,21 @@ class InMemoryMemoryProvider:
         role_id: str,
         active_skill_ids: list[str],
         prompt_hash: str = "",
+        *,
+        delegated_from: str | None = None,
+        delegation_turn_count: int = 0,
+        pending_delegation: str | None = None,
+        delegation_summary: str | None = None,
     ) -> None:
         """Сохранить состояние сессии."""
         self._session_states[(user_id, topic_id)] = {
             "role_id": role_id,
             "active_skill_ids": active_skill_ids,
             "prompt_hash": prompt_hash,
+            "delegated_from": delegated_from,
+            "delegation_turn_count": delegation_turn_count,
+            "pending_delegation": pending_delegation,
+            "delegation_summary": delegation_summary,
         }
 
     async def get_session_state(

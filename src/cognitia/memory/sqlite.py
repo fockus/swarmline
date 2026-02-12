@@ -341,17 +341,28 @@ class SQLiteMemoryProvider:
         role_id: str,
         active_skill_ids: list[str],
         prompt_hash: str = "",
+        *,
+        delegated_from: str | None = None,
+        delegation_turn_count: int = 0,
+        pending_delegation: str | None = None,
+        delegation_summary: str | None = None,
     ) -> None:
         async with self._session(commit=True) as session:
             await session.execute(
                 text(f"""
-                    INSERT INTO topics (user_id, topic_id, role_id, active_skill_ids, prompt_hash)
-                    VALUES ({_USER_ID_SUB}, :topic_id, :role_id, :skill_ids, :prompt_hash)
+                    INSERT INTO topics (user_id, topic_id, role_id, active_skill_ids, prompt_hash,
+                                        delegated_from, delegation_turn_count, pending_delegation, delegation_summary)
+                    VALUES ({_USER_ID_SUB}, :topic_id, :role_id, :skill_ids, :prompt_hash,
+                            :delegated_from, :delegation_turn_count, :pending_delegation, :delegation_summary)
                     ON CONFLICT (user_id, topic_id)
                     DO UPDATE SET
                         role_id = excluded.role_id,
                         active_skill_ids = excluded.active_skill_ids,
                         prompt_hash = excluded.prompt_hash,
+                        delegated_from = excluded.delegated_from,
+                        delegation_turn_count = excluded.delegation_turn_count,
+                        pending_delegation = excluded.pending_delegation,
+                        delegation_summary = excluded.delegation_summary,
                         updated_at = CURRENT_TIMESTAMP
                 """),
                 {
@@ -360,6 +371,10 @@ class SQLiteMemoryProvider:
                     "role_id": role_id,
                     "skill_ids": json.dumps(active_skill_ids),
                     "prompt_hash": prompt_hash,
+                    "delegated_from": delegated_from,
+                    "delegation_turn_count": delegation_turn_count,
+                    "pending_delegation": pending_delegation,
+                    "delegation_summary": delegation_summary,
                 },
             )
 
@@ -367,7 +382,9 @@ class SQLiteMemoryProvider:
         async with self._session() as session:
             result = await session.execute(
                 text(f"""
-                    SELECT role_id, active_skill_ids, title, COALESCE(prompt_hash, '') AS prompt_hash
+                    SELECT role_id, active_skill_ids, title, COALESCE(prompt_hash, '') AS prompt_hash,
+                           delegated_from, COALESCE(delegation_turn_count, 0) AS delegation_turn_count,
+                           pending_delegation, delegation_summary
                     FROM topics
                     WHERE user_id = {_USER_ID_SUB} AND topic_id = :topic_id
                 """),
@@ -381,6 +398,10 @@ class SQLiteMemoryProvider:
                 "active_skill_ids": _load_json_or_empty_list(row.active_skill_ids),
                 "title": row.title,
                 "prompt_hash": str(row.prompt_hash or ""),
+                "delegated_from": row.delegated_from,
+                "delegation_turn_count": row.delegation_turn_count or 0,
+                "pending_delegation": row.pending_delegation,
+                "delegation_summary": row.delegation_summary,
             }
 
     # --- Profile ---

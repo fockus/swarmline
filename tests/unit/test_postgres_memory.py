@@ -344,6 +344,11 @@ class TestSessionState:
         row.role_id = "deposit_advisor"
         row.active_skill_ids = ["finuslugi"]
         row.title = "Вклады"
+        row.prompt_hash = "abc"
+        row.delegated_from = "orchestrator"
+        row.delegation_turn_count = 3
+        row.pending_delegation = None
+        row.delegation_summary = "Подбор вклада"
         result_mock = MagicMock()
         result_mock.fetchone.return_value = row
         session.execute.return_value = result_mock
@@ -354,6 +359,10 @@ class TestSessionState:
         assert state["role_id"] == "deposit_advisor"
         assert state["active_skill_ids"] == ["finuslugi"]
         assert state["title"] == "Вклады"
+        assert state["delegated_from"] == "orchestrator"
+        assert state["delegation_turn_count"] == 3
+        assert state["pending_delegation"] is None
+        assert state["delegation_summary"] == "Подбор вклада"
 
     @pytest.mark.asyncio
     async def test_get_session_state_not_found(self) -> None:

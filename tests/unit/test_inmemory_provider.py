@@ -137,10 +137,31 @@ class TestSessionState:
         assert state is not None
         assert state["role_id"] == "coach"
         assert state["active_skill_ids"] == ["finuslugi"]
+        # Delegation defaults
+        assert state["delegated_from"] is None
+        assert state["delegation_turn_count"] == 0
+        assert state["pending_delegation"] is None
+        assert state["delegation_summary"] is None
 
     @pytest.mark.asyncio
     async def test_get_session_state_none(self, provider: InMemoryMemoryProvider) -> None:
         assert await provider.get_session_state("u1", "absent") is None
+
+    @pytest.mark.asyncio
+    async def test_session_state_delegation_persist(self, provider: InMemoryMemoryProvider) -> None:
+        """Delegation fields сохраняются и восстанавливаются."""
+        await provider.save_session_state(
+            "u1", "t1", "deposit_advisor", ["finuslugi"],
+            delegated_from="orchestrator",
+            delegation_turn_count=5,
+            pending_delegation=None,
+            delegation_summary="Подбор вклада",
+        )
+        state = await provider.get_session_state("u1", "t1")
+        assert state is not None
+        assert state["delegated_from"] == "orchestrator"
+        assert state["delegation_turn_count"] == 5
+        assert state["delegation_summary"] == "Подбор вклада"
 
 
 class TestProfile:

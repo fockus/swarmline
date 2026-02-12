@@ -106,6 +106,11 @@ class SessionStateStore(Protocol):
         role_id: str,
         active_skill_ids: list[str],
         prompt_hash: str = "",
+        *,
+        delegated_from: str | None = None,
+        delegation_turn_count: int = 0,
+        pending_delegation: str | None = None,
+        delegation_summary: str | None = None,
     ) -> None: ...
 
     async def get_session_state(

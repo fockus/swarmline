@@ -5,6 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
+aiosqlite = pytest.importorskip("aiosqlite", reason="aiosqlite не установлен")
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -117,6 +120,10 @@ async def _init_schema(session_factory: async_sessionmaker) -> None:
                     active_skill_ids TEXT,
                     title TEXT,
                     prompt_hash TEXT,
+                    delegated_from TEXT,
+                    delegation_turn_count INTEGER NOT NULL DEFAULT 0,
+                    pending_delegation TEXT,
+                    delegation_summary TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(user_id, topic_id)
                 )
@@ -227,12 +234,34 @@ class TestSQLiteSessionAndPhase:
         assert state["role_id"] == "coach"
         assert state["active_skill_ids"] == ["finuslugi"]
         assert state["prompt_hash"] == "abc"
+        # Delegation fields — дефолты
+        assert state["delegated_from"] is None
+        assert state["delegation_turn_count"] == 0
+        assert state["pending_delegation"] is None
+        assert state["delegation_summary"] is None
 
         await provider.save_phase_state("u1", "debts", "Погашение")
         phase = await provider.get_phase_state("u1")
         assert phase is not None
         assert phase.phase == "debts"
         assert phase.notes == "Погашение"
+
+    @pytest.mark.asyncio
+    async def test_session_state_delegation_persist(self, provider: SQLiteMemoryProvider) -> None:
+        """Delegation fields корректно сохраняются и восстанавливаются."""
+        await provider.save_session_state(
+            "u1", "t1", "deposit_advisor", ["finuslugi"],
+            delegated_from="orchestrator",
+            delegation_turn_count=3,
+            pending_delegation=None,
+            delegation_summary="Подбор вклада на 1 млн",
+        )
+        state = await provider.get_session_state("u1", "t1")
+        assert state is not None
+        assert state["delegated_from"] == "orchestrator"
+        assert state["delegation_turn_count"] == 3
+        assert state["pending_delegation"] is None
+        assert state["delegation_summary"] == "Подбор вклада на 1 млн"
 
 
 class TestSQLiteToolEventsAndProfile:

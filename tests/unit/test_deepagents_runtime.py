@@ -119,7 +119,8 @@ class TestDeepAgentsRuntimeRun:
         async def _fake_stream(**kwargs):
             yield RuntimeEvent.assistant_delta("Привет, мир!")
 
-        with patch.object(runtime, "_stream_langchain", side_effect=_fake_stream):
+        with patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None), \
+             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream):
             events = []
             async for ev in runtime.run(
                 messages=[Message(role="user", content="hi")],
@@ -143,7 +144,8 @@ class TestDeepAgentsRuntimeRun:
             return
             yield  # сделать async generator
 
-        with patch.object(runtime, "_stream_langchain", side_effect=_fake_stream):
+        with patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None), \
+             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream):
             events = []
             async for ev in runtime.run(
                 messages=[Message(role="user", content="hi")],
@@ -164,7 +166,8 @@ class TestDeepAgentsRuntimeRun:
             raise RuntimeError("LLM fail")
             yield  # сделать async generator
 
-        with patch.object(runtime, "_stream_langchain", side_effect=_failing_stream):
+        with patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None), \
+             patch.object(runtime, "_stream_langchain", side_effect=_failing_stream):
             events = []
             async for ev in runtime.run(
                 messages=[Message(role="user", content="hi")],
@@ -186,7 +189,8 @@ class TestDeepAgentsRuntimeRun:
         async def _fake_stream(**kwargs):
             yield RuntimeEvent.assistant_delta("ok")
 
-        with patch.object(runtime, "_stream_langchain", side_effect=_fake_stream) as mock_stream:
+        with patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None), \
+             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream) as mock_stream:
             events = []
             async for ev in runtime.run(
                 messages=[Message(role="user", content="hi")],
@@ -209,7 +213,8 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.tool_call_finished(name="calc", correlation_id="test-cid", result_summary="42")
             yield RuntimeEvent.assistant_delta("Результат: 42")
 
-        with patch.object(runtime, "_stream_langchain", side_effect=_fake_stream_with_tools):
+        with patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None), \
+             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream_with_tools):
             events = []
             async for ev in runtime.run(
                 messages=[Message(role="user", content="hi")],

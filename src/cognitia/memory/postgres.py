@@ -328,18 +328,29 @@ class PostgresMemoryProvider:
         role_id: str,
         active_skill_ids: list[str],
         prompt_hash: str = "",
+        *,
+        delegated_from: str | None = None,
+        delegation_turn_count: int = 0,
+        pending_delegation: str | None = None,
+        delegation_summary: str | None = None,
     ) -> None:
         """Сохранить состояние сессии для rehydration (таблица topics, §8.4)."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(f"""
-                    INSERT INTO topics (user_id, topic_id, role_id, active_skill_ids, prompt_hash)
-                    VALUES ({_USER_ID_SUB}, :topic_id, :role_id, CAST(:skill_ids AS jsonb), :prompt_hash)
+                    INSERT INTO topics (user_id, topic_id, role_id, active_skill_ids, prompt_hash,
+                                        delegated_from, delegation_turn_count, pending_delegation, delegation_summary)
+                    VALUES ({_USER_ID_SUB}, :topic_id, :role_id, CAST(:skill_ids AS jsonb), :prompt_hash,
+                            :delegated_from, :delegation_turn_count, :pending_delegation, :delegation_summary)
                     ON CONFLICT (user_id, topic_id)
                     DO UPDATE SET
                         role_id = EXCLUDED.role_id,
                         active_skill_ids = EXCLUDED.active_skill_ids,
                         prompt_hash = EXCLUDED.prompt_hash,
+                        delegated_from = EXCLUDED.delegated_from,
+                        delegation_turn_count = EXCLUDED.delegation_turn_count,
+                        pending_delegation = EXCLUDED.pending_delegation,
+                        delegation_summary = EXCLUDED.delegation_summary,
                         updated_at = now()
                 """),
                 {
@@ -348,6 +359,10 @@ class PostgresMemoryProvider:
                     "role_id": role_id,
                     "skill_ids": json.dumps(active_skill_ids),
                     "prompt_hash": prompt_hash,
+                    "delegated_from": delegated_from,
+                    "delegation_turn_count": delegation_turn_count,
+                    "pending_delegation": pending_delegation,
+                    "delegation_summary": delegation_summary,
                 },
             )
 
@@ -356,7 +371,10 @@ class PostgresMemoryProvider:
         async with self._session() as session:
             result = await session.execute(
                 text(f"""
-                    SELECT role_id, active_skill_ids, title, COALESCE(prompt_hash, '') as prompt_hash FROM topics
+                    SELECT role_id, active_skill_ids, title, COALESCE(prompt_hash, '') as prompt_hash,
+                           delegated_from, COALESCE(delegation_turn_count, 0) as delegation_turn_count,
+                           pending_delegation, delegation_summary
+                    FROM topics
                     WHERE user_id = {_USER_ID_SUB} AND topic_id = :topic_id
                 """),
                 {"user_id": user_id, "topic_id": topic_id},
@@ -369,6 +387,10 @@ class PostgresMemoryProvider:
                 "active_skill_ids": row.active_skill_ids or [],
                 "title": row.title,
                 "prompt_hash": row.prompt_hash,
+                "delegated_from": row.delegated_from,
+                "delegation_turn_count": row.delegation_turn_count or 0,
+                "pending_delegation": row.pending_delegation,
+                "delegation_summary": row.delegation_summary,
             }
 
     # --- Profile (UserStore) ---

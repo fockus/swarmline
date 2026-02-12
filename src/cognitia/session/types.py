@@ -39,3 +39,13 @@ class SessionState:
     runtime_messages: list[Message] = field(default_factory=list)
     is_rehydrated: bool = False
     tool_failure_count: int = 0
+
+    # --- Orchestrator delegation ---
+    # role_id из которого пришла делегация (None = нет активной делегации)
+    delegated_from: str | None = None
+    # Summary, переданный при делегировании / возврате
+    delegation_summary: str | None = None
+    # Счётчик turn'ов внутри делегированной роли (для автовозврата)
+    delegation_turn_count: int = 0
+    # Отложенная делегация: role_id для следующего turn'а (установлен delegate_to_role)
+    pending_delegation: str | None = None
