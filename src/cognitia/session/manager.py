@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -19,12 +20,13 @@ class InMemorySessionManager:
 
     - Хранит активные сессии в dict
     - asyncio.Lock per SessionKey для последовательной обработки
-    - TTL eviction пока не реализован (post-MVP)
+    - TTL eviction: сессия считается протухшей после ttl_seconds неактивности
     """
 
-    def __init__(self) -> None:
+    def __init__(self, ttl_seconds: float = 900.0) -> None:
         self._sessions: dict[str, SessionState] = {}
         self._locks: dict[str, asyncio.Lock] = {}
+        self._ttl_seconds = ttl_seconds
 
     def _key_str(self, key: SessionKey) -> str:
         return str(key)
@@ -37,11 +39,20 @@ class InMemorySessionManager:
         return self._locks[ks]
 
     def get(self, key: SessionKey) -> SessionState | None:
-        """Получить существующую сессию."""
-        return self._sessions.get(self._key_str(key))
+        """Получить существующую сессию. Возвращает None если TTL истёк."""
+        ks = self._key_str(key)
+        state = self._sessions.get(ks)
+        if state is None:
+            return None
+        if self._ttl_seconds > 0 and (time.monotonic() - state.last_activity_at) > self._ttl_seconds:
+            logger.info("get[%s]: сессия протухла (TTL=%.0fs), удаляю", ks, self._ttl_seconds)
+            self._sessions.pop(ks, None)
+            return None
+        return state
 
     def register(self, state: SessionState) -> None:
         """Зарегистрировать новую сессию."""
+        state.last_activity_at = time.monotonic()
         self._sessions[self._key_str(state.key)] = state
 
     async def close(self, key: SessionKey) -> None:
@@ -83,6 +94,8 @@ class InMemorySessionManager:
         async with lock:
             logger.info("run_turn[%s]: lock получен", ks)
             state = self.get(key)
+            if state:
+                state.last_activity_at = time.monotonic()
             if not state:
                 logger.error("run_turn[%s]: сессия не найдена", ks)
                 yield RuntimeEvent.error(

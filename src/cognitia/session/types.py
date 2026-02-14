@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -39,6 +40,10 @@ class SessionState:
     runtime_messages: list[Message] = field(default_factory=list)
     is_rehydrated: bool = False
     tool_failure_count: int = 0
+
+    # --- Session TTL ---
+    # Время последней активности (monotonic clock). Используется SessionManager для eviction.
+    last_activity_at: float = field(default_factory=time.monotonic)
 
     # --- Orchestrator delegation ---
     # role_id из которого пришла делегация (None = нет активной делегации)

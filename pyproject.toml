@@ -40,9 +40,29 @@ sqlite = [
     "aiosqlite>=0.20",
     "sqlalchemy[asyncio]>=2.0",
 ]
-# Web tools (fetch/search)
+# Web tools (fetch/search) — base
 web = [
     "httpx>=0.27",
+]
+# Web search: DuckDuckGo (default, без API key). Метапоиск по 9 движкам.
+web-duckduckgo = [
+    "ddgs>=9.0",
+]
+# Web search: Tavily (AI-оптимизированный, требует TAVILY_API_KEY)
+web-tavily = [
+    "tavily-python",
+]
+# Web fetch: Jina Reader API (URL → markdown, требует JINA_API_KEY)
+web-jina = [
+    "httpx>=0.27",
+]
+# Web fetch: Crawl4AI (URL → markdown, Playwright)
+web-crawl4ai = [
+    "crawl4ai>=0.8",
+]
+# Web fetch: trafilatura (качественное извлечение текста из HTML)
+web-extract = [
+    "trafilatura>=2.0",
 ]
 # Sandbox: E2B cloud
 e2b = [
@@ -54,7 +74,7 @@ docker = [
 ]
 # Всё вместе (для разработки Freedom)
 all = [
-    "cognitia[claude,thin,postgres,web]",
+    "cognitia[claude,thin,postgres,web,web-duckduckgo]",
 ]
 dev = [
     "pytest>=8.0",

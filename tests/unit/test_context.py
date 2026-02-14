@@ -345,3 +345,82 @@ class TestContextBuilderLastMessages:
         """По умолчанию messages_max = 2000."""
         budget = ContextBudget()
         assert budget.messages_max == 2000
+
+
+class TestContextBuilderHotReload:
+    """Тесты hot-reload промптов — файлы перечитываются при изменении на диске."""
+
+    @pytest.mark.asyncio
+    async def test_role_file_change_picked_up(self, prompts_dir: Path) -> None:
+        """Изменённый файл роли подхватывается без перезапуска."""
+        builder = DefaultContextBuilder(prompts_dir)
+        inp = ContextInput(
+            user_id="u1", topic_id="t1", role_id="coach",
+            user_text="привет", active_skill_ids=[],
+        )
+        result1 = await builder.build(inp)
+        assert "коуча" in result1.system_prompt
+
+        # Меняем файл роли на диске
+        role_file = prompts_dir / "roles" / "coach.md"
+        role_file.write_text("Ты новый суперкоуч!")
+        # Гарантируем отличие mtime (некоторые FS имеют секундную точность)
+        import os
+        import time
+        os.utime(role_file, (time.time() + 1, time.time() + 1))
+
+        result2 = await builder.build(inp)
+        assert "суперкоуч" in result2.system_prompt
+        assert "коуча" not in result2.system_prompt
+
+    @pytest.mark.asyncio
+    async def test_identity_file_change_picked_up(self, prompts_dir: Path) -> None:
+        """Изменённый identity.md подхватывается без перезапуска."""
+        builder = DefaultContextBuilder(prompts_dir)
+        inp = ContextInput(
+            user_id="u1", topic_id="t1", role_id="coach",
+            user_text="привет", active_skill_ids=[],
+        )
+        result1 = await builder.build(inp)
+        assert "Freedom AI" in result1.system_prompt
+
+        # Меняем identity
+        identity_file = prompts_dir / "identity.md"
+        identity_file.write_text("Ты — Мегабот, финансовый гуру.")
+        import os
+        import time
+        os.utime(identity_file, (time.time() + 1, time.time() + 1))
+
+        result2 = await builder.build(inp)
+        assert "Мегабот" in result2.system_prompt
+        assert "Freedom AI" not in result2.system_prompt
+
+    @pytest.mark.asyncio
+    async def test_new_role_file_picked_up(self, prompts_dir: Path) -> None:
+        """Новый файл роли подхватывается без перезапуска."""
+        builder = DefaultContextBuilder(prompts_dir)
+        inp = ContextInput(
+            user_id="u1", topic_id="t1", role_id="wizard",
+            user_text="привет", active_skill_ids=[],
+        )
+        result1 = await builder.build(inp)
+        assert "волшебник" not in result1.system_prompt
+
+        # Добавляем новую роль
+        (prompts_dir / "roles" / "wizard.md").write_text("Ты финансовый волшебник!")
+
+        result2 = await builder.build(inp)
+        assert "волшебник" in result2.system_prompt
+
+    @pytest.mark.asyncio
+    async def test_no_reload_when_files_unchanged(self, prompts_dir: Path) -> None:
+        """Если файлы не менялись — повторная загрузка не происходит."""
+        builder = DefaultContextBuilder(prompts_dir)
+        inp = ContextInput(
+            user_id="u1", topic_id="t1", role_id="coach",
+            user_text="привет", active_skill_ids=[],
+        )
+        result1 = await builder.build(inp)
+        result2 = await builder.build(inp)
+        # Контент одинаковый — prompt_hash совпадает
+        assert result1.prompt_hash == result2.prompt_hash

@@ -54,14 +54,60 @@ class DefaultContextBuilder:
     P3: Memory recall (кросс-topic факты)
     P4: User profile
     P5: Summary (отбрасывается первым при переполнении, §10.3)
+
+    Hot-reload: файлы промптов перечитываются автоматически при изменении на диске.
     """
 
     def __init__(self, prompts_dir: str | Path) -> None:
         self._dir = Path(prompts_dir)
-        self._identity: str = self._load_file("identity.md")
-        self._guardrails: str = self._load_file("guardrails.md")
+        self._identity: str = ""
+        self._guardrails: str = ""
         self._roles: dict[str, str] = {}
+        self._file_mtimes: dict[Path, float] = {}
+        self._reload()
+
+    # ---------- Hot-reload ----------
+
+    def _reload(self) -> None:
+        """Загрузить или перезагрузить все промпт-файлы с диска."""
+        self._identity = self._load_file("identity.md")
+        self._guardrails = self._load_file("guardrails.md")
+        self._roles = {}
         self._load_roles()
+        self._snapshot_mtimes()
+
+    def _snapshot_mtimes(self) -> None:
+        """Запомнить mtime всех загруженных промпт-файлов."""
+        self._file_mtimes = {}
+        for name in ("identity.md", "guardrails.md"):
+            path = self._dir / name
+            if path.exists():
+                self._file_mtimes[path] = path.stat().st_mtime
+        roles_dir = self._dir / "roles"
+        if roles_dir.exists():
+            for f in roles_dir.iterdir():
+                if f.suffix == ".md":
+                    self._file_mtimes[f] = f.stat().st_mtime
+
+    def _files_changed(self) -> bool:
+        """Проверить, изменились ли файлы промптов с момента последней загрузки."""
+        for path, old_mtime in self._file_mtimes.items():
+            if not path.exists() or path.stat().st_mtime != old_mtime:
+                return True
+        # Проверяем появление новых файлов ролей
+        roles_dir = self._dir / "roles"
+        if roles_dir.exists():
+            for f in roles_dir.iterdir():
+                if f.suffix == ".md" and f not in self._file_mtimes:
+                    return True
+        return False
+
+    def _maybe_reload(self) -> None:
+        """Перезагрузить файлы, если они изменились на диске."""
+        if self._files_changed():
+            self._reload()
+
+    # ---------- Загрузка файлов ----------
 
     def _load_file(self, filename: str) -> str:
         """Загрузить промпт-файл."""
@@ -98,7 +144,10 @@ class DefaultContextBuilder:
         Порядок drop при overflow (§10.3):
         summary → user_profile → memory_recall → tool_hints → goal.
         Guardrails и Role — никогда не отбрасываются.
+
+        Hot-reload: перед сборкой проверяем, не изменились ли файлы на диске.
         """
+        self._maybe_reload()
         budget = inp.budget
         truncated: list[str] = []
         packs: list[str] = []

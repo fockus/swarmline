@@ -75,8 +75,9 @@ class DefaultToolPolicy:
         agent_logger: AgentLogger | None = None,
         allowed_system_tools: set[str] | None = None,
     ) -> None:
+        self._allowed_system_tools = allowed_system_tools or set()
         # Whitelist: убираем из deny-list разрешённые system tools
-        base_denied = ALWAYS_DENIED_TOOLS - (allowed_system_tools or set())
+        base_denied = ALWAYS_DENIED_TOOLS - self._allowed_system_tools
         self._denied = base_denied | (extra_denied or set())
         if codec is None:
             from cognitia.policy.tool_id_codec import DefaultToolIdCodec
@@ -120,6 +121,11 @@ class DefaultToolPolicy:
         # Шаг 2: local tools (проверяем до MCP, т.к. local tools тоже имеют mcp__ префикс)
         if tool_name in state.allowed_local_tools:
             self._log_policy(tool_name, allowed=True, reason="local_tool")
+            return PermissionAllow(updated_input=input_data)
+
+        # Шаг 2b: явно разрешённые system tools (например WebSearch/WebFetch в SDK).
+        if tool_name in self._allowed_system_tools:
+            self._log_policy(tool_name, allowed=True, reason="allowed_system_tool")
             return PermissionAllow(updated_input=input_data)
 
         # Шаг 3: MCP tools — проверяем через ToolIdCodec

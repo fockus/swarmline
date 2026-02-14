@@ -1,5 +1,6 @@
 """Тесты для InMemorySessionManager — управление сессиями агента."""
 
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
@@ -268,3 +269,69 @@ class TestRunTurn:
         assert [e.type for e in events] == ["assistant_delta", "final"]
         assert len(fake_runtime.calls) == 1
         assert fake_runtime.calls[0]["system_prompt"] == "system"
+
+
+class TestSessionTTL:
+    """TTL eviction — сессия протухает после N секунд неактивности."""
+
+    def test_session_state_has_last_activity_at(self) -> None:
+        """Поле last_activity_at существует и заполняется при создании."""
+        state = _make_state()
+        assert hasattr(state, "last_activity_at")
+        assert isinstance(state.last_activity_at, float)
+        assert state.last_activity_at > 0
+
+    def test_get_returns_none_for_expired_session(self) -> None:
+        """get() возвращает None для протухшей сессии (TTL истёк)."""
+        mgr = InMemorySessionManager(ttl_seconds=1.0)
+        state = _make_state()
+        mgr.register(state)
+        # Сдвигаем last_activity_at в прошлое
+        state.last_activity_at = time.monotonic() - 10.0
+        result = mgr.get(SessionKey("u1", "t1"))
+        assert result is None
+
+    def test_get_returns_session_within_ttl(self) -> None:
+        """get() возвращает сессию до истечения TTL."""
+        mgr = InMemorySessionManager(ttl_seconds=600.0)
+        state = _make_state()
+        mgr.register(state)
+        result = mgr.get(SessionKey("u1", "t1"))
+        assert result is state
+
+    @pytest.mark.asyncio
+    async def test_run_turn_updates_last_activity(self) -> None:
+        """run_turn() обновляет last_activity_at при каждом turn'е."""
+        mgr = InMemorySessionManager(ttl_seconds=600.0)
+        fake_runtime = _FakeRuntime([RuntimeEvent.final("ok")])
+        state = SessionState(
+            key=SessionKey("u1", "t1"),
+            runtime=fake_runtime,
+            role_id="coach",
+        )
+        mgr.register(state)
+        old_ts = state.last_activity_at
+
+        # Небольшая задержка чтобы monotonic сдвинулся
+        import asyncio
+        await asyncio.sleep(0.01)
+
+        async for _ in mgr.run_turn(
+            SessionKey("u1", "t1"),
+            messages=[Message(role="user", content="привет")],
+            system_prompt="system",
+            active_tools=[],
+        ):
+            pass
+
+        assert state.last_activity_at > old_ts
+
+    def test_ttl_zero_disables_eviction(self) -> None:
+        """TTL=0 отключает проверку: сессия живёт вечно."""
+        mgr = InMemorySessionManager(ttl_seconds=0)
+        state = _make_state()
+        mgr.register(state)
+        # Сдвигаем last_activity_at далеко в прошлое
+        state.last_activity_at = time.monotonic() - 999999.0
+        result = mgr.get(SessionKey("u1", "t1"))
+        assert result is state

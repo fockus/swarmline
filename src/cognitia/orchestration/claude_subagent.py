@@ -31,8 +31,6 @@ class ClaudeSubagentOrchestrator(ThinSubagentOrchestrator):
                 "ClaudeSubagentOrchestrator требует adapter_factory (RuntimeAdapter per worker).",
             )
         return _ClaudeWorkerRuntime(spec=spec, adapter_factory=self._adapter_factory)
-
-
 class _ClaudeWorkerRuntime:
     """Запуск subagent через RuntimeAdapter.stream_reply()."""
 

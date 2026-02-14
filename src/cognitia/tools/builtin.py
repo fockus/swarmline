@@ -14,8 +14,12 @@ import re
 from collections.abc import Callable
 from typing import Any
 
+import structlog
+
 from cognitia.runtime.types import ToolSpec
 from cognitia.tools.protocols import SandboxProvider
+
+_log = structlog.get_logger(component="web_tools")
 
 # ---------------------------------------------------------------------------
 # Alias map: SDK-имена → canonical snake_case
@@ -339,30 +343,33 @@ def create_web_tools(
 
     async def fetch_executor(args: dict) -> str:
         url = args.get("url", "")
-        if not url:
+        if not url or not url.strip():
             return _make_json_error("url обязателен")
         try:
-            content = await web_provider.fetch(url)
+            content = await web_provider.fetch(url.strip())
             return json.dumps({"status": "ok", "content": content})
         except Exception as e:
+            _log.warning("web_fetch_failed", url=url[:200], error=str(e))
             return _make_json_error(str(e))
 
     async def search_executor(args: dict) -> str:
         query = args.get("query", "")
         max_results = args.get("max_results", 5)
-        if not query:
+        if not query or not query.strip():
             return _make_json_error("query обязателен")
         try:
-            results = await web_provider.search(query, max_results)
+            results = await web_provider.search(query.strip(), max_results)
             return json.dumps({
                 "status": "ok",
+                "result_count": len(results),
                 "results": [
                     {"title": r.title, "url": r.url, "snippet": r.snippet}
                     for r in results
                 ],
             })
         except Exception as e:
-            return _make_json_error(str(e))
+            _log.warning("web_search_failed", query=query[:100], error=str(e))
+            return json.dumps({"status": "error", "message": str(e)})
 
     specs["web_fetch"] = ToolSpec(
         name="web_fetch", description="Получить содержимое URL", parameters=_WEB_FETCH_SCHEMA
