@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include pyproject.toml
+recursive-include src *.py *.yaml py.typed
+prune .github
+prune docs
+prune tests
+exclude mkdocs.yml
+exclude .gitignore

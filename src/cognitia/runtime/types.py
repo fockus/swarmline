@@ -417,6 +417,9 @@ class RuntimeConfig:
     # None = стандартный URL провайдера
     base_url: str | None = None
 
+    # Structured output schema для portable/native runtime path
+    output_format: dict[str, Any] | None = None
+
     # Дополнительные параметры (extensible)
     extra: dict[str, Any] = field(default_factory=dict)
 

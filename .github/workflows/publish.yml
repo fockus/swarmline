@@ -21,7 +21,10 @@ jobs:
           python-version: '3.12'
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install build check-manifest twine
+
+      - name: Validate source distribution manifest
+        run: python -m check_manifest
 
       - name: Build package
         run: python -m build
@@ -73,10 +76,9 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-        continue-on-error: true
 
   publish-pypi:
-    needs: test-install
+    needs: publish-testpypi
     runs-on: ubuntu-latest
     environment: pypi
     steps:

@@ -200,6 +200,15 @@ class TestSQLiteFacts:
         assert topic_facts["income"] == 120000
         assert topic_facts["product"] == "deposit"
 
+    @pytest.mark.asyncio
+    async def test_topic_fact_overrides_global_with_same_key(self, provider: SQLiteMemoryProvider) -> None:
+        await provider.upsert_fact("u1", "status", "global", source="user")
+        await provider.upsert_fact("u1", "status", "topic", topic_id="t1", source="system")
+
+        topic_facts = await provider.get_facts("u1", topic_id="t1")
+
+        assert topic_facts["status"] == "topic"
+
 
 class TestSQLiteSummaryAndGoal:
     @pytest.mark.asyncio
@@ -223,6 +232,36 @@ class TestSQLiteSummaryAndGoal:
         assert loaded.title == "Подушка"
         assert loaded.plan == {"steps": ["a", "b"]}
         assert loaded.is_main is True
+
+    @pytest.mark.asyncio
+    async def test_goal_second_save_updates_existing_row(self, provider: SQLiteMemoryProvider) -> None:
+        first = GoalState(
+            goal_id="t1",
+            title="Подушка",
+            target_amount=500000,
+            current_amount=100000,
+            phase="cushion",
+            plan={"steps": ["a"]},
+            is_main=True,
+        )
+        second = GoalState(
+            goal_id="t1",
+            title="Подушка",
+            target_amount=500000,
+            current_amount=250000,
+            phase="cushion",
+            plan={"steps": ["a", "b"]},
+            is_main=False,
+        )
+
+        await provider.save_goal("u1", first)
+        await provider.save_goal("u1", second)
+
+        loaded = await provider.get_active_goal("u1", "t1")
+        assert loaded is not None
+        assert loaded.current_amount == 250000
+        assert loaded.plan == {"steps": ["a", "b"]}
+        assert loaded.is_main is False
 
 
 class TestSQLiteSessionAndPhase:

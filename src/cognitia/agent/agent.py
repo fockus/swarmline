@@ -200,6 +200,7 @@ class Agent:
         return RuntimeConfig(
             runtime_name=runtime_name,
             model=self._config.resolved_model,
+            output_format=self._config.output_format,
             feature_mode=self._config.feature_mode,
             required_capabilities=self._config.require_capabilities,
             allow_native_features=self._config.allow_native_features,

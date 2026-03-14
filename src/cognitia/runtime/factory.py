@@ -192,6 +192,12 @@ class RuntimeFactory:
         try:
             from cognitia.runtime.thin import ThinRuntime
 
+            local_tools = dict(kwargs.pop("local_tools", {}) or {})
+            tool_executors = kwargs.pop("tool_executors", None) or {}
+            if tool_executors:
+                local_tools.update(tool_executors)
+                kwargs["local_tools"] = local_tools
+
             return ThinRuntime(config=config, **kwargs)
         except ImportError:
             return _ErrorRuntime(

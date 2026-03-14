@@ -33,6 +33,10 @@ from cognitia.runtime.deepagents_native import (
     validate_native_backend_config,
 )
 from cognitia.runtime.deepagents_tools import create_langchain_tool
+from cognitia.runtime.structured_output import (
+    append_structured_output_instruction,
+    extract_structured_output,
+)
 from cognitia.runtime.types import (
     Message,
     RuntimeConfig,
@@ -92,6 +96,10 @@ class DeepAgentsRuntime:
             return
 
         effective_config = config or self._config
+        effective_system_prompt = append_structured_output_instruction(
+            system_prompt,
+            effective_config.output_format,
+        )
 
         requested_tools = list(active_tools)
         selected_tools = self.select_active_tools(
@@ -136,7 +144,7 @@ class DeepAgentsRuntime:
                 selected_tools = native_selection.custom_tools
                 lc_messages = self._build_lc_messages(
                     messages,
-                    system_prompt,
+                    effective_system_prompt,
                     include_system_prompt=False,
                 )
                 input_payload, run_config, final_native_metadata = build_native_invocation(
@@ -158,7 +166,7 @@ class DeepAgentsRuntime:
 
             async for event in stream(
                 messages=messages,
-                system_prompt=system_prompt,
+                system_prompt=effective_system_prompt,
                 tools=selected_tools,
                 model=effective_config.model,
                 base_url=effective_config.base_url,
@@ -196,6 +204,10 @@ class DeepAgentsRuntime:
                 tool_calls_count=len(tool_calls),
             ),
             session_id=final_session_id,
+            structured_output=extract_structured_output(
+                full_text,
+                effective_config.output_format,
+            ),
             native_metadata=final_native_metadata,
         )
 

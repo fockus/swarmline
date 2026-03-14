@@ -286,6 +286,7 @@ class TestRuntimeConfig:
         assert cfg.max_iterations == 6
         assert cfg.max_tool_calls == 8
         assert cfg.max_model_retries == 2
+        assert cfg.output_format is None
         assert cfg.feature_mode == "portable"
         assert cfg.required_capabilities is None
         assert cfg.allow_native_features is False

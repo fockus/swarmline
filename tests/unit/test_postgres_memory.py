@@ -197,6 +197,41 @@ class TestGetFacts:
         facts = await provider.get_facts("u1", topic_id=None)
         assert facts == {}
 
+    @pytest.mark.asyncio
+    async def test_with_topic_same_key_prefers_topic_value(self) -> None:
+        factory, session = _mock_session_factory()
+        global_row = MagicMock()
+        global_row.key = "status"
+        global_row.value = "global"
+        global_row.topic_id = None
+        topic_row = MagicMock()
+        topic_row.key = "status"
+        topic_row.value = "topic"
+        topic_row.topic_id = "t1"
+        result_mock = MagicMock()
+        result_mock.fetchall.return_value = [global_row, topic_row]
+        session.execute.return_value = result_mock
+
+        provider = PostgresMemoryProvider(factory)
+        facts = await provider.get_facts("u1", topic_id="t1")
+        assert facts == {"status": "topic"}
+
+
+class TestSaveGoalUpsert:
+    """save_goal должен upsert'ить существующую цель."""
+
+    @pytest.mark.asyncio
+    async def test_uses_upsert_query(self) -> None:
+        factory, session = _mock_session_factory()
+        provider = PostgresMemoryProvider(factory)
+
+        goal = GoalState(goal_id="t1", title="Подушка", current_amount=100000)
+        await provider.save_goal("u1", goal)
+
+        statement = str(session.execute.call_args.args[0])
+        assert "ON CONFLICT (user_id, topic_id)" in statement
+        assert "DO UPDATE SET" in statement
+
 
 class TestSaveSummary:
     """save_summary — INSERT ... ON CONFLICT DO UPDATE с версией."""

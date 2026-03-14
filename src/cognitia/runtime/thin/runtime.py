@@ -14,6 +14,10 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from cognitia.runtime.structured_output import (
+    append_structured_output_instruction,
+    extract_structured_output,
+)
 from cognitia.runtime.thin.executor import ToolExecutor
 from cognitia.runtime.thin.modes import detect_mode
 from cognitia.runtime.thin.prompts import (
@@ -147,7 +151,13 @@ class ThinRuntime:
         start_time: float,
     ) -> AsyncIterator[RuntimeEvent]:
         """Single LLM call → final."""
-        prompt = build_conversational_prompt(system_prompt)
+        prompt = build_conversational_prompt(
+            append_structured_output_instruction(
+                system_prompt,
+                config.output_format,
+                final_response_field="final_message",
+            )
+        )
         lm_messages = self._messages_to_lm(messages)
 
         raw = await self._llm_call(lm_messages, prompt)
@@ -176,12 +186,14 @@ class ThinRuntime:
             text = raw  # fallback: используем raw ответ
 
         new_messages = [Message(role="assistant", content=text)]
+        structured_output = extract_structured_output(text, config.output_format)
 
         yield RuntimeEvent.assistant_delta(text)
         yield RuntimeEvent.final(
             text=text,
             new_messages=new_messages,
             metrics=self._build_metrics(start_time, config, iterations=1),
+            structured_output=structured_output,
         )
 
     # ------------------------------------------------------------------
@@ -197,7 +209,14 @@ class ThinRuntime:
         start_time: float,
     ) -> AsyncIterator[RuntimeEvent]:
         """React loop: LLM → tool_call | final."""
-        prompt = build_react_prompt(system_prompt, tools)
+        prompt = build_react_prompt(
+            append_structured_output_instruction(
+                system_prompt,
+                config.output_format,
+                final_response_field="final_message",
+            ),
+            tools,
+        )
         lm_messages = self._messages_to_lm(messages)
         new_messages: list[Message] = []
 
@@ -219,6 +238,10 @@ class ThinRuntime:
                     fallback_text = self._extract_text_fallback(last_raw)
                     if fallback_text:
                         new_messages.append(Message(role="assistant", content=fallback_text))
+                        structured_output = extract_structured_output(
+                            fallback_text,
+                            config.output_format,
+                        )
                         yield RuntimeEvent.status(
                             "LLM ответила не в JSON-формате, использую текстовый fallback"
                         )
@@ -232,6 +255,7 @@ class ThinRuntime:
                                 iterations,
                                 tool_calls_count,
                             ),
+                            structured_output=structured_output,
                         )
                         return
                     yield RuntimeEvent.error(
@@ -316,6 +340,7 @@ class ThinRuntime:
             if envelope.type == "final" and envelope.final_message:
                 text = envelope.final_message
                 new_messages.append(Message(role="assistant", content=text))
+                structured_output = extract_structured_output(text, config.output_format)
 
                 yield RuntimeEvent.assistant_delta(text)
                 yield RuntimeEvent.final(
@@ -327,6 +352,7 @@ class ThinRuntime:
                         iterations,
                         tool_calls_count,
                     ),
+                    structured_output=structured_output,
                 )
                 return
 
@@ -338,6 +364,7 @@ class ThinRuntime:
                     text = f"{text}\n\n{qs}"
 
                 new_messages.append(Message(role="assistant", content=text))
+                structured_output = extract_structured_output(text, config.output_format)
                 yield RuntimeEvent.assistant_delta(text)
                 yield RuntimeEvent.final(
                     text=text,
@@ -348,6 +375,7 @@ class ThinRuntime:
                         iterations,
                         tool_calls_count,
                     ),
+                    structured_output=structured_output,
                 )
                 return
 
@@ -471,7 +499,11 @@ class ThinRuntime:
 
         # Шаг 3: финальная сборка
         assembly_prompt = build_final_assembly_prompt(
-            system_prompt,
+            append_structured_output_instruction(
+                system_prompt,
+                config.output_format,
+                final_response_field="final_message",
+            ),
             plan.goal,
             step_results,
             plan.final_format,
@@ -485,6 +517,7 @@ class ThinRuntime:
             final_text = raw  # fallback
 
         new_messages.append(Message(role="assistant", content=final_text))
+        structured_output = extract_structured_output(final_text, config.output_format)
 
         yield RuntimeEvent.assistant_delta(final_text)
         yield RuntimeEvent.final(
@@ -496,6 +529,7 @@ class ThinRuntime:
                 iterations=len(plan.steps) + 2,  # plan + steps + assembly
                 tool_calls=total_tool_calls,
             ),
+            structured_output=structured_output,
         )
 
     # ------------------------------------------------------------------

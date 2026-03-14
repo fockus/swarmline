@@ -1,7 +1,7 @@
 """Тесты для RuntimeFactory — выбор runtime по config/env/override."""
 
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -115,6 +115,24 @@ class TestCreate:
         )
         runtime = factory.create(config=cfg, runtime_override="thin")
         assert isinstance(runtime, _ErrorRuntime)
+
+    def test_create_thin_maps_tool_executors_to_local_tools(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
+        """tool_executors facade-слоя прокидываются в ThinRuntime как local_tools."""
+        cfg = RuntimeConfig(runtime_name="thin")
+        fake_runtime = object()
+        fake_cls = MagicMock(return_value=fake_runtime)
+        tool_exec = {"calc": object()}
+
+        with patch("cognitia.runtime.thin.ThinRuntime", fake_cls):
+            runtime = factory.create(config=cfg, tool_executors=tool_exec)
+
+        assert runtime is fake_runtime
+        kwargs = fake_cls.call_args.kwargs
+        assert kwargs["local_tools"] == tool_exec
+        assert "tool_executors" not in kwargs
 
 
 class TestCapabilities:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -13,6 +14,7 @@ from cognitia.agent.config import AgentConfig
 from cognitia.agent.middleware import Middleware
 from cognitia.agent.result import Result
 from cognitia.agent.tool import tool
+from cognitia.runtime.thin.runtime import ThinRuntime
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -76,6 +78,44 @@ class TestAgentQueryBasic:
             result = await agent.query("rate this")
 
         assert result.structured_output == {"score": 85}
+
+    @pytest.mark.asyncio
+    async def test_query_thin_output_format_returns_structured_output(self) -> None:
+        """runtime=thin не должен терять output_format facade-конфига."""
+        config = _make_config(
+            runtime="thin",
+            output_format={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "age": {"type": "integer"},
+                },
+                "required": ["name", "age"],
+            },
+        )
+        agent = Agent(config)
+
+        class FakeLLM:
+            async def __call__(self, messages: list[dict[str, str]], system_prompt: str) -> str:
+                _ = (messages, system_prompt)
+                return json.dumps(
+                    {
+                        "type": "final",
+                        "final_message": json.dumps({"name": "John", "age": 30}),
+                    }
+                )
+
+        fake_factory = MagicMock()
+        fake_factory.create.side_effect = lambda **kwargs: ThinRuntime(
+            config=kwargs["config"],
+            llm_call=FakeLLM(),
+        )
+
+        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+            result = await agent.query("John is 30 years old")
+
+        assert result.ok is True
+        assert result.structured_output == {"name": "John", "age": 30}
 
     @pytest.mark.asyncio
     async def test_query_error_returns_result_not_ok(self) -> None:

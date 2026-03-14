@@ -90,6 +90,7 @@ class DeepAgentsPlannerMode:
         """Выполнить все шаги."""
         plan = plan.start_execution() if plan.status == "approved" else plan
         await self._store.save(plan)
+        execution_failed = False
         for step in plan.steps:
             if step.status != "pending":
                 continue
@@ -97,7 +98,12 @@ class DeepAgentsPlannerMode:
             yield result
             plan = plan.update_step(result)
             if result.status == "failed":
+                execution_failed = True
                 break
+
+        if not execution_failed and all(step.status == "completed" for step in plan.steps):
+            plan = plan.mark_completed()
+            await self._store.save(plan)
 
     async def replan(self, plan: Plan, feedback: str) -> Plan:
         """Перегенерировать план."""

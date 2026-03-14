@@ -144,6 +144,23 @@ class TestThinPlannerExecuteAll:
         assert len(results) == 3
         assert all(s.status == "completed" for s in results)
 
+    async def test_execute_all_marks_plan_completed(self, planner, mock_llm, plan_store) -> None:
+        mock_llm.generate.side_effect = [
+            _make_plan_json(),
+            _make_step_result_json("s1", "r1"),
+            _make_step_result_json("s2", "r2"),
+            _make_step_result_json("s3", "r3"),
+        ]
+        plan = await planner.generate_plan("g", "c")
+        plan = await planner.approve(plan, by="system")
+
+        async for _step in planner.execute_all(plan):
+            pass
+
+        loaded = await plan_store.load(plan.id)
+        assert loaded is not None
+        assert loaded.status == "completed"
+
     async def test_execute_all_stops_on_failure(self, planner, mock_llm) -> None:
         mock_llm.generate.side_effect = [
             _make_plan_json(),

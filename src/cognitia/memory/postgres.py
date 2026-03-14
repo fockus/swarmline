@@ -186,7 +186,7 @@ class PostgresMemoryProvider:
             if topic_id:
                 result = await session.execute(
                     text(f"""
-                        SELECT key, value FROM facts
+                        SELECT key, value, topic_id FROM facts
                         WHERE user_id = {_USER_ID_SUB}
                           AND (topic_id IS NULL OR topic_id = :topic_id)
                         ORDER BY updated_at DESC
@@ -203,7 +203,9 @@ class PostgresMemoryProvider:
                     {"user_id": user_id},
                 )
             rows = result.fetchall()
-        return {r.key: r.value for r in rows}
+        if not topic_id:
+            return {r.key: r.value for r in rows}
+        return _merge_scoped_postgres_facts(rows)
 
     # --- Summaries (SummaryStore) ---
 
@@ -277,7 +279,14 @@ class PostgresMemoryProvider:
                         :topic_id, :title, :target_amount, :current_amount,
                         :phase, :is_main, CAST(:plan AS jsonb), 'active'
                     )
-                    ON CONFLICT (user_id, topic_id) DO NOTHING
+                    ON CONFLICT (user_id, topic_id) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        target_amount = EXCLUDED.target_amount,
+                        current_amount = EXCLUDED.current_amount,
+                        phase = EXCLUDED.phase,
+                        is_main = EXCLUDED.is_main,
+                        plan = EXCLUDED.plan,
+                        status = 'active'
                 """),
                 {
                     "user_id": user_id,
@@ -474,3 +483,13 @@ def _json_or_none(value: Any) -> str | None:
     if value is None:
         return None
     return json.dumps(value)
+
+
+def _merge_scoped_postgres_facts(rows: list[Any]) -> dict[str, Any]:
+    """Слить global + topic rows так, чтобы topic-scoped значения перекрывали global."""
+    merged: dict[str, Any] = {}
+    global_rows = [row for row in rows if getattr(row, "topic_id", None) is None]
+    topic_rows = [row for row in rows if getattr(row, "topic_id", None) is not None]
+    for row in global_rows + topic_rows:
+        merged[row.key] = row.value
+    return merged

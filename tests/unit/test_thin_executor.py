@@ -5,6 +5,7 @@ import json
 import httpx
 import pytest
 
+from cognitia.agent.tool import tool
 from cognitia.runtime.thin.executor import ToolExecutor
 
 
@@ -54,6 +55,32 @@ class TestToolExecutorLocal:
         executor = ToolExecutor(local_tools={"stool": str_tool})
         result = await executor.execute("stool", {})
         assert result == "hello world"
+
+    @pytest.mark.asyncio
+    async def test_decorated_tool_receives_keyword_arguments(self) -> None:
+        """@tool handler(name=...) должен получать kwargs, а не весь args dict."""
+
+        @tool(name="greet", description="Greet user")
+        async def greet(name: str) -> str:
+            return f"Hello, {name}!"
+
+        executor = ToolExecutor(local_tools={"greet": greet.__tool_definition__.handler})
+        result = await executor.execute("greet", {"name": "Alice"})
+
+        assert result == "Hello, Alice!"
+
+    @pytest.mark.asyncio
+    async def test_decorated_tool_with_multiple_args_receives_kwargs(self) -> None:
+        """Многопараметрический @tool handler(a, b) должен вызываться через kwargs."""
+
+        @tool(name="add", description="Add two numbers")
+        async def add(a: int, b: int) -> int:
+            return a + b
+
+        executor = ToolExecutor(local_tools={"add": add.__tool_definition__.handler})
+        result = await executor.execute("add", {"a": 2, "b": 3})
+
+        assert json.loads(result) == 5
 
 
 class TestToolExecutorMcp:

@@ -7,6 +7,7 @@ MCP tools: HTTP JSON-RPC через httpx (если доступен).
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 from collections.abc import Callable
 from typing import Any
@@ -87,12 +88,65 @@ class ToolExecutor:
     @staticmethod
     async def _call_func(func: Callable[..., Any], args: dict[str, Any]) -> Any:
         """Вызвать функцию (sync или async)."""
+        call_with_kwargs = ToolExecutor._should_call_with_kwargs(func, args)
+
         if asyncio.iscoroutinefunction(func):
+            if call_with_kwargs:
+                return await func(**args)
             return await func(args)
-        result = await asyncio.to_thread(func, args)
+
+        if call_with_kwargs:
+            result = await asyncio.to_thread(func, **args)
+        else:
+            result = await asyncio.to_thread(func, args)
         if asyncio.iscoroutine(result):
             return await result
         return result
+
+    @staticmethod
+    def _should_call_with_kwargs(func: Callable[..., Any], args: dict[str, Any]) -> bool:
+        """Определить, поддерживает ли функция keyword-вызов.
+
+        Предпочитаем kwargs для handler'ов из `@tool`, но сохраняем backward
+        compatibility для legacy local tools вида `tool(args)`.
+        """
+        if hasattr(func, "__tool_definition__"):
+            return True
+
+        try:
+            signature = inspect.signature(func)
+        except (TypeError, ValueError):
+            return False
+
+        params = list(signature.parameters.values())
+        if not params:
+            return not args
+
+        if any(param.kind == inspect.Parameter.POSITIONAL_ONLY for param in params):
+            return False
+
+        if any(param.kind == inspect.Parameter.VAR_KEYWORD for param in params):
+            return True
+
+        if not args:
+            return not any(
+                param.default is inspect.Parameter.empty
+                for param in params
+                if param.kind in (
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    inspect.Parameter.KEYWORD_ONLY,
+                )
+            )
+
+        accepted_names = {
+            param.name
+            for param in params
+            if param.kind in (
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                inspect.Parameter.KEYWORD_ONLY,
+            )
+        }
+        return set(args).issubset(accepted_names)
 
     async def _execute_mcp(self, tool_name: str, args: dict[str, Any]) -> str:
         """Выполнить MCP tool через HTTP JSON-RPC."""

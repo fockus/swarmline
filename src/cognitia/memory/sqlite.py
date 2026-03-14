@@ -203,7 +203,7 @@ class SQLiteMemoryProvider:
             if topic_id:
                 result = await session.execute(
                     text(f"""
-                        SELECT key, value FROM facts
+                        SELECT key, value, topic_id FROM facts
                         WHERE user_id = {_USER_ID_SUB}
                           AND (topic_id IS NULL OR topic_id = :topic_id)
                         ORDER BY updated_at DESC, id DESC
@@ -221,7 +221,9 @@ class SQLiteMemoryProvider:
                     {"user_id": user_id},
                 )
             rows = result.fetchall()
-        return {str(row.key): _load_json_value(row.value) for row in rows}
+        if not topic_id:
+            return {str(row.key): _load_json_value(row.value) for row in rows}
+        return _merge_scoped_sqlite_facts(rows)
 
     # --- Summaries ---
 
@@ -284,7 +286,7 @@ class SQLiteMemoryProvider:
         async with self._session(commit=True) as session:
             await session.execute(
                 text(f"""
-                    INSERT OR IGNORE INTO goals (
+                    INSERT INTO goals (
                         user_id, topic_id, title, target_amount,
                         current_amount, phase, is_main, plan, status
                     )
@@ -292,6 +294,14 @@ class SQLiteMemoryProvider:
                         {_USER_ID_SUB}, :topic_id, :title, :target_amount,
                         :current_amount, :phase, :is_main, :plan, 'active'
                     )
+                    ON CONFLICT(user_id, topic_id) DO UPDATE SET
+                        title = excluded.title,
+                        target_amount = excluded.target_amount,
+                        current_amount = excluded.current_amount,
+                        phase = excluded.phase,
+                        is_main = excluded.is_main,
+                        plan = excluded.plan,
+                        status = 'active'
                 """),
                 {
                     "user_id": user_id,
@@ -508,3 +518,13 @@ def _load_json_value(raw: Any) -> Any:
         return json.loads(str(raw))
     except (TypeError, json.JSONDecodeError):
         return raw
+
+
+def _merge_scoped_sqlite_facts(rows: list[Any]) -> dict[str, Any]:
+    """Слить global + topic rows так, чтобы topic-scoped значения перекрывали global."""
+    merged: dict[str, Any] = {}
+    global_rows = [row for row in rows if getattr(row, "topic_id", None) is None]
+    topic_rows = [row for row in rows if getattr(row, "topic_id", None) is not None]
+    for row in global_rows + topic_rows:
+        merged[str(row.key)] = _load_json_value(row.value)
+    return merged

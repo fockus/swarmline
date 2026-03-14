@@ -279,9 +279,42 @@ class TestDeepAgentsRuntimeRun:
             ):
                 events.append(ev)
 
-            mock_stream.assert_called_once()
-            call_kwargs = mock_stream.call_args
-            assert call_kwargs.kwargs.get("base_url") == "https://proxy.example.com"
+        mock_stream.assert_called_once()
+        call_kwargs = mock_stream.call_args
+        assert call_kwargs.kwargs.get("base_url") == "https://proxy.example.com"
+
+    @pytest.mark.asyncio
+    async def test_run_parses_structured_output_when_configured(self) -> None:
+        """Если output_format задан и финальный текст — JSON, structured_output заполняется."""
+        cfg = RuntimeConfig(
+            runtime_name="deepagents",
+            output_format={
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            },
+        )
+        runtime = DeepAgentsRuntime(config=cfg)
+
+        async def _fake_stream(**kwargs):
+            _ = kwargs
+            yield RuntimeEvent.assistant_delta('{"name":"Alice"}')
+
+        with (
+            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
+        ):
+            events = []
+            async for ev in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="test",
+                active_tools=[],
+            ):
+                events.append(ev)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert final.data["structured_output"] == {"name": "Alice"}
 
     @pytest.mark.asyncio
     async def test_run_hybrid_uses_native_stream(self) -> None:
