@@ -1,0 +1,223 @@
+/* Landing page hero */
+.md-typeset .hero {
+  margin: 0 auto;
+  max-width: 800px;
+  text-align: center;
+  padding: 2rem 0 3rem;
+}
+
+.md-typeset .hero h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.md-typeset .hero .hero-subtitle {
+  font-size: 1.3rem;
+  color: var(--md-default-fg-color--light);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.md-typeset .hero .hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.md-typeset .hero .hero-buttons a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.md-typeset .hero .hero-buttons .btn-primary {
+  background: #7c3aed;
+  color: white;
+}
+
+.md-typeset .hero .hero-buttons .btn-primary:hover {
+  background: #6d28d9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.md-typeset .hero .hero-buttons .btn-secondary {
+  border: 2px solid var(--md-default-fg-color--lighter);
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset .hero .hero-buttons .btn-secondary:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  transform: translateY(-2px);
+}
+
+/* Feature grid */
+.md-typeset .feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.md-typeset .feature-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  transition: all 0.2s ease;
+}
+
+.md-typeset .feature-card:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.1);
+  transform: translateY(-2px);
+}
+
+.md-typeset .feature-card .feature-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.md-typeset .feature-card h3 {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.md-typeset .feature-card p {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Stats bar */
+.md-typeset .stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  padding: 1.5rem 0;
+  margin: 1rem 0 2rem;
+  flex-wrap: wrap;
+}
+
+.md-typeset .stat-item {
+  text-align: center;
+}
+
+.md-typeset .stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #7c3aed;
+  display: block;
+}
+
+.md-typeset .stat-label {
+  font-size: 0.85rem;
+  color: var(--md-default-fg-color--light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Code comparison section */
+.md-typeset .comparison {
+  margin: 3rem 0;
+}
+
+.md-typeset .comparison h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Provider logos row */
+.md-typeset .provider-row {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0;
+  align-items: center;
+}
+
+.md-typeset .provider-badge {
+  padding: 0.5rem 1.2rem;
+  border-radius: 24px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Section headers */
+.md-typeset .section-header {
+  text-align: center;
+  margin: 3rem 0 1.5rem;
+}
+
+.md-typeset .section-header h2 {
+  margin-bottom: 0.5rem;
+}
+
+.md-typeset .section-header p {
+  color: var(--md-default-fg-color--light);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* CTA section */
+.md-typeset .cta-section {
+  text-align: center;
+  padding: 3rem 0;
+  margin-top: 3rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .cta-section h2 {
+  margin-bottom: 1rem;
+}
+
+/* Terminal-style code block */
+.md-typeset .terminal {
+  background: #1a1a2e;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem auto;
+  max-width: 500px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+}
+
+.md-typeset .terminal code {
+  color: #e2e8f0;
+  background: none;
+  padding: 0;
+}
+
+.md-typeset .terminal .prompt {
+  color: #a855f7;
+}
+
+/* Dark mode adjustments */
+[data-md-color-scheme="slate"] .md-typeset .feature-card {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .feature-card:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.15);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .provider-badge {
+  border-color: rgba(255, 255, 255, 0.1);
+}

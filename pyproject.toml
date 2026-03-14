@@ -45,7 +45,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/fockus/cognitia"
-Documentation = "https://github.com/fockus/cognitia#readme"
+Documentation = "https://fockus.github.io/cognitia"
 Repository = "https://github.com/fockus/cognitia"
 Issues = "https://github.com/fockus/cognitia/issues"
 Changelog = "https://github.com/fockus/cognitia/blob/main/CHANGELOG.md"
@@ -119,6 +119,10 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.8",
     "mypy>=1.10",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocs-minify-plugin>=0.8",
 ]
 
 [tool.hatch.build.targets.wheel]
