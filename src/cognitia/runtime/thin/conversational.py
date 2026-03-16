@@ -13,7 +13,6 @@ from cognitia.runtime.thin.helpers import _build_metrics, _messages_to_lm
 from cognitia.runtime.thin.llm_client import try_stream_llm_call
 from cognitia.runtime.thin.parsers import parse_envelope
 from cognitia.runtime.thin.prompts import build_conversational_prompt
-from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 from cognitia.runtime.types import (
     Message,
     RuntimeConfig,
@@ -44,11 +43,9 @@ async def run_conversational(
 
     if stream_result is not None:
         chunks, raw = stream_result
-        parser = IncrementalEnvelopeParser()
 
         # Emit per-chunk deltas
         for chunk in chunks:
-            parser.feed(chunk)
             yield RuntimeEvent.assistant_delta(chunk)
 
         # Парсим envelope из собранного текста

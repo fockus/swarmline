@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
+from _stubs import StubPlannerMode as PlannerMode
 from cognitia.orchestration.code_workflow_engine import (
     CodeWorkflowEngine,
-    PlannerMode,
     WorkflowStatus,
 )
 from cognitia.orchestration.dod_state_machine import DoDStateMachine, DoDStatus

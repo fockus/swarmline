@@ -121,9 +121,9 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
     """CodeWorkflowEngine works as before (backward compat)."""
 
     async def test_generic_workflow_code_verifier_backward_compat(self) -> None:
+        from _stubs import StubPlannerMode as PlannerMode
         from cognitia.orchestration.code_workflow_engine import (
             CodeWorkflowEngine,
-            PlannerMode,
             WorkflowStatus,
         )
         from cognitia.orchestration.dod_state_machine import DoDStateMachine

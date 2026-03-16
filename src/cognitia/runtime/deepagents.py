@@ -37,6 +37,7 @@ from cognitia.runtime.deepagents_native import (
 )
 from cognitia.runtime.deepagents_tools import create_langchain_tool
 from cognitia.runtime.mcp_bridge import McpBridge
+from cognitia.runtime.thin.mcp_client import parse_mcp_tool_name
 from cognitia.runtime.structured_output import (
     append_structured_output_instruction,
     extract_structured_output,
@@ -123,10 +124,9 @@ class DeepAgentsRuntime:
                 selected_tools = list(selected_tools) + mcp_tools
                 # Register MCP executors
                 for spec in mcp_tools:
-                    # Parse mcp__server__tool -> (server_id, tool_name)
-                    parts = spec.name.split("__", 2)
-                    if len(parts) == 3:
-                        server_id, tool_name = parts[1], parts[2]
+                    parsed = parse_mcp_tool_name(spec.name)
+                    if parsed is not None:
+                        server_id, tool_name = parsed
                         self._tool_executors[spec.name] = self._mcp_bridge.create_tool_executor(
                             server_id, tool_name
                         )

@@ -34,7 +34,7 @@ class WorkflowResult:
 class CodePlannerPort(Protocol):
     """Protocol for pluggable planner in CodeWorkflowEngine (DIP).
 
-    Implementations: PlannerMode (default), ThinPlannerMode, custom planners.
+    Implementations: ThinPlannerMode, DeepAgentsPlannerMode, custom planners.
     """
 
     async def create_plan(self, goal: str) -> str: ...
@@ -51,19 +51,6 @@ class DoDVerifierPort(Protocol):
     async def verify_dod(
         self, criteria: tuple[str, ...], verifier: CodeVerifier
     ) -> DoDResult: ...
-
-
-class PlannerMode:
-    """Pluggable planner — generates execution plan from goal.
-
-    Default implementation. Satisfies CodePlannerPort Protocol.
-    """
-
-    async def create_plan(self, goal: str) -> str:
-        return f"Plan for: {goal}"
-
-    async def execute_plan(self, plan: str) -> str:
-        return f"Executed: {plan}"
 
 
 class _PlannerExecutor:
@@ -89,6 +76,7 @@ class _DoDVerifierAdapter:
     def __init__(self, dod: DoDVerifierPort, verifier: CodeVerifier) -> None:
         self._dod = dod
         self._verifier = verifier
+        self._criteria: tuple[str, ...] = ()
         self._last_dod_status: DoDStatus = DoDStatus.PENDING
         self._last_dod_log: str = ""
         self._last_dod_loop_count: int = 0
@@ -133,7 +121,7 @@ class CodeWorkflowEngine:
     """Structured code pipeline: plan -> execute -> verify DoD.
 
     Delegates to GenericWorkflowEngine with code-specific adapters:
-    - PlannerMode as executor (via _PlannerExecutor)
+    - CodePlannerPort as executor (via _PlannerExecutor)
     - DoDStateMachine + CodeVerifier as verifier (via _DoDVerifierAdapter)
     """
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from cognitia.runtime.thin.parsers import strip_markdown_fences as _strip_markdown_fences
+
 
 def append_structured_output_instruction(
     system_prompt: str,
@@ -65,25 +67,6 @@ def normalize_output_schema(output_format: dict[str, Any] | None) -> dict[str, A
         schema = output_format.get("schema")
         return schema if isinstance(schema, dict) else None
     return output_format
-
-
-def _strip_markdown_fences(raw: str) -> str:
-    cleaned = raw.strip()
-    if not cleaned.startswith("```"):
-        return cleaned
-
-    lines = cleaned.split("\n")
-    inner_lines: list[str] = []
-    started = False
-    for line in lines:
-        if line.strip().startswith("```") and not started:
-            started = True
-            continue
-        if line.strip() == "```" and started:
-            break
-        if started:
-            inner_lines.append(line)
-    return "\n".join(inner_lines).strip()
 
 
 def _extract_first_json_value(text: str) -> str | None:

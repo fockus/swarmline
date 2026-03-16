@@ -1,15 +1,18 @@
 """Типы для team orchestration — multi-agent команды.
 
-TeamConfig, TeamStatus, TeamMessage.
+TeamConfig, TeamStatus, TeamMessage, InternalTeamState, compose_worker_task.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from cognitia.orchestration.subagent_types import SubagentSpec, SubagentStatus
+
+if TYPE_CHECKING:
+    from cognitia.orchestration.message_bus import MessageBus
 
 TeamState = Literal["idle", "running", "completed", "failed"]
 
@@ -42,3 +45,32 @@ class TeamStatus:
     state: TeamState = "idle"
     workers: dict[str, SubagentStatus] = field(default_factory=dict)
     messages_exchanged: int = 0
+
+
+class InternalTeamState:
+    """Внутреннее состояние команды (shared across all team orchestrators)."""
+
+    def __init__(
+        self,
+        *,
+        config: TeamConfig,
+        worker_ids: dict[str, str],
+        started_at: datetime,
+        bus: MessageBus,
+        task: str,
+    ) -> None:
+        self.config = config
+        self.worker_ids = worker_ids
+        self.started_at = started_at
+        self.bus = bus
+        self.task = task
+        self.paused_workers: set[str] = set()
+
+
+def compose_worker_task(*, config: TeamConfig, worker_name: str, task: str) -> str:
+    """Сформировать worker task из lead_prompt и общей задачи."""
+    return (
+        f"{config.lead_prompt}\n\n"
+        f"Ты worker '{worker_name}'.\n"
+        f"Выполни подзадачу в контексте общей цели:\n{task}"
+    )

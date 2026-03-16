@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from cognitia.runtime.thin.mcp_client import McpClient
+from cognitia.runtime.thin.mcp_client import McpClient, resolve_mcp_server_url
 from cognitia.runtime.types import ToolSpec
 
 
@@ -37,15 +37,7 @@ class McpBridge:
 
     def _resolve_url(self, server_id: str) -> str | None:
         """Resolve server_id to URL string."""
-        server = self._servers.get(server_id)
-        if server is None:
-            return None
-        if isinstance(server, str):
-            return server
-        url = getattr(server, "url", None)
-        if isinstance(url, str) and url:
-            return url
-        return None
+        return resolve_mcp_server_url(self._servers, server_id)
 
     async def discover_tools(self, server_id: str) -> list[ToolSpec]:
         """Discover tools from a single MCP server.

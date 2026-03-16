@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from cognitia.orchestration.runtime_helpers import collect_runtime_output
 from cognitia.orchestration.subagent_types import SubagentSpec
 from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
 from cognitia.runtime.deepagents import DeepAgentsRuntime
@@ -46,19 +47,13 @@ class _DeepAgentsWorkerRuntime:
 
     async def run(self, task: str) -> str:
         """Выполнить задачу через DeepAgentsRuntime и вернуть финальный текст."""
-        final_text = ""
-        async for event in self._runtime.run(
-            messages=[Message(role="user", content=task)],
-            system_prompt=self._spec.system_prompt,
-            active_tools=self._spec.tools,
-            config=None,
-            mode_hint="subagent",
-        ):
-            if event.type == "assistant_delta":
-                final_text += str(event.data.get("text", ""))
-            elif event.type == "final":
-                final_text = str(event.data.get("text", final_text))
-            elif event.type == "error":
-                message = str(event.data.get("message", "DeepAgents subagent error"))
-                raise RuntimeError(message)
-        return final_text
+        return await collect_runtime_output(
+            self._runtime.run(
+                messages=[Message(role="user", content=task)],
+                system_prompt=self._spec.system_prompt,
+                active_tools=self._spec.tools,
+                config=None,
+                mode_hint="subagent",
+            ),
+            error_prefix="DeepAgents subagent error",
+        )

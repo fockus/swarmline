@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from cognitia.orchestration.runtime_helpers import collect_runtime_output
 from cognitia.orchestration.workflow_graph import State, WorkflowGraph
 from cognitia.runtime.thin.runtime import ThinRuntime
 from cognitia.runtime.types import Message, RuntimeConfig
@@ -45,18 +46,14 @@ class ThinWorkflowExecutor:
             local_tools=self._local_tools,
             mcp_servers=self._mcp_servers,
         )
-        final_text = ""
-        async for event in runtime.run(
-            messages=[Message(role="user", content=task)],
-            system_prompt=system_prompt,
-            active_tools=[],
-            mode_hint="react",
-        ):
-            if event.type == "final":
-                final_text = str(event.data.get("text", final_text))
-            elif event.type == "assistant_delta":
-                final_text += str(event.data.get("text", ""))
-        return final_text
+        return await collect_runtime_output(
+            runtime.run(
+                messages=[Message(role="user", content=task)],
+                system_prompt=system_prompt,
+                active_tools=[],
+                mode_hint="react",
+            ),
+        )
 
 
 class ThinRuntimeExecutor:

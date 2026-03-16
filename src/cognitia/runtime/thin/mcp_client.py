@@ -3,6 +3,10 @@
 Поддерживает:
 - tools/call
 - tools/list (discovery) + in-memory cache
+
+Module-level utilities (D7, D8):
+- resolve_mcp_server_url — resolve server_id to URL from servers dict.
+- parse_mcp_tool_name — parse "mcp__server__tool" into (server_id, tool_name).
 """
 
 from __future__ import annotations
@@ -14,6 +18,40 @@ from typing import Any
 import httpx
 
 from cognitia.runtime.types import ToolSpec
+
+
+def resolve_mcp_server_url(
+    servers: dict[str, Any],
+    server_id: str,
+) -> str | None:
+    """Resolve server_id to URL string from a servers mapping.
+
+    Supports:
+    - str values (used as-is)
+    - Objects with a `url` attribute (McpServerSpec-like)
+    - None / missing -> None
+    """
+    server = servers.get(server_id)
+    if server is None:
+        return None
+    if isinstance(server, str):
+        return server
+    url = getattr(server, "url", None)
+    if isinstance(url, str) and url:
+        return url
+    return None
+
+
+def parse_mcp_tool_name(tool_name: str) -> tuple[str, str] | None:
+    """Parse 'mcp__server__tool' into (server_id, remote_tool_name).
+
+    Returns None if the format is invalid.
+    Format: mcp__{server_id}__{tool_name} where both parts are non-empty.
+    """
+    parts = tool_name.split("__", 2)
+    if len(parts) != 3 or parts[0] != "mcp" or not parts[1] or not parts[2]:
+        return None
+    return parts[1], parts[2]
 
 
 class McpClient:

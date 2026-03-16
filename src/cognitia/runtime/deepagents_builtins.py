@@ -4,35 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from cognitia.runtime.builtin_names import BUILTIN_ALIASES, BUILTIN_TOOL_NAMES
 from cognitia.runtime.types import ToolSpec
 
-DEEPAGENTS_NATIVE_BUILTIN_TOOLS = frozenset(
-    {
-        "write_todos",
-        "ls",
-        "read_file",
-        "write_file",
-        "edit_file",
-        "glob",
-        "grep",
-        "execute",
-        "task",
-    }
-)
-
-DEEPAGENTS_NATIVE_BUILTIN_ALIASES = {
-    "TodoRead": "write_todos",
-    "TodoWrite": "write_todos",
-    "LS": "ls",
-    "Read": "read_file",
-    "Write": "write_file",
-    "Edit": "edit_file",
-    "MultiEdit": "edit_file",
-    "Glob": "glob",
-    "Grep": "grep",
-    "Bash": "execute",
-    "Task": "task",
-}
+# Backward-compatible re-exports from canonical source
+DEEPAGENTS_NATIVE_BUILTIN_TOOLS: frozenset[str] = BUILTIN_TOOL_NAMES
+DEEPAGENTS_NATIVE_BUILTIN_ALIASES: dict[str, str] = BUILTIN_ALIASES
 
 
 @dataclass(frozen=True)

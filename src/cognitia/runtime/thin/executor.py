@@ -12,7 +12,11 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from cognitia.runtime.thin.mcp_client import McpClient
+from cognitia.runtime.thin.mcp_client import (
+    McpClient,
+    parse_mcp_tool_name,
+    resolve_mcp_server_url,
+)
 
 
 class ToolExecutor:
@@ -190,26 +194,12 @@ class ToolExecutor:
 
     @staticmethod
     def _parse_mcp_tool_name(tool_name: str) -> tuple[str, str] | None:
-        """Разобрать mcp__server__tool → (server, tool)."""
-        parts = tool_name.split("__", 2)
-        if len(parts) != 3 or parts[0] != "mcp" or not parts[1] or not parts[2]:
-            return None
-        return parts[1], parts[2]
+        """Разобрать mcp__server__tool -> (server, tool)."""
+        return parse_mcp_tool_name(tool_name)
 
     def _resolve_server_url(self, server_id: str) -> str | None:
         """Получить URL MCP сервера по id."""
-        server = self._mcp_servers.get(server_id)
-        if server is None:
-            return None
-
-        if isinstance(server, str):
-            return server
-
-        # McpServerSpec или совместимый объект
-        url = getattr(server, "url", None)
-        if isinstance(url, str) and url:
-            return url
-        return None
+        return resolve_mcp_server_url(self._mcp_servers, server_id)
 
     def has_tool(self, tool_name: str) -> bool:
         """Проверить доступность инструмента."""

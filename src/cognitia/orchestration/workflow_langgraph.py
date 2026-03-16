@@ -78,11 +78,3 @@ def compile_to_langgraph(graph: WorkflowGraph) -> Any:
     return sg.compile(**compile_kwargs)
 
 
-def check_langgraph_available() -> bool:
-    """Check if langgraph package is available."""
-    try:
-        import langgraph  # noqa: F401
-
-        return True
-    except ImportError:
-        return False

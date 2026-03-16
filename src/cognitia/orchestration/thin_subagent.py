@@ -13,6 +13,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
+from cognitia.orchestration.runtime_helpers import collect_runtime_output
 from cognitia.orchestration.subagent_types import (
     SubagentResult,
     SubagentSpec,
@@ -198,18 +199,12 @@ class _ThinWorkerRuntime:
         if self._llm_call is not None:
             kwargs["llm_call"] = self._llm_call
         runtime = ThinRuntime(**kwargs)
-        final_text = ""
-        async for event in runtime.run(
-            messages=[Message(role="user", content=task)],
-            system_prompt=self._spec.system_prompt,
-            active_tools=self._spec.tools,
-            mode_hint="react",
-        ):
-            if event.type == "final":
-                final_text = str(event.data.get("text", final_text))
-            elif event.type == "assistant_delta":
-                final_text += str(event.data.get("text", ""))
-            elif event.type == "error":
-                message = str(event.data.get("message", "ThinRuntime subagent error"))
-                raise RuntimeError(message)
-        return final_text
+        return await collect_runtime_output(
+            runtime.run(
+                messages=[Message(role="user", content=task)],
+                system_prompt=self._spec.system_prompt,
+                active_tools=self._spec.tools,
+                mode_hint="react",
+            ),
+            error_prefix="ThinRuntime subagent error",
+        )

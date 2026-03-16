@@ -15,17 +15,7 @@ from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
 from cognitia.runtime.thin.executor import ToolExecutor
 from cognitia.runtime.thin.llm_client import default_llm_call
 from cognitia.runtime.thin.modes import detect_mode
-from cognitia.runtime.thin.parsers import (
-    extract_first_json_object,
-    extract_text_fallback,
-    parse_envelope,
-    parse_json_dict,
-    parse_plan,
-    strip_markdown_fences,
-)
 from cognitia.runtime.thin.strategies import (
-    _build_metrics,
-    _messages_to_lm,
     run_conversational,
     run_planner,
     run_react,
@@ -36,7 +26,6 @@ from cognitia.runtime.types import (
     RuntimeErrorData,
     RuntimeEvent,
     ToolSpec,
-    TurnMetrics,
 )
 
 
@@ -169,10 +158,6 @@ class ThinRuntime:
                 )
             )
 
-    # ------------------------------------------------------------------
-    # Backward-compatible static methods (delegate to module functions)
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _extract_last_user_text(messages: list[Message]) -> str:
         """Извлечь текст последнего user message."""
@@ -180,51 +165,6 @@ class ThinRuntime:
             if msg.role == "user" and msg.content:
                 return msg.content
         return ""
-
-    @staticmethod
-    def _messages_to_lm(messages: list[Message]) -> list[dict[str, str]]:
-        """Конвертировать Message -> dict для LLM."""
-        return _messages_to_lm(messages)
-
-    @staticmethod
-    def _parse_envelope(raw: str) -> Any:
-        """Парсить JSON ответ LLM в ActionEnvelope."""
-        return parse_envelope(raw)
-
-    @staticmethod
-    def _parse_plan(raw: str) -> Any:
-        """Парсить JSON ответ LLM в PlanSchema."""
-        return parse_plan(raw)
-
-    @staticmethod
-    def _strip_markdown_fences(raw: str) -> str:
-        """Убрать markdown code fences."""
-        return strip_markdown_fences(raw)
-
-    @staticmethod
-    def _extract_first_json_object(text: str) -> str | None:
-        """Извлечь первый JSON-объект из произвольного текста."""
-        return extract_first_json_object(text)
-
-    @staticmethod
-    def _parse_json_dict(raw: str) -> dict[str, Any] | None:
-        """Попробовать распарсить dict JSON из raw-ответа модели."""
-        return parse_json_dict(raw)
-
-    @staticmethod
-    def _extract_text_fallback(raw: str) -> str:
-        """Сформировать безопасный текстовый fallback из raw-ответа LLM."""
-        return extract_text_fallback(raw)
-
-    @staticmethod
-    def _build_metrics(
-        start_time: float,
-        config: RuntimeConfig,
-        iterations: int = 0,
-        tool_calls: int = 0,
-    ) -> TurnMetrics:
-        """Собрать метрики turn'а."""
-        return _build_metrics(start_time, config, iterations, tool_calls)
 
     async def cleanup(self) -> None:
         """Нечего очищать -- stateless."""

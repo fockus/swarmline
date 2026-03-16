@@ -13,10 +13,14 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
+from cognitia.orchestration.base_team import BaseTeamOrchestrator
 from cognitia.orchestration.message_bus import MessageBus
 from cognitia.orchestration.message_tools import create_send_message_tool
-from cognitia.orchestration.subagent_types import SubagentStatus
-from cognitia.orchestration.team_types import TeamConfig, TeamMessage, TeamState, TeamStatus
+from cognitia.orchestration.team_types import (
+    InternalTeamState,
+    TeamConfig,
+    compose_worker_task,
+)
 from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
 from cognitia.runtime.types import RuntimeConfig
 
@@ -33,7 +37,7 @@ async def _default_llm_call(
     return json.dumps({"type": "final", "final_message": "done"})
 
 
-class ThinTeamOrchestrator:
+class ThinTeamOrchestrator(BaseTeamOrchestrator):
     """TeamOrchestrator для ThinRuntime workers.
 
     SRP: координация команды (lead delegation, worker dispatch, messaging).
@@ -53,17 +57,17 @@ class ThinTeamOrchestrator:
         sub_orchestrator: ThinSubagentOrchestrator | None = None,
     ) -> None:
         if sub_orchestrator is not None:
-            self._sub_orch = sub_orchestrator
+            sub_orch = sub_orchestrator
         else:
             effective_llm_call = llm_call if llm_call is not None else _default_llm_call
-            self._sub_orch = ThinSubagentOrchestrator(
+            sub_orch = ThinSubagentOrchestrator(
                 max_concurrent=max_concurrent,
                 llm_call=effective_llm_call,
                 local_tools=local_tools,
                 mcp_servers=mcp_servers,
                 runtime_config=runtime_config,
             )
-        self._teams: dict[str, _TeamState] = {}
+        super().__init__(sub_orch)
 
     async def start(self, config: TeamConfig, task: str) -> str:
         """Запустить команду — spawn workers с lead-composed tasks.
@@ -79,19 +83,20 @@ class ThinTeamOrchestrator:
 
         # Регистрируем send_message tool — один executor для всех workers
         # executor принимает args dict с from_agent (опционально, fallback на sender)
+        assert isinstance(self._sub_orch, ThinSubagentOrchestrator)
         self._sub_orch.register_tool(
             "send_message",
             create_send_message_tool(bus, sender_agent_id="team", team_members=worker_names),
         )
 
         for spec in config.worker_specs[: config.max_workers]:
-            worker_task = self._compose_worker_task(
+            worker_task = compose_worker_task(
                 config=config, worker_name=spec.name, task=task
             )
             agent_id = await self._sub_orch.spawn(spec, worker_task)
             worker_ids[spec.name] = agent_id
 
-        self._teams[team_id] = _TeamState(
+        self._teams[team_id] = InternalTeamState(
             config=config,
             worker_ids=worker_ids,
             started_at=datetime.now(tz=UTC),
@@ -100,44 +105,8 @@ class ThinTeamOrchestrator:
         )
         return team_id
 
-    async def stop(self, team_id: str) -> None:
-        """Остановить всех workers."""
-        state = self._teams.get(team_id)
-        if not state:
-            return
-        for agent_id in state.worker_ids.values():
-            await self._sub_orch.cancel(agent_id)
-
-    async def get_team_status(self, team_id: str) -> TeamStatus:
-        """Агрегированный статус команды."""
-        state = self._teams.get(team_id)
-        if not state:
-            return TeamStatus(team_id=team_id)
-
-        workers: dict[str, SubagentStatus] = {}
-        for name, agent_id in state.worker_ids.items():
-            workers[name] = await self._sub_orch.get_status(agent_id)
-
-        all_done = all(
-            w.state in ("completed", "failed", "cancelled") for w in workers.values()
-        )
-        team_state: TeamState = "completed" if all_done and workers else "running"
-        history = await state.bus.get_history()
-        return TeamStatus(
-            team_id=team_id,
-            state=team_state,
-            workers=workers,
-            messages_exchanged=len(history),
-        )
-
-    async def send_message(self, team_id: str, message: TeamMessage) -> None:
-        """Отправить сообщение в MessageBus команды."""
-        state = self._teams.get(team_id)
-        if state:
-            await state.bus.send(message)
-
     def _resolve_worker(
-        self, state: _TeamState, agent_id: str
+        self, state: InternalTeamState, agent_id: str
     ) -> tuple[str, str] | None:
         """Resolve agent_id to (worker_name, actual_agent_uuid).
 
@@ -192,7 +161,7 @@ class ThinTeamOrchestrator:
         if spec is None:
             return
 
-        worker_task = self._compose_worker_task(
+        worker_task = compose_worker_task(
             config=state.config,
             worker_name=worker_name,
             task=state.task,
@@ -200,37 +169,3 @@ class ThinTeamOrchestrator:
         new_agent_id = await self._sub_orch.spawn(spec, worker_task)
         state.worker_ids[worker_name] = new_agent_id
         state.paused_workers.discard(worker_name)
-
-    def get_message_bus(self, team_id: str) -> MessageBus | None:
-        """Получить MessageBus команды."""
-        state = self._teams.get(team_id)
-        return state.bus if state else None
-
-    @staticmethod
-    def _compose_worker_task(*, config: TeamConfig, worker_name: str, task: str) -> str:
-        """Сформировать worker task из lead_prompt и общей задачи."""
-        return (
-            f"{config.lead_prompt}\n\n"
-            f"Ты worker '{worker_name}'.\n"
-            f"Выполни подзадачу в контексте общей цели:\n{task}"
-        )
-
-
-class _TeamState:
-    """Внутреннее состояние команды."""
-
-    def __init__(
-        self,
-        *,
-        config: TeamConfig,
-        worker_ids: dict[str, str],
-        started_at: datetime,
-        bus: MessageBus,
-        task: str,
-    ) -> None:
-        self.config = config
-        self.worker_ids = worker_ids
-        self.started_at = started_at
-        self.bus = bus
-        self.task = task
-        self.paused_workers: set[str] = set()
