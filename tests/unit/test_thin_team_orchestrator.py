@@ -216,6 +216,108 @@ class TestThinTeamPauseResume:
 # ---------------------------------------------------------------------------
 
 
+class TestThinTeamEdgeCases:
+    """Edge cases: unknown team_id, resolve_worker, resume not-paused."""
+
+    @pytest.mark.asyncio
+    async def test_thin_team_stop_unknown_team_noop(self) -> None:
+        """stop с несуществующим team_id → не crash."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        await orch.stop("nonexistent-team-id")  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_status_unknown_team_returns_default(self) -> None:
+        """get_team_status с несуществующим team_id → default TeamStatus."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        status = await orch.get_team_status("nonexistent-team-id")
+        assert status.team_id == "nonexistent-team-id"
+        assert status.workers == {} or status.workers is None or len(status.workers) == 0
+
+    @pytest.mark.asyncio
+    async def test_thin_team_send_message_unknown_team_noop(self) -> None:
+        """send_message с несуществующим team_id → не crash."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        msg = TeamMessage(
+            from_agent="lead",
+            to_agent="worker",
+            content="Hello",
+            timestamp=datetime.now(tz=UTC),
+        )
+        await orch.send_message("nonexistent", msg)  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_pause_unknown_team_noop(self) -> None:
+        """pause_agent с несуществующим team_id → не crash."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        await orch.pause_agent("nonexistent", "worker_0")  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_pause_unknown_agent_noop(self) -> None:
+        """pause_agent с несуществующим agent_id → не crash."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        config = _make_team_config(n_workers=1)
+        team_id = await orch.start(config, "Task")
+        await orch.pause_agent(team_id, "nonexistent_worker")  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_resume_unknown_team_noop(self) -> None:
+        """resume_agent с несуществующим team_id → не crash."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        await orch.resume_agent("nonexistent", "worker_0")  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_resume_not_paused_noop(self) -> None:
+        """resume_agent для не-paused worker → не crash, нет эффекта."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        config = _make_team_config(n_workers=1)
+        team_id = await orch.start(config, "Task")
+        # Resume worker_0 без предварительного pause
+        await orch.resume_agent(team_id, "worker_0")  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_resume_unknown_agent_noop(self) -> None:
+        """resume_agent для несуществующего agent → не crash."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        config = _make_team_config(n_workers=1)
+        team_id = await orch.start(config, "Task")
+        await orch.resume_agent(team_id, "ghost_worker")  # Не должно raise
+
+    @pytest.mark.asyncio
+    async def test_thin_team_get_message_bus(self) -> None:
+        """get_message_bus возвращает MessageBus для известного team_id."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        config = _make_team_config(n_workers=1)
+        team_id = await orch.start(config, "Task")
+        bus = orch.get_message_bus(team_id)
+        assert bus is not None
+
+    @pytest.mark.asyncio
+    async def test_thin_team_get_message_bus_unknown_none(self) -> None:
+        """get_message_bus для неизвестного team_id → None."""
+        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+
+        orch = ThinTeamOrchestrator()
+        assert orch.get_message_bus("nonexistent") is None
+
+
 class TestThinTeamLeadPrompt:
     """Lead delegation: task composition."""
 

@@ -46,12 +46,16 @@ class ThinSubagentOrchestrator:
     ) -> None:
         self._max_concurrent = max_concurrent
         self._llm_call = llm_call
-        self._local_tools = local_tools or {}
+        self._local_tools: dict[str, Callable[..., Any]] = dict(local_tools or {})
         self._mcp_servers = mcp_servers
         self._runtime_config = runtime_config or RuntimeConfig(runtime_name="thin")
         self._tasks: dict[str, asyncio.Task[str]] = {}
         self._specs: dict[str, SubagentSpec] = {}
         self._results: dict[str, SubagentResult] = {}
+
+    def register_tool(self, name: str, executor: Callable[..., Any]) -> None:
+        """Register a tool available to all spawned workers."""
+        self._local_tools[name] = executor
 
     def _create_runtime(self, spec: SubagentSpec) -> _SubagentRuntime:
         """Создать runtime для subagent'а.

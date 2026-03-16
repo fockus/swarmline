@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from unittest.mock import AsyncMock
 
 import pytest
 from cognitia.orchestration.subagent_types import SubagentSpec
+from cognitia.runtime.types import ToolSpec
 
 
 @pytest.fixture()
@@ -105,3 +107,65 @@ class TestThinSubagentSpawn:
         result = await orchestrator.wait(agent_id)
         assert result.status.state == "failed"
         assert "crash" in (result.status.error or "")
+
+
+class TestThinSubagentFullImpl:
+    """Tests for full _create_runtime with ThinRuntime backend."""
+
+    async def test_thin_subagent_spawn_with_real_runtime(self) -> None:
+        """spawn with real ThinRuntime (mock LLM) -> get result."""
+        from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+
+        async def mock_llm(messages: list, system_prompt: str, **kwargs: object) -> str:
+            return json.dumps({"type": "final", "final_message": "worker result"})
+
+        orch = ThinSubagentOrchestrator(max_concurrent=2, llm_call=mock_llm)
+
+        spec = SubagentSpec(name="worker", system_prompt="You are a worker")
+        agent_id = await orch.spawn(spec, "do task")
+        result = await orch.wait(agent_id)
+        assert result.status.state == "completed"
+        assert "worker result" in result.output
+
+    async def test_thin_subagent_error_propagated(self) -> None:
+        """LLM error -> status=failed, error message propagated."""
+        from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+
+        async def mock_llm(messages: list, system_prompt: str, **kwargs: object) -> str:
+            raise RuntimeError("LLM connection failed")
+
+        orch = ThinSubagentOrchestrator(max_concurrent=2, llm_call=mock_llm)
+
+        spec = SubagentSpec(name="worker", system_prompt="prompt")
+        agent_id = await orch.spawn(spec, "task")
+        result = await orch.wait(agent_id)
+        assert result.status.state == "failed"
+        assert result.status.error is not None
+
+    async def test_thin_subagent_tools_inherited(self) -> None:
+        """Worker inherits tools from SubagentSpec."""
+        from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+
+        received_tools: list[list[ToolSpec]] = []
+
+        async def mock_llm(messages: list, system_prompt: str, **kwargs: object) -> str:
+            return json.dumps({"type": "final", "final_message": "done"})
+
+        orch = ThinSubagentOrchestrator(max_concurrent=2, llm_call=mock_llm)
+
+        # Intercept _create_runtime to verify tools are passed
+        original_create = orch._create_runtime
+
+        def patched_create(spec: SubagentSpec) -> object:
+            received_tools.append(list(spec.tools))
+            return original_create(spec)
+
+        orch._create_runtime = patched_create  # type: ignore[assignment]
+
+        tools = [ToolSpec(name="my_tool", description="desc", parameters={})]
+        spec = SubagentSpec(name="worker", system_prompt="prompt", tools=tools)
+        agent_id = await orch.spawn(spec, "task")
+        result = await orch.wait(agent_id)
+        assert result.status.state == "completed"
+        assert len(received_tools) == 1
+        assert received_tools[0][0].name == "my_tool"

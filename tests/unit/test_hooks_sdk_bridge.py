@@ -1,6 +1,7 @@
 """Тесты для hooks SDK bridge — конвертация HookRegistry → SDK HookMatcher."""
 
 import pytest
+
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 
 pytestmark = pytest.mark.requires_claude_sdk

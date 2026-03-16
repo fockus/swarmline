@@ -18,6 +18,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 from cognitia.hooks.registry import HookRegistry
 from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks

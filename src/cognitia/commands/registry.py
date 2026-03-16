@@ -6,6 +6,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+import jsonschema
+
 # Тип обработчика команды
 CommandHandler = Callable[..., Awaitable[str]]
 
@@ -18,6 +20,17 @@ class CommandDef:
     handler: CommandHandler
     aliases: list[str] = field(default_factory=list)
     description: str = ""
+    category: str = ""
+    parameters: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class ToolDefinition:
+    """Tool definition для LLM — typed wrapper над dict."""
+
+    name: str
+    description: str
+    parameters: dict[str, Any]
 
 
 class CommandRegistry:
@@ -49,6 +62,8 @@ class CommandRegistry:
         handler: CommandHandler,
         aliases: list[str] | None = None,
         description: str = "",
+        category: str = "",
+        parameters: dict[str, Any] | None = None,
     ) -> None:
         """Зарегистрировать команду."""
         canonical_name = self._normalize_name(name)
@@ -57,6 +72,8 @@ class CommandRegistry:
             handler=handler,
             aliases=aliases or [],
             description=description,
+            category=category,
+            parameters=parameters,
         )
         self._commands[canonical_name] = cmd
         for alias in cmd.aliases:
@@ -105,9 +122,47 @@ class CommandRegistry:
         args = parts[1:] if len(parts) > 1 else []
         return name, args
 
-    def list_commands(self) -> list[CommandDef]:
-        """Все зарегистрированные команды."""
-        return list(self._commands.values())
+    def list_commands(self, category: str | None = None) -> list[CommandDef]:
+        """Все зарегистрированные команды, опционально фильтруя по категории."""
+        commands = list(self._commands.values())
+        if category is not None:
+            commands = [c for c in commands if c.category == category]
+        return commands
+
+    async def execute_validated(
+        self, name_or_alias: str, params: dict[str, Any] | None = None
+    ) -> str:
+        """Выполнить команду с JSON Schema валидацией параметров.
+
+        Если у команды определена JSON Schema (parameters), params валидируются
+        перед вызовом handler. При ошибке валидации возвращает сообщение об ошибке.
+        """
+        cmd = self.resolve(name_or_alias)
+        if not cmd:
+            return f"Неизвестная команда: {name_or_alias}"
+        effective_params = params or {}
+        if cmd.parameters:
+            try:
+                jsonschema.validate(instance=effective_params, schema=cmd.parameters)
+            except jsonschema.ValidationError as e:
+                return f"Error: validation failed — {e.message}"
+        try:
+            return await cmd.handler(**effective_params)
+        except Exception as e:
+            return f"Ошибка выполнения '{cmd.name}': {e}"
+
+    def to_tool_definitions(self) -> list[ToolDefinition]:
+        """Конвертировать зарегистрированные команды в tool definitions для LLM."""
+        tools: list[ToolDefinition] = []
+        for cmd in self._commands.values():
+            tools.append(
+                ToolDefinition(
+                    name=cmd.name,
+                    description=cmd.description,
+                    parameters=cmd.parameters or {"type": "object", "properties": {}},
+                )
+            )
+        return tools
 
     def help_text(self) -> str:
         """Сгенерировать текст справки."""

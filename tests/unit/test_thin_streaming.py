@@ -230,6 +230,89 @@ class TestStreamParser:
 
 
 # ---------------------------------------------------------------------------
+# Edge case tests
+# ---------------------------------------------------------------------------
+
+
+class TestIncrementalEnvelopeParserEdgeCases:
+    """Edge cases для IncrementalEnvelopeParser."""
+
+    def test_thin_stream_parser_text_before_json_skipped(self) -> None:
+        """Текст перед JSON объектом пропускается."""
+        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+
+        parser = IncrementalEnvelopeParser()
+        result = parser.feed('Some prefix text {"type": "final", "final_message": "ok"}')
+        assert result is not None
+        assert result["type"] == "final"
+
+    def test_thin_stream_parser_finalize_incomplete(self) -> None:
+        """finalize() на неполном JSON → None."""
+        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+
+        parser = IncrementalEnvelopeParser()
+        parser.feed('{"type": "final"')
+        result = parser.finalize()
+        assert result is None
+
+    def test_thin_stream_parser_get_buffered_text(self) -> None:
+        """get_buffered_text() возвращает накопленный текст."""
+        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+
+        parser = IncrementalEnvelopeParser()
+        parser.feed('{"partial":')
+        text = parser.get_buffered_text()
+        assert '{"partial":' in text
+
+    def test_thin_stream_parser_escaped_quotes_in_string(self) -> None:
+        r"""Escaped quotes (\") внутри JSON строки обрабатываются."""
+        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+
+        parser = IncrementalEnvelopeParser()
+        result = parser.feed('{"type": "final", "final_message": "say \\"hello\\""}')
+        assert result is not None
+        assert result["final_message"] == 'say "hello"'
+
+
+class TestStreamParserEdgeCases:
+    """Edge cases для StreamParser."""
+
+    def test_stream_parser_json_with_escaped_strings(self) -> None:
+        r"""JSON с escaped строками парсится корректно."""
+        from cognitia.runtime.thin.stream_parser import StreamParser
+
+        parser = StreamParser()
+        done = parser.feed('{"type": "final", "final_message": "path: C:\\\\Users"}')
+        assert done
+        assert parser.result is not None
+
+    def test_stream_parser_empty_fenced_block(self) -> None:
+        """Пустой fenced block → не завершён."""
+        from cognitia.runtime.thin.stream_parser import StreamParser
+
+        parser = StreamParser()
+        done = parser.feed("```json\n```")
+        assert not done
+
+    def test_stream_parser_no_json_object(self) -> None:
+        """Текст без JSON объекта → не завершён."""
+        from cognitia.runtime.thin.stream_parser import StreamParser
+
+        parser = StreamParser()
+        done = parser.feed("just plain text without braces")
+        assert not done
+
+    def test_stream_parser_invalid_json_structure(self) -> None:
+        """Скобки балансируются но содержимое — не JSON."""
+        from cognitia.runtime.thin.stream_parser import StreamParser
+
+        parser = StreamParser()
+        done = parser.feed("{not valid json content}")
+        # Скобки сбалансированы, но json.loads fail → не complete
+        assert not done or (done and parser.error is not None)
+
+
+# ---------------------------------------------------------------------------
 # Streaming mode tests
 # ---------------------------------------------------------------------------
 

@@ -75,8 +75,9 @@ class ThinTeamOrchestrator:
 
         # Регистрируем send_message tool — один executor для всех workers
         # executor принимает args dict с from_agent (опционально, fallback на sender)
-        self._sub_orch._local_tools["send_message"] = create_send_message_tool(
-            bus, sender_agent_id="team", team_members=worker_names
+        self._sub_orch.register_tool(
+            "send_message",
+            create_send_message_tool(bus, sender_agent_id="team", team_members=worker_names),
         )
 
         for spec in config.worker_specs[: config.max_workers]:

@@ -60,6 +60,54 @@ class SlowLLM:
 
 
 # ---------------------------------------------------------------------------
+# Edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestThinSubagentEdgeCases:
+    """Edge cases для ThinSubagentOrchestrator."""
+
+    @pytest.mark.asyncio
+    async def test_thin_subagent_get_status_unknown_agent(self) -> None:
+        """get_status для несуществующего agent → pending."""
+        orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
+        status = await orch.get_status("nonexistent-id")
+        assert status.state == "pending"
+
+    @pytest.mark.asyncio
+    async def test_thin_subagent_wait_unknown_agent(self) -> None:
+        """wait для несуществующего agent → pending result."""
+        orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
+        result = await orch.wait("nonexistent-id")
+        assert result.status.state == "pending"
+        assert result.output == ""
+
+    @pytest.mark.asyncio
+    async def test_thin_subagent_list_active_empty(self) -> None:
+        """list_active при отсутствии workers → пустой список."""
+        orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
+        active = await orch.list_active()
+        assert active == []
+
+    @pytest.mark.asyncio
+    async def test_thin_subagent_list_active_after_complete(self) -> None:
+        """list_active после завершения worker → пустой список."""
+        llm = MockLLMForSubagent(response_text="done")
+        orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=llm)
+        spec = SubagentSpec(name="worker", system_prompt="Work.")
+        agent_id = await orch.spawn(spec, "task")
+        await orch.wait(agent_id)
+        active = await orch.list_active()
+        assert agent_id not in active
+
+    @pytest.mark.asyncio
+    async def test_thin_subagent_cancel_nonexistent_noop(self) -> None:
+        """cancel для несуществующего agent → не crash."""
+        orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
+        await orch.cancel("nonexistent-id")  # Не должно raise
+
+
+# ---------------------------------------------------------------------------
 # Тесты
 # ---------------------------------------------------------------------------
 

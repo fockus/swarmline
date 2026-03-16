@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 
 pytestmark = pytest.mark.requires_claude_sdk

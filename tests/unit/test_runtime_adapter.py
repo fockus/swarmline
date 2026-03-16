@@ -17,6 +17,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 from cognitia.runtime.adapter import RuntimeAdapter, StreamEvent
 

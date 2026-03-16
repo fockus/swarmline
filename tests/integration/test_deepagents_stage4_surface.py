@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 pytest.importorskip("langgraph", reason="langgraph не установлен")
 from cognitia.agent.agent import Agent
 from cognitia.agent.config import AgentConfig

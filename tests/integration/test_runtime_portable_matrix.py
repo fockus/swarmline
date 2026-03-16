@@ -8,6 +8,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 from cognitia.agent import Agent, AgentConfig
 from cognitia.runtime.adapter import StreamEvent

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator, Callable
 from typing import Any
+
+_log = logging.getLogger(__name__)
 
 from cognitia.runtime.deepagents_builtins import (
     DEEPAGENTS_NATIVE_BUILTIN_TOOLS,
@@ -127,8 +130,8 @@ class DeepAgentsRuntime:
                         self._tool_executors[spec.name] = self._mcp_bridge.create_tool_executor(
                             server_id, tool_name
                         )
-            except Exception:
-                pass  # Graceful degradation — MCP tools unavailable
+            except Exception as exc:
+                _log.warning("MCP discovery failed, tools unavailable: %s", exc)
 
         full_text = ""
         tool_calls: list[dict[str, Any]] = []

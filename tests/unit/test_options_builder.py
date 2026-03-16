@@ -1,6 +1,7 @@
 """Тесты для ClaudeOptionsBuilder и _spec_to_sdk_config — фабрика опций SDK."""
 
 import pytest
+
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 
 pytestmark = pytest.mark.requires_claude_sdk

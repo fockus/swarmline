@@ -20,6 +20,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 pytest.importorskip("deepagents", reason="deepagents не установлен")
 from cognitia.runtime.deepagents import (
     DeepAgentsRuntime,
