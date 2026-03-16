@@ -164,13 +164,20 @@ class ThinRuntime:
         """Попробовать streaming LLM вызов.
 
         Returns:
-            (chunks, full_text) если streaming поддерживается, None иначе.
+            (chunks, full_text) если streaming поддерживается.
+            Если LLM вернула str вместо AsyncIterator — возвращает ([full_text], full_text)
+            чтобы не терять уже сделанный вызов.
+            None только если LLM не поддерживает stream kwarg (TypeError).
         """
         try:
             result = await self._llm_call(lm_messages, prompt, stream=True)
         except TypeError:
             # LLM не поддерживает stream kwarg
             return None
+
+        if isinstance(result, str):
+            # LLM принимает stream kwarg но возвращает str — используем как есть
+            return [result], result
 
         if not hasattr(result, "__aiter__"):
             return None
@@ -284,7 +291,7 @@ class ThinRuntime:
         config: RuntimeConfig,
         start_time: float,
     ) -> AsyncIterator[RuntimeEvent]:
-        """React loop: LLM → tool_call | final."""
+        """React loop: LLM → tool_call | final. С поддержкой token streaming."""
         prompt = build_react_prompt(
             append_structured_output_instruction(
                 system_prompt,
@@ -300,11 +307,19 @@ class ThinRuntime:
         tool_calls_count = 0
         retries = 0
         last_raw = ""
+        stream_chunks: list[str] = []
 
         while iterations < config.max_iterations:
             iterations += 1
 
-            raw = await self._llm_call(lm_messages, prompt)
+            # Пробуем streaming LLM вызов, fallback на non-streaming
+            stream_result = await self._try_stream_llm_call(lm_messages, prompt)
+            if stream_result is not None:
+                stream_chunks, raw = stream_result
+            else:
+                raw = await self._llm_call(lm_messages, prompt)
+                stream_chunks = []
+
             last_raw = raw
             envelope = self._parse_envelope(raw)
 
@@ -418,7 +433,11 @@ class ThinRuntime:
                 new_messages.append(Message(role="assistant", content=text))
                 structured_output = extract_structured_output(text, config.output_format)
 
-                yield RuntimeEvent.assistant_delta(text)
+                if stream_chunks:
+                    for chunk in stream_chunks:
+                        yield RuntimeEvent.assistant_delta(chunk)
+                else:
+                    yield RuntimeEvent.assistant_delta(text)
                 yield RuntimeEvent.final(
                     text=text,
                     new_messages=new_messages,
@@ -441,7 +460,11 @@ class ThinRuntime:
 
                 new_messages.append(Message(role="assistant", content=text))
                 structured_output = extract_structured_output(text, config.output_format)
-                yield RuntimeEvent.assistant_delta(text)
+                if stream_chunks:
+                    for chunk in stream_chunks:
+                        yield RuntimeEvent.assistant_delta(chunk)
+                else:
+                    yield RuntimeEvent.assistant_delta(text)
                 yield RuntimeEvent.final(
                     text=text,
                     new_messages=new_messages,

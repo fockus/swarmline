@@ -421,6 +421,94 @@ class TestThinRuntimeStreaming:
         assert len(deltas) >= 2, "Каждый step плана должен стримить отдельно"
 
     @pytest.mark.asyncio
+    async def test_thin_stream_react_emits_multiple_deltas_for_final(self) -> None:
+        """React mode: final response стримится token-by-token (>1 delta)."""
+        final_json = _make_final_json("Ответ из react mode: 42 + extras")
+        chunks = [final_json[i : i + 12] for i in range(0, len(final_json), 12)]
+
+        llm = MockStreamingLLM(
+            token_chunks=[chunks],
+            full_responses=[final_json],
+        )
+
+        runtime = ThinRuntime(llm_call=llm)
+        events = await collect_events(runtime, "Прямой ответ", mode_hint="react")
+
+        deltas = [e for e in events if e.type == "assistant_delta"]
+        assert len(deltas) > 1, (
+            f"React mode должен стримить final response по chunk'ам, "
+            f"получено {len(deltas)} delta events"
+        )
+
+        finals = [e for e in events if e.type == "final"]
+        assert len(finals) == 1
+        assert "42" in finals[0].data["text"]
+
+    @pytest.mark.asyncio
+    async def test_thin_stream_react_tool_then_streamed_final(self) -> None:
+        """React mode: tool_call (non-stream) -> final (stream) -> multiple deltas."""
+
+        def calc(args: dict) -> dict:
+            return {"result": 99}
+
+        tool_call_json = _make_tool_call_json("calc", {"x": 5})
+        final_json = _make_final_json("Результат вычисления: 99")
+        final_chunks = [final_json[i : i + 10] for i in range(0, len(final_json), 10)]
+
+        llm = MockStreamingLLM(
+            token_chunks=[
+                list(tool_call_json),  # call 0: tool_call (stream chunks)
+                final_chunks,  # call 1: final (stream chunks)
+            ],
+            full_responses=[tool_call_json, final_json],
+        )
+
+        runtime = ThinRuntime(llm_call=llm, local_tools={"calc": calc})
+        events = await collect_events(runtime, "Посчитай 5", mode_hint="react")
+        types = [e.type for e in events]
+
+        # Tool events preserved
+        assert "tool_call_started" in types
+        assert "tool_call_finished" in types
+
+        # Final response was streamed with multiple deltas
+        final_idx = next(i for i, e in enumerate(events) if e.type == "final")
+        deltas_before_final = [e for e in events[:final_idx] if e.type == "assistant_delta"]
+        assert len(deltas_before_final) > 1, (
+            f"Final response в react mode должен стримиться после tool call, "
+            f"получено {len(deltas_before_final)} delta events перед final"
+        )
+
+    @pytest.mark.asyncio
+    async def test_thin_stream_react_fallback_on_stream_failure(self) -> None:
+        """React mode: если streaming не поддерживается -> fallback на non-streaming."""
+
+        class NonStreamLLM:
+            """LLM без поддержки stream kwarg (TypeError при stream=True)."""
+
+            def __init__(self, responses: list[str]) -> None:
+                self._responses = list(responses)
+                self._idx = 0
+
+            async def __call__(self, messages: list[dict], system_prompt: str) -> str:
+                if self._idx < len(self._responses):
+                    r = self._responses[self._idx]
+                    self._idx += 1
+                    return r
+                return _make_final_json("fallback")
+
+        llm = NonStreamLLM([_make_final_json("Non-stream react ответ")])
+        runtime = ThinRuntime(llm_call=llm)
+        events = await collect_events(runtime, "test", mode_hint="react")
+
+        finals = [e for e in events if e.type == "final"]
+        assert len(finals) == 1
+        assert finals[0].data["text"] == "Non-stream react ответ"
+
+        errors = [e for e in events if e.type == "error"]
+        assert len(errors) == 0
+
+    @pytest.mark.asyncio
     async def test_thin_stream_fallback_on_parse_error(self) -> None:
         """При ошибке парсинга streaming → fallback на full response."""
         # Невалидные chunks (corrupted stream)
