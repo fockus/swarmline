@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project
 
@@ -89,16 +89,9 @@ Tests mirror source: `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/s
 - **Model registry**: aliases like `"sonnet"` → resolved via `runtime/models.yaml`.
 - **Contract-first**: Protocol/ABC → contract tests → implementation. Tests must pass for ANY correct implementation.
 
-## Git Workflow
+## Contributing
 
-Two remotes: private development + public release.
-
-```
-origin  → github.com/fockus/cognitia-dev  (private, all branches)
-public  → github.com/fockus/cognitia      (public, stable main only)
-```
-
-### Branching (GitHub Flow + release branches)
+GitHub Flow: feature branches → PR → merge to main.
 
 ```
 main (stable, tested, releasable)
@@ -109,47 +102,4 @@ main (stable, tested, releasable)
 
 **Rules:**
 - `main` = always green (tests pass, lint clean, can `pip install`)
-- Development on feature branches → PR → merge to main
-- Push all branches to `origin` (private) freely
-- Push only stable `main` to `public`: `./scripts/sync-public.sh`
-- Release: branch `release/vX.Y.Z` → version bump + changelog → merge → tag → `sync-public.sh --tags`
-- Hotfix: branch from tag → fix → merge to main → new tag
-
-### Private vs Public
-
-| Content | Private (`origin`) | Public (`public`) |
-|---------|-------------------|-------------------|
-| Source code | all branches | main only |
-| `.memory-bank/` | tracked, all branches | **filtered out** by sync script |
-| `CLAUDE.md`, `RULES.md` | tracked, all branches | **filtered out** by sync script |
-| `.claude/` | local only (.gitignore) | excluded |
-| `AGENTS.md` | tracked, full version | **replaced** with `AGENTS.public.md` |
-| `AGENTS.public.md` | tracked, public-safe source | becomes `AGENTS.md` in public |
-| WIP / feature branches | pushed | never pushed |
-| Tags / releases | all | stable only |
-
-`sync-public.sh` creates a temporary branch without private files (`PRIVATE_PATHS` array in the script), force-pushes it as `main` to public, then cleans up. Supports `--dry-run` to preview.
-
-### Commands
-
-```bash
-# Daily development
-git checkout -b feat/my-feature       # new feature branch
-git push origin feat/my-feature       # push to private
-# ... PR → merge to main
-
-# Sync stable main to public
-./scripts/sync-public.sh              # tests + push main
-./scripts/sync-public.sh --tags       # + push tags
-
-# Release
-git checkout -b release/v1.0.0
-# ... version bump, changelog
-git checkout main && git merge release/v1.0.0
-git tag v1.0.0
-./scripts/sync-public.sh --tags
-```
-
-## Memory Bank
-
-Active at `.memory-bank/`. Core files: `STATUS.md`, `checklist.md`, `plan.md`, `RESEARCH.md`. Use `/mb start` to load context, `/mb done` to close session.
+- Release: branch `release/vX.Y.Z` → version bump + changelog → merge → tag

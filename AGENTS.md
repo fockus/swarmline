@@ -122,7 +122,8 @@ main (stable, tested, releasable)
 | `.memory-bank/` | tracked, all branches | **filtered out** by sync script |
 | `CLAUDE.md`, `RULES.md` | tracked, all branches | **filtered out** by sync script |
 | `.claude/` | local only (.gitignore) | excluded |
-| `AGENTS.md` | tracked, all branches | included (public-safe) |
+| `AGENTS.md` | tracked, full version | **replaced** with `AGENTS.public.md` |
+| `AGENTS.public.md` | tracked, public-safe source | becomes `AGENTS.md` in public |
 | WIP / feature branches | pushed | never pushed |
 | Tags / releases | all | stable only |
 

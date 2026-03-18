@@ -16,9 +16,11 @@
 #   5. Optionally pushes tags (--tags)
 #
 # Private files (excluded from public):
-#   - .memory-bank/    (project memory, plans, notes)
-#   - CLAUDE.md         (Claude Code instructions)
-#   - RULES.md          (development rules)
+#   - .memory-bank/       (project memory, plans, notes)
+#   - CLAUDE.md            (Claude Code instructions)
+#   - RULES.md             (development rules)
+#   - AGENTS.md            (replaced with AGENTS.public.md)
+#   - AGENTS.public.md     (source for public AGENTS.md)
 
 set -euo pipefail
 
@@ -42,6 +44,8 @@ PRIVATE_PATHS=(
     ".memory-bank"
     "CLAUDE.md"
     "RULES.md"
+    "AGENTS.md"
+    "AGENTS.public.md"
 )
 
 TEMP_BRANCH="_sync_public_temp"
@@ -96,7 +100,17 @@ done
 
 if [ ${#REMOVED[@]} -gt 0 ]; then
     echo -e "  Excluded: ${REMOVED[*]}"
-    git commit --quiet -m "sync: exclude private files for public repo"
+fi
+
+# Replace AGENTS.md with public-safe version
+if [ -f "AGENTS.public.md" ]; then
+    cp AGENTS.public.md AGENTS.md
+    git add AGENTS.md
+    echo -e "  Replaced: AGENTS.md with public-safe version"
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+    git commit --quiet -m "sync: prepare public-safe snapshot"
 else
     echo -e "  No private files to exclude"
 fi
