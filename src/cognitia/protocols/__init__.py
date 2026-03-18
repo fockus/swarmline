@@ -24,7 +24,7 @@ from cognitia.protocols.routing import (
     RoleRouter,
     RoleSkillsProvider,
 )
-from cognitia.protocols.multi_agent import AgentTool
+from cognitia.protocols.multi_agent import AgentTool, TaskQueue
 from cognitia.protocols.runtime import RuntimePort
 from cognitia.protocols.session import (
     SessionFactory,
@@ -42,6 +42,7 @@ with contextlib.suppress(ImportError):
 
 __all__ = [
     "AgentTool",
+    "TaskQueue",
     "ContextBuilder",
     "FactStore",
     "GoalStore",

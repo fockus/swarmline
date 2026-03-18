@@ -477,5 +477,12 @@ See [RAG](rag.md) for custom retrievers (Pinecone, pgvector) and filter chain in
 - [Web Tools](web-tools.md) — search providers (DuckDuckGo, Brave, Tavily, SearXNG), fetch providers
 - [Configuration](configuration.md) — CognitiaStack, RuntimeConfig, ToolPolicy, environment variables
 - [Orchestration](orchestration.md) — planning mode, subagents, team mode
+- [Structured Output](structured-output.md) — Pydantic validation, retry on failure, nested models
+- [Production Safety](production-safety.md) — cost budgets, guardrails, input filters, retry/fallback
+- [Sessions](sessions.md) — session backends, memory scopes, persistence
+- [Observability](observability.md) — event bus, tracing, custom tracers
+- [UI Projection](ui-projection.md) — RuntimeEvent to UIState for frontends
+- [RAG](rag.md) — retrieval-augmented generation, custom retrievers
+- [Runtime Registry](runtime-registry.md) — custom runtimes, entry point plugins
 - [Architecture](architecture.md) — Clean Architecture layers, protocols, design principles
 - [Examples](examples.md) — integration examples for different domains

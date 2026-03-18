@@ -1,7 +1,7 @@
-"""Multi-agent protocols -- agent-as-tool and task queue contracts.
+"""Multi-agent protocols -- agent-as-tool, task queue, and agent registry contracts.
 
-ISP-compliant: AgentTool has 1 method, TaskQueue has 5 methods (ISP limit).
-Dependencies: cognitia.runtime.types (ToolSpec), cognitia.multi_agent.task_types.
+ISP-compliant: AgentTool has 1 method, TaskQueue has 5 methods, AgentRegistry has 5 methods.
+Dependencies: cognitia domain types and stdlib only.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from cognitia.multi_agent.task_types import TaskFilter, TaskItem
 
 if TYPE_CHECKING:
+    from cognitia.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
     from cognitia.runtime.types import ToolSpec
 
 
@@ -56,3 +57,24 @@ class TaskQueue(Protocol):
     ) -> list[TaskItem]:
         """List all tasks matching filters. Returns all if filters is None."""
         ...
+
+
+@runtime_checkable
+class AgentRegistry(Protocol):
+    """Port: registry for managing agent lifecycle records.
+
+    Provides CRUD operations for AgentRecord instances with
+    filtering support. Exactly 5 methods (ISP limit).
+    """
+
+    async def register(self, record: AgentRecord) -> None: ...
+
+    async def get(self, agent_id: str) -> AgentRecord | None: ...
+
+    async def list_agents(
+        self, filters: AgentFilter | None = None,
+    ) -> list[AgentRecord]: ...
+
+    async def update_status(self, agent_id: str, status: AgentStatus) -> bool: ...
+
+    async def remove(self, agent_id: str) -> bool: ...
