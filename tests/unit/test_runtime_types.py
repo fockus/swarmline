@@ -1,4 +1,4 @@
-"""Тесты для runtime types — Message, ToolSpec, RuntimeEvent, RuntimeErrorData, RuntimeConfig, resolve_model_name."""
+"""Tests for runtime types - Message, ToolSpec, RuntimeEvent, RuntimeErrorData, RuntimeConfig, resolve_model_name."""
 
 import pytest
 from cognitia.runtime.types import (
@@ -20,7 +20,7 @@ from cognitia.runtime.types import (
 
 
 class TestMessage:
-    """Message — универсальное сообщение для AgentRuntime."""
+    """Message - universalnoe message for AgentRuntime."""
 
     def test_user_message(self) -> None:
         msg = Message(role="user", content="Привет!")
@@ -60,7 +60,7 @@ class TestMessage:
         assert d["metadata"] == {"ts": 123}
 
     def test_from_memory_message(self) -> None:
-        """Конвертация из MemoryMessage (backward compat)."""
+        """Conversion from MemoryMessage (backward compat)."""
         from cognitia.memory.types import MemoryMessage
 
         mm = MemoryMessage(role="assistant", content="Ответ", tool_calls=[{"t": 1}])
@@ -82,7 +82,7 @@ class TestMessage:
 
 
 class TestToolSpec:
-    """ToolSpec — описание инструмента."""
+    """ToolSpec - opisanie toola."""
 
     def test_mcp_tool(self) -> None:
         spec = ToolSpec(
@@ -115,7 +115,7 @@ class TestToolSpec:
 
 
 class TestRuntimeErrorData:
-    """RuntimeErrorData — типизированная ошибка."""
+    """RuntimeErrorData - tipizirovannaya error."""
 
     def test_valid_kind(self) -> None:
         err = RuntimeErrorData(kind="loop_limit", message="Превышен лимит итераций")
@@ -123,7 +123,7 @@ class TestRuntimeErrorData:
         assert err.recoverable is False
 
     def test_unknown_kind_fallback(self) -> None:
-        """Неизвестный kind → автозамена на runtime_crash."""
+        """Notizvestnyy kind -> avtozamena on runtime_crash."""
         err = RuntimeErrorData(kind="unknown_kind", message="test")
         assert err.kind == "runtime_crash"
 
@@ -140,7 +140,7 @@ class TestRuntimeErrorData:
         assert d["details"]["server"] == "iss"
 
     def test_all_kinds_exist(self) -> None:
-        """Все заявленные kinds доступны."""
+        """Vse zayavlennye kinds available."""
         expected = {
             "runtime_crash",
             "bad_model_output",
@@ -158,12 +158,12 @@ class TestRuntimeErrorData:
 
 
 # ---------------------------------------------------------------------------
-# RuntimeEvent (фабричные методы)
+# RuntimeEvent (fabrichnye metody)
 # ---------------------------------------------------------------------------
 
 
 class TestRuntimeEvent:
-    """RuntimeEvent — унифицированное событие стриминга."""
+    """RuntimeEvent - unifitsirovannoe event striminga."""
 
     def test_assistant_delta(self) -> None:
         ev = RuntimeEvent.assistant_delta("Привет")
@@ -303,7 +303,7 @@ class TestRuntimeEvent:
 
 
 class TestRuntimeConfig:
-    """RuntimeConfig — конфигурация runtime."""
+    """RuntimeConfig - configuration runtime."""
 
     def test_defaults(self) -> None:
         cfg = RuntimeConfig()
@@ -340,12 +340,12 @@ class TestRuntimeConfig:
         assert cfg.extra["temperature"] == 0.7
 
     def test_default_model(self) -> None:
-        """По умолчанию — DEFAULT_MODEL."""
+        """Po umolchaniyu - DEFAULT_MODEL."""
         cfg = RuntimeConfig()
         assert cfg.model == DEFAULT_MODEL
 
     def test_custom_model(self) -> None:
-        """Можно задать модель напрямую."""
+        """Mozhno zadat model napryamuyu."""
         cfg = RuntimeConfig(model="claude-opus-4-20250514")
         assert cfg.model == "claude-opus-4-20250514"
 
@@ -360,7 +360,7 @@ class TestRuntimeConfig:
 
 
 class TestResolveModelName:
-    """resolve_model_name — разрешение имени модели (alias + полное имя)."""
+    """resolve_model_name - razreshenie imeni models (alias + full imya)."""
 
     def test_none_returns_default(self) -> None:
         assert resolve_model_name(None) == DEFAULT_MODEL
@@ -391,7 +391,7 @@ class TestResolveModelName:
         assert resolve_model_name("claude-haiku-3-20250307") == "claude-haiku-3-20250307"
 
     def test_prefix_match(self) -> None:
-        """Prefix match для неполных имён."""
+        """Prefix match for notpolnyh imen."""
         result = resolve_model_name("claude-opus")
         assert result == "claude-opus-4-20250514"
 
@@ -399,13 +399,13 @@ class TestResolveModelName:
         assert resolve_model_name("nonexistent_model_xyz") == DEFAULT_MODEL
 
     def test_multi_provider_models(self) -> None:
-        """Мультипровайдерные модели из models.yaml."""
+        """Multiprovaydernye models from models.yaml."""
         assert resolve_model_name("gpt-4o") == "gpt-4o"
         assert resolve_model_name("gemini") == "gemini-2.5-pro"
         assert resolve_model_name("r1") == "deepseek-reasoner"
 
     def test_explicit_provider_prefix_passthrough(self) -> None:
-        """Explicit provider:model не должен схлопываться в registry default."""
+        """Explicit provider:model not should shlopyvatsya in registry default."""
         assert (
             resolve_model_name("openrouter:anthropic/claude-3.5-haiku")
             == "openrouter:anthropic/claude-3.5-haiku"
@@ -415,7 +415,7 @@ class TestResolveModelName:
         assert resolve_model_name("  sonnet  ") == "claude-sonnet-4-20250514"
 
     def test_valid_model_names_via_registry(self) -> None:
-        """ModelRegistry.valid_models содержит модели всех провайдеров."""
+        """ModelRegistry.valid_models contains models vseh provayderov."""
         from cognitia.runtime.model_registry import get_registry
 
         valid = get_registry().valid_models
@@ -431,7 +431,7 @@ class TestResolveModelName:
 
 
 class TestTurnMetrics:
-    """TurnMetrics — метрики turn'а."""
+    """TurnMetrics - metrics turn'a."""
 
     def test_defaults(self) -> None:
         m = TurnMetrics()

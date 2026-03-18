@@ -1,4 +1,4 @@
-"""Unit: runtime capability descriptors и требования."""
+"""Unit: runtime capability descriptors and trebovaniya."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from cognitia.runtime.types import RuntimeConfig
 
 
 class TestCapabilityRequirements:
-    """CapabilityRequirements — валидация и сравнение."""
+    """CapabilityRequirements - validation and sravnotnie."""
 
     def test_invalid_tier_raises(self) -> None:
         with pytest.raises(ValueError, match="tier"):
@@ -92,7 +92,7 @@ class TestRuntimeCapabilities:
 
 
 class TestRuntimeConfigCapabilityValidation:
-    """RuntimeConfig fail-fast валидация capability requirements."""
+    """RuntimeConfig fail-fast validation capability requirements."""
 
     def test_deepagents_portable_hitl_requirement_raises(self) -> None:
         with pytest.raises(ValueError, match="hitl"):

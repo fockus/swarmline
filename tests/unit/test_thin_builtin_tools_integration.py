@@ -1,14 +1,9 @@
-"""TDD Red Phase: Built-in Tools для ThinRuntime (Этап 1.1).
-
-Тесты проверяют:
-- 9 built-in tools регистрируются при наличии SandboxProvider
-- feature_mode фильтрация (portable/hybrid/native_first)
-- Алиасы совместимы с DeepAgents (Read → read_file и т.д.)
-- Без sandbox provider → 0 built-in tools
-- Merge user tools + built-in без дублей
-
-Contract: cognitia.runtime.thin.builtin_tools
-"""
+"""TDD Red Phase: Built-in Tools for ThinRuntime (Phase 1.1). Tests check:
+- 9 built-in tools are registered if SandboxProvider is present
+- feature_mode filtering (portable/hybrid/native_first)
+- Aliases are compatible with DeepAgents (Read -> read_file etc.)
+- Without sandbox provider -> 0 built-in tools
+- Merge user tools + built-in without duplicates Contract: cognitia.runtime.thin.builtin_tools"""
 
 from __future__ import annotations
 
@@ -31,7 +26,7 @@ from cognitia.runtime.types import ToolSpec
 
 
 class FakeSandboxProvider:
-    """InMemory SandboxProvider для тестов (без I/O)."""
+    """InMemory SandboxProvider for tests (without I/O)."""
 
     def __init__(self) -> None:
         self._files: dict[str, str] = {}
@@ -68,15 +63,15 @@ def sandbox() -> FakeSandboxProvider:
 
 
 # ---------------------------------------------------------------------------
-# Этап 1.1: Built-in Tools
+# Stage 1.1: Built-in Tools
 # ---------------------------------------------------------------------------
 
 
 class TestThinBuiltinToolsRegistration:
-    """Регистрация built-in tools в ThinRuntime."""
+    """Registering built-in tools in ThinRuntime."""
 
     def test_thin_builtin_tools_registered_by_default(self, sandbox: FakeSandboxProvider) -> None:
-        """При наличии sandbox provider 9 tools появляются в active_tools."""
+        """If there is a sandbox provider 9 tools appear in active_tools."""
         specs, executors = create_thin_builtin_tools(sandbox)
 
         registered_names = set(specs.keys())
@@ -84,14 +79,14 @@ class TestThinBuiltinToolsRegistration:
         assert set(executors.keys()) == THIN_BUILTIN_TOOLS
 
     def test_thin_builtin_tools_without_sandbox_empty(self) -> None:
-        """Без sandbox provider → 0 built-in tools."""
+        """Without sandbox provider -> 0 built-in tools."""
         specs, executors = create_thin_builtin_tools(None)
 
         assert specs == {}
         assert executors == {}
 
     def test_thin_builtin_specs_list_has_9_items(self, sandbox: FakeSandboxProvider) -> None:
-        """get_thin_builtin_specs возвращает ровно 9 ToolSpec."""
+        """get_thin_builtin_specs returns exactly 9 ToolSpec."""
         specs = get_thin_builtin_specs(sandbox)
         assert len(specs) == 9
         names = {s.name for s in specs}
@@ -99,12 +94,12 @@ class TestThinBuiltinToolsRegistration:
 
 
 class TestThinBuiltinToolsFeatureMode:
-    """Фильтрация built-in tools по feature_mode."""
+    """Filtering built-in tools by feature_mode."""
 
     def test_thin_builtin_tools_portable_mode_excluded(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """feature_mode=portable → 0 built-in tools (все отфильтрованы)."""
+        """feature_mode=portable -> 0 built-in tools (all filtered)."""
         specs = get_thin_builtin_specs(sandbox)
         filtered = filter_thin_builtins_by_mode(specs, feature_mode="portable")
         assert filtered == []
@@ -112,7 +107,7 @@ class TestThinBuiltinToolsFeatureMode:
     def test_thin_builtin_tools_hybrid_mode_keeps_all(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """feature_mode=hybrid → все built-in tools сохранены."""
+        """feature_mode=hybrid -> all built-in tools are saved."""
         specs = get_thin_builtin_specs(sandbox)
         filtered = filter_thin_builtins_by_mode(specs, feature_mode="hybrid")
         assert len(filtered) == 9
@@ -120,7 +115,7 @@ class TestThinBuiltinToolsFeatureMode:
     def test_thin_builtin_tools_native_first_mode_keeps_all(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """feature_mode=native_first → все built-in tools сохранены."""
+        """feature_mode=native_first -> all built-in tools are saved."""
         specs = get_thin_builtin_specs(sandbox)
         filtered = filter_thin_builtins_by_mode(specs, feature_mode="native_first")
         assert len(filtered) == 9
@@ -128,7 +123,7 @@ class TestThinBuiltinToolsFeatureMode:
     def test_thin_builtin_tools_merge_hybrid_no_duplicates(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """merge_tools_with_builtins в hybrid mode → user + built-in без дублей."""
+        """merge_tools_with_builtins in hybrid mode -> user + built-in without duplicates."""
         builtin_specs = get_thin_builtin_specs(sandbox)
         user_tools = [
             ToolSpec(
@@ -151,7 +146,7 @@ class TestThinBuiltinToolsFeatureMode:
     def test_thin_builtin_tools_merge_portable_only_user(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """merge_tools_with_builtins в portable mode → только user tools."""
+        """merge_tools_with_builtins in portable mode -> user tools only."""
         builtin_specs = get_thin_builtin_specs(sandbox)
         user_tools = [
             ToolSpec(name="my_tool", description="Custom", parameters={"type": "object"}),
@@ -163,10 +158,10 @@ class TestThinBuiltinToolsFeatureMode:
 
 
 class TestThinBuiltinToolsAliases:
-    """Алиасы совместимы с DeepAgents."""
+    """Aliases are compatible with DeepAgents."""
 
     def test_thin_builtin_aliases_resolved(self) -> None:
-        """SDK-стиль алиасы маппятся в canonical имена."""
+        """SDK-style aliases are mapped to canonical names."""
         assert THIN_BUILTIN_ALIASES["Read"] == "read_file"
         assert THIN_BUILTIN_ALIASES["Write"] == "write_file"
         assert THIN_BUILTIN_ALIASES["Bash"] == "execute"
@@ -178,7 +173,7 @@ class TestThinBuiltinToolsAliases:
         assert THIN_BUILTIN_ALIASES["TodoWrite"] == "write_todos"
 
     def test_thin_builtin_aliases_cover_deepagents_set(self) -> None:
-        """Все DeepAgents алиасы имеют маппинг в THIN_BUILTIN_ALIASES."""
+        """All DeepAgents aliases have mapping in THIN_BUILTIN_ALIASES."""
         from cognitia.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_ALIASES
 
         for alias, canonical in DEEPAGENTS_NATIVE_BUILTIN_ALIASES.items():
@@ -187,13 +182,13 @@ class TestThinBuiltinToolsAliases:
 
 
 class TestThinBuiltinToolsExecution:
-    """Выполнение built-in tools через executors."""
+    """Execution built-in tools via executors."""
 
     @pytest.mark.asyncio
     async def test_thin_builtin_execute_reads_file(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """read_file executor возвращает содержимое файла."""
+        """read_file executor returns the contents of the file."""
         sandbox._files["test.txt"] = "hello world"
 
         _specs, executors = create_thin_builtin_tools(sandbox)
@@ -207,7 +202,7 @@ class TestThinBuiltinToolsExecution:
     async def test_thin_builtin_execute_bash(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """execute (bash) executor возвращает результат команды."""
+        """execute (bash) executor returns result commands."""
         _specs, executors = create_thin_builtin_tools(sandbox)
         result = await executors["execute"]({"command": "echo test"})
 
@@ -218,7 +213,7 @@ class TestThinBuiltinToolsExecution:
     async def test_thin_builtin_write_todos(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """write_todos executor сохраняет todo список."""
+        """write_todos executor saves todo list."""
         _specs, executors = create_thin_builtin_tools(sandbox)
         result = await executors["write_todos"]({"todos": "- [ ] Task 1\n- [x] Task 2"})
 
@@ -230,7 +225,7 @@ class TestThinBuiltinToolsExecution:
     async def test_thin_builtin_task_executor(
         self, sandbox: FakeSandboxProvider
     ) -> None:
-        """task executor отвечает ok."""
+        """task executor responds ok."""
         _specs, executors = create_thin_builtin_tools(sandbox)
         result = await executors["task"]({"description": "Test task"})
 

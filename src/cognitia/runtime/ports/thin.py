@@ -1,10 +1,4 @@
-"""ThinRuntimePort — адаптер ThinRuntime под RuntimePort протокол.
-
-Позволяет использовать ThinRuntime в SessionManager вместо
-ClaudeSDK RuntimeAdapter. Работает с OpenRouter, proxy и т.д.
-
-Наследует BaseRuntimePort (DRY: StreamEvent, convert_event, sliding window).
-"""
+"""Thin module."""
 
 from __future__ import annotations
 
@@ -23,16 +17,7 @@ THIN_HISTORY_MAX = HISTORY_MAX
 
 
 class ThinRuntimePort(BaseRuntimePort):
-    """Адаптер ThinRuntime → RuntimePort.
-
-    Реализует протокол RuntimePort (connect, disconnect, is_connected, stream_reply)
-    поверх ThinRuntime, конвертируя RuntimeEvent → StreamEvent.
-
-    Args:
-        system_prompt: System prompt для LLM.
-        config: RuntimeConfig с моделью, base_url, budgets.
-        local_tools: Дополнительные локальные инструменты.
-    """
+    """Thin Runtime Port implementation."""
 
     def __init__(
         self,
@@ -53,7 +38,7 @@ class ThinRuntimePort(BaseRuntimePort):
 
     @staticmethod
     def _build_active_tools(local_tools: dict[str, Any]) -> list[ToolSpec]:
-        """Преобразовать local tools в ToolSpec для LLM advertisement."""
+        """Build active tools."""
         active_tools: list[ToolSpec] = []
         for name, tool in local_tools.items():
             tool_definition = getattr(tool, "__tool_definition__", None)
@@ -78,7 +63,7 @@ class ThinRuntimePort(BaseRuntimePort):
         return active_tools
 
     async def connect(self) -> None:
-        """Инициализировать ThinRuntime."""
+        """Initialize ThinRuntime."""
         self._runtime = ThinRuntime(
             config=self._config,
             local_tools=self._local_tools,
@@ -91,7 +76,7 @@ class ThinRuntimePort(BaseRuntimePort):
         )
 
     async def disconnect(self) -> None:
-        """Освободить ресурсы."""
+        """Disconnect."""
         if self._runtime:
             await self._runtime.cleanup()
             self._runtime = None
@@ -102,7 +87,7 @@ class ThinRuntimePort(BaseRuntimePort):
         messages: list[Message],
         system_prompt: str,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Вызвать ThinRuntime.run()."""
+        """Run runtime."""
         if not self._runtime:
             return
         async for event in self._runtime.run(

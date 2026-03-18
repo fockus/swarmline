@@ -1,4 +1,4 @@
-"""HookRegistry — реестр хуков для перехвата событий агента."""
+"""HookRegistry - registry of hooks for intercepting agent events."""
 
 from __future__ import annotations
 
@@ -6,42 +6,42 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-# Типы хуков
+# Hook types
 HookCallback = Callable[..., Awaitable[Any]]
 
 
 @dataclass
 class HookEntry:
-    """Запись в реестре хуков."""
+    """Entry in the hook registry."""
 
     event: str  # 'PreToolUse' | 'PostToolUse' | 'Stop' | 'UserPromptSubmit' | etc.
     callback: HookCallback
-    matcher: str = ""  # Фильтр по tool name (опционально)
+    matcher: str = ""  # Optional tool name filter
 
 
 class HookRegistry:
-    """Реестр хуков (программная регистрация для MVP).
+    """Hook registry (programmatic registration for the MVP).
 
-    Хуки маппятся в SDK HookMatcher при сборке ClaudeAgentOptions.
+    Hooks are mapped to SDK HookMatcher instances when building ClaudeAgentOptions.
     """
 
     def __init__(self) -> None:
         self._hooks: dict[str, list[HookEntry]] = {}
 
     def on_pre_tool_use(self, callback: HookCallback, matcher: str = "") -> None:
-        """Зарегистрировать хук перед вызовом инструмента."""
+        """Register a hook before a tool call."""
         self._add("PreToolUse", callback, matcher)
 
     def on_post_tool_use(self, callback: HookCallback, matcher: str = "") -> None:
-        """Зарегистрировать хук после вызова инструмента."""
+        """Register a hook after a tool call."""
         self._add("PostToolUse", callback, matcher)
 
     def on_stop(self, callback: HookCallback) -> None:
-        """Зарегистрировать хук при остановке."""
+        """Register a hook on stop."""
         self._add("Stop", callback)
 
     def on_user_prompt(self, callback: HookCallback) -> None:
-        """Зарегистрировать хук при отправке промпта."""
+        """Register a hook when a prompt is submitted."""
         self._add("UserPromptSubmit", callback)
 
     def _add(self, event: str, callback: HookCallback, matcher: str = "") -> None:
@@ -50,11 +50,11 @@ class HookRegistry:
         self._hooks[event].append(HookEntry(event=event, callback=callback, matcher=matcher))
 
     def get_hooks(self, event: str) -> list[HookEntry]:
-        """Получить хуки для события."""
+        """Get hooks for an event."""
         return self._hooks.get(event, [])
 
     def list_events(self) -> list[str]:
-        """Все события с зарегистрированными хуками."""
+        """All events with registered hooks."""
         return list(self._hooks.keys())
 
     def merge(self, other: HookRegistry) -> HookRegistry:

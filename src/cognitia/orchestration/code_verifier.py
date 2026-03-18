@@ -1,7 +1,7 @@
 """Code verification protocol and types.
 
-CodeVerifier — ISP-compliant protocol (5 methods) for verifying code quality.
-CommandRunner — sandbox-agnostic command execution protocol.
+CodeVerifier - ISP-compliant protocol (5 methods) for verifying code quality.
+CommandRunner - sandbox-agnostic command execution protocol.
 """
 
 from __future__ import annotations

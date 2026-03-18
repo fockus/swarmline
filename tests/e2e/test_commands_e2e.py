@@ -1,7 +1,5 @@
-"""E2E: Commands — YAML to execution.
-
-Полный pipeline: YAML definition -> load -> register -> validate -> execute.
-CommandRegistry + load_commands_from_yaml с реальным YAML.
+"""E2E: Commands - YAML to execution. Full pipeline: YAML definition -> load -> register -> validate -> execute.
+CommandRegistry + load_commands_from_yaml with realnym YAML.
 """
 
 from __future__ import annotations
@@ -26,10 +24,7 @@ class TestCommandYamlToExecutionE2E:
 
     @pytest.mark.asyncio
     async def test_command_yaml_load_validate_execute(self) -> None:
-        """Write YAML to tmpfile -> load_commands_from_yaml -> register -> execute_validated.
-
-        Полный E2E: от файла до выполнения с валидацией параметров.
-        """
+        """Write YAML to tmpfile -> load_commands_from_yaml -> register -> execute_validated. Full E2E: ot filea do vypolnotniya with validatsiey parameterov. """
         yaml_content = """\
 commands:
   - name: topic.new
@@ -150,16 +145,16 @@ aliases:
 
     @pytest.mark.asyncio
     async def test_command_directory_scan(self) -> None:
-        """load_commands_from_yaml с директорией: сканирует все .yaml файлы."""
+        """load_commands_from_yaml with direktoriey: scans vse .yaml files."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Создаём 2 YAML файла
+            # Create 2 YAML filea
             (Path(tmpdir) / "cmd1.yaml").write_text(
                 "name: cmd1\ndescription: First command\n"
             )
             (Path(tmpdir) / "cmd2.yaml").write_text(
                 "name: cmd2\ndescription: Second command\n"
             )
-            # Не-YAML файл — должен игнорироваться
+            # Not-YAML file - should be ignored
             (Path(tmpdir) / "readme.txt").write_text("Not a command")
 
             commands = load_commands_from_yaml(tmpdir)
@@ -178,7 +173,7 @@ class TestCommandAsLLMToolE2E:
 
     @pytest.mark.asyncio
     async def test_command_as_llm_tool(self) -> None:
-        """Commands регистрируются и конвертируются в ToolDefinition для LLM."""
+        """Commands are registered and are converted in ToolDefinition for LLM."""
         registry = CommandRegistry()
 
         async def noop(**kwargs: Any) -> str:
@@ -221,13 +216,13 @@ class TestCommandAsLLMToolE2E:
         assert "dataset" in analyze_tool.parameters.get("properties", {})
         assert "dataset" in analyze_tool.parameters.get("required", [])
 
-        # Dict-like доступ работает
+        # Dict-like dostup works
         assert analyze_tool["name"] == "analyze.data"
         assert analyze_tool["description"] == "Analyze dataset"
 
     @pytest.mark.asyncio
     async def test_command_help_text(self) -> None:
-        """help_text() генерирует корректный текст справки."""
+        """help_text() genotriruet correct tekst spravki."""
         registry = CommandRegistry()
 
         async def noop(**kwargs: Any) -> str:
@@ -244,7 +239,7 @@ class TestCommandAsLLMToolE2E:
 
     @pytest.mark.asyncio
     async def test_command_resolve_by_alias(self) -> None:
-        """resolve() находит команду по alias."""
+        """resolve() nahodit komandu by alias."""
         registry = CommandRegistry()
 
         async def handler(**kwargs: Any) -> str:
@@ -252,20 +247,20 @@ class TestCommandAsLLMToolE2E:
 
         registry.add("workflow.start", handler, aliases=["ws", "wf_start"])
 
-        # По имени
+        # Po imeni
         cmd = registry.resolve("workflow.start")
         assert cmd is not None
         assert cmd.name == "workflow.start"
 
-        # По alias
+        # Po alias
         cmd_alias = registry.resolve("ws")
         assert cmd_alias is not None
         assert cmd_alias.name == "workflow.start"
 
-        # По alias с underscore
+        # Po alias with underscore
         cmd_alias2 = registry.resolve("wf_start")
         assert cmd_alias2 is not None
         assert cmd_alias2.name == "workflow.start"
 
-        # Неизвестная команда
+        # Notizvestnaya command
         assert registry.resolve("unknown") is None

@@ -1,4 +1,4 @@
-"""Тесты MemoryBank types, config, path validation — TDD."""
+"""Tests for MemoryBank types, config, and path validation - TDD."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ class TestPathValidation:
     def test_valid_root_file(self) -> None:
         from cognitia.memory_bank.types import validate_memory_path
 
-        validate_memory_path("MEMORY.md", max_depth=2)  # Не бросает
+        validate_memory_path("MEMORY.md", max_depth=2)  # Does not raise
 
     def test_valid_subfolder_file(self) -> None:
         from cognitia.memory_bank.types import validate_memory_path

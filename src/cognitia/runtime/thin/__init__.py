@@ -1,8 +1,4 @@
-"""ThinRuntime — собственный тонкий агентный loop.
-
-Режимы: conversational | react | planner-lite.
-Bounded loops с budgets, typed errors, streaming RuntimeEvent.
-"""
+"""Thin package."""
 
 try:
     from cognitia.runtime.thin.mcp_client import McpClient

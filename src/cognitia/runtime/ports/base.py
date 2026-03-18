@@ -1,11 +1,4 @@
-"""BaseRuntimePort — базовый класс для runtime-адаптеров (DRY).
-
-Извлекает общую логику ThinRuntimePort и DeepAgentsRuntimePort:
-- StreamEvent dataclass
-- convert_event (RuntimeEvent → StreamEvent)
-- Sliding window для _history + auto-summarization
-- connect / disconnect / is_connected
-"""
+"""Base module."""
 
 from __future__ import annotations
 
@@ -24,7 +17,7 @@ HISTORY_MAX = 20
 
 @dataclass
 class StreamEvent:
-    """Унифицированное событие потока (совместимо с RuntimeAdapter.StreamEvent)."""
+    """Stream Event implementation."""
 
     type: str  # 'text_delta' | 'tool_use_start' | 'tool_use_result' | 'done' | 'error'
     text: str = ""
@@ -42,7 +35,7 @@ class StreamEvent:
 
 
 def convert_event(event: RuntimeEvent) -> StreamEvent | None:
-    """Конвертировать RuntimeEvent → StreamEvent (общая логика для всех адаптеров)."""
+    """Convert event."""
     if event.type == "assistant_delta":
         return StreamEvent(type="text_delta", text=str(event.data.get("text", "")))
 
@@ -94,7 +87,7 @@ def convert_event(event: RuntimeEvent) -> StreamEvent | None:
         )
 
     if event.type == "final":
-        # Final обрабатывается в stream_reply для корректного fallback.
+
         return None
 
     return None
@@ -105,7 +98,7 @@ CompactionTrigger = tuple[str, int]
 
 
 def _estimate_tokens(messages: list[Message]) -> int:
-    """Приблизительный подсчёт токенов (~4 chars/token)."""
+    """Estimate tokens."""
     return sum(len(msg.content) for msg in messages) // 4
 
 
@@ -120,11 +113,7 @@ def truncate_long_args(
     messages: list[dict[str, str]],
     max_chars: int = _ARG_TRUNCATION_MAX,
 ) -> list[dict[str, str]]:
-    """Обрезать слишком длинный content в tool/function messages.
-
-    Только tool и function роли обрезаются — user/assistant остаются нетронутыми.
-    Возвращает новый список (не мутирует оригинал).
-    """
+    """Truncate long args."""
     result = []
     for msg in messages:
         content = msg["content"]
@@ -137,16 +126,7 @@ def truncate_long_args(
 
 
 class BaseRuntimePort:
-    """Базовый класс для runtime-адаптеров с общей логикой.
-
-    Предоставляет:
-    - is_connected / connect / disconnect шаблон
-    - Управление in-memory историей со sliding window
-    - Auto-summarization при overflow (если summarizer задан)
-    - stream_reply шаблон с конвертацией событий
-    - Token-aware или message-based compaction trigger
-    - Memory injection из AGENTS.md файлов
-    """
+    """Base Runtime Port implementation."""
 
     def __init__(
         self,
@@ -162,7 +142,7 @@ class BaseRuntimePort:
         self._connected = False
         self._history: list[Message] = []
         self._history_max = history_max
-        self._summarizer = summarizer  # LlmSummaryGenerator или None
+        self._summarizer = summarizer  # LLMSummaryGenerator or None
         self._rolling_summary: str = ""
         self._compaction_trigger = compaction_trigger or ("messages", history_max)
         self._memory_sources = memory_sources or []
@@ -172,22 +152,22 @@ class BaseRuntimePort:
         return self._connected
 
     async def connect(self) -> None:
-        """Инициализировать runtime. Переопределяется в подклассах."""
+        """Connect."""
         self._connected = True
 
     async def disconnect(self) -> None:
-        """Освободить ресурсы. Переопределяется в подклассах."""
+        """Disconnect."""
         self._connected = False
         self._history.clear()
 
     def _append_to_history(self, role: str, content: str) -> None:
-        """Добавить сообщение в историю с sliding window."""
+        """Append to history."""
         self._history.append(Message(role=role, content=content))
         if len(self._history) > self._history_max:
             self._history = self._history[-self._history_max :]
 
     def _should_compact(self) -> bool:
-        """Проверить trigger для compaction."""
+        """Check trigger for compaction."""
         trigger_type, threshold = self._compaction_trigger
         if trigger_type == "tokens":
             return _estimate_tokens(self._history) >= threshold
@@ -197,17 +177,17 @@ class BaseRuntimePort:
         raise ValueError(msg)
 
     async def _maybe_summarize(self) -> None:
-        """Auto-summarize: если trigger сработал и есть summarizer — обновить rolling_summary."""
+        """Maybe summarize."""
         if not self._summarizer or not self._should_compact():
             return
 
         from cognitia.memory.types import MemoryMessage
 
-        # Truncate long args перед передачей в summarizer
+
         raw = [{"role": msg.role, "content": msg.content} for msg in self._history]
         truncated = truncate_long_args(raw)
 
-        # Конвертируем → MemoryMessage для summarizer
+
         mem_messages = [MemoryMessage(role=m["role"], content=m["content"]) for m in truncated]
 
         try:
@@ -219,7 +199,7 @@ class BaseRuntimePort:
             logger.warning("Ошибка auto-summarization", exc_info=True)
 
     def _build_system_prompt(self) -> str:
-        """Собрать system_prompt с memory injection и rolling summary."""
+        """Build system prompt."""
         from cognitia.runtime.portable_memory import inject_memory_into_prompt, load_agents_md
 
         prompt = self._system_prompt
@@ -240,31 +220,23 @@ class BaseRuntimePort:
         messages: list[Message],
         system_prompt: str,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Вызвать runtime. Переопределяется в подклассах."""
+        """Run runtime."""
         raise NotImplementedError  # pragma: no cover
         yield  # pragma: no cover
 
     async def stream_reply(self, user_text: str) -> AsyncIterator[StreamEvent]:
-        """Отправить сообщение и стримить ответ.
-
-        Общий шаблон:
-        1. Добавить user message в историю
-        2. Вызвать _run_runtime()
-        3. Конвертировать RuntimeEvent → StreamEvent
-        4. Добавить assistant message в историю
-        5. Yield done event
-        """
+        """Stream reply."""
         if not self._connected:
             yield StreamEvent(type="error", text="Runtime not connected")
             return
 
         self._append_to_history("user", user_text)
 
-        # Auto-summarize перед запуском runtime (если history подходит к лимиту)
+
         await self._maybe_summarize()
 
         full_text = ""
-        final_text = ""  # текст из final event (fallback если нет assistant_delta)
+        final_text = ""
         final_data: dict[str, Any] | None = None
         saw_terminal_event = False
 
@@ -273,7 +245,7 @@ class BaseRuntimePort:
                 messages=list(self._history),
                 system_prompt=self._build_system_prompt(),
             ):
-                # Запоминаем текст из final для fallback
+
                 if event.type == "final":
                     final_data = event.data
                     final_text = str(event.data.get("text", ""))
@@ -306,7 +278,7 @@ class BaseRuntimePort:
             )
             return
 
-        # Fallback: если assistant_delta не пришёл, берём текст из final
+
         if not full_text and final_text:
             full_text = final_text
             yield StreamEvent(type="text_delta", text=full_text)

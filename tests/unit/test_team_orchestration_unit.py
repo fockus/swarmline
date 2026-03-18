@@ -1,4 +1,4 @@
-"""Тесты DeepAgentsTeamOrchestrator, ClaudeTeamOrchestrator, TeamManager — TDD."""
+"""Tests DeepAgentsTeamOrchestrator, ClaudeTeamOrchestrator, TeamManager - TDD."""
 
 from __future__ import annotations
 

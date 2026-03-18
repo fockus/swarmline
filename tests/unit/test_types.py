@@ -1,14 +1,14 @@
-"""Тесты для базовых типов: TurnContext, ContextPack, SkillSet."""
+"""Tests for bazovyh tipov: TurnContext, ContextPack, SkillSet."""
 
 import pytest
 from cognitia.types import ContextPack, SkillSet, TurnContext
 
 
 class TestTurnContext:
-    """TurnContext — единый контекст turn'а (секция 17 архитектуры)."""
+    """TurnContext - edinyy context turn'a (sektsiya 17 arhitektury)."""
 
     def test_create(self) -> None:
-        """Создание с обязательными полями."""
+        """Createdie with obyazatelnymi polyami."""
         ctx = TurnContext(
             user_id="u1",
             topic_id="t1",
@@ -23,7 +23,7 @@ class TestTurnContext:
         assert ctx.active_skill_ids == ("iss", "funds")
 
     def test_frozen(self) -> None:
-        """TurnContext неизменяем (frozen dataclass)."""
+        """TurnContext notizmenyaem (frozen dataclass)."""
         ctx = TurnContext(
             user_id="u1",
             topic_id="t1",
@@ -35,7 +35,7 @@ class TestTurnContext:
             ctx.user_id = "u2"  # type: ignore[misc]
 
     def test_hashable(self) -> None:
-        """TurnContext можно использовать как ключ dict."""
+        """TurnContext mozhno use kak klyuch dict."""
         ctx1 = TurnContext(
             user_id="u1",
             topic_id="t1",
@@ -55,7 +55,7 @@ class TestTurnContext:
         assert {ctx1: 1}[ctx2] == 1
 
     def test_different_skills_not_equal(self) -> None:
-        """TurnContext с разными skills — разные объекты."""
+        """TurnContext with raznymi skills - raznye obekty."""
         ctx1 = TurnContext(
             user_id="u1",
             topic_id="t1",
@@ -74,10 +74,10 @@ class TestTurnContext:
 
 
 class TestContextPack:
-    """ContextPack — единица контекста с приоритетом (секция 17 архитектуры)."""
+    """ContextPack - edinitsa contexta with prioritetom (sektsiya 17 arhitektury)."""
 
     def test_create(self) -> None:
-        """Создание с обязательными полями."""
+        """Createdie with obyazatelnymi polyami."""
         pack = ContextPack(
             pack_id="guardrails",
             priority=0,
@@ -90,7 +90,7 @@ class TestContextPack:
         assert pack.tokens_estimate == 10
 
     def test_frozen(self) -> None:
-        """ContextPack неизменяем."""
+        """ContextPack notizmenyaem."""
         pack = ContextPack(
             pack_id="role",
             priority=1,
@@ -101,7 +101,7 @@ class TestContextPack:
             pack.content = "new"  # type: ignore[misc]
 
     def test_sort_by_priority(self) -> None:
-        """ContextPack можно сортировать по приоритету."""
+        """ContextPack mozhno sortirovat by prioritetu."""
         packs = [
             ContextPack(pack_id="summary", priority=6, content="s", tokens_estimate=1),
             ContextPack(pack_id="guardrails", priority=0, content="g", tokens_estimate=1),
@@ -112,10 +112,10 @@ class TestContextPack:
 
 
 class TestSkillSet:
-    """SkillSet — именованный набор скилов (секция 5.1 архитектуры)."""
+    """SkillSet - imenovannyy set skilov (sektsiya 5.1 arhitektury)."""
 
     def test_create(self) -> None:
-        """Создание с id, скилами и local tools."""
+        """Createdie with id, skilami and local tools."""
         ss = SkillSet(
             set_id="deposits_basic",
             skill_ids=("finuslugi", "funds", "iss-price"),
@@ -126,13 +126,13 @@ class TestSkillSet:
         assert "calculate_goal_plan" in ss.local_tool_ids
 
     def test_frozen(self) -> None:
-        """SkillSet неизменяем."""
+        """SkillSet notizmenyaem."""
         ss = SkillSet(set_id="x", skill_ids=(), local_tool_ids=())
         with pytest.raises(AttributeError):
             ss.set_id = "y"  # type: ignore[misc]
 
     def test_empty_defaults(self) -> None:
-        """Пустой набор без tools."""
+        """Empty set without tools."""
         ss = SkillSet(set_id="coach_set")
         assert ss.skill_ids == ()
         assert ss.local_tool_ids == ()

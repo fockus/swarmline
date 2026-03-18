@@ -1,7 +1,5 @@
-"""Integration: ThinRuntime multi-provider dispatch через ProviderResolver + LlmAdapter.
-
-Моки — только на SDK клиенты (внешние сервисы), не на наши модули.
-Проверяет полный путь: config.model → resolve_provider → get_cached_adapter → adapter.call/stream.
+"""Integration: ThinRuntime multi-provider dispatch cherez ProviderResolver + LlmAdapter. Mocki - tolko on SDK klienty (vnotshnie servisy), not on nashi moduli.
+Verifies full put: config.model -> resolve_provider -> get_cached_adapter -> adapter.call/stream.
 """
 
 from __future__ import annotations
@@ -25,7 +23,7 @@ from cognitia.runtime.types import RuntimeConfig
 
 @pytest.fixture(autouse=True)
 def _clear_adapter_cache():
-    """Чистим кеш адаптеров между тестами."""
+    """Clear kesh adapterov mezhdu testami."""
     _adapter_cache.clear()
     yield
     _adapter_cache.clear()
@@ -62,7 +60,7 @@ def _make_mock_google_package(genai_module: MagicMock) -> types.ModuleType:
 
 
 class TestResolverToAdapterIntegration:
-    """resolve_provider → create_llm_adapter → правильный адаптер."""
+    """resolve_provider -> create_llm_adapter -> pravilnyy adapter."""
 
     def test_anthropic_alias_to_adapter(self) -> None:
         resolved = resolve_provider("sonnet")
@@ -134,7 +132,7 @@ class TestResolverToAdapterIntegration:
 
 
 class TestDefaultLlmCallEndToEnd:
-    """default_llm_call: полный путь config → adapter.call()."""
+    """default_llm_call: full put config -> adapter.call()."""
 
     @pytest.mark.asyncio
     async def test_anthropic_end_to_end(self) -> None:
@@ -191,7 +189,7 @@ class TestDefaultLlmCallEndToEnd:
 
 
 class TestAdapterCachingIntegration:
-    """get_cached_adapter кеширует по (model_id, provider, base_url)."""
+    """get_cached_adapter keshiruet by (model_id, provider, base_url)."""
 
     def test_cache_hit(self) -> None:
         resolved = resolve_provider("openai:gpt-4o")

@@ -1,4 +1,4 @@
-"""LangChain compatibility helpers для DeepAgents runtime."""
+"""LangChain compatibility helpers for DeepAgents runtime."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from cognitia.runtime.types import Message, RuntimeErrorData, RuntimeEvent
 
 
 def check_langchain_available() -> RuntimeErrorData | None:
-    """Проверить наличие DeepAgents/LangChain baseline deps."""
+    """Check langchain available."""
     try:
         import deepagents  # type: ignore[import-not-found] # noqa: F401
         import langchain_core  # noqa: F401
@@ -32,7 +32,7 @@ def build_langchain_messages(
     *,
     include_system_prompt: bool = True,
 ) -> list[Any]:
-    """Конвертировать cognitia Message → LangChain messages."""
+    """Build langchain messages."""
     from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
     lc_messages: list[Any] = []
@@ -73,7 +73,7 @@ async def stream_langchain_runtime_events(
     runnable: Any,
     lc_messages: list[Any],
 ) -> AsyncIterator[RuntimeEvent]:
-    """Стримить через LangChain compatibility path."""
+    """Stream langchain runtime events."""
     tool_correlation: dict[str, str] = {}
 
     async for event in runnable.astream_events(lc_messages, version="v2"):

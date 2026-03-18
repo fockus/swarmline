@@ -1,8 +1,6 @@
-"""E2E: Team orchestration — полный lifecycle multi-agent команды.
-
-ThinTeamOrchestrator + ThinSubagentOrchestrator с fake LLM.
-Реальные компоненты: MessageBus, asyncio.Task workers, runtime.
-Единственный mock: LLM callable (внешняя граница).
+"""E2E: Team orchestration - full lifecycle multi-agent commands. ThinTeamOrchestrator + ThinSubagentOrchestrator with fake LLM.
+Real komponotnty: MessageBus, asyncio.Task workers, runtime.
+Edinstvennyy mock: LLM callable (external boundary).
 """
 
 from __future__ import annotations
@@ -27,12 +25,12 @@ from cognitia.runtime.types import RuntimeConfig
 
 
 def _final_envelope(text: str) -> str:
-    """Сформировать JSON-ответ LLM в формате final envelope."""
+    """Build JSON-response LLM in formate final envelope."""
     return json.dumps({"type": "final", "final_message": text})
 
 
 def _make_worker_spec(name: str, prompt: str = "You are a worker") -> SubagentSpec:
-    """Создать SubagentSpec для worker'а."""
+    """Create SubagentSpec for worker'a."""
     return SubagentSpec(name=name, system_prompt=prompt, tools=[])
 
 
@@ -46,16 +44,13 @@ class TestTeamFullLifecycleE2E:
 
     @pytest.mark.asyncio
     async def test_team_full_lifecycle_start_to_complete(self) -> None:
-        """ThinTeamOrchestrator -> start(config with 2 workers) -> оба complete.
-
-        Workers выполняются через fake LLM, каждый получает свой task.
-        """
+        """ThinTeamOrchestrator -> start(config with 2 workers) -> oba complete. Workers run cherez fake LLM, kazhdyy gets svoy task. """
         worker_tasks_received: list[str] = []
 
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            # Запоминаем полученные задания
+            # Zapominaem poluchennye zadaniya
             user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
             worker_tasks_received.append(user_msg[:50])
             await asyncio.sleep(0.05)
@@ -77,7 +72,7 @@ class TestTeamFullLifecycleE2E:
 
         team_id = await orchestrator.start(config, task="Analyze AI trends")
 
-        # Ждём завершения workers
+        # Wait zaversheniya workers
         for _ in range(50):
             status = await orchestrator.get_team_status(team_id)
             if status.state == "completed":
@@ -98,20 +93,17 @@ class TestTeamFullLifecycleE2E:
 
 
 class TestTeamMessageBusE2E:
-    """MessageBus: workers обмениваются сообщениями."""
+    """MessageBus: workers obmenivayutsya messagesmi."""
 
     @pytest.mark.asyncio
     async def test_team_message_bus_worker_communication(self) -> None:
-        """Team с 2 workers, сообщения через MessageBus видны в истории.
-
-        Проверяем bus.send() + bus.get_history() через прямой доступ к bus.
-        """
+        """Team with 2 workers, messages cherez MessageBus vidny in history. Verify bus.send() + bus.get_history() cherez pryamoy dostup k bus. """
         bus = MessageBus()
 
         from cognitia.orchestration.team_types import TeamMessage
         from datetime import UTC, datetime
 
-        # Worker 1 отправляет сообщение worker 2
+        # Worker 1 otpravlyaet message worker 2
         await bus.send(
             TeamMessage(
                 from_agent="researcher",
@@ -121,7 +113,7 @@ class TestTeamMessageBusE2E:
             )
         )
 
-        # Worker 2 отвечает
+        # Worker 2 otvechaet
         await bus.send(
             TeamMessage(
                 from_agent="writer",
@@ -149,7 +141,7 @@ class TestTeamMessageBusE2E:
 
     @pytest.mark.asyncio
     async def test_team_broadcast_message(self) -> None:
-        """Broadcast: одно сообщение доставляется всем recipients."""
+        """Broadcast: odno message dostavlyaetsya vsem recipients."""
         bus = MessageBus()
         await bus.broadcast(
             from_agent="lead",
@@ -176,10 +168,7 @@ class TestTeamPauseResumeE2E:
 
     @pytest.mark.asyncio
     async def test_team_pause_resume_worker(self) -> None:
-        """Start team -> pause worker -> status = paused -> resume -> completed.
-
-        Resume создаёт новый spawn для worker'а.
-        """
+        """Start team -> pause worker -> status = paused -> resume -> completed. Resume sozdaet new spawn for worker'a. """
         call_count = 0
 
         async def fake_llm(
@@ -187,7 +176,7 @@ class TestTeamPauseResumeE2E:
         ) -> str:
             nonlocal call_count
             call_count += 1
-            # Делаем задержку чтобы успеть pause
+            # Delaem zaderzhku chtoby uspet pause
             await asyncio.sleep(0.3)
             return _final_envelope(f"done #{call_count}")
 
@@ -207,13 +196,13 @@ class TestTeamPauseResumeE2E:
 
         team_id = await orchestrator.start(config, task="Do the work")
 
-        # Даём workers начать выполнение
+        # Daem workers nachat execution
         await asyncio.sleep(0.05)
 
         # Pause slow_worker
         await orchestrator.pause_agent(team_id, "slow_worker")
 
-        # Проверяем: slow_worker paused (cancelled)
+        # Verify: slow_worker paused (cancelled)
         status = await orchestrator.get_team_status(team_id)
         slow_status = status.workers.get("slow_worker")
         assert slow_status is not None
@@ -221,10 +210,10 @@ class TestTeamPauseResumeE2E:
             f"Paused worker должен быть cancelled, но state={slow_status.state}"
         )
 
-        # Resume slow_worker — создаёт новый spawn
+        # Resume slow_worker - sozdaet new spawn
         await orchestrator.resume_agent(team_id, "slow_worker")
 
-        # Ждём завершения обоих workers
+        # Wait zaversheniya oboih workers
         for _ in range(60):
             status = await orchestrator.get_team_status(team_id)
             if status.state == "completed":
@@ -250,7 +239,7 @@ class TestSubagentSpawnE2E:
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
             await asyncio.sleep(0.05)
-            # Извлекаем имя из system_prompt для уникальности результата
+            # Izvlekaem imya from system_prompt for unikalnosti resulta
             return _final_envelope(f"output from {system_prompt[:20]}")
 
         orchestrator = ThinSubagentOrchestrator(
@@ -288,9 +277,9 @@ class TestSubagentSpawnE2E:
 
     @pytest.mark.asyncio
     async def test_subagent_max_concurrent_limit(self) -> None:
-        """Spawn больше max_concurrent -> ValueError."""
+        """Spawn bolshe max_concurrent -> ValueError."""
         async def fake_llm(messages: list, system_prompt: str, **kwargs: Any) -> str:
-            await asyncio.sleep(10)  # Долгий worker
+            await asyncio.sleep(10)  # Dolgiy worker
             return _final_envelope("done")
 
         orchestrator = ThinSubagentOrchestrator(

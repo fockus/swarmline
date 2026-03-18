@@ -1,4 +1,4 @@
-"""Модуль политик — контроль доступа к инструментам."""
+"""Policy module - tool access control."""
 
 from cognitia.policy.tool_id_codec import DefaultToolIdCodec
 from cognitia.policy.tool_policy import (

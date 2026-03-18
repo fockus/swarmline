@@ -1,6 +1,6 @@
-"""Tavily search provider — AI-оптимизированный поиск.
+"""Tavily search provider - AI-optimized search.
 
-Требует API ключ (TAVILY_API_KEY). Free tier: 1000 req/month.
+Requires an API key (TAVILY_API_KEY). Free tier: 1000 req/month.
 Optional dependency: tavily-python (pip install cognitia[web-tavily]).
 """
 
@@ -21,9 +21,9 @@ _log = structlog.get_logger(component="web_search.tavily")
 
 
 class TavilySearchProvider:
-    """Поиск через Tavily API (оптимизирован для AI-агентов).
+    """Search via the Tavily API (optimized for AI agents).
 
-    Требует API key. При отсутствии tavily-python — graceful fallback.
+    Requires an API key. Falls back gracefully if tavily-python is missing.
     """
 
     def __init__(self, api_key: str) -> None:
@@ -32,14 +32,14 @@ class TavilySearchProvider:
         self._api_key = api_key
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск через Tavily API.
+        """Search via the Tavily API.
 
         Args:
-            query: Поисковый запрос. Пустой/whitespace -> пустой список.
-            max_results: Максимальное количество результатов.
+            query: Search query. Empty/whitespace -> empty list.
+            max_results: Maximum number of results.
 
         Returns:
-            Список SearchResult. Пустой при отсутствии tavily-python или ошибке.
+            List of SearchResult. Empty if tavily-python is unavailable or an error occurs.
         """
         if TavilyClient is None:
             return []

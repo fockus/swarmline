@@ -1,8 +1,6 @@
-"""Тесты: cognitia.sessions удалён, каноничный модуль — cognitia.session.
-
-Гарантируем, что:
-- cognitia.session экспортирует все нужные классы
-- cognitia.sessions больше не существует (удалён в v0.2.x)
+"""Tests: cognitia.sessions udalen, kanonichnyy modul - cognitia.session. Garantiruem, chto:
+- cognitia.session eksportiruet vse nuzhnye klassy
+- cognitia.sessions bolshe not sushchestvuet (udalen in v0.2.x)
 """
 
 from __future__ import annotations
@@ -11,7 +9,7 @@ import pytest
 
 
 class TestSessionsRemoved:
-    """cognitia.sessions удалён, cognitia.session — единственный модуль."""
+    """cognitia.sessions udalen, cognitia.session - edinstvennyy modul."""
 
     def test_sessions_package_not_importable(self) -> None:
         """import cognitia.sessions → ModuleNotFoundError."""
@@ -19,7 +17,7 @@ class TestSessionsRemoved:
             import cognitia.sessions  # type: ignore[import-not-found]  # noqa: F401
 
     def test_canonical_session_importable(self) -> None:
-        """import cognitia.session работает без ошибок."""
+        """import cognitia.session works without oshibok."""
         from cognitia.session import (
             DefaultSessionRehydrator,
             InMemorySessionManager,

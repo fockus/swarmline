@@ -1,16 +1,12 @@
-"""TDD Red Phase: ThinTeamOrchestrator (Этап 2.2).
-
-Тесты проверяют:
-- start(config, task) → N workers running
-- stop → все workers cancelled
-- team_status отражает состояние всех workers
-- send_message → worker видит в inbox
-- pause → cancelled, resume → re-spawned
+"""TDD Red Phase: ThinTeamOrchestrator (Etap 2.2). Tests verify:
+- start(config, task) -> N workers running
+- stop -> vse workers cancelled
+- team_status otrazhaet sostoyanie vseh workers
+- send_message -> worker vidit in inbox
+- pause -> cancelled, resume -> re-spawned
 - lead_prompt composed: worker task = lead_prompt + worker_name + general_task
-- Все workers completed → team state = completed
-
-Contract: cognitia.orchestration.thin_team.ThinTeamOrchestrator
-Implements: TeamOrchestrator protocol (5 методов) + ResumableTeamOrchestrator
+- Vse workers completed -> team state = completed Contract: cognitia.orchestration.thin_team.ThinTeamOrchestrator
+Implements: TeamOrchestrator protocol (5 metodov) + ResumableTeamOrchestrator
 """
 
 from __future__ import annotations
@@ -29,7 +25,7 @@ from cognitia.orchestration.team_types import TeamConfig, TeamMessage, TeamStatu
 
 
 def _make_team_config(n_workers: int = 2) -> TeamConfig:
-    """Создать TeamConfig с N workers."""
+    """Create TeamConfig with N workers."""
     workers = [
         SubagentSpec(name=f"worker_{i}", system_prompt=f"Worker {i} prompt")
         for i in range(n_workers)
@@ -47,7 +43,7 @@ def _make_team_config(n_workers: int = 2) -> TeamConfig:
 
 
 class TestThinTeamOrchestratorProtocol:
-    """ThinTeamOrchestrator реализует TeamOrchestrator protocol."""
+    """ThinTeamOrchestrator realizuet TeamOrchestrator protocol."""
 
     def test_thin_team_implements_protocol(self) -> None:
         """ThinTeamOrchestrator — isinstance TeamOrchestrator."""
@@ -65,7 +61,7 @@ class TestThinTeamOrchestratorProtocol:
 
 
 # ---------------------------------------------------------------------------
-# Lifecycle тесты
+# Lifecycle tests
 # ---------------------------------------------------------------------------
 
 
@@ -91,25 +87,25 @@ class TestThinTeamLifecycle:
 
     @pytest.mark.asyncio
     async def test_thin_team_stop_cancels_all(self) -> None:
-        """stop → все workers cancelled."""
+        """stop -> vse workers cancelled."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=2)
 
         team_id = await orch.start(config, "Task")
-        await asyncio.sleep(0.05)  # Дать workers стартовать
+        await asyncio.sleep(0.05)  # Dat workers startovat
 
         await orch.stop(team_id)
 
         status = await orch.get_team_status(team_id)
-        # После stop все workers должны быть cancelled/failed/completed
+        # Posle stop vse workers should byt cancelled/failed/completed
         for worker_status in status.workers.values():
             assert worker_status.state in ("cancelled", "failed", "completed")
 
     @pytest.mark.asyncio
     async def test_thin_team_status_aggregated(self) -> None:
-        """team_status отражает состояние всех workers."""
+        """team_status otrazhaet sostoyanie vseh workers."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -125,7 +121,7 @@ class TestThinTeamLifecycle:
 
     @pytest.mark.asyncio
     async def test_thin_team_all_completed(self) -> None:
-        """Все workers completed → team state = completed."""
+        """Vse workers completed -> team state = completed."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -133,7 +129,7 @@ class TestThinTeamLifecycle:
 
         team_id = await orch.start(config, "Quick task")
 
-        # Ждём завершения всех workers (timeout 5s)
+        # Wait zaversheniya vseh workers (timeout 5s)
         for _ in range(50):
             status = await orch.get_team_status(team_id)
             if status.state == "completed":
@@ -154,7 +150,7 @@ class TestThinTeamMessaging:
 
     @pytest.mark.asyncio
     async def test_thin_team_send_message_delivered(self) -> None:
-        """send_message → worker видит в inbox."""
+        """send_message -> worker vidit in inbox."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -237,15 +233,15 @@ class TestThinTeamEdgeCases:
 
     @pytest.mark.asyncio
     async def test_thin_team_stop_unknown_team_noop(self) -> None:
-        """stop с несуществующим team_id → не crash."""
+        """stop with notsushchestvuyushchim team_id -> not crash."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
-        await orch.stop("nonexistent-team-id")  # Не должно raise
+        await orch.stop("nonexistent-team-id")  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_status_unknown_team_returns_default(self) -> None:
-        """get_team_status с несуществующим team_id → default TeamStatus."""
+        """get_team_status with notsushchestvuyushchim team_id -> default TeamStatus."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -255,7 +251,7 @@ class TestThinTeamEdgeCases:
 
     @pytest.mark.asyncio
     async def test_thin_team_send_message_unknown_team_noop(self) -> None:
-        """send_message с несуществующим team_id → не crash."""
+        """send_message with notsushchestvuyushchim team_id -> not crash."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -265,58 +261,58 @@ class TestThinTeamEdgeCases:
             content="Hello",
             timestamp=datetime.now(tz=UTC),
         )
-        await orch.send_message("nonexistent", msg)  # Не должно raise
+        await orch.send_message("nonexistent", msg)  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_pause_unknown_team_noop(self) -> None:
-        """pause_agent с несуществующим team_id → не crash."""
+        """pause_agent with notsushchestvuyushchim team_id -> not crash."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
-        await orch.pause_agent("nonexistent", "worker_0")  # Не должно raise
+        await orch.pause_agent("nonexistent", "worker_0")  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_pause_unknown_agent_noop(self) -> None:
-        """pause_agent с несуществующим agent_id → не crash."""
+        """pause_agent with notsushchestvuyushchim agent_id -> not crash."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
         team_id = await orch.start(config, "Task")
-        await orch.pause_agent(team_id, "nonexistent_worker")  # Не должно raise
+        await orch.pause_agent(team_id, "nonexistent_worker")  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_resume_unknown_team_noop(self) -> None:
-        """resume_agent с несуществующим team_id → не crash."""
+        """resume_agent with notsushchestvuyushchim team_id -> not crash."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
-        await orch.resume_agent("nonexistent", "worker_0")  # Не должно raise
+        await orch.resume_agent("nonexistent", "worker_0")  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_resume_not_paused_noop(self) -> None:
-        """resume_agent для не-paused worker → не crash, нет эффекта."""
+        """resume_agent for not-paused worker -> not crash, nott effekta."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
         team_id = await orch.start(config, "Task")
-        # Resume worker_0 без предварительного pause
-        await orch.resume_agent(team_id, "worker_0")  # Не должно raise
+        # Resume worker_0 without predvaritelnogo pause
+        await orch.resume_agent(team_id, "worker_0")  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_resume_unknown_agent_noop(self) -> None:
-        """resume_agent для несуществующего agent → не crash."""
+        """resume_agent for notsushchestvuyushchego agent -> not crash."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
         team_id = await orch.start(config, "Task")
-        await orch.resume_agent(team_id, "ghost_worker")  # Не должно raise
+        await orch.resume_agent(team_id, "ghost_worker")  # Not should raise
 
     @pytest.mark.asyncio
     async def test_thin_team_get_message_bus(self) -> None:
-        """get_message_bus возвращает MessageBus для известного team_id."""
+        """get_message_bus returns MessageBus for izvestnogo team_id."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -327,7 +323,7 @@ class TestThinTeamEdgeCases:
 
     @pytest.mark.asyncio
     async def test_thin_team_get_message_bus_unknown_none(self) -> None:
-        """get_message_bus для неизвестного team_id → None."""
+        """get_message_bus for notizvestnogo team_id -> None."""
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
@@ -353,9 +349,9 @@ class TestThinTeamLeadPrompt:
 
         team_id = await orch.start(config, "Analyze Q4 revenue")
 
-        # Проверяем что worker получил составной prompt
-        # (через status или внутреннее состояние)
+        # Verify chto worker poluchil sostavnoy prompt
+        # (cherez status ili vnutrennote sostoyanie)
         status = await orch.get_team_status(team_id)
         assert status.state in ("running", "completed")
-        # Worker должен существовать
+        # Worker should sushchestvovat
         assert len(status.workers) == 1

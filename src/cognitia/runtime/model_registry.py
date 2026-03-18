@@ -1,14 +1,4 @@
-"""ModelRegistry — реестр LLM моделей, загружаемый из YAML конфига.
-
-Мультипровайдерный: Anthropic, OpenAI, Google, DeepSeek и т.д.
-Поддерживает:
-- Полные имена моделей: "claude-sonnet-4-20250514", "gpt-4o"
-- Короткие alias: "sonnet", "opus", "4o", "gemini"
-- Prefix match: "claude-sonnet" → "claude-sonnet-4-20250514"
-- Определение провайдера по модели: "gpt-4o" → "openai"
-
-Конфиг: models.yaml рядом с этим файлом.
-"""
+"""Model Registry module."""
 
 from __future__ import annotations
 
@@ -17,15 +7,12 @@ from typing import Any
 
 import yaml
 
-# Путь к конфигу по умолчанию — рядом с этим модулем
+
 _DEFAULT_CONFIG_PATH = Path(__file__).parent / "models.yaml"
 
 
 class ModelRegistry:
-    """Реестр моделей: загружает из YAML, резолвит alias → полное имя.
-
-    Синглтон через get_registry() для переиспользования.
-    """
+    """Model Registry implementation."""
 
     def __init__(self, config_path: Path | None = None) -> None:
         self._config_path = config_path or _DEFAULT_CONFIG_PATH
@@ -34,15 +21,15 @@ class ModelRegistry:
         self._model_to_provider: dict[str, str] = {}
         # alias → full_model_id
         self._aliases: dict[str, str] = {}
-        # full_model_id → описание
+
         self._descriptions: dict[str, str] = {}
-        # Все допустимые full_model_id
+
         self._valid_models: frozenset[str] = frozenset()
 
         self._load()
 
     def _load(self) -> None:
-        """Загрузить конфиг из YAML."""
+        """Load config from YAML."""
         if not self._config_path.exists():
             # Fallback: Anthropic default
             self._default_model = "claude-sonnet-4-20250514"
@@ -79,23 +66,16 @@ class ModelRegistry:
 
     @property
     def default_model(self) -> str:
-        """Модель по умолчанию."""
+        """Default model."""
         return self._default_model
 
     @property
     def valid_models(self) -> frozenset[str]:
-        """Множество всех допустимых полных имён моделей."""
+        """Valid models."""
         return self._valid_models
 
     def resolve(self, raw: str | None) -> str:
-        """Разрешить имя модели: alias/prefix/full → полное имя.
-
-        Приоритет:
-        1. Точный alias match
-        2. Точное полное имя
-        3. Prefix match
-        4. Fallback на default_model
-        """
+        """Resolve."""
         if not raw:
             return self._default_model
 
@@ -105,11 +85,11 @@ class ModelRegistry:
         if name in self._aliases:
             return self._aliases[name]
 
-        # 2. Полное имя (exact match)
+
         if name in self._valid_models:
             return name
 
-        # 3. Prefix match: "claude-sonnet" → первая подходящая
+
         for full_name in sorted(self._valid_models):
             if full_name.startswith(name):
                 return full_name
@@ -117,51 +97,44 @@ class ModelRegistry:
         return self._default_model
 
     def get_provider(self, model_id: str) -> str:
-        """Определить провайдер по model_id.
+        """Get provider."""
 
-        Если model_id неизвестен, пытается определить по prefix.
-        """
-        # Точное совпадение
         if model_id in self._model_to_provider:
             return self._model_to_provider[model_id]
 
-        # Резолвим через alias
+
         resolved = self.resolve(model_id)
         return self._model_to_provider.get(resolved, "unknown")
 
     def get_description(self, model_id: str) -> str:
-        """Описание модели (или пустая строка)."""
+        """Get description."""
         resolved = self.resolve(model_id)
         return self._descriptions.get(resolved, "")
 
     def list_models(self, provider: str | None = None) -> list[str]:
-        """Список всех моделей (или по конкретному провайдеру)."""
+        """List models."""
         if provider:
             return sorted(m for m, p in self._model_to_provider.items() if p == provider)
         return sorted(self._valid_models)
 
     def list_aliases(self) -> dict[str, str]:
-        """Все alias → полное имя."""
+        """List aliases."""
         return dict(self._aliases)
 
     def list_providers(self) -> list[str]:
-        """Список уникальных провайдеров."""
+        """List providers."""
         return sorted(set(self._model_to_provider.values()))
 
 
 # ---------------------------------------------------------------------------
-# Синглтон для переиспользования
+
 # ---------------------------------------------------------------------------
 
 _registry: ModelRegistry | None = None
 
 
 def get_registry(config_path: Path | None = None) -> ModelRegistry:
-    """Получить (или создать) глобальный ModelRegistry.
-
-    При первом вызове загружает YAML конфиг.
-    Для тестов можно передать custom config_path.
-    """
+    """Get registry."""
     global _registry
     if _registry is None or config_path is not None:
         _registry = ModelRegistry(config_path=config_path)
@@ -169,6 +142,6 @@ def get_registry(config_path: Path | None = None) -> ModelRegistry:
 
 
 def reset_registry() -> None:
-    """Сбросить синглтон (для тестов)."""
+    """Reset registry."""
     global _registry
     _registry = None

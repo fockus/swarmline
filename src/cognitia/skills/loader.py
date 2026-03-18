@@ -1,7 +1,7 @@
-"""YamlSkillLoader — загрузка скилов из skills/*.yaml файлов.
+"""YamlSkillLoader - load skills from skills/*.yaml files.
 
-§4.3: Если MCP-серверы уже описаны в .claude/settings.json,
-SkillLoader нормализует их и дополняет настройками из skills/*.yaml.
+§4.3: If MCP servers are already defined in .claude/settings.json,
+SkillLoader normalizes them and augments them with skills/*.yaml settings.
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ from cognitia.skills.types import LoadedSkill, McpServerSpec, SkillSpec
 
 
 def load_mcp_from_settings(project_root: Path) -> dict[str, McpServerSpec]:
-    """Загрузить MCP-серверы из .claude/settings.json (§4.3, R-401).
+    """Load MCP servers from .claude/settings.json (§4.3, R-401).
 
-    Ищет mcpServers в project-level и user-level settings.
+    Searches for mcpServers in project-level and user-level settings.
     """
     servers: dict[str, McpServerSpec] = {}
 
-    # Приоритет: project -> user (project перезаписывает)
+    # Priority: project -> user (project overrides)
     paths = [
         Path.home() / ".claude" / "settings.json",
         project_root / ".claude" / "settings.json",
@@ -51,10 +51,10 @@ def load_mcp_from_settings(project_root: Path) -> dict[str, McpServerSpec]:
 
 
 class YamlSkillLoader:
-    """Загружает скилы из директории skills/.
+    """Loads skills from the skills/ directory.
 
-    §4.3: при наличии .claude/settings.json нормализует MCP серверы
-    и дополняет настройками из skills/*.yaml (yaml имеет приоритет §2.1).
+    §4.3: when .claude/settings.json is present, normalizes MCP servers
+    and augments them with skills/*.yaml settings (yaml has priority §2.1).
     """
 
     def __init__(
@@ -66,12 +66,12 @@ class YamlSkillLoader:
         self._project_root = Path(project_root) if project_root else self._dir.parent
 
     def load_all(self) -> list[LoadedSkill]:
-        """Загрузить все скилы из поддиректорий skills/.
+        """Load all skills from subdirectories under skills/.
 
-        §4.3: также загружает MCP из .claude/settings.json,
-        skill.yaml дополняет/перезаписывает (§2.1 приоритет).
+        §4.3: also loads MCP from .claude/settings.json,
+        skill.yaml augments/overrides it (§2.1 priority).
         """
-        # Загружаем MCP из settings (нижний приоритет)
+        # Load MCP from settings (lower priority)
         self._settings_mcp = load_mcp_from_settings(self._project_root)
 
         skills: list[LoadedSkill] = []
@@ -91,11 +91,11 @@ class YamlSkillLoader:
 
     @property
     def settings_mcp_servers(self) -> dict[str, McpServerSpec]:
-        """MCP серверы загруженные из .claude/settings.json."""
+        """MCP servers loaded from .claude/settings.json."""
         return getattr(self, "_settings_mcp", {})
 
     def _load_one(self, skill_dir: Path, yaml_file: Path) -> LoadedSkill | None:
-        """Загрузить один скилл из YAML + instruction markdown."""
+        """Load a single skill from YAML + instruction markdown."""
         with open(yaml_file, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
@@ -105,7 +105,7 @@ class YamlSkillLoader:
         skill_id = data.get("id", skill_dir.name)
         title = data.get("title", skill_id)
 
-        # Парсим MCP серверы
+        # Parse MCP servers
         mcp_servers: list[McpServerSpec] = []
         mcp_section = data.get("mcp", {})
         for srv in mcp_section.get("servers", []):
@@ -127,7 +127,7 @@ class YamlSkillLoader:
         # Local tools
         local_tools = data.get("local_tools", [])
 
-        # Intents (для role routing)
+        # Intents (for role routing)
         when_section = data.get("when", {})
         intents = when_section.get("intents", [])
 
@@ -135,7 +135,7 @@ class YamlSkillLoader:
         instruction_file = data.get("instruction", f"skills/{skill_id}/INSTRUCTION.md")
         instruction_path = self._dir.parent / instruction_file
         if not instruction_path.exists():
-            # Пробуем относительно skill_dir
+            # Try relative to skill_dir
             instruction_path = skill_dir / "INSTRUCTION.md"
 
         instruction_md = ""
@@ -154,4 +154,4 @@ class YamlSkillLoader:
         return LoadedSkill(spec=spec, instruction_md=instruction_md)
 
 
-# SkillRegistry вынесен в skills/registry.py (SRP)
+# SkillRegistry lives in skills/registry.py (SRP)

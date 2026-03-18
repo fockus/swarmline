@@ -1,8 +1,4 @@
-"""Runtime Ports — адаптеры AgentRuntime → RuntimePort (stream_reply).
-
-Ports оборачивают низкоуровневые AgentRuntime реализации в унифицированный
-интерфейс RuntimePort с управлением историей, summarization и streaming.
-"""
+"""Ports package."""
 
 from __future__ import annotations
 

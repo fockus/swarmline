@@ -1,9 +1,9 @@
-"""SessionRehydrator — восстановление состояния сессии из Postgres (секция 8.4 архитектуры).
+"""SessionRehydrator - restore session state from Postgres (architecture section 8.4).
 
-Контракт: build_rehydration_payload(ctx: TurnContext) -> Mapping
-Восстанавливает: role_id, active_skill_ids, summary, last_N messages, goals, phase, prompt_hash.
+Contract: build_rehydration_payload(ctx: TurnContext) -> Mapping
+Restores: role_id, active_skill_ids, summary, last_N messages, goals, phase, prompt_hash.
 
-ISP/DIP: зависит от мелких Protocol (≤5 методов каждый), не от монолитного провайдера.
+ISP/DIP: depends on small Protocols (<=5 methods each), not a monolithic provider.
 """
 
 from __future__ import annotations
@@ -21,17 +21,17 @@ from cognitia.types import TurnContext
 
 
 class DefaultSessionRehydrator:
-    """Реализация rehydration из Postgres.
+    """Postgres rehydration implementation.
 
-    Порядок (из секции 8.4):
-    1. Session state (role_id, skills) из таблицы topics
+    Order (from section 8.4):
+    1. Session state (role_id, skills) from the topics table
     2. Rolling summary
-    3. Last N messages (текущий topic)
+    3. Last N messages (current topic)
     4. Active goal + phase_state
 
-    Конфликт-резолюция: summary vs last_N → доверяем last_N.
+    Conflict resolution: summary vs last_N -> last_N wins.
 
-    ISP: зависит от 5 мелких протоколов, а не от монолитного MemoryProvider.
+    ISP: depends on 5 small protocols rather than a monolithic MemoryProvider.
     """
 
     def __init__(
@@ -51,15 +51,15 @@ class DefaultSessionRehydrator:
         self._last_n = last_n_messages
 
     async def build_rehydration_payload(self, ctx: TurnContext) -> dict[str, Any]:
-        """Собрать полный payload для rehydration (§8.4).
+        """Build the full rehydration payload (§8.4).
 
-        Порядок:
-        1. Session state (role_id, skills) из таблицы topics
+        Order:
+        1. Session state (role_id, skills) from the topics table
         2. Rolling summary
-        3. Last N messages (текущий topic)
+        3. Last N messages (current topic)
         4. Active goal + phase_state
         """
-        # 1. Session state из БД
+        # 1. Session state from the database
         session_state = await self._sessions.get_session_state(ctx.user_id, ctx.topic_id)
 
         if session_state:
@@ -67,7 +67,7 @@ class DefaultSessionRehydrator:
             active_skill_ids = session_state.get("active_skill_ids", [])
             prompt_hash = session_state.get("prompt_hash", "")
         else:
-            # Нет данных в БД — берём из ctx
+            # No database data available - fall back to ctx
             role_id = ctx.role_id
             active_skill_ids = list(ctx.active_skill_ids) if ctx.active_skill_ids else []
             prompt_hash = ""

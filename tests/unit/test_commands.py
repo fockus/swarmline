@@ -1,4 +1,4 @@
-"""Тесты для CommandRegistry."""
+"""Tests for CommandRegistry."""
 
 import pytest
 from cognitia.commands import CommandRegistry
@@ -21,63 +21,63 @@ def registry() -> CommandRegistry:
 
 
 class TestCommandRegistry:
-    """Тесты реестра команд."""
+    """Tests reestra komand."""
 
     def test_resolve_by_name(self, registry: CommandRegistry) -> None:
-        """Находит команду по имени."""
+        """Nahodit komandu by imeni."""
         cmd = registry.resolve("hello")
         assert cmd is not None
         assert cmd.name == "hello"
 
     def test_resolve_by_alias(self, registry: CommandRegistry) -> None:
-        """Находит команду по алиасу."""
+        """Nahodit komandu by aliasu."""
         cmd = registry.resolve("hi")
         assert cmd is not None
         assert cmd.name == "hello"
 
     def test_resolve_nonexistent(self, registry: CommandRegistry) -> None:
-        """Несуществующая команда возвращает None."""
+        """Notsushchestvuyushchaya command returns None."""
         assert registry.resolve("nonexistent") is None
 
     @pytest.mark.asyncio
     async def test_execute_with_args(self, registry: CommandRegistry) -> None:
-        """Выполнение команды с аргументами."""
+        """Execution commands with argumentami."""
         result = await registry.execute("hello", args=["Freedom"])
         assert result == "Hello, Freedom!"
 
     @pytest.mark.asyncio
     async def test_execute_by_alias(self, registry: CommandRegistry) -> None:
-        """Выполнение по алиасу."""
+        """Execution by aliasu."""
         result = await registry.execute("bye")
         assert result == "Goodbye!"
 
     @pytest.mark.asyncio
     async def test_execute_nonexistent(self, registry: CommandRegistry) -> None:
-        """Несуществующая команда → сообщение об ошибке."""
+        """Notsushchestvuyushchaya command -> message ob oshibke."""
         result = await registry.execute("nonexistent")
         assert "Неизвестная" in result
 
     def test_is_command(self, registry: CommandRegistry) -> None:
-        """Текст, начинающийся с /, является командой."""
+        """Tekst, nachinayushchiysya with /, yavlyaetsya komandoy."""
         assert registry.is_command("/hello")
         assert not registry.is_command("hello")
         assert not registry.is_command("привет")
 
     def test_parse_command(self, registry: CommandRegistry) -> None:
-        """Парсинг команды на имя и аргументы."""
+        """Parsing commands on imya and argumenty."""
         name, args = registry.parse_command("/topic.new my_goal")
         assert name == "topic.new"
         assert args == ["my_goal"]
 
     def test_parse_command_with_underscore(self, registry: CommandRegistry) -> None:
-        """Парсинг underscore-формата команды в canonical dotted-name."""
+        """Parsing underscore-formata commands in canonical dotted-name."""
         name, args = registry.parse_command("/topic_new my_goal")
         assert name == "topic.new"
         assert args == ["my_goal"]
 
     @pytest.mark.asyncio
     async def test_execute_dotted_command_via_underscore_name(self) -> None:
-        """`/role_set`-подобные имена должны резолвиться в `role.set`."""
+        """`/role_set`-podobnye imena should rezolvitsya in `role.set`."""
         reg = CommandRegistry()
 
         async def _handler(*args, **kwargs):
@@ -88,18 +88,18 @@ class TestCommandRegistry:
         assert result == "ok"
 
     def test_parse_command_no_args(self, registry: CommandRegistry) -> None:
-        """Парсинг команды без аргументов."""
+        """Parsing commands without argumentov."""
         name, args = registry.parse_command("/help")
         assert name == "help"
         assert args == []
 
     def test_list_commands(self, registry: CommandRegistry) -> None:
-        """Список всех команд."""
+        """List vseh komand."""
         commands = registry.list_commands()
         assert len(commands) == 2
 
     def test_help_text(self, registry: CommandRegistry) -> None:
-        """Генерация help текста."""
+        """Genotratsiya help teksta."""
         text = registry.help_text()
         assert "/hello" in text
         assert "/goodbye" in text

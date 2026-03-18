@@ -1,12 +1,4 @@
-"""LLM provider adapters — multi-provider support для ThinRuntime.
-
-Адаптеры абстрагируют вызовы к LLM SDK:
-- AnthropicAdapter  → anthropic SDK (messages API)
-- OpenAICompatAdapter → openai SDK (chat.completions API, покрывает OpenAI/OpenRouter/Ollama/vLLM/Groq/etc)
-- GoogleAdapter → google-genai SDK
-
-Factory: create_llm_adapter(ResolvedProvider) → LlmAdapter
-"""
+"""Llm Providers module."""
 
 from __future__ import annotations
 
@@ -20,7 +12,7 @@ from cognitia.runtime.thin.errors import dependency_missing_error
 
 @runtime_checkable
 class LlmAdapter(Protocol):
-    """Протокол для LLM provider адаптеров."""
+    """Llm Adapter protocol."""
 
     async def call(
         self,
@@ -38,7 +30,7 @@ class LlmAdapter(Protocol):
 
 
 def _filter_chat_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Отфильтровать user/assistant сообщения, fallback на пустой user."""
+    """Filter out user/assistant messages, fallback on empty user."""
     filtered = [
         {"role": m["role"], "content": m["content"]}
         for m in messages
@@ -50,7 +42,7 @@ def _filter_chat_messages(messages: list[dict[str, str]]) -> list[dict[str, str]
 
 
 class AnthropicAdapter:
-    """Адаптер для Anthropic SDK (messages API)."""
+    """Adapter for Anthropic SDK (messages API)."""
 
     def __init__(self, model: str, *, base_url: str | None = None) -> None:
         try:
@@ -105,10 +97,7 @@ class AnthropicAdapter:
 
 
 class OpenAICompatAdapter:
-    """Адаптер для OpenAI-compatible API (chat.completions).
-
-    Покрывает: OpenAI, OpenRouter, Ollama, vLLM, Groq, Together, Fireworks, DeepSeek.
-    """
+    """Open A I Compat Adapter implementation."""
 
     def __init__(self, model: str, *, base_url: str | None = None) -> None:
         try:
@@ -172,7 +161,7 @@ class OpenAICompatAdapter:
 
 
 class GoogleAdapter:
-    """Адаптер для Google GenAI SDK."""
+    """Adapter for Google GenAI SDK."""
 
     def __init__(self, model: str, *, base_url: str | None = None) -> None:
         try:
@@ -249,7 +238,7 @@ class GoogleAdapter:
 
 
 def create_llm_adapter(resolved: ResolvedProvider) -> LlmAdapter:
-    """Factory: создаёт LlmAdapter по ResolvedProvider."""
+    """Create llm adapter."""
     if resolved.sdk_type == "anthropic":
         return AnthropicAdapter(model=resolved.model_id, base_url=resolved.base_url)
     if resolved.sdk_type == "openai_compat":
@@ -264,7 +253,7 @@ _adapter_cache: dict[tuple[str, str, str | None], LlmAdapter] = {}
 
 
 def get_cached_adapter(resolved: ResolvedProvider) -> LlmAdapter:
-    """Кешированная версия create_llm_adapter — один адаптер на (model_id, provider, base_url)."""
+    """Get cached adapter."""
     key = (resolved.model_id, resolved.provider, resolved.base_url)
     if key not in _adapter_cache:
         _adapter_cache[key] = create_llm_adapter(resolved)

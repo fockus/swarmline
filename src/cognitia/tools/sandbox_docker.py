@@ -1,8 +1,8 @@
-"""DockerSandboxProvider — sandbox через Docker container.
+"""DockerSandboxProvider - sandbox via a Docker container.
 
-Каждая сессия = Docker container. Optional dependency: docker SDK.
-Container API может быть sync (docker SDK) или async (мок) —
-используем _exec_run для абстракции.
+Each session is a Docker container. Optional dependency: docker SDK.
+The container API may be sync (docker SDK) or async (mock) -
+use _exec_run for abstraction.
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ _DENYLIST_WRAPPERS = frozenset({"sh", "bash", "zsh", "ksh", "dash", "fish", "env
 
 
 class DockerSandboxProvider:
-    """SandboxProvider через Docker container.
+    """SandboxProvider via a Docker container.
 
-    LSP: полностью заменяет LocalSandboxProvider и E2BSandboxProvider.
+    LSP: fully replaces LocalSandboxProvider and E2BSandboxProvider.
     """
 
     def __init__(
@@ -41,7 +41,7 @@ class DockerSandboxProvider:
         self._workspace = "/workspace"
 
     def _resolve_path(self, path: str) -> str:
-        """Безопасно нормализовать путь относительно workspace."""
+        """Safely normalize a path relative to the workspace."""
         if os.path.isabs(path):
             raise SandboxViolation(f"Абсолютный путь запрещён: {path}", path=path)
         parts = [p for p in path.split("/") if p]
@@ -50,7 +50,7 @@ class DockerSandboxProvider:
         return "/".join(parts)
 
     def _parse_command(self, command: str) -> list[str]:
-        """Распарсить command string в argv без shell semantics."""
+        """Parse a command string into argv without shell semantics."""
         try:
             argv = shlex.split(command, posix=True)
         except ValueError as exc:
@@ -78,7 +78,7 @@ class DockerSandboxProvider:
             raise SandboxViolation(f"Path traversal запрещён: {pattern}", path=pattern)
 
     async def _ensure_container(self) -> Any:
-        """Ленивая инициализация docker container."""
+        """Lazy initialization of the Docker container."""
         if self._container is not None:
             return self._container
 
@@ -93,7 +93,7 @@ class DockerSandboxProvider:
             import docker  # type: ignore[import-untyped]
         except ImportError as exc:
             raise RuntimeError(
-                "docker SDK не установлен. Установите optional dependency docker.",
+                "docker SDK is not installed. Install the optional docker dependency.",
             ) from exc
 
         try:
@@ -106,13 +106,13 @@ class DockerSandboxProvider:
                 working_dir=self._workspace,
             )
         except Exception as exc:
-            raise RuntimeError("Docker daemon недоступен для sandbox container.") from exc
+            raise RuntimeError("Docker daemon is unavailable for the sandbox container.") from exc
         return self._container
 
     async def _exec(
         self, cmd: Any, *, timeout_seconds: int | None = None, **kwargs: Any
     ) -> tuple[int, bytes]:
-        """Выполнить команду в container. Поддерживает sync и async container."""
+        """Execute a command in the container. Supports sync and async containers."""
         container = await self._ensure_container()
         timeout = timeout_seconds or self._config.timeout_seconds
         exec_run = container.exec_run
@@ -127,7 +127,7 @@ class DockerSandboxProvider:
         return ret
 
     async def read_file(self, path: str) -> str:
-        """Прочитать файл через docker exec cat."""
+        """Read a file via docker exec cat."""
         safe_path = self._resolve_path(path)
         full_path = f"{self._workspace}/{safe_path}"
         _exit_code, output = await self._exec(["cat", full_path])
@@ -136,7 +136,7 @@ class DockerSandboxProvider:
         )
 
     async def write_file(self, path: str, content: str) -> None:
-        """Записать файл через docker exec с передачей content."""
+        """Write a file via docker exec while passing content."""
         if len(content.encode("utf-8")) > self._config.max_file_size_bytes:
             raise SandboxViolation(
                 f"Файл превышает лимит {self._config.max_file_size_bytes} байт",
@@ -145,7 +145,7 @@ class DockerSandboxProvider:
 
         safe_path = self._resolve_path(path)
         full_path = f"{self._workspace}/{safe_path}"
-        # Передаём content через base64 чтобы избежать проблем с escaping
+        # Pass content through base64 to avoid escaping issues
         encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
         quoted_path = shlex.quote(full_path)
         cmd = (
@@ -154,7 +154,7 @@ class DockerSandboxProvider:
         await self._exec(["sh", "-c", cmd], timeout_seconds=self._config.timeout_seconds)
 
     async def execute(self, command: str) -> ExecutionResult:
-        """Выполнить команду через docker exec."""
+        """Execute a command via docker exec."""
         argv = self._parse_command(command)
         self._check_denied_command(argv, command)
         try:
@@ -175,7 +175,7 @@ class DockerSandboxProvider:
             return ExecutionResult(stdout="", stderr="timeout", exit_code=-1, timed_out=True)
 
     async def list_dir(self, path: str = ".") -> list[str]:
-        """Список файлов через docker exec ls."""
+        """List files via docker exec ls."""
         safe_path = self._resolve_path(path)
         full_path = f"{self._workspace}/{safe_path}" if safe_path else self._workspace
         _exit_code, output = await self._exec(["ls", full_path])
@@ -183,7 +183,7 @@ class DockerSandboxProvider:
         return [f for f in raw.strip().split("\n") if f]
 
     async def glob_files(self, pattern: str) -> list[str]:
-        """Glob через find в Docker."""
+        """Glob via find in Docker."""
         self._validate_glob_pattern(pattern)
         cmd = (
             f"cd {shlex.quote(self._workspace)} "
@@ -194,7 +194,7 @@ class DockerSandboxProvider:
         return sorted(f for f in raw.strip().split("\n") if f)
 
     async def close(self) -> None:
-        """Остановить и удалить контейнер."""
+        """Stop and remove the container."""
         container = self._container
         if container is not None:
             for method_name in ("stop", "remove"):

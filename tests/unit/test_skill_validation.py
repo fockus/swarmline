@@ -1,4 +1,4 @@
-"""Unit-тесты для SkillRegistry.validate_tools (§4.4)."""
+"""Unit-tests for SkillRegistry.validate_tools (§4.4)."""
 
 from __future__ import annotations
 
@@ -17,10 +17,10 @@ def _make_skill(skill_id: str, tools: list[str]) -> LoadedSkill:
 
 
 class TestValidateTools:
-    """Тесты startup self-check (§4.4)."""
+    """Tests startup self-check (§4.4)."""
 
     def test_all_tools_available(self) -> None:
-        """Все tools доступны → нет предупреждений."""
+        """Vse tools available -> nott preduprezhdeniy."""
         registry = SkillRegistry(
             [
                 _make_skill("iss", ["mcp__iss__get_market_snapshot"]),
@@ -32,7 +32,7 @@ class TestValidateTools:
         assert warnings == []
 
     def test_missing_tool_warning(self) -> None:
-        """Недоступный tool → предупреждение."""
+        """Notavailable tool -> preduprezhdenie."""
         registry = SkillRegistry(
             [
                 _make_skill("iss", ["mcp__iss__get_market_snapshot", "mcp__iss__missing_tool"]),
@@ -45,13 +45,13 @@ class TestValidateTools:
         assert "iss" in warnings[0]
 
     def test_empty_registry(self) -> None:
-        """Пустой реестр → нет предупреждений."""
+        """Empty reestr -> nott preduprezhdeniy."""
         registry = SkillRegistry([])
         warnings = registry.validate_tools(set())
         assert warnings == []
 
     def test_multiple_skills_multiple_warnings(self) -> None:
-        """Несколько скилов с недоступными tools."""
+        """Notskolko skilov with notavailablemi tools."""
         registry = SkillRegistry(
             [
                 _make_skill("iss", ["mcp__iss__missing1"]),

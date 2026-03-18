@@ -1,4 +1,4 @@
-"""Тесты FilesystemTodoProvider — TDD."""
+"""Tests FilesystemTodoProvider - TDD."""
 
 from __future__ import annotations
 

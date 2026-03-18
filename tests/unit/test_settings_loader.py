@@ -1,4 +1,4 @@
-"""Unit-тесты для load_mcp_from_settings (§4.3, R-401)."""
+"""Unit-tests for load_mcp_from_settings (§4.3, R-401)."""
 
 from __future__ import annotations
 
@@ -9,15 +9,15 @@ from cognitia.skills.loader import load_mcp_from_settings
 
 
 class TestLoadMcpFromSettings:
-    """Тесты загрузки MCP из .claude/settings.json."""
+    """Tests zagruzki MCP from .claude/settings.json."""
 
     def test_no_settings_file(self, tmp_path: Path) -> None:
-        """Нет файла → пустой результат."""
+        """Nott filea -> empty result."""
         servers = load_mcp_from_settings(tmp_path)
         assert servers == {}
 
     def test_loads_from_project_settings(self, tmp_path: Path) -> None:
-        """Загружает серверы из project-level settings."""
+        """Loads servery from project-level settings."""
         claude_dir = tmp_path / ".claude"
         claude_dir.mkdir()
         settings = {
@@ -33,7 +33,7 @@ class TestLoadMcpFromSettings:
         assert servers["iss"].transport == "url"
 
     def test_local_overrides_project(self, tmp_path: Path) -> None:
-        """settings.local.json перезаписывает settings.json."""
+        """settings.local.json overwrites settings.json."""
         claude_dir = tmp_path / ".claude"
         claude_dir.mkdir()
         # project settings
@@ -61,7 +61,7 @@ class TestLoadMcpFromSettings:
         assert servers["iss"].url == "https://dev.com/iss/mcp"
 
     def test_invalid_json_skipped(self, tmp_path: Path) -> None:
-        """Невалидный JSON пропускается без ошибки."""
+        """Invalid JSON is skipped without errors."""
         claude_dir = tmp_path / ".claude"
         claude_dir.mkdir()
         (claude_dir / "settings.json").write_text("NOT VALID JSON")
@@ -70,7 +70,7 @@ class TestLoadMcpFromSettings:
         assert servers == {}
 
     def test_no_mcp_servers_key(self, tmp_path: Path) -> None:
-        """Нет ключа mcpServers → пустой результат."""
+        """Nott klyucha mcpServers -> empty result."""
         claude_dir = tmp_path / ".claude"
         claude_dir.mkdir()
         (claude_dir / "settings.json").write_text(json.dumps({"other": "config"}))
@@ -79,7 +79,7 @@ class TestLoadMcpFromSettings:
         assert servers == {}
 
     def test_stdio_transport(self, tmp_path: Path) -> None:
-        """Поддержка stdio transport."""
+        """Support stdio transport."""
         claude_dir = tmp_path / ".claude"
         claude_dir.mkdir()
         settings = {

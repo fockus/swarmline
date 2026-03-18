@@ -1,4 +1,4 @@
-"""Unit: native thread/checkpointer/resume helpers для DeepAgents."""
+"""Unit: native thread/checkpointer/resume helpers for DeepAgents."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from langgraph.types import Command
 
 
 def test_validate_resume_requires_checkpointer() -> None:
-    """resume без checkpointer должен fail-fast."""
+    """resume without checkpointer should fail-fast."""
     error = validate_native_state_config({"resume": {"i1": "ok"}})
 
     assert error is not None
@@ -25,7 +25,7 @@ def test_validate_resume_requires_checkpointer() -> None:
 
 
 def test_build_native_invocation_uses_latest_message_with_thread_state() -> None:
-    """При native thread state не replay'им весь Cognitia history в graph input."""
+    """Pri native thread state not replay'im ves Cognitia history in graph input."""
     messages = [
         HumanMessage(content="old question"),
         AIMessage(content="old answer"),
@@ -49,7 +49,7 @@ def test_build_native_invocation_uses_latest_message_with_thread_state() -> None
 
 
 def test_build_native_invocation_uses_command_for_resume() -> None:
-    """resume превращается в LangGraph Command(resume=...)."""
+    """resume prevrashchaetsya in LangGraph Command(resume=...)."""
     payload, run_config, native_metadata = build_native_invocation(
         messages=[HumanMessage(content="ignored")],
         native_config={
@@ -66,7 +66,7 @@ def test_build_native_invocation_uses_command_for_resume() -> None:
 
 
 def test_build_native_invocation_replays_full_history_when_only_store_is_configured() -> None:
-    """Store без checkpointer не должен включать latest-message-only semantics."""
+    """Store without checkpointer not should vklyuchat latest-message-only semantics."""
     messages = [
         HumanMessage(content="old question"),
         AIMessage(content="old answer"),
@@ -89,7 +89,7 @@ def test_build_native_invocation_replays_full_history_when_only_store_is_configu
 
 
 def test_build_native_state_notice_marks_semantic_difference() -> None:
-    """При native thread/checkpointer semantics выдаём явный notice."""
+    """Pri native thread/checkpointer semantics vydaem yavnyy notice."""
     notice = build_native_state_notice(
         {
             "history_source": "native_thread",

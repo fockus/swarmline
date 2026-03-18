@@ -1,4 +1,4 @@
-"""StructuredLogger — структурированное логирование для агента."""
+"""StructuredLogger — structured logging for the agent."""
 
 from __future__ import annotations
 
@@ -10,23 +10,23 @@ import structlog
 
 
 def configure_logging(level: str = "info", fmt: str = "json") -> None:
-    """Настроить structlog + стандартный logging в stdout.
+    """Configure structlog + standard logging to stdout.
 
-    Стандартный logging нужен т.к. многие модули (adapter, service, session_factory)
-    используют ``logging.getLogger(__name__)`` вместо structlog.
-    Без basicConfig их вывод молча теряется.
+    Standard logging is needed because many modules (adapter, service, session_factory)
+    use ``logging.getLogger(__name__)`` instead of structlog.
+    Without basicConfig, their output is silently lost.
     """
     numeric_level = _level_to_int(level)
 
-    # --- Стандартный logging (для logging.getLogger) ---
+    # --- Standard logging (for logging.getLogger) ---
     logging.basicConfig(
         level=numeric_level,
         stream=sys.stdout,
         format="%(levelname)s %(name)s: %(message)s",
-        force=True,  # перенастроить даже если уже был вызов basicConfig
+        force=True,  # reconfigure even if basicConfig was already called
     )
 
-    # --- structlog (для AgentLogger) ---
+    # --- structlog (for AgentLogger) ---
     processors = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
@@ -50,7 +50,7 @@ def configure_logging(level: str = "info", fmt: str = "json") -> None:
 
 
 class AgentLogger:
-    """Логгер событий агента с предопределённой схемой."""
+    """Agent event logger with a predefined schema."""
 
     def __init__(self, component: str = "cognitia") -> None:
         self._log = structlog.get_logger(component=component)
@@ -62,7 +62,7 @@ class AgentLogger:
         role_id: str,
         is_rehydrated: bool = False,
     ) -> None:
-        """Создание/восстановление сессии."""
+        """Session creation/restoration."""
         self._log.info(
             "session_created",
             user_id=user_id,
@@ -77,7 +77,7 @@ class AgentLogger:
         topic_id: str,
         user_text_preview: str = "",
     ) -> None:
-        """Начало обработки сообщения."""
+        """Start processing a message."""
         self._log.info(
             "turn_start",
             user_id=user_id,
@@ -92,7 +92,7 @@ class AgentLogger:
         status: str = "ok",
         input_preview: str = "",
     ) -> None:
-        """Вызов инструмента."""
+        """Tool invocation."""
         self._log.info(
             "tool_call",
             tool_name=tool_name,
@@ -114,9 +114,9 @@ class AgentLogger:
         truncated_packs: list[str] | None = None,
         turn_latency_ms: int = 0,
     ) -> None:
-        """Завершение обработки сообщения (§12.1: включает prompt_hash).
+        """Message processing completion (§12.1: includes prompt_hash).
 
-        KISS: latency_ms передаётся вызывающим кодом, а не считается в логгере.
+        KISS: latency_ms is passed by the caller instead of being computed in the logger.
         """
         self._log.info(
             "turn_complete",
@@ -144,7 +144,7 @@ class AgentLogger:
         topic_id: str = "",
         role_id: str = "",
     ) -> None:
-        """Событие политики инструментов (§6.2, §12.1)."""
+        """Tool policy event (§6.2, §12.1)."""
         event_type = "tool_allowed" if allowed else "tool_denied"
         self._log.info(
             event_type,
@@ -165,7 +165,7 @@ class AgentLogger:
         total_tokens: int,
         truncated_packs: list[str] | None = None,
     ) -> None:
-        """Событие применения бюджета контекста (§10.3 acceptance)."""
+        """Context budget application event (§10.3 acceptance)."""
         self._log.info(
             "context_budget_applied",
             user_id=user_id,
@@ -180,7 +180,7 @@ class AgentLogger:
         sources: list[str],
         mcp_servers_count: int = 0,
     ) -> None:
-        """Событие загрузки настроек (§2.2 acceptance)."""
+        """Settings load event (§2.2 acceptance)."""
         self._log.info(
             "settings_loaded",
             sources=sources,
@@ -195,7 +195,7 @@ class AgentLogger:
         error_message: str,
         recovery_action: str = "",
     ) -> None:
-        """Ошибка при обработке."""
+        """Processing error."""
         self._log.error(
             "turn_error",
             user_id=user_id,
@@ -214,7 +214,7 @@ class AgentLogger:
         role_id: str,
         source: str = "",
     ) -> None:
-        """Роль выбрана для turn'а.
+        """Role selected for a turn.
 
         source: explicit / intent / router / orchestrator / delegation / auto_return.
         """
@@ -234,7 +234,7 @@ class AgentLogger:
         to_role: str,
         context: str = "",
     ) -> None:
-        """Делегирование начато (orchestrator → доменная роль)."""
+        """Delegation started (orchestrator → domain role)."""
         self._log.info(
             "delegation_start",
             user_id=user_id,
@@ -253,7 +253,7 @@ class AgentLogger:
         turns: int = 0,
         trigger: str = "",
     ) -> None:
-        """Делегирование завершено (доменная роль → orchestrator).
+        """Delegation finished (domain role → orchestrator).
 
         trigger: return_tool / auto_return / intent_change.
         """
@@ -274,7 +274,7 @@ class AgentLogger:
         role_id: str,
         error: str,
     ) -> None:
-        """Ошибка при делегировании."""
+        """Delegation error."""
         self._log.error(
             "delegation_failed",
             user_id=user_id,
@@ -290,7 +290,7 @@ class AgentLogger:
         facts_saved: int = 0,
         summary_updated: bool = False,
     ) -> None:
-        """Сохранение данных в память."""
+        """Persist data to memory."""
         self._log.info(
             "memory_persist",
             user_id=user_id,
@@ -301,7 +301,7 @@ class AgentLogger:
 
 
 def _level_to_int(level: str) -> int:
-    """Преобразовать строковый уровень в числовой."""
+    """Convert a string log level to its numeric value."""
     levels = {
         "debug": 10,
         "info": 20,

@@ -1,12 +1,4 @@
-"""AgentRuntime — базовый протокол для всех runtime (v1 контракт).
-
-Runtime НЕ владеет историей: получает messages каждый turn,
-возвращает new_messages через финальный RuntimeEvent.
-
-Контракт ownership:
-- Вход: messages (от SessionManager/ContextBuilder)
-- Выход: AsyncIterator[RuntimeEvent] (стрим) + new_messages в final event
-"""
+"""Base module."""
 
 from __future__ import annotations
 
@@ -23,19 +15,7 @@ from cognitia.runtime.types import (
 
 @runtime_checkable
 class AgentRuntime(Protocol):
-    """Единый контракт для всех runtime.
-
-    Реализации:
-    - ClaudeCodeRuntime: обёртка над claude-agent-sdk
-    - DeepAgentsRuntime: LangChain Deep Agents (optional)
-    - ThinRuntime: собственный тонкий агентный loop
-
-    Использование:
-        async for event in runtime.run(
-            messages=[...], system_prompt="...", active_tools=[...],
-        ):
-            handle(event)
-    """
+    """Agent Runtime protocol."""
 
     def run(
         self,
@@ -46,28 +26,11 @@ class AgentRuntime(Protocol):
         config: RuntimeConfig | None = None,
         mode_hint: str | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Выполнить один turn.
-
-        Реализации — async generators (``async def run(...) → yield``),
-        поэтому Protocol декларирует ``def`` возвращающий ``AsyncIterator``
-        (иначе mypy интерпретирует как Coroutine, что не совпадает).
-
-        Args:
-            messages: История диалога (каноническая, от SessionManager).
-            system_prompt: Собранный system prompt (от ContextBuilder).
-            active_tools: Разрешённые инструменты (после ToolPolicy).
-            config: Конфигурация runtime (budgets, model, etc.).
-            mode_hint: Подсказка режима для ThinRuntime (conversational/react/planner).
-
-        Yields:
-            RuntimeEvent: события стриминга.
-            Финализация: обязательно final или error.
-            tool_call_started всегда парный tool_call_finished.
-        """
+        """Run."""
         ...  # pragma: no cover
 
     async def cleanup(self) -> None:
-        """Освободить ресурсы runtime (connections, subprocess, etc.)."""
+        """Cleanup."""
         ...  # pragma: no cover
 
     def cancel(self) -> None:
@@ -79,5 +42,5 @@ class AgentRuntime(Protocol):
         return self  # pragma: no cover
 
     async def __aexit__(self, *exc: Any) -> None:
-        """Exit async context manager — calls cleanup()."""
+        """Exit async context manager - calls cleanup()."""
         await self.cleanup()  # pragma: no cover

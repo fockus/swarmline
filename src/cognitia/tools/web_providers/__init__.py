@@ -1,18 +1,18 @@
-"""Pluggable search и fetch providers для веб-инструментов агентов.
+"""Pluggable search and fetch providers for agent web tools.
 
-Пользователь выбирает провайдер через env (WEB_SEARCH_PROVIDER, WEB_FETCH_PROVIDER).
-Каждый провайдер реализует WebSearchProvider или WebFetchProvider Protocol (ISP: 1 метод).
+The user selects a provider via env (WEB_SEARCH_PROVIDER, WEB_FETCH_PROVIDER).
+Each provider implements the WebSearchProvider or WebFetchProvider Protocol (ISP: 1 method).
 
-Search провайдеры:
-- duckduckgo: метапоиск по 9 движкам, без API key (default)
-- tavily: AI-оптимизированный поиск (требует TAVILY_API_KEY)
-- searxng: self-hosted метапоисковик (требует SEARXNG_URL)
-- brave: Brave Search API (требует BRAVE_SEARCH_API_KEY)
+Search providers:
+- duckduckgo: metasearch across 9 engines, no API key (default)
+- tavily: AI-optimized search (requires TAVILY_API_KEY)
+- searxng: self-hosted metasearch engine (requires SEARXNG_URL)
+- brave: Brave Search API (requires BRAVE_SEARCH_API_KEY)
 
-Fetch провайдеры:
-- default: httpx + trafilatura/regex (встроенный)
-- jina: Jina Reader API → markdown (требует JINA_API_KEY)
-- crawl4ai: Crawl4AI + Playwright → markdown (pip install crawl4ai)
+Fetch providers:
+- default: httpx + trafilatura/regex (built in)
+- jina: Jina Reader API -> markdown (requires JINA_API_KEY)
+- crawl4ai: Crawl4AI + Playwright -> markdown (pip install crawl4ai)
 """
 
 from cognitia.tools.web_providers.factory import create_fetch_provider, create_search_provider

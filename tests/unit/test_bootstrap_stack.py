@@ -1,8 +1,5 @@
-"""Тесты для cognitia.bootstrap.CognitiaStack.
-
-Iteration 3: TDD тесты для public integration API.
-Testing Trophy: unit (factory output) + integration (real YAML fixtures).
-"""
+"""Tests for cognitia.bootstrap.CognitiaStack. Iteration 3: TDD tests for public integration API.
+Testing Trophy: unit (factory output) + integration (real YAML fixtures)."""
 
 from __future__ import annotations
 
@@ -23,7 +20,7 @@ from cognitia.skills import SkillRegistry
 
 
 def _create_fixture_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
-    """Создать минимальную fixture-структуру для CognitiaStack."""
+    """Create a minimal fixture structure for CognitiaStack."""
     project_root = tmp_path / "project"
     project_root.mkdir()
     prompts_dir = project_root / "prompts"
@@ -31,7 +28,7 @@ def _create_fixture_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
     skills_dir = project_root / "skills"
     skills_dir.mkdir()
 
-    # Минимальный identity.md
+    # Minimal identity.md
     (prompts_dir / "identity.md").write_text("You are a helpful assistant.", encoding="utf-8")
 
     # Role skills YAML
@@ -50,10 +47,10 @@ def _create_fixture_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
 
 
 class TestCognitiaStackCreate:
-    """CognitiaStack.create() создаёт все library-компоненты."""
+    """CognitiaStack.create() creates all library components."""
 
     def test_create_returns_all_components(self, tmp_path: Path) -> None:
-        """create() возвращает CognitiaStack со всеми компонентами."""
+        """create() returns CognitiaStack with all components."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         stack = CognitiaStack.create(
@@ -75,7 +72,7 @@ class TestCognitiaStackCreate:
         assert stack.local_tool_resolver is None
 
     def test_role_router_config_loaded(self, tmp_path: Path) -> None:
-        """Role router config загружается из YAML."""
+        """Role router config loads from YAML."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         stack = CognitiaStack.create(
@@ -88,7 +85,7 @@ class TestCognitiaStackCreate:
         assert "coach" in stack.role_router_config.keywords
 
     def test_role_skills_loaded(self, tmp_path: Path) -> None:
-        """RoleSkillsLoader загружает skills и local_tools."""
+        """RoleSkillsLoader loads skills and local_tools."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         stack = CognitiaStack.create(
@@ -101,7 +98,7 @@ class TestCognitiaStackCreate:
         assert stack.role_skills_loader.get_skills("coach") == []
 
     def test_escalate_roles_passed_to_model_policy(self, tmp_path: Path) -> None:
-        """escalate_roles передаётся в ModelPolicy."""
+        """escalate_roles is passed in ModelPolicy."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         stack = CognitiaStack.create(
@@ -114,7 +111,7 @@ class TestCognitiaStackCreate:
         assert isinstance(stack.model_policy, ModelPolicy)
 
     def test_missing_prompts_dir_graceful(self, tmp_path: Path) -> None:
-        """Отсутствующие config файлы → graceful defaults."""
+        """Missing config files -> graceful defaults."""
         project_root = tmp_path / "empty"
         project_root.mkdir()
         prompts_dir = project_root / "prompts"
@@ -122,7 +119,7 @@ class TestCognitiaStackCreate:
         skills_dir = project_root / "skills"
         skills_dir.mkdir()
 
-        # Нет role_skills.yaml, role_router.yaml — должен создаться без ошибок
+        # Not role_skills.yaml, role_router.yaml - should be created without errors
         stack = CognitiaStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
@@ -133,7 +130,7 @@ class TestCognitiaStackCreate:
         assert stack.role_skills_loader.get_skills("nonexistent") == []
 
     def test_accepts_runtime_config_and_local_tool_resolver(self, tmp_path: Path) -> None:
-        """create() принимает runtime_config и local_tool_resolver из app."""
+        """create() takes runtime_config and local_tool_resolver from app."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         class DummyResolver:
@@ -163,7 +160,7 @@ class TestCognitiaStackCreate:
         assert stack.local_tool_resolver is resolver
 
     def test_memory_bank_prompt_autoloaded_when_provider_passed(self, tmp_path: Path) -> None:
-        """При memory_bank_provider stack подгружает default_prompt.md."""
+        """When memory_bank_provider stack loads default_prompt.md."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         class DummyMemoryProvider:
@@ -184,7 +181,7 @@ class TestCognitiaStackCreate:
         assert "Memory Bank" in stack.memory_bank_prompt
 
     def test_tool_budget_config_applies_to_capability_tools(self, tmp_path: Path) -> None:
-        """tool_budget_config реально ограничивает набор capability tools."""
+        """tool_budget_config really limits the set of capability tools."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         class _Sandbox:
@@ -239,7 +236,7 @@ class TestLocalToolResolverProtocol:
     """LocalToolResolver Protocol — contract tests."""
 
     def test_dummy_satisfies_protocol(self) -> None:
-        """Простая реализация удовлетворяет Protocol."""
+        """A simple implementation satisfies Protocol."""
         from collections.abc import Callable
         from typing import Any
 
@@ -258,6 +255,6 @@ class TestLocalToolResolverProtocol:
         assert resolver.resolve("unknown") is None
 
     def test_isp_2_methods(self) -> None:
-        """LocalToolResolver имеет ровно 2 метода (ISP)."""
+        """LocalToolResolver has exactly 2 methods (ISP)."""
         methods = [n for n in dir(LocalToolResolver) if not n.startswith("_") and n != "register"]
         assert len(methods) == 2

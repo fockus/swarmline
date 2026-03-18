@@ -1,7 +1,7 @@
-"""McpBridge — library-level MCP tool discovery and execution.
+"""MCPBridge - library-level MCP tool discovery and execution.
 
-Wraps McpClient from thin runtime, making MCP available to ANY runtime
-(thin, deepagents, claude_sdk). Provides tool discovery, caching,
+Wraps MCPClient from Thin runtime, making MCP available to ANY runtime
+(Thin, DeepAgents, Claude_SDK). Provides tool discovery, caching,
 and executor factories for LangChain integration.
 """
 
@@ -17,11 +17,11 @@ from cognitia.runtime.types import ToolSpec
 class McpBridge:
     """Library-level facade for MCP server interaction.
 
-    Args:
-        mcp_servers: Mapping server_id → url string or McpServerSpec-like object.
-        timeout_seconds: Timeout for MCP HTTP calls.
-        tools_cache_ttl: TTL for tools/list cache per server.
-    """
+  Args:
+    MCP_servers: Mapping server_id -> URL string or MCPServerSpec-like object.
+    timeout_seconds: Timeout for MCP HTTP calls.
+    tools_cache_ttl: TTL for tools/list cache per server.
+  """
 
     def __init__(
         self,
@@ -42,8 +42,8 @@ class McpBridge:
     async def discover_tools(self, server_id: str) -> list[ToolSpec]:
         """Discover tools from a single MCP server.
 
-        Returns ToolSpec list with names prefixed as mcp__{server_id}__{tool}.
-        """
+    Returns ToolSpec list with names prefixed as MCP__{server_id}__{tool}.
+    """
         url = self._resolve_url(server_id)
         if not url:
             return []
@@ -75,14 +75,14 @@ class McpBridge:
     ) -> Any:
         """Call a tool on a specific MCP server.
 
-        Args:
-            server_id: The server identifier.
-            tool_name: Remote tool name (without mcp__ prefix).
-            arguments: Tool arguments.
+    Args:
+      server_id: The server identifier.
+      tool_name: Remote tool name (without MCP__ prefix).
+      arguments: Tool arguments.
 
-        Returns:
-            Tool execution result or error dict.
-        """
+    Returns:
+      Tool execution result or error dict.
+    """
         url = self._resolve_url(server_id)
         if not url:
             return {"error": f"MCP server '{server_id}' not found"}
@@ -93,8 +93,8 @@ class McpBridge:
     ) -> Callable[..., Any]:
         """Create an async callable executor for a specific MCP tool.
 
-        Useful for LangChain StructuredTool integration.
-        """
+    Useful for LangChain StructuredTool integration.
+    """
 
         async def _executor(**kwargs: Any) -> Any:
             return await self.call_tool(server_id, tool_name, kwargs)

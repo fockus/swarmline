@@ -1,6 +1,4 @@
-"""Тесты Builtin Tools — sandbox и web инструменты.
-
-TDD: RED → GREEN → REFACTOR.
+"""Tests Builtin Tools - sandbox and web tooly. TDD: RED -> GREEN -> REFACTOR.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ def sandbox_tools(sandbox):
 
 
 class TestBashExecutor:
-    """bash tool — выполнение команд."""
+    """bash tool - execution komand."""
 
     async def test_bash_echo(self, sandbox_tools) -> None:
         _specs, executors = sandbox_tools
@@ -66,7 +64,7 @@ class TestBashExecutor:
 
 
 class TestReadExecutor:
-    """read tool — чтение файлов."""
+    """read tool - reading fileov."""
 
     async def test_read_file(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("test.txt", "content")
@@ -89,7 +87,7 @@ class TestReadExecutor:
 
 
 class TestWriteExecutor:
-    """write tool — запись файлов."""
+    """write tool - writing fileov."""
 
     async def test_write_and_read_back(self, sandbox, sandbox_tools) -> None:
         _, executors = sandbox_tools
@@ -108,7 +106,7 @@ class TestWriteExecutor:
 
 
 class TestEditExecutor:
-    """edit tool — замена подстроки."""
+    """edit tool - zamena podstrings."""
 
     async def test_edit_replace(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("file.py", "old_value = 1\nold_value = 2")
@@ -126,7 +124,7 @@ class TestEditExecutor:
 
         content = await sandbox.read_file("file.py")
         assert "new_value = 42" in content
-        assert "old_value = 2" in content  # вторая строка не затронута
+        assert "old_value = 2" in content  # vtoraya string not zatronuta
 
     async def test_edit_string_not_found(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("f.txt", "hello")
@@ -144,7 +142,7 @@ class TestEditExecutor:
 
 
 class TestMultiEditExecutor:
-    """multi_edit tool — несколько замен."""
+    """multi_edit tool - notskolko zamen."""
 
     async def test_multi_edit(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("m.py", "a = 1\nb = 2\nc = 3")
@@ -169,7 +167,7 @@ class TestMultiEditExecutor:
 
 
 class TestLsExecutor:
-    """ls tool — список файлов."""
+    """ls tool - list fileov."""
 
     async def test_ls_workspace(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("a.txt", "a")
@@ -182,7 +180,7 @@ class TestLsExecutor:
 
 
 class TestGlobExecutor:
-    """glob tool — поиск по паттерну."""
+    """glob tool - poisk by patternu."""
 
     async def test_glob_py(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("main.py", "x")
@@ -195,7 +193,7 @@ class TestGlobExecutor:
 
 
 class TestGrepExecutor:
-    """grep tool — поиск текста."""
+    """grep tool - poisk teksta."""
 
     async def test_grep_finds_pattern(self, sandbox, sandbox_tools) -> None:
         await sandbox.write_file("code.py", "def hello():\n    pass\ndef world():\n    pass")
@@ -215,10 +213,10 @@ class TestGrepExecutor:
 
 
 class TestWebTools:
-    """web_fetch / web_search — без WebProvider → error."""
+    """web_fetch / web_search - without WebProvider -> error."""
 
     def test_create_web_tools_without_provider(self) -> None:
-        """Без WebProvider → пустой результат."""
+        """Without WebProvider -> empty result."""
         from cognitia.tools.builtin import create_web_tools
 
         specs, executors = create_web_tools(None)
@@ -226,7 +224,7 @@ class TestWebTools:
         assert executors == {}
 
     async def test_web_fetch_with_mock_provider(self) -> None:
-        """web_fetch с mock WebProvider."""
+        """web_fetch with mock WebProvider."""
         from cognitia.tools.builtin import create_web_tools
 
         class MockWeb:
@@ -242,7 +240,7 @@ class TestWebTools:
         assert "content of https://example.com" in data["content"]
 
     async def test_web_search_with_mock_provider(self) -> None:
-        """web_search с mock WebProvider."""
+        """web_search with mock WebProvider."""
         from cognitia.tools.builtin import create_web_tools
         from cognitia.tools.web_protocols import SearchResult
 
@@ -261,7 +259,7 @@ class TestWebTools:
 
 
 class TestAliasMap:
-    """SDK-alias (Bash → bash) через alias map."""
+    """SDK-alias (Bash -> bash) cherez alias map."""
 
     def test_alias_map_exists(self) -> None:
         from cognitia.tools.builtin import TOOL_ALIAS_MAP

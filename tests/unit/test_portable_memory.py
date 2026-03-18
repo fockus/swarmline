@@ -1,4 +1,4 @@
-"""Тесты для portable memory — lightweight AGENTS.md support."""
+"""Tests for portable memory - lightweight AGENTS.md support."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from cognitia.runtime.portable_memory import (
 
 
 class TestLoadAgentsMd:
-    """load_agents_md() читает и мержит файлы."""
+    """load_agents_md() chitaet and merzhit files."""
 
     def test_reads_single_file(self, tmp_path) -> None:
         p = tmp_path / "AGENTS.md"
@@ -34,7 +34,7 @@ class TestLoadAgentsMd:
         assert load_agents_md([]) == ""
 
     def test_truncates_large_files(self, tmp_path) -> None:
-        """Файлы > 10KB обрезаются."""
+        """Files > 10KB are truncated."""
         p = tmp_path / "large.md"
         p.write_text("x" * 20_000)
         content = load_agents_md([str(p)])
@@ -42,7 +42,7 @@ class TestLoadAgentsMd:
 
 
 class TestInjectMemoryIntoPrompt:
-    """inject_memory_into_prompt() добавляет XML блок."""
+    """inject_memory_into_prompt() dobavlyaet XML blok."""
 
     def test_injects_memory_block(self) -> None:
         result = inject_memory_into_prompt("You are helpful", "Use snake_case")

@@ -1,7 +1,7 @@
-"""Загрузчик конфигурации KeywordRoleRouter из YAML.
+"""YAML loader for KeywordRoleRouter configuration.
 
-Возвращает typed dataclass RoleRouterConfig вместо raw dict.
-Принимает yaml_path через DI — не привязан к конкретной структуре проекта.
+Returns the typed RoleRouterConfig dataclass instead of a raw dict.
+Accepts yaml_path via DI - not tied to a specific project structure.
 """
 
 from __future__ import annotations
@@ -14,11 +14,11 @@ import yaml
 
 @dataclass(frozen=True)
 class RoleRouterConfig:
-    """Typed конфигурация для KeywordRoleRouter.
+    """Typed configuration for KeywordRoleRouter.
 
     Attributes:
-        default_role: Роль по умолчанию (если ни одно ключевое слово не совпало).
-        keywords: Маппинг role_id → список ключевых слов для автоматического переключения.
+        default_role: Default role (if no keyword matched).
+        keywords: Mapping role_id -> list of keywords for automatic switching.
     """
 
     default_role: str = "default"
@@ -26,13 +26,13 @@ class RoleRouterConfig:
 
 
 def load_role_router_config(yaml_path: Path) -> RoleRouterConfig:
-    """Загрузить конфигурацию роутера из YAML.
+    """Load router configuration from YAML.
 
     Args:
-        yaml_path: Путь к YAML-файлу role_router.yaml.
+        yaml_path: Path to the role_router.yaml file.
 
     Returns:
-        RoleRouterConfig с default_role и keywords.
+        RoleRouterConfig with default_role and keywords.
     """
     if not yaml_path.exists():
         return RoleRouterConfig()

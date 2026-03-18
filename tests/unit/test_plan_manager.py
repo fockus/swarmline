@@ -1,6 +1,4 @@
-"""Тесты PlanManager — программное управление планами.
-
-TDD: RED → GREEN. DIP: зависит от Protocol'ов.
+"""Tests PlanManager - programmnoe upravlenie planami. TDD: RED -> GREEN. DIP: zavisit ot Protocol'ov.
 """
 
 from __future__ import annotations
@@ -25,7 +23,7 @@ def _plan_json() -> str:
 
 @pytest.fixture()
 def mock_planner() -> AsyncMock:
-    """Мокнутый PlannerMode."""
+    """Mocked PlannerMode."""
     from datetime import datetime
 
     planner = AsyncMock()
@@ -71,7 +69,7 @@ def manager(mock_planner, store):
 
 
 class TestPlanManagerCreate:
-    """create_plan: создание планов."""
+    """create_plan: createdie planov."""
 
     async def test_create_plan(self, manager) -> None:
         plan = await manager.create_plan("Подобрать вклад", user_id="u1", topic_id="t1")
@@ -89,7 +87,7 @@ class TestPlanManagerCreate:
 
 
 class TestPlanManagerApprove:
-    """approve_plan: программное одобрение."""
+    """approve_plan: programmnoe odobrenie."""
 
     async def test_approve_by_system(self, manager) -> None:
         plan = await manager.create_plan("g", "u", "t")
@@ -102,7 +100,7 @@ class TestPlanManagerApprove:
 
 
 class TestPlanManagerExecute:
-    """execute_plan: стриминг выполнения."""
+    """execute_plan: striming vypolnotniya."""
 
     async def test_execute_plan(self, manager) -> None:
         plan = await manager.create_plan("g", "u", "t", auto_approve=True)
@@ -114,7 +112,7 @@ class TestPlanManagerExecute:
 
 
 class TestPlanManagerCancel:
-    """cancel_plan: отмена."""
+    """cancel_plan: cancellation."""
 
     async def test_cancel(self, manager, store) -> None:
         plan = await manager.create_plan("g", "u", "t")

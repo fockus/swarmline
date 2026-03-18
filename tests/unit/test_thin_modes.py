@@ -1,4 +1,4 @@
-"""Тесты для mode detection ThinRuntime."""
+"""Tests for mode detection ThinRuntime."""
 
 import re
 
@@ -6,7 +6,7 @@ from cognitia.runtime.thin.modes import VALID_MODES, detect_mode
 
 
 class TestDetectModeHint:
-    """mode_hint имеет приоритет."""
+    """mode_hint takes precedence."""
 
     def test_hint_planner(self) -> None:
         assert detect_mode("привет", mode_hint="planner") == "planner"
@@ -18,7 +18,7 @@ class TestDetectModeHint:
         assert detect_mode("план на год", mode_hint="conversational") == "conversational"
 
     def test_invalid_hint_ignored(self) -> None:
-        """Невалидный hint → используется эвристика."""
+        """Invalid hint -> uses heuristic."""
         assert detect_mode("привет", mode_hint="invalid") == "conversational"
 
 
@@ -80,7 +80,7 @@ class TestDetectModeConversational:
 
 
 class TestDetectModeCustomPatterns:
-    """Кастомные domain-паттерны передаются извне."""
+    """Custom domain patterns are passed from not."""
 
     def test_custom_planner_pattern(self) -> None:
         planner_patterns = [re.compile(r"\bpf5\b", re.IGNORECASE)]
@@ -107,7 +107,7 @@ class TestDetectModeCustomPatterns:
 
 
 class TestValidModes:
-    """Множество допустимых режимов."""
+    """Many acceptable modes."""
 
     def test_all_modes(self) -> None:
         assert {"conversational", "react", "planner"} == VALID_MODES

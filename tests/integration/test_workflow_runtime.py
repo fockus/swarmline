@@ -1,7 +1,5 @@
-"""Integration: WorkflowGraph + ThinWorkflowExecutor — 3 nodes pipeline.
-
-3 nodes (research -> analyze -> report), каждый node = fake LLM call через ThinRuntime.
-Проверить: state propagation между nodes, final state содержит результаты всех nodes.
+"""Integration: WorkflowGraph + ThinWorkflowExecutor - 3 nodes pipeline. 3 nodes (research -> analyze -> report), kazhdyy node = fake LLM call cherez ThinRuntime.
+Check: state propagation mezhdu nodes, final state contains results vseh nodes.
 """
 
 from __future__ import annotations
@@ -27,8 +25,8 @@ class TestWorkflowGraphWithThinRuntimeNodes:
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            """Fake LLM: возвращает final с контекстом из system_prompt."""
-            # Извлекаем ключевое слово из system_prompt для routing
+            """Fake LLM: returns final with contextom from system_prompt."""
+            # Izvlekaem klyuchevoe slovo from system_prompt for routing
             if "research" in system_prompt.lower():
                 call_log.append("research")
                 return json.dumps(
@@ -49,7 +47,7 @@ class TestWorkflowGraphWithThinRuntimeNodes:
             runtime_config=RuntimeConfig(runtime_name="thin"),
         )
 
-        # Создаем node functions, которые вызывают ThinRuntime через executor
+        # Create node functions, kotorye vyzyvayut ThinRuntime cherez executor
         async def research_node(state: State) -> State:
             result = await executor.run_node(
                 system_prompt="You are a researcher. Research the topic.",
@@ -77,7 +75,7 @@ class TestWorkflowGraphWithThinRuntimeNodes:
             state["report_result"] = result
             return state
 
-        # Собираем граф
+        # Collect graf
         graph = WorkflowGraph(name="research_pipeline")
         graph.add_node("research", research_node)
         graph.add_node("analyze", analyze_node)
@@ -88,22 +86,22 @@ class TestWorkflowGraphWithThinRuntimeNodes:
         graph.add_edge("analyze", "report")
         graph.add_edge("report", END_NODE)
 
-        # Запускаем
+        # Run
         initial_state: State = {"task": "Market analysis for Q4 2025"}
         final_state = await graph.execute(initial_state)
 
-        # Проверяем state propagation — все 3 результата присутствуют
+        # Verify state propagation - vse 3 resulta prisutstvuyut
         assert "research_result" in final_state
         assert "analysis_result" in final_state
         assert "report_result" in final_state
 
-        # Содержимое результатов
+        # Content resultov
         assert "market is growing" in final_state["research_result"]
         assert "growth trajectory" in final_state["analysis_result"]
         assert "recommend investment" in final_state["report_result"]
 
-        # Все 3 node вызваны в правильном порядке
+        # Vse 3 node vyzvany in pravilnom poryadke
         assert call_log == ["research", "analyze", "report"]
 
-        # Original task сохранен
+        # Original task saved
         assert final_state["task"] == "Market analysis for Q4 2025"

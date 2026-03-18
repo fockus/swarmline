@@ -1,4 +1,4 @@
-"""Integration: runtime capability negotiation и fail-fast wiring."""
+"""Integration: runtime capability negotiation and fail-fast wiring."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ from cognitia.runtime.types import RuntimeConfig
 
 
 class TestRuntimeCapabilityNegotiation:
-    """RuntimeFactory и Agent wiring для capability-aware выбора runtime."""
+    """RuntimeFactory and Agent wiring for capability-aware selectiona runtime."""
 
     @pytest.mark.asyncio
     async def test_runtime_selection_fail_fast_on_missing_capability(self) -> None:
-        """override -> unsupported runtime возвращает typed capability error event."""
+        """override -> unsupported runtime returns typed capability error event."""
         factory = RuntimeFactory()
         config = RuntimeConfig(
             runtime_name="claude_sdk",
@@ -33,7 +33,7 @@ class TestRuntimeCapabilityNegotiation:
         assert "tier:full" in events[0].data["details"]["missing"]
 
     def test_agent_exposes_capability_descriptor(self) -> None:
-        """Agent даёт приложению capability descriptor выбранного runtime."""
+        """Agent daet prilozheniyu capability descriptor vybrannogo runtime."""
         agent = Agent(
             AgentConfig(
                 system_prompt="test",

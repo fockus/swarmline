@@ -1,4 +1,4 @@
-"""Bootstrap — high-level API для быстрого подключения cognitia в приложение."""
+"""Bootstrap - high-level API for quickly wiring cognitia into an application."""
 
 from cognitia.bootstrap.stack import CognitiaStack
 

@@ -1,4 +1,4 @@
-"""Capability descriptors для runtime tiers и capability negotiation."""
+"""Capability descriptors for runtime tiers and capability negotiation."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ FeatureMode = Literal["portable", "hybrid", "native_first"]
 
 @dataclass(frozen=True)
 class CapabilityRequirements:
-    """Требования приложения к runtime capabilities."""
+    """Application requirements for runtime capabilities."""
 
     tier: RuntimeTier | None = None
     flags: tuple[str, ...] = ()
@@ -57,7 +57,7 @@ class CapabilityRequirements:
 
 @dataclass(frozen=True)
 class RuntimeCapabilities:
-    """Фактические runtime-возможности, которые гарантирует cognitia."""
+    """Actual runtime capabilities guaranteed by cognitia."""
 
     runtime_name: str
     tier: RuntimeTier
@@ -75,16 +75,16 @@ class RuntimeCapabilities:
     supports_provider_override: bool = False
 
     def enabled_flags(self) -> frozenset[str]:
-        """Имена capability-флагов, поддерживаемых runtime."""
+        """Capability flag names supported by the runtime."""
         enabled = {flag for flag, is_enabled in self._flag_map().items() if is_enabled}
         return frozenset(enabled)
 
     def supports(self, requirements: CapabilityRequirements | None) -> bool:
-        """Проверить, удовлетворяет ли runtime требованиям."""
+        """Check whether the runtime satisfies the requirements."""
         return not self.missing(requirements)
 
     def missing(self, requirements: CapabilityRequirements | None) -> tuple[str, ...]:
-        """Вернуть список недостающих capability-флагов."""
+        """Return the list of missing capability flags."""
         if requirements is None or requirements.is_empty:
             return ()
 
@@ -146,7 +146,7 @@ _CAPABILITIES_BY_RUNTIME: dict[str, RuntimeCapabilities] = {
 
 
 def get_runtime_capabilities(runtime_name: str) -> RuntimeCapabilities:
-    """Получить capability descriptor для runtime."""
+    """Get the capability descriptor for a runtime."""
     if runtime_name not in VALID_RUNTIME_NAMES:
         raise ValueError(
             f"Unknown runtime: '{runtime_name}'. "

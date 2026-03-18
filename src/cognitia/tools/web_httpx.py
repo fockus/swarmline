@@ -1,7 +1,7 @@
-"""HttpxWebProvider — реализация WebProvider через httpx.
+"""HttpxWebProvider - WebProvider implementation via httpx.
 
-fetch: GET URL → trafilatura/regex → текст (работает всегда).
-search: делегирует в pluggable WebSearchProvider (DIP).
+fetch: GET URL -> trafilatura/regex -> text (always works).
+search: delegates to a pluggable WebSearchProvider (DIP).
 Optional dependency: httpx, trafilatura.
 """
 
@@ -22,18 +22,18 @@ _log = structlog.get_logger(component="web_httpx")
 
 
 def _extract_text(html: str) -> str:
-    """Извлечь текст из HTML: trafilatura → улучшенный regex fallback.
+    """Extract text from HTML: trafilatura -> improved regex fallback.
 
-    Trafilatura (если установлен) извлекает основной контент страницы,
-    отбрасывая навигацию, футеры, рекламу.
-    Без trafilatura — regex удаляет script/style/теги.
+    Trafilatura (if installed) extracts the main page content,
+    discarding navigation, footers, and ads.
+    Without trafilatura, regex removes script/style/tags.
     """
     if trafilatura is not None:
         text = trafilatura.extract(html, include_links=True) or ""
         if text:
             return text[:50000]
 
-    # Улучшенный regex fallback: удаляем script, style, затем теги
+    # Improved regex fallback: remove script, style, then tags
     text = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL)
     text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL)
     text = re.sub(r"<[^>]+>", " ", text)
@@ -42,10 +42,10 @@ def _extract_text(html: str) -> str:
 
 
 class HttpxWebProvider:
-    """WebProvider через httpx (async HTTP client).
+    """WebProvider via httpx (async HTTP client).
 
-    fetch: GET → trafilatura/regex → text. Или делегация в fetch_provider (Jina/Crawl4AI).
-    search: делегирует в search_provider (DuckDuckGo, Tavily, SearXNG, Brave).
+    fetch: GET -> trafilatura/regex -> text. Or delegate to fetch_provider (Jina/Crawl4AI).
+    search: delegates to search_provider (DuckDuckGo, Tavily, SearXNG, Brave).
     """
 
     def __init__(
@@ -59,10 +59,10 @@ class HttpxWebProvider:
         self._fetch_provider = fetch_provider
 
     async def fetch(self, url: str) -> str:
-        """Загрузить URL, вернуть текстовое содержимое.
+        """Load a URL and return text content.
 
-        Если задан fetch_provider (Jina/Crawl4AI) — делегирует.
-        Иначе — httpx GET + trafilatura/regex.
+        If fetch_provider (Jina/Crawl4AI) is set, delegate to it.
+        Otherwise, use httpx GET + trafilatura/regex.
         """
         if self._fetch_provider is not None:
             return await self._fetch_provider.fetch(url)
@@ -83,10 +83,10 @@ class HttpxWebProvider:
             return ""
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск в интернете через pluggable provider.
+        """Search the internet via a pluggable provider.
 
-        Делегирует в search_provider если он задан.
-        Без провайдера возвращает пустой список.
+        Delegates to search_provider when it is set.
+        Returns an empty list when no provider is configured.
         """
         if self._search_provider is None:
             return []

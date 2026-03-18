@@ -1,8 +1,4 @@
-"""Pydantic-схемы для structured output ThinRuntime.
-
-ActionEnvelope — ответ LLM (tool_call | final | clarify).
-PlanSchema / PlanStep — planner-lite JSON plan.
-"""
+"""Schemas module."""
 
 from __future__ import annotations
 
@@ -11,12 +7,12 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
-# ActionEnvelope — ответ LLM в одном из трёх вариантов
+
 # ---------------------------------------------------------------------------
 
 
 class ToolCallAction(BaseModel):
-    """Вариант A: вызов инструмента."""
+    """Tool Call Action implementation."""
 
     name: str = Field(..., description="Полное имя инструмента (mcp__server__tool)")
     args: dict[str, Any] = Field(default_factory=dict)
@@ -24,7 +20,7 @@ class ToolCallAction(BaseModel):
 
 
 class FinalAction(BaseModel):
-    """Вариант B: финальный ответ."""
+    """Final Action implementation."""
 
     final_message: str = Field(..., description="Полный ответ пользователю")
     citations: list[str] = Field(default_factory=list)
@@ -32,47 +28,44 @@ class FinalAction(BaseModel):
 
 
 class ClarifyQuestion(BaseModel):
-    """Один вопрос для уточнения."""
+    """Clarify Question implementation."""
 
     id: str
     text: str
 
 
 class ClarifyAction(BaseModel):
-    """Вариант C: уточнение (не хватает данных)."""
+    """Clarify Action implementation."""
 
     questions: list[ClarifyQuestion] = Field(..., min_length=1)
     assistant_message: str = Field(default="")
 
 
 class ActionEnvelope(BaseModel):
-    """Конверт ответа LLM — ровно один из вариантов.
-
-    type: "tool_call" | "final" | "clarify"
-    """
+    """Action Envelope implementation."""
 
     type: str = Field(..., pattern=r"^(tool_call|final|clarify)$")
 
-    # Вариант A: tool_call
+
     tool: ToolCallAction | None = None
 
-    # Вариант B: final
+
     final_message: str | None = None
     citations: list[str] = Field(default_factory=list)
     next_suggestions: list[str] = Field(default_factory=list)
 
-    # Вариант C: clarify
+
     questions: list[ClarifyQuestion] = Field(default_factory=list)
     assistant_message: str = Field(default="")
 
     def get_tool_call(self) -> ToolCallAction:
-        """Извлечь tool_call. Raises ValueError если type != tool_call."""
+        """Extract tool_call. Raises ValueError if type != tool_call."""
         if self.type != "tool_call" or self.tool is None:
             raise ValueError("ActionEnvelope.type != 'tool_call'")
         return self.tool
 
     def get_final(self) -> FinalAction:
-        """Извлечь final. Raises ValueError если type != final."""
+        """Extract final. Raises ValueError if type != final."""
         if self.type != "final" or self.final_message is None:
             raise ValueError("ActionEnvelope.type != 'final'")
         return FinalAction(
@@ -82,7 +75,7 @@ class ActionEnvelope(BaseModel):
         )
 
     def get_clarify(self) -> ClarifyAction:
-        """Извлечь clarify. Raises ValueError если type != clarify."""
+        """Extract clarify. Raises ValueError if type != clarify."""
         if self.type != "clarify" or not self.questions:
             raise ValueError("ActionEnvelope.type != 'clarify'")
         return ClarifyAction(
@@ -97,7 +90,7 @@ class ActionEnvelope(BaseModel):
 
 
 class PlanStep(BaseModel):
-    """Один шаг плана."""
+    """Plan Step implementation."""
 
     id: str
     title: str
@@ -108,10 +101,7 @@ class PlanStep(BaseModel):
 
 
 class PlanSchema(BaseModel):
-    """JSON-план от LLM для planner-lite режима.
-
-    type: "plan"
-    """
+    """Plan Schema implementation."""
 
     type: str = Field(default="plan", pattern=r"^plan$")
     goal: str

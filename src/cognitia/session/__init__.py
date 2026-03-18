@@ -1,4 +1,4 @@
-"""Модуль сессий — управление сессиями агента."""
+"""Sessions module - agent session management."""
 
 from cognitia.session.backends import (
     InMemorySessionBackend,

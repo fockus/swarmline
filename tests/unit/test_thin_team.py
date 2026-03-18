@@ -1,7 +1,5 @@
-"""TDD RED: ThinTeamOrchestrator — lead delegation, workers, MessageBus.
-
-CRP-2.2: Полноценный team orchestrator для ThinRuntime.
-Каждый тест = бизнес-факт.
+"""TDD RED: ThinTeamOrchestrator - lead delegation, workers, MessageBus. CRP-2.2: Polnotsennyy team orchestrator for ThinRuntime.
+Kazhdyy test = biznots-fakt.
 """
 
 from __future__ import annotations
@@ -16,7 +14,7 @@ from cognitia.orchestration.team_types import TeamConfig, TeamMessage
 
 
 def _make_llm_call(response_text: str = "done"):
-    """Mock LLM call с фиксированным ответом."""
+    """Mock LLM call with fiksirovannym responseom."""
 
     async def _llm_call(messages: list[dict], system_prompt: str, **kwargs) -> str:
         return json.dumps({"type": "final", "final_message": response_text})
@@ -25,7 +23,7 @@ def _make_llm_call(response_text: str = "done"):
 
 
 def _make_slow_llm_call(delay: float = 10.0):
-    """Mock LLM call с задержкой."""
+    """Mock LLM call with zaderzhkoy."""
 
     async def _llm_call(messages: list[dict], system_prompt: str, **kwargs) -> str:
         await asyncio.sleep(delay)
@@ -59,7 +57,7 @@ class TestThinTeamStartSpawnsWorkers:
 
 
 class TestThinTeamStopCancelsAll:
-    """stop → все workers cancelled."""
+    """stop -> vse workers cancelled."""
 
     async def test_thin_team_stop_cancels_all(self) -> None:
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
@@ -75,7 +73,7 @@ class TestThinTeamStopCancelsAll:
 
 
 class TestThinTeamStatusAggregated:
-    """team_status отражает состояние всех workers."""
+    """team_status otrazhaet sostoyanie vseh workers."""
 
     async def test_thin_team_status_aggregated(self) -> None:
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
@@ -83,13 +81,13 @@ class TestThinTeamStatusAggregated:
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call("done"))
         team_id = await orch.start(_config(2), "Quick task")
 
-        # Ждём завершения workers
+        # Wait zaversheniya workers
         await asyncio.sleep(0.3)
         status = await orch.get_team_status(team_id)
 
         assert len(status.workers) == 2
         assert status.team_id == team_id
-        # Все workers completed → team completed
+        # Vse workers completed -> team completed
         all_done = all(
             w.state in ("completed", "failed", "cancelled") for w in status.workers.values()
         )
@@ -98,7 +96,7 @@ class TestThinTeamStatusAggregated:
 
 
 class TestThinTeamSendMessageDelivered:
-    """send_message → worker видит в inbox MessageBus."""
+    """send_message -> worker vidit in inbox MessageBus."""
 
     async def test_thin_team_send_message_delivered(self) -> None:
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
@@ -133,7 +131,7 @@ class TestThinTeamPauseResumeAgent:
         team_id = await orch.start(_config(2), "Task")
         await asyncio.sleep(0.05)
 
-        # Получаем UUID agent_id (pause_agent ожидает UUID, не worker name)
+        # Poluchaem UUID agent_id (pause_agent ozhidaet UUID, not worker name)
         state = orch._teams[team_id]
         worker_name = list(state.worker_ids.keys())[0]
         agent_id = state.worker_ids[worker_name]
@@ -170,18 +168,18 @@ class TestThinTeamLeadPromptComposed:
         orch = ThinTeamOrchestrator(llm_call=capturing_llm)
         await orch.start(_config(1), "Build feature Y")
 
-        # Ждём worker completion
+        # Wait worker completion
         await asyncio.sleep(0.3)
 
-        # system_prompt должен содержать worker spec prompt
-        # task (messages[0].content) должен содержать lead_prompt + worker name
+        # system_prompt should soderzhat worker spec prompt
+        # task (messages[0].content) should soderzhat lead_prompt + worker name
         assert len(captured_prompts) >= 1
         # Worker system_prompt comes from spec
         assert "Worker 0 prompt" in captured_prompts[0]
 
 
 class TestThinTeamAllCompleted:
-    """Все workers completed → team state = completed."""
+    """Vse workers completed -> team state = completed."""
 
     async def test_thin_team_all_completed(self) -> None:
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator
@@ -189,7 +187,7 @@ class TestThinTeamAllCompleted:
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call("finished"))
         team_id = await orch.start(_config(3), "Quick parallel task")
 
-        # Ждём завершения всех workers
+        # Wait zaversheniya vseh workers
         await asyncio.sleep(0.5)
         status = await orch.get_team_status(team_id)
 
@@ -198,7 +196,7 @@ class TestThinTeamAllCompleted:
 
 
 class TestThinTeamProtocolCompliance:
-    """ThinTeamOrchestrator удовлетворяет TeamOrchestrator + ResumableTeamOrchestrator."""
+    """ThinTeamOrchestrator udovletvoryaet TeamOrchestrator + ResumableTeamOrchestrator."""
 
     async def test_isinstance_team_orchestrator(self) -> None:
         from cognitia.orchestration.thin_team import ThinTeamOrchestrator

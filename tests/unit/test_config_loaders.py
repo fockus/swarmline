@@ -1,8 +1,5 @@
-"""Тесты для cognitia.config — загрузчики конфигурации.
-
-Iteration 2: TDD тесты для перенесённых loaders.
-Testing Trophy: unit + integration (fixture YAML).
-"""
+"""Tests for cognitia.config - configuration loaders. Iteration 2: TDD tests for migrated loaders.
+Testing Trophy: unit + integration (fixture YAML)."""
 
 from __future__ import annotations
 
@@ -18,10 +15,10 @@ from cognitia.config.role_skills import YamlRoleSkillsLoader
 
 
 class TestYamlRoleSkillsLoader:
-    """Тесты YamlRoleSkillsLoader — реализация RoleSkillsProvider Protocol."""
+    """Tests YamlRoleSkillsLoader - implementation of the RoleSkillsProvider Protocol."""
 
     def test_load_skills_for_role(self, tmp_path: Path) -> None:
-        """get_skills возвращает список skill_id для роли."""
+        """get_skills returns list skill_id for the role."""
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text(
             "coach:\n  skills: [iss, finuslugi]\n  local_tools: [calculate_goal_plan]\n",
@@ -31,7 +28,7 @@ class TestYamlRoleSkillsLoader:
         assert loader.get_skills("coach") == ["iss", "finuslugi"]
 
     def test_load_local_tools_for_role(self, tmp_path: Path) -> None:
-        """get_local_tools возвращает список local tools для роли."""
+        """get_local_tools returns list local tools for the role."""
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text(
             "diagnostician:\n  skills: []\n  local_tools: [save_diagnosis, assess_health_score]\n",
@@ -44,7 +41,7 @@ class TestYamlRoleSkillsLoader:
         ]
 
     def test_missing_role_returns_empty(self, tmp_path: Path) -> None:
-        """Для несуществующей роли возвращает пустые списки."""
+        """For a not existing role returns empty lists."""
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text("coach:\n  skills: []\n", encoding="utf-8")
         loader = YamlRoleSkillsLoader(yaml_file)
@@ -52,14 +49,14 @@ class TestYamlRoleSkillsLoader:
         assert loader.get_local_tools("nonexistent") == []
 
     def test_missing_file_returns_empty(self, tmp_path: Path) -> None:
-        """Отсутствующий файл → пустые списки для любой роли."""
+        """Missing file -> empty lists for any role."""
         yaml_file = tmp_path / "nonexistent.yaml"
         loader = YamlRoleSkillsLoader(yaml_file)
         assert loader.get_skills("coach") == []
         assert loader.get_local_tools("coach") == []
 
     def test_list_roles(self, tmp_path: Path) -> None:
-        """list_roles возвращает все ключи верхнего уровня."""
+        """list_roles returns all top-level keys."""
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text(
             "coach:\n  skills: []\ndiagnostician:\n  skills: []\ndeposit_advisor:\n  skills: []\n",
@@ -69,14 +66,14 @@ class TestYamlRoleSkillsLoader:
         assert set(loader.list_roles()) == {"coach", "diagnostician", "deposit_advisor"}
 
     def test_satisfies_role_skills_provider_protocol(self, tmp_path: Path) -> None:
-        """YamlRoleSkillsLoader удовлетворяет RoleSkillsProvider Protocol."""
+        """YamlRoleSkillsLoader satisfies RoleSkillsProvider Protocol."""
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text("coach:\n  skills: []\n", encoding="utf-8")
         loader = YamlRoleSkillsLoader(yaml_file)
-        # Структурная проверка наличия методов Protocol
+        # Structural check for the presence of Protocol methods
         assert hasattr(loader, "get_skills")
         assert hasattr(loader, "get_local_tools")
-        # Вызов не бросает исключений
+        # Calling not throws exceptions
         assert isinstance(loader.get_skills("coach"), list)
         assert isinstance(loader.get_local_tools("coach"), list)
 
@@ -87,10 +84,10 @@ class TestYamlRoleSkillsLoader:
 
 
 class TestRoleRouterConfig:
-    """Тесты typed RoleRouterConfig dataclass."""
+    """Tests typed RoleRouterConfig dataclass."""
 
     def test_default_values(self) -> None:
-        """Дефолтные значения: default_role='default', keywords={}."""
+        """Default values: default_role='default', keywords={}."""
         config = RoleRouterConfig()
         assert config.default_role == "default"
         assert config.keywords == {}
@@ -102,7 +99,7 @@ class TestRoleRouterConfig:
             config.default_role = "other"  # type: ignore[misc]
 
     def test_custom_values(self) -> None:
-        """Можно задать custom default_role и keywords."""
+        """You can set custom default_role and keywords."""
         config = RoleRouterConfig(
             default_role="coach",
             keywords={"deposit_advisor": ["вклад", "депозит"]},
@@ -112,10 +109,10 @@ class TestRoleRouterConfig:
 
 
 class TestLoadRoleRouterConfig:
-    """Тесты load_role_router_config (YAML → RoleRouterConfig)."""
+    """Tests load_role_router_config (YAML -> RoleRouterConfig)."""
 
     def test_load_from_yaml(self, tmp_path: Path) -> None:
-        """Загрузка из существующего YAML-файла."""
+        """Loading from an existing YAML file."""
         yaml_file = tmp_path / "role_router.yaml"
         yaml_file.write_text(
             "default_role: coach\nkeywords:\n  deposit_advisor:\n    - вклад\n    - депозит\n",
@@ -128,14 +125,14 @@ class TestLoadRoleRouterConfig:
         assert "вклад" in config.keywords["deposit_advisor"]
 
     def test_missing_file_returns_defaults(self, tmp_path: Path) -> None:
-        """Отсутствующий файл → дефолтный config."""
+        """Missing file -> default config."""
         yaml_file = tmp_path / "nonexistent.yaml"
         config = load_role_router_config(yaml_file)
         assert config.default_role == "default"
         assert config.keywords == {}
 
     def test_empty_file_returns_defaults(self, tmp_path: Path) -> None:
-        """Пустой YAML → дефолтный config."""
+        """Empty YAML -> default config."""
         yaml_file = tmp_path / "role_router.yaml"
         yaml_file.write_text("", encoding="utf-8")
         config = load_role_router_config(yaml_file)
@@ -143,7 +140,7 @@ class TestLoadRoleRouterConfig:
         assert config.keywords == {}
 
     def test_partial_yaml(self, tmp_path: Path) -> None:
-        """YAML только с keywords (без default_role) → default_role='default'."""
+        """YAML only with keywords (without default_role) -> default_role='default'."""
         yaml_file = tmp_path / "role_router.yaml"
         yaml_file.write_text(
             "keywords:\n  credit_advisor:\n    - кредит\n",

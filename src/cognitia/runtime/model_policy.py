@@ -1,17 +1,10 @@
-"""ModelPolicy — политика выбора модели (Sonnet/Opus) по условиям (секция 3 архитектуры).
-
-Триггеры переключения на Opus (секция 3.2):
-- Пользователь просит «план», «стратегию», «пошагово», «дорожную карту»
-- 2+ skills одновременно
-- Роль из escalate_roles
-- N неудачных tool calls
-"""
+"""Model Policy module."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-# Ключевые слова, триггерящие Opus (стемы для покрытия словоформ)
+
 _OPUS_KEYWORDS: tuple[str, ...] = (
     "план",
     "стратеги",
@@ -24,14 +17,7 @@ _OPUS_KEYWORDS: tuple[str, ...] = (
 
 @dataclass
 class ModelPolicy:
-    """Политика выбора модели.
-
-    - default_model: модель по умолчанию (быстрая, дешёвая)
-    - escalation_model: модель для сложных задач
-    - escalate_roles: роли, которые всегда используют escalation_model
-    - escalate_on_tool_failures: после N неудачных tool calls → escalate
-    - min_skills_for_escalation: >= N одновременных skills → escalate
-    """
+    """Model Policy implementation."""
 
     default_model: str = "sonnet"
     escalation_model: str = "opus"
@@ -40,7 +26,7 @@ class ModelPolicy:
     min_skills_for_escalation: int = 2
 
     def select(self, role_id: str, tool_failure_count: int = 0) -> str:
-        """Выбрать модель (обратная совместимость). DRY: делегирует в select_for_turn."""
+        """Select."""
         return self.select_for_turn(
             role_id=role_id,
             user_text="",
@@ -54,22 +40,12 @@ class ModelPolicy:
         active_skill_count: int = 0,
         tool_failure_count: int = 0,
     ) -> str:
-        """Расширенный выбор модели с keyword triggers (секция 3.2).
+        """Select for turn."""
 
-        Args:
-            role_id: текущая роль
-            user_text: текст сообщения пользователя
-            active_skill_count: количество активных skills
-            tool_failure_count: количество ошибок tool calls
-
-        Returns:
-            'sonnet' или 'opus'
-        """
-        # 1. Роль
         if role_id in self.escalate_roles:
             return self.escalation_model
 
-        # 2. Ошибки tools
+
         if tool_failure_count >= self.escalate_on_tool_failures:
             return self.escalation_model
 

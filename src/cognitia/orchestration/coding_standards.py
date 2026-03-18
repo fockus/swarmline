@@ -1,7 +1,7 @@
-"""Конфигурации code pipeline для multi-agent orchestration.
+"""Code pipeline configurations for multi-agent orchestration.
 
-Все конфиги — frozen dataclass (pure value objects, 0 зависимостей).
-Factory methods предоставляют типовые пресеты.
+All configs — frozen dataclass (pure value objects, 0 dependencies).
+Factory methods provide standard presets.
 """
 
 from __future__ import annotations
@@ -11,10 +11,10 @@ from dataclasses import dataclass, field
 
 @dataclass(slots=True, frozen=True)
 class CodingStandardsConfig:
-    """Стандарты кода — все флаги OFF по умолчанию.
+    """Code standards — all flags are off by default.
 
-    Декларативно задаёт обязательные практики для code task:
-    TDD, SOLID, DRY, KISS, Clean Architecture, тесты, coverage.
+    Declaratively sets the mandatory practices for the code task:
+    TDD, SOLID, DRY, KISS, Clean Architecture, tests, coverage.
     """
 
     tdd_enabled: bool = False
@@ -53,9 +53,9 @@ class CodingStandardsConfig:
 
 @dataclass(slots=True, frozen=True)
 class WorkflowAutomationConfig:
-    """Автоматизация workflow — какие шаги pipeline автоматические.
+    """Workflow automation — which pipeline steps are automatic.
 
-    Определяет lint, format, test, commit, review автоматизацию.
+    Defines lint, format, test, commit, review automation.
     """
 
     auto_lint: bool = False
@@ -88,9 +88,9 @@ class WorkflowAutomationConfig:
 
 @dataclass(slots=True, frozen=True)
 class AutonomousLoopConfig:
-    """Параметры автономного цикла выполнения агентом.
+    """Parameters of the autonomous execution cycle by the agent.
 
-    max_cost_credits=0 означает «без ограничения по кредитам».
+    max_cost_credits=0 means "no credit limit".
     """
 
     max_iterations: int = 10
@@ -115,7 +115,7 @@ class AutonomousLoopConfig:
 
 @dataclass(slots=True, frozen=True)
 class TeamAgentsConfig:
-    """Конфигурация team agents — какие роли активны в команде."""
+    """Team agents configuration — which roles are active in the team."""
 
     use_architect: bool = True
     use_developer: bool = True
@@ -126,10 +126,10 @@ class TeamAgentsConfig:
 
 @dataclass(slots=True, frozen=True)
 class CodePipelineConfig:
-    """Агрегат конфигурации code pipeline.
+    """Code pipeline configuration unit.
 
-    Объединяет стандарты кода, автоматизацию workflow,
-    параметры автономного цикла и team agents.
+    Combines code standards, workflow automation,
+    offline loop parameters and team agents.
     """
 
     standards: CodingStandardsConfig = field(default_factory=CodingStandardsConfig)

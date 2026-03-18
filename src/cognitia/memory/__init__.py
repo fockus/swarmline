@@ -1,10 +1,10 @@
-"""Модуль памяти — провайдеры хранения данных агента.
+"""Memory module - storage providers for agent data.
 
-ISP: монолитный MemoryProvider удалён. Используйте мелкие протоколы
-из cognitia.protocols (MessageStore, FactStore, etc.).
+ISP: the monolithic MemoryProvider has been removed. Use the small protocols
+from cognitia.protocols (MessageStore, FactStore, etc.).
 
-PostgresMemoryProvider перенесён в infrastructure layer
-приложения. Здесь только InMemory + types.
+PostgresMemoryProvider has been moved to the application's infrastructure layer.
+Only InMemory + types live here.
 """
 
 from __future__ import annotations

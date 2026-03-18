@@ -1,13 +1,9 @@
-"""TDD Red Phase: Token-Level Streaming для ThinRuntime (Этап 1.2).
-
-Тесты проверяют:
-- stream mode → получаем N assistant_delta events (N > 1)
-- tool_call_started/finished events при streaming
-- JSON envelope парсится из token stream
+"""TDD Red Phase: Token-Level Streaming for ThinRuntime (Etap 1.2). Tests verify:
+- stream mode -> poluchaem N assistant_delta events (N > 1)
+- tool_call_started/finished events pri streaming
+- JSON envelope parsitsya from token stream
 - Planner: per-step streaming
-- Fallback на full response при ошибке парсинга
-
-Contract: ThinRuntime._stream_llm_call(), stream_parser.py
+- Fallback on full response pri oshibke parsinga Contract: ThinRuntime._stream_llm_call(), stream_parser.py
 """
 
 from __future__ import annotations
@@ -25,18 +21,10 @@ from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpe
 
 
 class MockStreamingLLM:
-    """Mock LLM с поддержкой streaming (возвращает токены по одному).
-
-    При stream=True возвращает AsyncIterator[str] (токены).
-    При stream=False возвращает полный ответ.
-    """
+    """Mock LLM with podderzhkoy streaming (returns tokeny by odnomu). Pri stream=True returns AsyncIterator[str] (tokeny). Pri stream=False returns full response. """
 
     def __init__(self, token_chunks: list[list[str]], full_responses: list[str] | None = None):
-        """
-        Args:
-            token_chunks: Для каждого вызова — список token chunks.
-            full_responses: Fallback полные ответы (для non-stream mode).
-        """
+        """ Args: token_chunks: Dlya kazhdogo vyzova - list token chunks. full_responses: Fallback full responsey (for non-stream mode). """
         self._token_chunks = list(token_chunks)
         self._full_responses = list(full_responses or [])
         self._call_count = 0
@@ -104,15 +92,15 @@ async def collect_events(
 
 
 class TestIncrementalEnvelopeParser:
-    """Incremental JSON envelope parsing из token stream (low-level)."""
+    """Incremental JSON envelope parsing from token stream (low-level)."""
 
     def test_thin_stream_json_envelope_parsed_incrementally(self) -> None:
-        """JSON envelope собирается из отдельных token chunks."""
+        """JSON envelope collects from otdelnyh token chunks."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
 
-        # Подаём JSON по частям
+        # Podaem JSON by chastyam
         chunks = ['{"type":', '"final",', '"final_message":', '"Hello world"}']
 
         for chunk in chunks[:-1]:
@@ -125,50 +113,50 @@ class TestIncrementalEnvelopeParser:
         assert result["final_message"] == "Hello world"
 
     def test_thin_stream_parser_handles_nested_json(self) -> None:
-        """Parser обрабатывает вложенные JSON объекты."""
+        """Parser obrabatyvaet vlozhennye JSON obekty."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
 
-        # tool_call с вложенным args
+        # tool_call with vlozhennym args
         envelope = {
             "type": "tool_call",
             "tool": {"name": "read_file", "args": {"path": "/tmp/test.txt"}},
         }
         full_json = json.dumps(envelope)
 
-        # Подаём по 10 символов
+        # Podaem by 10 simvolov
         for i in range(0, len(full_json), 10):
             chunk = full_json[i : i + 10]
             result = parser.feed(chunk)
             if i + 10 < len(full_json):
                 assert result is None
 
-        # Последний feed должен вернуть результат
+        # Posledniy feed should vernut result
         if result is None:
             result = parser.feed("")
         assert result is not None
         assert result["type"] == "tool_call"
 
     def test_thin_stream_parser_fallback_on_invalid_json(self) -> None:
-        """При невалидном JSON → parser возвращает None, не crash."""
+        """Pri notvalidnom JSON -> parser returns None, not crash."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
         result = parser.feed("this is not json at all")
-        # Не crash, возвращает None (пока нет полного JSON)
+        # Not crash, returns None (poka nott polnogo JSON)
         assert result is None
 
-        # Финализация
+        # Finalizatsiya
         final = parser.finalize()
         assert final is None
 
 
 class TestStreamParser:
-    """High-level StreamParser — возвращает ActionEnvelope."""
+    """High-level StreamParser - returns ActionEnvelope."""
 
     def test_stream_json_envelope_parsed_incrementally(self) -> None:
-        """StreamParser собирает JSON и возвращает ActionEnvelope."""
+        """StreamParser sobiraet JSON and returns ActionEnvelope."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -184,7 +172,7 @@ class TestStreamParser:
         assert parser.result.final_message == "Hello world"
 
     def test_stream_partial_json_not_complete(self) -> None:
-        """Неполный JSON — парсер ещё не завершён."""
+        """Notfull JSON - parser eshche not zavershen."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -193,7 +181,7 @@ class TestStreamParser:
         assert not parser.has_result
 
     def test_stream_invalid_envelope_sets_error(self) -> None:
-        """Валидный JSON но невалидный ActionEnvelope — error set."""
+        """Validnyy JSON no invalid ActionEnvelope - error set."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -205,7 +193,7 @@ class TestStreamParser:
         assert parser.result is None
 
     def test_stream_reset_clears_state(self) -> None:
-        """reset() сбрасывает все внутренние состояния."""
+        """reset() sbrasyvaet vse vnutrennie sostoyaniya."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -218,7 +206,7 @@ class TestStreamParser:
         assert parser.error is None
 
     def test_stream_markdown_fences_stripped(self) -> None:
-        """JSON обёрнутый в markdown fences парсится корректно."""
+        """JSON obernutyy in markdown fences parsitsya correctly."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -235,10 +223,10 @@ class TestStreamParser:
 
 
 class TestIncrementalEnvelopeParserEdgeCases:
-    """Edge cases для IncrementalEnvelopeParser."""
+    """Edge cases for IncrementalEnvelopeParser."""
 
     def test_thin_stream_parser_text_before_json_skipped(self) -> None:
-        """Текст перед JSON объектом пропускается."""
+        """Tekst pered JSON obektom is skipped."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
@@ -247,7 +235,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
         assert result["type"] == "final"
 
     def test_thin_stream_parser_finalize_incomplete(self) -> None:
-        """finalize() на неполном JSON → None."""
+        """finalize() on notpolnom JSON -> None."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
@@ -256,7 +244,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
         assert result is None
 
     def test_thin_stream_parser_get_buffered_text(self) -> None:
-        """get_buffered_text() возвращает накопленный текст."""
+        """get_buffered_text() returns nakoplennyy tekst."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
@@ -265,7 +253,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
         assert '{"partial":' in text
 
     def test_thin_stream_parser_escaped_quotes_in_string(self) -> None:
-        r"""Escaped quotes (\") внутри JSON строки обрабатываются."""
+        r"""Escaped quotes (\") vnutri JSON strings obrabatyvayutsya."""
         from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
@@ -275,10 +263,10 @@ class TestIncrementalEnvelopeParserEdgeCases:
 
 
 class TestStreamParserEdgeCases:
-    """Edge cases для StreamParser."""
+    """Edge cases for StreamParser."""
 
     def test_stream_parser_json_with_escaped_strings(self) -> None:
-        r"""JSON с escaped строками парсится корректно."""
+        r"""JSON with escaped stringmi parsitsya correctly."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -287,7 +275,7 @@ class TestStreamParserEdgeCases:
         assert parser.result is not None
 
     def test_stream_parser_empty_fenced_block(self) -> None:
-        """Пустой fenced block → не завершён."""
+        """Empty fenced block -> not zavershen."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -295,7 +283,7 @@ class TestStreamParserEdgeCases:
         assert not done
 
     def test_stream_parser_no_json_object(self) -> None:
-        """Текст без JSON объекта → не завершён."""
+        """Tekst without JSON obekta -> not zavershen."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
@@ -303,12 +291,12 @@ class TestStreamParserEdgeCases:
         assert not done
 
     def test_stream_parser_invalid_json_structure(self) -> None:
-        """Скобки балансируются но содержимое — не JSON."""
+        """Skobki balansiruyutsya no content - not JSON."""
         from cognitia.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         done = parser.feed("{not valid json content}")
-        # Скобки сбалансированы, но json.loads fail → не complete
+        # Skobki sbalansirovany, no json.loads fail -> not complete
         assert not done or (done and parser.error is not None)
 
 
@@ -318,12 +306,12 @@ class TestStreamParserEdgeCases:
 
 
 class TestThinRuntimeStreaming:
-    """Token-level streaming через ThinRuntime."""
+    """Token-level streaming cherez ThinRuntime."""
 
     @pytest.mark.asyncio
     async def test_thin_stream_emits_token_deltas(self) -> None:
-        """Stream mode → получаем N assistant_delta events (N > 1)."""
-        # Разбиваем final response на token chunks
+        """Stream mode -> poluchaem N assistant_delta events (N > 1)."""
+        # Razbivaem final response on token chunks
         final_json = _make_final_json("Привет! Как дела? Всё хорошо.")
         chunks = [final_json[i : i + 15] for i in range(0, len(final_json), 15)]
 
@@ -340,16 +328,16 @@ class TestThinRuntimeStreaming:
         )
 
         deltas = [e for e in events if e.type == "assistant_delta"]
-        # В streaming mode должно быть больше 1 delta event
+        # V streaming mode should byt bolshe 1 delta event
         assert len(deltas) > 1, f"Ожидается >1 assistant_delta, получено {len(deltas)}"
 
-        # Финальный event тоже должен быть
+        # Finalnyy event tozhe should byt
         finals = [e for e in events if e.type == "final"]
         assert len(finals) == 1
 
     @pytest.mark.asyncio
     async def test_thin_stream_react_tool_call_preserved(self) -> None:
-        """tool_call_started/finished events сохраняются при streaming."""
+        """tool_call_started/finished events are preserved pri streaming."""
 
         def calc(args: dict) -> dict:
             return {"result": 42}
@@ -359,7 +347,7 @@ class TestThinRuntimeStreaming:
 
         llm = MockStreamingLLM(
             token_chunks=[
-                list(tool_call_json),  # по символу
+                list(tool_call_json),  # by simvolu
                 list(final_json),
             ],
             full_responses=[tool_call_json, final_json],
@@ -376,7 +364,7 @@ class TestThinRuntimeStreaming:
 
     @pytest.mark.asyncio
     async def test_thin_stream_planner_per_step_streaming(self) -> None:
-        """Planner mode: каждый step стримит отдельно."""
+        """Planner mode: kazhdyy step strimit otdelno."""
         plan_json = json.dumps(
             {
                 "goal": "Test plan",
@@ -416,13 +404,13 @@ class TestThinRuntimeStreaming:
         runtime = ThinRuntime(llm_call=llm)
         events = await collect_events(runtime, "Сложная задача", mode_hint="planner")
 
-        # Должны быть delta events от streaming отдельных шагов
+        # Should byt delta events ot streaming otdelnyh stepov
         deltas = [e for e in events if e.type == "assistant_delta"]
         assert len(deltas) >= 2, "Каждый step плана должен стримить отдельно"
 
     @pytest.mark.asyncio
     async def test_thin_stream_react_emits_multiple_deltas_for_final(self) -> None:
-        """React mode: final response стримится token-by-token (>1 delta)."""
+        """React mode: final response strimitsya token-by-token (>1 delta)."""
         final_json = _make_final_json("Ответ из react mode: 42 + extras")
         chunks = [final_json[i : i + 12] for i in range(0, len(final_json), 12)]
 
@@ -481,10 +469,10 @@ class TestThinRuntimeStreaming:
 
     @pytest.mark.asyncio
     async def test_thin_stream_react_fallback_on_stream_failure(self) -> None:
-        """React mode: если streaming не поддерживается -> fallback на non-streaming."""
+        """React mode: if streaming not supportssya -> fallback on non-streaming."""
 
         class NonStreamLLM:
-            """LLM без поддержки stream kwarg (TypeError при stream=True)."""
+            """LLM without podderzhki stream kwarg (TypeError pri stream=True)."""
 
             def __init__(self, responses: list[str]) -> None:
                 self._responses = list(responses)
@@ -510,8 +498,8 @@ class TestThinRuntimeStreaming:
 
     @pytest.mark.asyncio
     async def test_thin_stream_fallback_on_parse_error(self) -> None:
-        """При ошибке парсинга streaming → fallback на full response."""
-        # Невалидные chunks (corrupted stream)
+        """Pri oshibke parsinga streaming -> fallback on full response."""
+        # Invalid chunks (corrupted stream)
         bad_chunks = ["corrupt", "ed str", "eam da", "ta!!!"]
 
         llm = MockStreamingLLM(
@@ -522,9 +510,9 @@ class TestThinRuntimeStreaming:
         runtime = ThinRuntime(llm_call=llm)
         events = await collect_events(runtime, "test", mode_hint="conversational")
 
-        # Должен сработать fallback — финальный ответ получен
+        # Should srabotat fallback - finalnyy response poluchen
         finals = [e for e in events if e.type == "final"]
         assert len(finals) == 1
-        # Не должно быть error (fallback, не crash)
+        # Not should byt error (fallback, not crash)
         errors = [e for e in events if e.type == "error"]
         assert len(errors) == 0

@@ -1,6 +1,4 @@
-"""Тесты для PostgresMemoryProvider — через мок SQLAlchemy session.
-
-Проверяем, что методы вызывают правильные SQL-запросы с правильными параметрами.
+"""Tests for PostgresMemoryProvider - cherez mock SQLAlchemy session. Verify, chto metody vyzyvayut pravilnye SQL-queries with pravilnymi parameterami.
 """
 
 import json
@@ -12,7 +10,7 @@ from cognitia.memory.types import GoalState
 
 
 def _mock_session_factory():
-    """Создать мок async_sessionmaker."""
+    """Create mock async_sessionmaker."""
     session = AsyncMock()
     session.__aenter__ = AsyncMock(return_value=session)
     session.__aexit__ = AsyncMock(return_value=False)
@@ -23,7 +21,7 @@ def _mock_session_factory():
 
 
 class TestJsonOrNone:
-    """_json_or_none — утилита сериализации."""
+    """_json_or_none - utilita serializatsii."""
 
     def test_none_returns_none(self) -> None:
         assert _json_or_none(None) is None
@@ -42,7 +40,7 @@ class TestJsonOrNone:
 
 
 class TestUserIdSubquery:
-    """_USER_ID_SUB — единая константа для подзапроса."""
+    """_USER_ID_SUB - edinaya konstanta for podquery."""
 
     def test_contains_select(self) -> None:
         assert "SELECT id FROM users" in _USER_ID_SUB
@@ -50,7 +48,7 @@ class TestUserIdSubquery:
 
 
 class TestSaveMessage:
-    """save_message — INSERT в messages."""
+    """save_message - INSERT in messages."""
 
     @pytest.mark.asyncio
     async def test_calls_execute(self) -> None:
@@ -77,13 +75,13 @@ class TestSaveMessage:
 
 
 class TestGetMessages:
-    """get_messages — SELECT из messages."""
+    """get_messages - SELECT from messages."""
 
     @pytest.mark.asyncio
     async def test_returns_messages(self) -> None:
         factory, session = _mock_session_factory()
 
-        # Мокируем результат запроса
+        # Mockiruem result query
         row1 = MagicMock()
         row1.role = "user"
         row1.content = "Вопрос?"
@@ -102,7 +100,7 @@ class TestGetMessages:
         messages = await provider.get_messages("u1", "t1", limit=10)
 
         assert len(messages) == 2
-        # Должны быть в ASC порядке (reversed)
+        # Should byt in ASC poryadke (reversed)
         assert messages[0].role == "user"
         assert messages[1].role == "assistant"
 
@@ -136,7 +134,7 @@ class TestCountMessages:
 
 
 class TestDeleteMessagesBefore:
-    """delete_messages_before — DELETE с keep_last."""
+    """delete_messages_before - DELETE with keep_last."""
 
     @pytest.mark.asyncio
     async def test_returns_rowcount(self) -> None:
@@ -249,7 +247,7 @@ class TestGetFacts:
 
 
 class TestSaveGoalUpsert:
-    """save_goal должен upsert'ить существующую цель."""
+    """save_goal should upsert'it sushchestvuyushchuyu tsel."""
 
     @pytest.mark.asyncio
     async def test_uses_upsert_query(self) -> None:
@@ -265,7 +263,7 @@ class TestSaveGoalUpsert:
 
 
 class TestSaveSummary:
-    """save_summary — INSERT ... ON CONFLICT DO UPDATE с версией."""
+    """save_summary - INSERT ... ON CONFLICT DO UPDATE with versiey."""
 
     @pytest.mark.asyncio
     async def test_calls_execute(self) -> None:
@@ -322,7 +320,7 @@ class TestEnsureUser:
 
 
 class TestSaveGoal:
-    """save_goal — INSERT в goals."""
+    """save_goal - INSERT in goals."""
 
     @pytest.mark.asyncio
     async def test_saves_goal(self) -> None:
@@ -357,7 +355,7 @@ class TestSaveGoal:
 
 
 class TestGetActiveGoal:
-    """get_active_goal — SELECT из goals."""
+    """get_active_goal - SELECT from goals."""
 
     @pytest.mark.asyncio
     async def test_returns_goal(self) -> None:
@@ -394,7 +392,7 @@ class TestGetActiveGoal:
 
 
 class TestSessionState:
-    """save/get_session_state — таблица topics."""
+    """save/get_session_state - table topics."""
 
     @pytest.mark.asyncio
     async def test_save_session_state(self) -> None:
@@ -447,7 +445,7 @@ class TestSessionState:
 
 
 class TestGetUserProfile:
-    """get_user_profile — агрегация фактов."""
+    """get_user_profile - agregatsiya faktov."""
 
     @pytest.mark.asyncio
     async def test_returns_profile_with_facts(self) -> None:

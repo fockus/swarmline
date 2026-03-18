@@ -1,4 +1,4 @@
-"""Coverage тесты: structured_output — append/extract/normalize/strip."""
+"""Coverage tests: structured_output - append/extract/normalize/strip."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from cognitia.runtime.structured_output import (
 
 
 class TestAppendStructuredOutputInstruction:
-    """append_structured_output_instruction добавляет JSON Schema инструкцию."""
+    """append_structured_output_instruction dobavlyaet JSON Schema instruktsiyu."""
 
     def test_append_no_format_returns_unchanged(self) -> None:
         result = append_structured_output_instruction("Hello", None)
@@ -54,7 +54,7 @@ class TestAppendStructuredOutputInstruction:
 
 
 class TestExtractStructuredOutput:
-    """extract_structured_output парсит JSON из текста."""
+    """extract_structured_output parsit JSON from teksta."""
 
     def test_extract_none_when_no_format(self) -> None:
         assert extract_structured_output('{"a": 1}', None) is None
@@ -91,7 +91,7 @@ class TestExtractStructuredOutput:
 
 
 class TestNormalizeOutputSchema:
-    """normalize_output_schema обрабатывает json_schema wrapper."""
+    """normalize_output_schema obrabatyvaet json_schema wrapper."""
 
     def test_normalize_none(self) -> None:
         assert normalize_output_schema(None) is None

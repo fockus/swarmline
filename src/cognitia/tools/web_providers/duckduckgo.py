@@ -1,8 +1,8 @@
-"""DuckDuckGo search provider — метапоиск по 9 движкам, без API ключей.
+"""DuckDuckGo search provider - metasearch across 9 engines, no API keys.
 
 Optional dependency: ddgs (pip install cognitia[web-duckduckgo]).
-Движки: Bing, Google, Brave, DuckDuckGo, Yandex, Yahoo, Mojeek, Wikipedia, Grokipedia.
-Если зависимость не установлена — graceful fallback на пустой список.
+Engines: Bing, Google, Brave, DuckDuckGo, Yandex, Yahoo, Mojeek, Wikipedia, Grokipedia.
+If the dependency is not installed, gracefully fall back to an empty list.
 """
 
 from __future__ import annotations
@@ -22,24 +22,24 @@ _log = structlog.get_logger(component="web_search.duckduckgo")
 
 
 class DuckDuckGoSearchProvider:
-    """Метапоиск через ddgs (9 движков, без API ключей).
+    """Metasearch via ddgs (9 engines, no API keys).
 
-    Используется библиотека ddgs (бывший duckduckgo-search).
-    Запросы выполняются синхронно через run_in_executor.
+    Uses the ddgs library (formerly duckduckgo-search).
+    Requests are executed synchronously via run_in_executor.
     """
 
     def __init__(self, timeout: int = 15) -> None:
         self._timeout = timeout
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск через ddgs.
+        """Search via ddgs.
 
         Args:
-            query: Поисковый запрос. Пустой/whitespace -> пустой список.
-            max_results: Максимальное количество результатов.
+            query: Search query. Empty/whitespace -> empty list.
+            max_results: Maximum number of results.
 
         Returns:
-            Список SearchResult. Пустой при отсутствии ddgs или ошибке.
+            List of SearchResult. Empty if ddgs is unavailable or an error occurs.
         """
         if DDGS is None:
             return []

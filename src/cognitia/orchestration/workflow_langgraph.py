@@ -1,8 +1,4 @@
-"""WorkflowGraph → LangGraph compiler.
-
-Конвертирует WorkflowGraph в LangGraph StateGraph для использования с DeepAgentsRuntime.
-Если LangGraph недоступен — raises ImportError с понятным сообщением.
-"""
+"""Workflow Langgraph module."""
 
 from __future__ import annotations
 
@@ -17,19 +13,7 @@ async def _parallel_entry_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def compile_to_langgraph(graph: WorkflowGraph) -> Any:
-    """Compile WorkflowGraph → LangGraph StateGraph.
-
-    Маппинг:
-    - add_node → StateGraph.add_node
-    - add_edge → StateGraph.add_edge
-    - add_conditional_edge → StateGraph.add_conditional_edges
-    - set_entry → StateGraph.set_entry_point
-    - parallel → fan-out/fan-in pattern
-    - interrupt → interrupt_before
-
-    Returns compiled LangGraph app.
-    Raises ImportError if langgraph not installed.
-    """
+    """Compile to langgraph."""
     try:
         from langgraph.graph import END, StateGraph  # type: ignore[import-not-found]
     except ImportError as e:

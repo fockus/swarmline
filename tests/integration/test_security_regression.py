@@ -1,6 +1,4 @@
-"""Security regression тесты — по P0 из аудита.
-
-Проверяют: prefix-bypass path isolation, cross-tenant isolation,
+"""Security regression tests - by P0 from audita. Verify: prefix-bypass path isolation, cross-tenant isolation,
 memory bank path traversal.
 """
 
@@ -16,13 +14,13 @@ pytestmark = pytest.mark.security
 
 
 class TestPathIsolationPrefixBypass:
-    """P0: prefix-bypass через startswith → is_relative_to."""
+    """P0: prefix-bypass cherez startswith -> is_relative_to."""
 
     async def test_sandbox_workspace_prefix_bypass(self, tmp_path) -> None:
-        """workspace=/tmp/ws → попытка читать /tmp/ws2 через 'ws2/secret'."""
+        """workspace=/tmp/ws -> popytka chitat /tmp/ws2 cherez 'ws2/secret'."""
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 
-        # Создаём два workspace: ws и ws2
+        # Create dva workspace: ws and ws2
         ws = tmp_path / "u1" / "t1" / "workspace"
         ws.mkdir(parents=True)
         ws2 = tmp_path / "u1" / "t1" / "workspace2"
@@ -34,18 +32,18 @@ class TestPathIsolationPrefixBypass:
             SandboxConfig(root_path=str(tmp_path), user_id="u1", topic_id="t1")
         )
 
-        # Попытка прочитать файл из workspace2 через относительный путь
+        # Popytka prochitat file from workspace2 cherez otnositelnyy put
         with pytest.raises((SandboxViolation, FileNotFoundError)):
             await sandbox.read_file("../workspace2/secret.txt")
 
     async def test_memory_bank_prefix_bypass(self, tmp_path) -> None:
-        """memory=/tmp/u1/t1/memory → попытка читать /tmp/u1/t1/memory2/secret."""
+        """memory=/tmp/u1/t1/memory -> popytka chitat /tmp/u1/t1/memory2/secret."""
         from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         cfg = MemoryBankConfig(enabled=True, root_path=tmp_path)
         p = FilesystemMemoryBankProvider(cfg, user_id="u1", topic_id="t1")
 
-        # Создаём «чужую» директорию рядом
+        # Create «chuzhuyu» directory ryadom
         evil_dir = tmp_path / "u1" / "t1" / "memory2"
         evil_dir.mkdir(parents=True)
         (evil_dir / "secret.md").write_text("SECRET")
@@ -55,7 +53,7 @@ class TestPathIsolationPrefixBypass:
 
 
 class TestCrossTenantIsolation:
-    """Security: cross-user и cross-topic изоляция."""
+    """Security: cross-user and cross-topic isolation."""
 
     async def test_sandbox_cross_user_cannot_read(self, tmp_path) -> None:
         from cognitia.tools.sandbox_local import LocalSandboxProvider
@@ -83,7 +81,7 @@ class TestCrossTenantIsolation:
         assert await pb.read_file("MEMORY.md") is None
 
     async def test_plan_store_multi_tenant(self) -> None:
-        """PlanStore фильтрует list_plans по user_id/topic_id."""
+        """PlanStore filtruet list_plans by user_id/topic_id."""
         from datetime import datetime
 
         from cognitia.orchestration.plan_store import InMemoryPlanStore
@@ -119,7 +117,7 @@ class TestCrossTenantIsolation:
 
 
 class TestPolicyCaseSensitivity:
-    """P1: ToolPolicy обрабатывает оба naming convention."""
+    """P1: ToolPolicy obrabatyvaet oba naming convention."""
 
     def test_snake_case_denied(self) -> None:
         from cognitia.policy import DefaultToolPolicy, PermissionDeny
@@ -129,7 +127,7 @@ class TestPolicyCaseSensitivity:
         state = ToolPolicyInput(
             tool_name="", input_data={}, active_skill_ids=[], allowed_local_tools=set()
         )
-        # snake_case должен быть запрещён
+        # snake_case should byt zapreshchen
         assert isinstance(policy.can_use_tool("bash", {}, state), PermissionDeny)
         assert isinstance(policy.can_use_tool("read", {}, state), PermissionDeny)
 

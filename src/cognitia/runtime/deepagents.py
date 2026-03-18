@@ -1,4 +1,4 @@
-"""DeepAgents runtime под AgentRuntime v1 контракт."""
+"""Deepagents module."""
 
 from __future__ import annotations
 
@@ -56,16 +56,12 @@ __all__ = ["DeepAgentsRuntime", "_check_langchain_available", "create_langchain_
 
 
 def _check_langchain_available() -> RuntimeErrorData | None:
-    """Проверить наличие langchain deps. None = всё ок."""
+    """Check langchain available."""
     return check_langchain_available()
 
 
 class DeepAgentsRuntime:
-    """AgentRuntime обёртка над LangChain для Deep Agents.
-
-    В portable mode suppress'ит native built-ins.
-    В hybrid/native_first сохраняет их в active_tools.
-    """
+    """Deep Agents Runtime implementation."""
 
     def __init__(
         self,
@@ -73,14 +69,7 @@ class DeepAgentsRuntime:
         tool_executors: dict[str, Callable] | None = None,
         mcp_servers: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализировать runtime.
-
-        Args:
-            config: Конфигурация runtime.
-            tool_executors: Маппинг tool_name → async callable для local tools.
-            mcp_servers: Маппинг server_id → url/config для MCP серверов.
-                         Если передан, создается McpBridge для tool discovery и execution.
-        """
+        """Init."""
         self._config = config or RuntimeConfig(runtime_name="deepagents")
         self._tool_executors = tool_executors or {}
         self._mcp_bridge = McpBridge(mcp_servers) if mcp_servers else None
@@ -94,11 +83,7 @@ class DeepAgentsRuntime:
         config: RuntimeConfig | None = None,
         mode_hint: str | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Выполнить turn через DeepAgents-compatible path.
-
-        Выбирает active_tools по feature_mode, конвертирует в LangChain формат,
-        вызывает модель, нормализует стрим в RuntimeEvent.
-        """
+        """Run."""
         dep_error = _check_langchain_available()
         if dep_error:
             yield RuntimeEvent.error(dep_error)
@@ -251,7 +236,7 @@ class DeepAgentsRuntime:
             )
             return
 
-        # Формируем new_messages
+
         new_messages.append(Message(role="assistant", content=full_text))
 
         yield RuntimeEvent.final(
@@ -276,7 +261,7 @@ class DeepAgentsRuntime:
         *,
         include_system_prompt: bool = True,
     ) -> list[Any]:
-        """Конвертировать cognitia Message → LangChain messages."""
+        """Build lc messages."""
         return build_langchain_messages(
             messages,
             system_prompt,
@@ -284,11 +269,11 @@ class DeepAgentsRuntime:
         )
 
     def _build_llm(self, model: str, base_url: str | None = None) -> Any:
-        """Создать provider-specific chat model через отдельный resolver."""
+        """Create provider-specific chat model via separate resolver."""
         return build_deepagents_chat_model(model, base_url=base_url)
 
     def _should_use_native_path(self, config: RuntimeConfig) -> bool:
-        """Native upstream path включаем для hybrid/native_first."""
+        """Should use native path."""
         return config.is_native_mode
 
     async def _stream_native(
@@ -302,7 +287,7 @@ class DeepAgentsRuntime:
         input_payload: Any = None,
         run_config: dict[str, Any] | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Стримить через native upstream DeepAgents graph."""
+        """Stream native."""
         native_config = native_config or {}
         graph = build_deepagents_graph(
             model=model,
@@ -338,7 +323,7 @@ class DeepAgentsRuntime:
         input_payload: Any = None,
         run_config: dict[str, Any] | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Стримить через LangChain astream_events."""
+        """Stream langchain."""
         lc_messages = self._build_lc_messages(messages, system_prompt)
         lc_tools = [
             create_langchain_tool(spec, self._tool_executors.get(spec.name)) for spec in tools
@@ -353,11 +338,11 @@ class DeepAgentsRuntime:
             yield event
 
     async def cleanup(self) -> None:
-        """Нечего очищать — LangChain stateless."""
+        """Cleanup."""
 
     @staticmethod
     def filter_builtin_tools(tools: list[ToolSpec]) -> list[ToolSpec]:
-        """Отфильтровать built-in tools DeepAgents. Public для тестирования."""
+        """Filter builtin tools."""
         return filter_native_builtin_tools(tools)
 
     @staticmethod
@@ -367,7 +352,7 @@ class DeepAgentsRuntime:
         feature_mode: str,
         allow_native_features: bool = False,
     ) -> list[ToolSpec]:
-        """Выбрать активные tools для DeepAgents по runtime policy."""
+        """Select active tools."""
         if allow_native_features or feature_mode in {"hybrid", "native_first"}:
             return list(tools)
         return DeepAgentsRuntime.filter_builtin_tools(tools)

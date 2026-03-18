@@ -1,9 +1,4 @@
-"""Типы для subagent orchestration.
-
-SubagentSpec — описание subagent'а.
-SubagentStatus — текущее состояние.
-SubagentResult — результат работы.
-"""
+"""Subagent Types module."""
 
 from __future__ import annotations
 
@@ -19,7 +14,7 @@ SubagentState = Literal["pending", "running", "completed", "failed", "cancelled"
 
 @dataclass(frozen=True)
 class SubagentSpec:
-    """Спецификация subagent'а — что запустить."""
+    """Spetsandfandtoatsandya subagent'a - what run."""
 
     name: str
     system_prompt: str
@@ -29,7 +24,7 @@ class SubagentSpec:
 
 @dataclass(frozen=True)
 class SubagentStatus:
-    """Текущий статус subagent'а."""
+    """Tetoushandy status subagent'a."""
 
     state: SubagentState = "pending"
     progress: str = ""
@@ -41,7 +36,7 @@ class SubagentStatus:
 
 @dataclass(frozen=True)
 class SubagentResult:
-    """Результат работы subagent'а."""
+    """Result of the subagent's work."""
 
     agent_id: str
     status: SubagentStatus

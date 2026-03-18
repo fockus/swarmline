@@ -1,4 +1,4 @@
-"""Типы данных для системы скилов."""
+"""Data types for the skills system."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ McpTransport = Literal["url", "http", "sse", "stdio"]
 
 @dataclass(frozen=True)
 class McpServerSpec:
-    """Спецификация MCP-сервера."""
+    """MCP server specification."""
 
     name: str
     transport: McpTransport = "url"
@@ -22,7 +22,7 @@ class McpServerSpec:
 
 @dataclass(frozen=True)
 class SkillSpec:
-    """Спецификация скилла (из YAML)."""
+    """Skill specification (from YAML)."""
 
     skill_id: str
     title: str
@@ -35,7 +35,7 @@ class SkillSpec:
 
 @dataclass(frozen=True)
 class LoadedSkill:
-    """Загруженный скилл: спецификация + содержимое инструкции."""
+    """Loaded skill: specification + instruction content."""
 
     spec: SkillSpec
     instruction_md: str

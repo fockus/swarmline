@@ -1,48 +1,48 @@
-"""ToolIdCodec — нормализация имён инструментов (секция 4.4 архитектуры).
+"""ToolIdCodec - normalization of tool names (architecture section 4.4).
 
-Обеспечивает единообразную работу с tool_name/server_id
-независимо от дефисов, подчёркиваний и префиксов mcp__.
+Provides consistent handling of tool_name/server_id
+regardless of hyphens, underscores, and mcp__ prefixes.
 """
 
 from __future__ import annotations
 
-# Разделитель SDK между server и tool
+# SDK separator between server and tool
 _SEP = "__"
 _MCP_PREFIX = "mcp"
 
 
 class DefaultToolIdCodec:
-    """Реализация ToolIdCodec по умолчанию.
+    """Default ToolIdCodec implementation.
 
-    Формат tool_name в SDK: mcp__<server_id>__<tool_name>
-    Разделитель — двойное подчёркивание.
-    server_id может содержать дефисы (iss-price).
+    SDK tool_name format: mcp__<server_id>__<tool_name>
+    Separator: double underscore.
+    server_id may contain hyphens (iss-price).
     """
 
     def matches(self, tool_name: str, server_id: str) -> bool:
-        """Проверить, принадлежит ли tool_name данному server_id."""
+        """Check whether tool_name belongs to the given server_id."""
         extracted = self.extract_server(tool_name)
         if extracted is None:
             return False
         return extracted == server_id
 
     def encode(self, server_id: str, tool_name: str) -> str:
-        """Построить полное имя инструмента: mcp__<server_id>__<tool_name>."""
+        """Build the full tool name: mcp__<server_id>__<tool_name>."""
         return f"{_MCP_PREFIX}{_SEP}{server_id}{_SEP}{tool_name}"
 
     def extract_server(self, tool_name: str) -> str | None:
-        """Извлечь server_id из tool_name формата mcp__<server>__<tool>.
+        """Extract server_id from a tool_name in the mcp__<server>__<tool> format.
 
-        Поддерживает server_id с дефисами (iss-price):
-        разделяем по '__' (двойное подчёркивание), а не по '_'.
+        Supports server_id values with hyphens (iss-price):
+        we split on '__' (double underscore), not on '_'.
         """
         if not tool_name.startswith(f"{_MCP_PREFIX}{_SEP}"):
             return None
 
-        # Убираем префикс "mcp__"
+        # Strip the "mcp__" prefix
         rest = tool_name[len(f"{_MCP_PREFIX}{_SEP}") :]
 
-        # Ищем следующий "__" — это разделитель server/tool
+        # Find the next "__" separator between server and tool
         idx = rest.find(_SEP)
         if idx <= 0:
             return None

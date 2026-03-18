@@ -1,7 +1,5 @@
-"""Интеграционные тесты: wiring capabilities в CognitiaStack.
-
-Проверяет что sandbox/todo/thinking tools корректно собираются
-и каждая capability включается/выключается независимо.
+"""Integration tests: wiring capabilities in CognitiaStack. Verifies chto sandbox/todo/thinking tools correctly are assembled
+and kazhdaya capability includessya/vyklyuchaetsya notzavisimo.
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ def sandbox_config(tmp_path) -> SandboxConfig:
 
 
 class TestCollectCapabilityTools:
-    """Тесты collect_capability_tools — merge tools из разных capability."""
+    """Tests collect_capability_tools - merge tools from raznyh capability."""
 
     def test_sandbox_only(self, sandbox_config: SandboxConfig) -> None:
         """Sandbox enabled, todo disabled → sandbox tools + thinking."""
@@ -61,7 +59,7 @@ class TestCollectCapabilityTools:
         assert "read" not in specs
 
     def test_all_capabilities(self, sandbox_config: SandboxConfig) -> None:
-        """Sandbox + todo + thinking → все инструменты."""
+        """Sandbox + todo + thinking -> vse tooly."""
         from cognitia.bootstrap.capabilities import collect_capability_tools
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider
         from cognitia.tools.sandbox_local import LocalSandboxProvider
@@ -89,11 +87,11 @@ class TestCollectCapabilityTools:
         assert "todo_write" in specs
         # Thinking
         assert "thinking" in specs
-        # Проверяем что executors тоже собрались
+        # Verify chto executors tozhe sobralis
         assert set(specs.keys()) == set(executors.keys())
 
     def test_nothing_enabled(self) -> None:
-        """Все capability выключены → пустые dicts."""
+        """Vse capability disabled -> empty dicts."""
         from cognitia.bootstrap.capabilities import collect_capability_tools
 
         specs, executors = collect_capability_tools(thinking_enabled=False)
@@ -101,7 +99,7 @@ class TestCollectCapabilityTools:
         assert executors == {}
 
     def test_thinking_disabled(self, sandbox_config: SandboxConfig) -> None:
-        """Thinking отключён → нет thinking tool."""
+        """Thinking otklyuchen -> nott thinking tool."""
         from cognitia.bootstrap.capabilities import collect_capability_tools
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 
@@ -116,10 +114,10 @@ class TestCollectCapabilityTools:
 
 
 class TestCapabilityToolsExecution:
-    """Тесты что собранные tools реально работают."""
+    """Tests chto builtnye tools realno work."""
 
     async def test_sandbox_bash_works(self, sandbox_config: SandboxConfig) -> None:
-        """bash tool из capability wiring работает."""
+        """bash tool from capability wiring works."""
         from cognitia.bootstrap.capabilities import collect_capability_tools
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 
@@ -131,7 +129,7 @@ class TestCapabilityToolsExecution:
         assert data["stdout"].strip() == "integration"
 
     async def test_todo_write_read_works(self) -> None:
-        """todo_write → todo_read из capability wiring работает."""
+        """todo_write -> todo_read from capability wiring works."""
         from cognitia.bootstrap.capabilities import collect_capability_tools
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider
 
@@ -149,7 +147,7 @@ class TestCapabilityToolsExecution:
         assert data["todos"][0]["content"] == "test"
 
     async def test_thinking_works(self) -> None:
-        """thinking tool из capability wiring работает."""
+        """thinking tool from capability wiring works."""
         from cognitia.bootstrap.capabilities import collect_capability_tools
 
         _specs, executors = collect_capability_tools(thinking_enabled=True)

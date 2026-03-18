@@ -18,14 +18,14 @@ class NdjsonParser(Protocol):
 
 
 class ClaudeNdjsonParser:
-    """Parse Claude Code stream-json NDJSON output into RuntimeEvents.
+    """Parse Claude Code stream-JSON NDJSON output into RuntimeEvents.
 
-    Supported event mappings:
-    - assistant + text content -> RuntimeEvent.assistant_delta
-    - assistant + tool_use content -> RuntimeEvent.tool_call_started
-    - result -> RuntimeEvent.final
-    - invalid JSON / unknown type -> None
-    """
+  Supported event mappings:
+  - assistant + text content -> RuntimeEvent.assistant_delta
+  - assistant + tool_use content -> RuntimeEvent.tool_call_started
+  - result -> RuntimeEvent.final
+  - invalid JSON / unknown type -> None
+  """
 
     def parse_line(self, line: str) -> RuntimeEvent | None:
         """Parse a Claude Code NDJSON line."""
@@ -76,9 +76,9 @@ class ClaudeNdjsonParser:
 class GenericNdjsonParser:
     """Fallback parser: wraps raw JSON as RuntimeEvent status data.
 
-    Any valid JSON object is passed through as a status event.
-    Invalid JSON returns None.
-    """
+  Any valid JSON object is passed through as a status event.
+  Invalid JSON returns None.
+  """
 
     def parse_line(self, line: str) -> RuntimeEvent | None:
         """Parse a generic NDJSON line."""

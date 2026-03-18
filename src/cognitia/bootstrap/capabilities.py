@@ -1,6 +1,6 @@
-"""Capabilities wiring — сборка tools из независимых capability.
+"""Capabilities wiring - assemble tools from independent capabilities.
 
-6 capability с отдельными toggle:
+Six capabilities with separate toggles:
 sandbox, web, todo, memory_bank, planning, thinking.
 """
 
@@ -25,18 +25,18 @@ def collect_capability_tools(
     thinking_enabled: bool = True,
     tool_budget_config: ToolBudgetConfig | None = None,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
-    """Собрать tools из всех включённых capability.
+    """Assemble tools from all enabled capabilities.
 
     Args:
-        sandbox_provider: SandboxProvider → bash, read, write, edit, ...
-        web_provider: WebProvider → web_fetch, web_search.
-        todo_provider: TodoProvider → todo_read, todo_write.
-        memory_bank_provider: MemoryBankProvider → memory_read, memory_write, ...
-        plan_manager: PlanManager → plan_create, plan_status, plan_execute.
-        plan_user_id: user_id для namespace планов.
-        plan_topic_id: topic_id для namespace планов.
-        thinking_enabled: → thinking tool (standalone).
-        tool_budget_config: Бюджет отбора инструментов (опционально).
+        sandbox_provider: SandboxProvider -> bash, read, write, edit, ...
+        web_provider: WebProvider -> web_fetch, web_search.
+        todo_provider: TodoProvider -> todo_read, todo_write.
+        memory_bank_provider: MemoryBankProvider -> memory_read, memory_write, ...
+        plan_manager: PlanManager -> plan_create, plan_status, plan_execute.
+        plan_user_id: user_id for the plan namespace.
+        plan_topic_id: topic_id for the plan namespace.
+        thinking_enabled: -> thinking tool (standalone).
+        tool_budget_config: Tool selection budget (optional).
 
     Returns:
         Tuple: (merged specs, merged executors).

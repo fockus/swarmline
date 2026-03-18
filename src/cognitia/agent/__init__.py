@@ -1,4 +1,4 @@
-"""cognitia.agent — high-level facade для интеграции cognitia в приложения."""
+"""cognitia.agent - high-level facade for integrating cognitia into applications."""
 
 from cognitia.agent.agent import Agent
 from cognitia.agent.config import AgentConfig

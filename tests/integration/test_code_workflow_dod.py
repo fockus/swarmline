@@ -1,8 +1,6 @@
-"""Integration: CodeWorkflowEngine + DoDStateMachine + CodeVerifier.
-
-Реальный DoDStateMachine, CodeVerifier как simple implementation (не mock).
-CodeVerifier возвращает pass на все criteria.
-Проверить: полный pipeline plan -> execute -> verify, result.status = success.
+"""Integration: CodeWorkflowEngine + DoDStateMachine + CodeVerifier. Real DoDStateMachine, CodeVerifier kak simple implementation (not mock).
+CodeVerifier returns pass on vse criteria.
+Check: full pipeline plan -> execute -> verify, result.status = success.
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ from cognitia.orchestration.verification_types import (
 
 
 class PassingCodeVerifier:
-    """Реальная (не mock) реализация CodeVerifier — все проверки проходят."""
+    """Real (not mock) implementation CodeVerifier - vse proverki prohodyat."""
 
     async def verify_contracts(self) -> VerificationResult:
         return VerificationResult(
@@ -76,7 +74,7 @@ class PassingCodeVerifier:
 
 
 class FailThenPassVerifier:
-    """CodeVerifier: первый вызов fail, далее pass. Для теста DoD retry."""
+    """CodeVerifier: pervyy call fail, dalee pass. Dlya testa DoD retry."""
 
     def __init__(self) -> None:
         self._call_count = 0
@@ -119,7 +117,7 @@ class TestCodeWorkflowDoDVerification:
 
     @pytest.mark.asyncio
     async def test_code_workflow_dod_verification_all_pass(self) -> None:
-        """Полный pipeline plan -> execute -> verify. Все criteria pass."""
+        """Full pipeline plan -> execute -> verify. Vse criteria pass."""
         verifier = PassingCodeVerifier()
         dod = DoDStateMachine(max_loops=3)
         planner = PlannerMode()
@@ -140,7 +138,7 @@ class TestCodeWorkflowDoDVerification:
 
     @pytest.mark.asyncio
     async def test_code_workflow_no_criteria_succeeds(self) -> None:
-        """Без DoD criteria -> success (verification skipped)."""
+        """Without DoD criteria -> success (verification skipped)."""
         verifier = PassingCodeVerifier()
         dod = DoDStateMachine(max_loops=3)
         planner = PlannerMode()
@@ -158,7 +156,7 @@ class TestCodeWorkflowDoDVerification:
 
     @pytest.mark.asyncio
     async def test_code_workflow_dod_retry_then_pass(self) -> None:
-        """DoDStateMachine retry: первый loop fail, второй pass."""
+        """DoDStateMachine retry: pervyy loop fail, vtoroy pass."""
         verifier = FailThenPassVerifier()
         dod = DoDStateMachine(max_loops=3)
         planner = PlannerMode()
@@ -176,6 +174,6 @@ class TestCodeWorkflowDoDVerification:
 
         assert result.status == WorkflowStatus.SUCCESS
         assert result.loop_count == 2
-        # Log содержит оба loop
+        # Log contains oba loop
         assert "Loop 1" in result.dod_log
         assert "Loop 2" in result.dod_log

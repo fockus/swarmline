@@ -1,4 +1,4 @@
-"""SkillRegistry — реестр загруженных скилов (SRP: отдельно от загрузки)."""
+"""SkillRegistry - registry of loaded skills (SRP: separate from loading)."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ _log = structlog.get_logger(component="skill_registry")
 
 
 class SkillRegistry:
-    """Реестр загруженных скилов.
+    """Registry of loaded skills.
 
-    settings_mcp — MCP-серверы из .claude/settings.json (нижний приоритет).
-    При merge: skill.yaml перезаписывает settings.json (§2.1, R-401/R-402).
+    settings_mcp - MCP servers from .claude/settings.json (lower priority).
+    On merge: skill.yaml overrides settings.json (§2.1, R-401/R-402).
     """
 
     def __init__(
@@ -28,31 +28,31 @@ class SkillRegistry:
                 self._skills[s.spec.skill_id] = s
 
     def register(self, skill: LoadedSkill) -> None:
-        """Зарегистрировать скилл."""
+        """Register a skill."""
         self._skills[skill.spec.skill_id] = skill
 
     def get(self, skill_id: str) -> LoadedSkill | None:
-        """Получить скилл по id."""
+        """Get a skill by id."""
         return self._skills.get(skill_id)
 
     def list_all(self) -> list[LoadedSkill]:
-        """Все загруженные скилы."""
+        """All loaded skills."""
         return list(self._skills.values())
 
     def list_ids(self) -> list[str]:
-        """Все id загруженных скилов."""
+        """All ids of loaded skills."""
         return list(self._skills.keys())
 
     def get_mcp_servers_for_skills(self, skill_ids: list[str]) -> dict[str, McpServerSpec]:
-        """Собрать MCP-серверы для набора скилов (§4.3, R-401/R-402).
+        """Collect MCP servers for a set of skills (§4.3, R-401/R-402).
 
-        Merge policy: settings.json (нижний приоритет) + skill.yaml (верхний).
-        skill.yaml перезаписывает settings.json при совпадении name.
+        Merge policy: settings.json (lower priority) + skill.yaml (upper priority).
+        skill.yaml overrides settings.json when names match.
         """
-        # Базовый слой — MCP из settings.json
+        # Base layer - MCP from settings.json
         servers: dict[str, McpServerSpec] = dict(self._settings_mcp)
 
-        # Верхний слой — MCP из skill.yaml (перезаписывает)
+        # Upper layer - MCP from skill.yaml (overrides)
         for sid in skill_ids:
             skill = self._skills.get(sid)
             if not skill:
@@ -62,7 +62,7 @@ class SkillRegistry:
         return servers
 
     def get_tool_allowlist(self, skill_ids: list[str]) -> set[str]:
-        """Собрать allowlist tool ids для набора скилов."""
+        """Collect tool id allowlists for a set of skills."""
         tools: set[str] = set()
         for sid in skill_ids:
             skill = self._skills.get(sid)
@@ -73,13 +73,13 @@ class SkillRegistry:
         return tools
 
     def validate_tools(self, available_tools: set[str]) -> list[str]:
-        """Проверить, что tools.include из skill.yaml доступны (§4.4 acceptance).
+        """Check that tools.include from skill.yaml are available (§4.4 acceptance).
 
         Args:
-            available_tools: множество реально доступных tool_name от SDK/MCP.
+            available_tools: the set of tool names actually available from SDK/MCP.
 
         Returns:
-            Список предупреждений о недоступных инструментах.
+            A list of warnings about unavailable tools.
         """
         warnings: list[str] = []
         for skill in self._skills.values():

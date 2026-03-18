@@ -1,4 +1,4 @@
-"""Integration: Stage 4 surface для DeepAgents runtime."""
+"""Integration: Stage 4 surface for DeepAgents runtime."""
 
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ class TestDeepAgentsStage4Surface:
 class TestDeepAgentsStage4RuntimeRoundtrip:
     @pytest.mark.asyncio
     async def test_hitl_then_resume_roundtrip_on_native_runtime(self) -> None:
-        """Offline integration: interrupt → resume проходит через реальный runtime.run()."""
+        """Offline integration: interrupt -> resume prohodit cherez real runtime.run()."""
 
         class FakeGraph:
             def __init__(self) -> None:

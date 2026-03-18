@@ -1,6 +1,4 @@
-"""Тесты ThinPlannerMode — TDD: RED → GREEN.
-
-Unit-тесты с мокнутым LLM. Проверяем generate_plan, approve,
+"""Tests ThinPlannerMode - TDD: RED -> GREEN. Unit-tests with mocknutym LLM. Verify generate_plan, approve,
 execute_step, execute_all, replan.
 """
 
@@ -19,7 +17,7 @@ def _now() -> datetime:
 
 
 def _make_plan_json(goal: str = "test") -> str:
-    """JSON-ответ LLM с планом."""
+    """JSON-response LLM with planom."""
     return json.dumps(
         {
             "goal": goal,
@@ -33,13 +31,13 @@ def _make_plan_json(goal: str = "test") -> str:
 
 
 def _make_step_result_json(step_id: str, result: str) -> str:
-    """JSON-ответ LLM с результатом шага."""
+    """JSON-response LLM with resultom stepa."""
     return json.dumps({"step_id": step_id, "result": result})
 
 
 @pytest.fixture()
 def mock_llm() -> AsyncMock:
-    """Мокнутый LLM — возвращает JSON-ответы."""
+    """Mocked LLM - returns JSON-responsey."""
     llm = AsyncMock()
     llm.generate.return_value = _make_plan_json()
     return llm
@@ -97,7 +95,7 @@ class TestThinPlannerApprove:
 
 
 class TestThinPlannerExecuteStep:
-    """execute_step: выполнить один шаг."""
+    """execute_step: run odin step."""
 
     async def test_execute_step(self, planner, mock_llm) -> None:
         mock_llm.generate.side_effect = [
@@ -126,7 +124,7 @@ class TestThinPlannerExecuteStep:
 
 
 class TestThinPlannerExecuteAll:
-    """execute_all: выполнить все шаги."""
+    """execute_all: run vse steps."""
 
     async def test_execute_all_steps(self, planner, mock_llm) -> None:
         mock_llm.generate.side_effect = [
@@ -181,7 +179,7 @@ class TestThinPlannerExecuteAll:
 
 
 class TestThinPlannerReplan:
-    """replan: перегенерировать план."""
+    """replan: peregenotrirovat plan."""
 
     async def test_replan(self, planner, mock_llm) -> None:
         mock_llm.generate.side_effect = [
@@ -197,10 +195,10 @@ class TestThinPlannerReplan:
 
 
 class TestThinPlannerProtocol:
-    """ThinPlannerMode реализует PlannerMode Protocol."""
+    """ThinPlannerMode realizuet PlannerMode Protocol."""
 
     def test_isinstance(self, planner) -> None:
-        # Проверяем структурно — все методы есть
+        # Verify structurally - vse metody est
         assert hasattr(planner, "generate_plan")
         assert hasattr(planner, "approve")
         assert hasattr(planner, "execute_step")

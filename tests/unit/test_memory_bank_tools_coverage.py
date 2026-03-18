@@ -1,4 +1,4 @@
-"""Coverage тесты: memory_bank/tools.py — все 5 tool executors + edge cases."""
+"""Coverage tests: memory_bank/tools.py - all 5 tool executors + edge cases."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from cognitia.memory_bank.tools import create_memory_bank_tools
 
 
 class InMemoryProvider:
-    """InMemory MemoryBankProvider для тестов."""
+    """InMemory MemoryBankProvider for tests."""
 
     def __init__(self) -> None:
         self._files: dict[str, str] = {}
@@ -171,7 +171,7 @@ class TestMemoryDelete:
 
 
 class TestCreateMemoryBankToolsSpecs:
-    """create_memory_bank_tools возвращает 5 specs и 5 executors."""
+    """create_memory_bank_tools returns 5 specs and 5 executors."""
 
     def test_returns_five_specs_and_executors(self) -> None:
         provider = InMemoryProvider()

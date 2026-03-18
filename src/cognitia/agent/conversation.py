@@ -1,4 +1,4 @@
-"""Conversation — explicit multi-turn управление диалогом."""
+"""Conversation - explicit multi-turn dialog management."""
 
 from __future__ import annotations
 
@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class Conversation:
-    """Multi-turn conversation с Agent.
+    """Multi-turn conversation with Agent.
 
-    Управляет историей сообщений и runtime lifecycle.
+    Manages message history and runtime lifecycle.
     - claude_sdk: warm subprocess (continue_conversation)
     - thin/deepagents: accumulated messages → AgentRuntime.run()
     """
@@ -33,7 +33,7 @@ class Conversation:
         self._agent = agent
         self._session_id = session_id or uuid.uuid4().hex
         self._history: list[Message] = []
-        self._adapter: Any = None  # RuntimeAdapter для claude_sdk
+        self._adapter: Any = None  # RuntimeAdapter for claude_sdk
         self._connected = False
 
     @property
@@ -45,7 +45,7 @@ class Conversation:
         return list(self._history)
 
     async def say(self, prompt: str) -> Result:
-        """Отправить сообщение и получить ответ."""
+        """Send a message and get a response."""
         # Apply middleware before_query
         from cognitia.agent.agent import apply_before_query
 
@@ -71,7 +71,7 @@ class Conversation:
         elif not has_error and result_payload["text"]:
             self._history.append(Message(role="assistant", content=result_payload["text"]))
 
-        # Conversation всегда заполняет session_id
+        # Conversation always fills session_id
         if not result_payload["session_id"]:
             result_payload["session_id"] = self._session_id
 
@@ -127,7 +127,7 @@ class Conversation:
             self._history.append(Message(role="assistant", content=full_text))
 
     async def close(self) -> None:
-        """Закрыть conversation (отключить runtime)."""
+        """Close the conversation (disconnect the runtime)."""
         if self._adapter is not None and self._connected:
             await self._adapter.disconnect()
             self._connected = False
@@ -144,7 +144,7 @@ class Conversation:
     # -----------------------------------------------------------------------
 
     async def _execute(self, prompt: str) -> AsyncIterator[Any]:
-        """Route execution по runtime."""
+        """Route execution by runtime."""
         runtime_name = self._agent.config.runtime
 
         if runtime_name == "claude_sdk":
@@ -155,7 +155,7 @@ class Conversation:
                 yield event
 
     async def _execute_claude_sdk(self, prompt: str) -> AsyncIterator[Any]:
-        """Multi-turn через Claude SDK (warm subprocess)."""
+        """Multi-turn via Claude SDK (warm subprocess)."""
         if self._adapter is None:
             self._adapter = await self._create_adapter()
             self._connected = True
@@ -164,7 +164,7 @@ class Conversation:
             yield event
 
     async def _execute_agent_runtime(self, prompt: str, runtime_name: str) -> AsyncIterator[Any]:
-        """Multi-turn через AgentRuntime (accumulated messages)."""
+        """Multi-turn via AgentRuntime (accumulated messages)."""
         from cognitia.agent.agent import _ErrorEvent, _RuntimeEventAdapter
         from cognitia.agent.runtime_wiring import build_portable_runtime_plan
         from cognitia.runtime.factory import RuntimeFactory
@@ -196,7 +196,7 @@ class Conversation:
                 await runtime.cleanup()
 
     async def _create_adapter(self) -> Any:
-        """Создать и подключить RuntimeAdapter для claude_sdk."""
+        """Create and connect a RuntimeAdapter for claude_sdk."""
         from cognitia.agent.agent import merge_hooks
         from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks
         from cognitia.runtime.adapter import RuntimeAdapter
@@ -204,7 +204,7 @@ class Conversation:
 
         config = self._agent.config
 
-        # Merge hooks из middleware + config
+        # Merge hooks from middleware + config
         merged_hooks = merge_hooks(config.hooks, config.middleware)
 
         # Build options
@@ -252,7 +252,7 @@ class Conversation:
         return adapter
 
     def _merge_hooks(self) -> Any:
-        """Merge hooks из config.hooks + middleware.get_hooks()."""
+        """Merge hooks from config.hooks + middleware.get_hooks()."""
         from cognitia.agent.agent import merge_hooks
 
         return merge_hooks(self._agent.config.hooks, self._agent.config.middleware)

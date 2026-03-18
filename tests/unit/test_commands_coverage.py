@@ -1,6 +1,4 @@
-"""Coverage тесты: CommandRegistry (validate, execute_validated, help, errors) + loader edge cases.
-
-Дополняет test_commands_v2.py — покрывает непротестированные пути.
+"""Coverage tests: CommandRegistry (validate, execute_validated, help, errors) + loader edge cases. Dopolnyaet test_commands_v2.py - pokryvaet notprotestirovannye puti.
 """
 
 from __future__ import annotations
@@ -16,7 +14,7 @@ from cognitia.commands.registry import CommandRegistry, _validate_params
 
 
 class TestValidateParamsRequired:
-    """_validate_params проверяет required поля."""
+    """_validate_params verifies required polya."""
 
     @pytest.mark.parametrize(
         "kwargs, expected",
@@ -41,7 +39,7 @@ class TestValidateParamsRequired:
 
 
 class TestValidateParamsTypeChecks:
-    """_validate_params проверяет типы по JSON Schema."""
+    """_validate_params verifies tipy by JSON Schema."""
 
     @pytest.mark.parametrize(
         "prop_type, value, should_pass",
@@ -94,7 +92,7 @@ class TestValidateParamsTypeChecks:
 
 
 class TestExecuteValidated:
-    """execute_validated валидирует параметры перед вызовом handler."""
+    """execute_validated validiruet parameters pered vyzovom handler."""
 
     async def test_execute_validated_success(self) -> None:
         reg = CommandRegistry()
@@ -170,7 +168,7 @@ class TestExecuteValidated:
 
 
 class TestExecuteErrorHandling:
-    """execute ловит исключения handler'а."""
+    """execute lovit isklyucheniya handler'a."""
 
     async def test_execute_handler_exception(self) -> None:
         reg = CommandRegistry()
@@ -193,7 +191,7 @@ class TestExecuteErrorHandling:
 
 
 class TestRegistryUtilities:
-    """Вспомогательные методы registry."""
+    """Vspomogatelnye metody registry."""
 
     def test_is_command_slash(self) -> None:
         reg = CommandRegistry()
@@ -244,7 +242,7 @@ class TestRegistryUtilities:
 
 
 class TestDictLikeAccess:
-    """__getitem__ для backward compatibility."""
+    """__getitem__ for backward compatibility."""
 
     def test_command_def_getitem(self) -> None:
         from cognitia.commands.registry import CommandDef
@@ -325,7 +323,7 @@ class TestLoaderEdgeCases:
 
 
 class TestAutoDiscoverCommands:
-    """auto_discover_commands — регистрация YAML в CommandRegistry."""
+    """auto_discover_commands - registratsiya YAML in CommandRegistry."""
 
     async def test_auto_discover_registers_commands(self, tmp_path: Any) -> None:
         from cognitia.commands.loader import auto_discover_commands

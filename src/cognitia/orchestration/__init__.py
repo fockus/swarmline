@@ -1,4 +1,4 @@
-"""Cognitia Orchestration — планирование, subagent'ы, team mode."""
+"""Cognitia Orchestration — planning, subagents, team mode."""
 
 from cognitia.orchestration.code_verifier import CodeVerifier, CommandResult, CommandRunner
 from cognitia.orchestration.code_workflow_engine import (

@@ -1,4 +1,4 @@
-"""Built-in tools for ThinRuntime — port of DeepAgents native tools.
+"""Built-in tools for ThinRuntime - port of DeepAgents native tools.
 
 Provides 9 tools (read_file, write_file, edit_file, ls, glob, grep,
 execute, write_todos, task) backed by SandboxProvider executors from
@@ -71,13 +71,13 @@ def get_thin_builtin_specs(
 ) -> list[ToolSpec]:
     """Create ToolSpec list for ThinRuntime built-in tools.
 
-    Args:
-        sandbox: SandboxProvider for file/exec tools. If None, returns empty list.
-        _sandbox_result: Pre-computed create_sandbox_tools result (internal optimization).
+  Args:
+    sandbox: SandboxProvider for file/exec tools. If None, returns empty list.
+    _sandbox_result: Pre-computed create_sandbox_tools result (internal optimization).
 
-    Returns:
-        List of 9 ToolSpec objects with canonical thin builtin names.
-    """
+  Returns:
+    List of 9 ToolSpec objects with canonical Thin builtin names.
+  """
     if sandbox is None:
         return []
 
@@ -130,13 +130,13 @@ def get_thin_builtin_executors(
 ) -> dict[str, Callable[..., Any]]:
     """Create executor mapping for ThinRuntime built-in tools.
 
-    Args:
-        sandbox: SandboxProvider for file/exec tools.
-        _sandbox_result: Pre-computed create_sandbox_tools result (internal optimization).
+  Args:
+    sandbox: SandboxProvider for file/exec tools.
+    _sandbox_result: Pre-computed create_sandbox_tools result (internal optimization).
 
-    Returns:
-        Dict mapping canonical thin name -> async callable executor.
-    """
+  Returns:
+    Dict mapping canonical Thin name -> async callable executor.
+  """
     sandbox_executors: dict[str, Callable[..., Any]]
     if _sandbox_result is not None:
         sandbox_executors = _sandbox_result[1]
@@ -175,15 +175,15 @@ def create_thin_builtin_tools(
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable[..., Any]]]:
     """Unified factory: create specs + executors for ThinRuntime built-in tools.
 
-    Calls create_sandbox_tools once and passes the result to both
-    get_thin_builtin_specs and get_thin_builtin_executors.
+  Calls create_sandbox_tools once and passes the result to both
+  get_Thin_builtin_specs and get_Thin_builtin_executors.
 
-    Args:
-        sandbox: SandboxProvider. If None, returns empty dicts.
+  Args:
+    sandbox: SandboxProvider. If None, returns empty dicts.
 
-    Returns:
-        (specs_dict, executors_dict) with 9 tools.
-    """
+  Returns:
+    (specs_dict, executors_dict) with 9 tools.
+  """
     if sandbox is None:
         return {}, {}
 
@@ -202,13 +202,13 @@ def filter_thin_builtins_by_mode(
 ) -> list[ToolSpec]:
     """Filter built-in tool specs based on feature_mode.
 
-    Args:
-        specs: List of ToolSpec from get_thin_builtin_specs().
-        feature_mode: "portable" | "hybrid" | "native_first".
+  Args:
+    specs: List of ToolSpec from get_Thin_builtin_specs().
+    feature_mode: "portable" | "hybrid" | "native_first".
 
-    Returns:
-        Filtered list. Portable mode excludes all built-ins.
-    """
+  Returns:
+    Filtered list. Portable mode excludes all built-ins.
+  """
     if feature_mode == "portable":
         return []
     return list(specs)
@@ -219,18 +219,7 @@ def merge_tools_with_builtins(
     builtin_tools: list[ToolSpec],
     feature_mode: str = "hybrid",
 ) -> list[ToolSpec]:
-    """Merge user tools с built-in tools без дублей.
-
-    User tools имеют приоритет (override) над built-in с тем же именем.
-
-    Args:
-        user_tools: Tools предоставленные пользователем.
-        builtin_tools: Built-in tools из create_thin_builtin_tools.
-        feature_mode: "portable" | "hybrid" | "native_first".
-
-    Returns:
-        Merged list. Portable mode → только user tools.
-    """
+    """Merge tools with builtins."""
     if feature_mode == "portable":
         return list(user_tools)
 

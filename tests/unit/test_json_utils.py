@@ -1,8 +1,5 @@
-"""TDD-тесты для find_json_object_boundaries — общая утилита brace-tracking.
-
-Покрывает: простые объекты, вложенность, escaped quotes, строки с фигурными
-скобками, start offset, отсутствие JSON, незакрытые объекты.
-"""
+"""TDD-tests for find_json_object_boundaries - a general brace-tracking utility. Covers: simple objects, nesting, escaped quotes, strings with curly ones
+parentheses, start offset, no JSON, not closed objects."""
 
 from __future__ import annotations
 
@@ -11,7 +8,7 @@ from cognitia.runtime.thin.json_utils import find_json_object_boundaries
 
 
 class TestFindJsonObjectBoundariesBasic:
-    """Базовые сценарии поиска JSON-объекта."""
+    """Basic scenarios for searching for a JSON object."""
 
     def test_simple_object_returns_boundaries(self) -> None:
         text = '{"type": "final"}'
@@ -36,7 +33,7 @@ class TestFindJsonObjectBoundariesBasic:
 
 
 class TestFindJsonObjectBoundariesNested:
-    """Вложенные объекты и массивы."""
+    """Nested objects and arrays."""
 
     def test_nested_objects(self) -> None:
         text = '{"tool": {"name": "calc", "args": {"x": 1}}}'
@@ -52,7 +49,7 @@ class TestFindJsonObjectBoundariesNested:
 
 
 class TestFindJsonObjectBoundariesStrings:
-    """Корректная обработка строковых литералов."""
+    """Correct processing of string literals."""
 
     def test_escaped_quotes_in_string(self) -> None:
         text = r'{"msg": "say \"hello\""}'
@@ -67,7 +64,7 @@ class TestFindJsonObjectBoundariesStrings:
         assert text[result[0] : result[1]] == text
 
     def test_escaped_backslash_before_quote(self) -> None:
-        # Строка заканчивается на \\", т.е. escaped backslash + closing quote
+        # String ends on \\", i.e. escaped backslash + closing quote
         text = '{"path": "C:\\\\Users"}'
         result = find_json_object_boundaries(text)
         assert result is not None
@@ -75,7 +72,7 @@ class TestFindJsonObjectBoundariesStrings:
 
 
 class TestFindJsonObjectBoundariesStartOffset:
-    """Параметр start для поиска с позиции."""
+    """Parameter start to search from position."""
 
     def test_start_offset_skips_first_object(self) -> None:
         text = '{"a": 1} {"b": 2}'

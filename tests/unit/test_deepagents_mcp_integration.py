@@ -1,14 +1,9 @@
-"""TDD Red Phase: DeepAgents MCP Integration (Этап 3.2).
-
-Тесты проверяют:
-- mcp_servers provided → MCP tools в active_tools
-- LLM вызывает MCP tool → McpBridge.call_tool() вызван
-- MCP tools + custom tools → оба доступны
-- MCP tools доступны в portable/hybrid/native_first
-- Без mcp_servers → поведение не меняется (backward compat)
-
-Contract: DeepAgentsRuntime + McpBridge integration
-"""
+"""TDD Red Phase: DeepAgents MCP Integration (Phase 3.2). Tests check:
+- mcp_servers provided -> MCP tools in active_tools
+- LLM calls MCP tool -> McpBridge.call_tool() called
+- MCP tools + custom tools -> both available
+- MCP tools are available in portable/hybrid/native_first
+- Without mcp_servers -> behavior does not change (backward compat) Contract: DeepAgentsRuntime + McpBridge integration"""
 
 from __future__ import annotations
 
@@ -34,7 +29,7 @@ async def collect_events(
     tools: list[ToolSpec] | None = None,
     config: RuntimeConfig | None = None,
 ) -> list[RuntimeEvent]:
-    """Собрать все events из runtime.run()."""
+    """Collect all events from runtime.run()."""
     events = []
     async for ev in runtime.run(
         messages=[Message(role="user", content=text)],
@@ -52,22 +47,22 @@ async def collect_events(
 
 
 class TestDeepAgentsMcpToolDiscovery:
-    """MCP tool discovery через McpBridge в DeepAgentsRuntime."""
+    """MCP tool discovery via McpBridge in DeepAgentsRuntime."""
 
     def test_deepagents_accepts_mcp_servers_parameter(self) -> None:
-        """DeepAgentsRuntime.__init__ принимает mcp_servers параметр."""
+        """DeepAgentsRuntime.__init__ accepts the mcp_servers parameter."""
         from cognitia.runtime.deepagents import DeepAgentsRuntime
 
         config = RuntimeConfig(runtime_name="deepagents")
         mcp_servers = {"weather": "https://weather.test/mcp"}
 
-        # Не должен raise — параметр принимается
+        # Not should raise - parameter is accepted
         runtime = DeepAgentsRuntime(config=config, mcp_servers=mcp_servers)
         assert runtime is not None
 
     @pytest.mark.asyncio
     async def test_deepagents_mcp_tools_discovered(self) -> None:
-        """mcp_servers provided → MCP tools обнаруживаются через McpBridge."""
+        """mcp_servers provided -> MCP tools are discovered via McpBridge."""
         from cognitia.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
@@ -90,34 +85,34 @@ class TestDeepAgentsMcpToolDiscovery:
             new_callable=AsyncMock,
             return_value=mock_tools,
         ):
-            # Verify tools are discovered (accessible через internal state)
+            # Verify tools are discovered (accessible via internal state)
             tools = await runtime._mcp_bridge.discover_all_tools()
             assert len(tools) == 1
             assert tools[0].name == "mcp__svc__get_data"
 
     def test_deepagents_no_mcp_servers_no_change(self) -> None:
-        """Без mcp_servers → поведение не меняется (backward compat)."""
+        """Without mcp_servers -> behavior does not change (backward compat)."""
         from cognitia.runtime.deepagents import DeepAgentsRuntime
 
         config = RuntimeConfig(runtime_name="deepagents")
 
-        # Без mcp_servers — обратная совместимость
+        # Without mcp_servers - backward compatibility
         runtime = DeepAgentsRuntime(config=config)
         assert runtime is not None
 
-        # Не должно быть _mcp_bridge или он должен быть None/empty
+        # Not should be _mcp_bridge or it should be None/empty
         bridge = getattr(runtime, "_mcp_bridge", None)
         if bridge is not None:
-            # Bridge создан, но без серверов
+            # Bridge created, no without serverov
             assert bridge._servers == {}
 
 
 class TestDeepAgentsMcpToolExecution:
-    """Вызов MCP tools через DeepAgentsRuntime."""
+    """Call MCP tools via DeepAgentsRuntime."""
 
     @pytest.mark.asyncio
     async def test_deepagents_mcp_tool_execution(self) -> None:
-        """LLM вызывает MCP tool → McpBridge.call_tool() делегирует вызов."""
+        """LLM calls MCP tool -> McpBridge.call_tool() delegates call."""
         from cognitia.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
@@ -125,11 +120,11 @@ class TestDeepAgentsMcpToolExecution:
 
         runtime = DeepAgentsRuntime(config=config, mcp_servers=mcp_servers)
 
-        # Проверяем что bridge может создать executor для MCP tool
+        # Verify that bridge can create executor for MCP tool
         bridge = runtime._mcp_bridge
         executor = bridge.create_tool_executor("svc", "get_data")
 
-        # Mock внутренний call_tool
+        # Mock internal call_tool
         with patch.object(
             bridge._client, "call_tool",
             new_callable=AsyncMock,
@@ -140,11 +135,11 @@ class TestDeepAgentsMcpToolExecution:
 
 
 class TestDeepAgentsMcpMergedWithCustomTools:
-    """MCP tools + custom tools → оба доступны."""
+    """MCP tools + custom tools -> both are available."""
 
     @pytest.mark.asyncio
     async def test_deepagents_mcp_merged_with_custom_tools(self) -> None:
-        """MCP tools + custom tools → оба типа доступны для LLM."""
+        """MCP tools + custom tools -> both types are available for LLM."""
         from cognitia.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
@@ -183,20 +178,20 @@ class TestDeepAgentsMcpMergedWithCustomTools:
 
 
 class TestDeepAgentsMcpFeatureMode:
-    """MCP tools доступны во всех feature_modes."""
+    """MCP tools are available in all feature_modes."""
 
     @pytest.mark.parametrize("mode", ["portable", "hybrid", "native_first"])
     def test_deepagents_mcp_feature_mode_all(self, mode: str) -> None:
-        """MCP tools доступны в portable/hybrid/native_first."""
+        """MCP tools are available in portable/hybrid/native_first."""
         from cognitia.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
         config = RuntimeConfig(runtime_name="deepagents", feature_mode=mode)
 
-        # Не crash в любом mode
+        # Not crash in any mode
         runtime = DeepAgentsRuntime(config=config, mcp_servers=mcp_servers)
         assert runtime is not None
 
-        # MCP bridge должен быть доступен независимо от feature_mode
+        # MCP bridge should be available not depending on feature_mode
         bridge = getattr(runtime, "_mcp_bridge", None)
         assert bridge is not None

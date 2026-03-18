@@ -1,7 +1,5 @@
-"""E2E: ThinRuntime — все 3 режима + CRP фичи.
-
-Полный user journey: создание runtime → конфигурация → выполнение → результат.
-Fake LLM через async callable (NOT mock.patch) — единственный mock (внешняя граница).
+"""E2E: ThinRuntime - vse 3 rezhima + CRP fichi. Full user journey: createdie runtime -> configuration -> execution -> result.
+Fake LLM cherez async callable (NOT mock.patch) - edinstvennyy mock (external boundary).
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ from cognitia.tools.types import ExecutionResult
 
 
 def _final_envelope(text: str) -> str:
-    """Сформировать JSON-ответ LLM в формате final envelope."""
+    """Build JSON-response LLM in formate final envelope."""
     return json.dumps({"type": "final", "final_message": text})
 
 
@@ -34,7 +32,7 @@ def _tool_call_envelope(
     correlation_id: str = "c1",
     assistant_message: str = "",
 ) -> str:
-    """Сформировать JSON-ответ LLM в формате tool_call envelope."""
+    """Build JSON-response LLM in formate tool_call envelope."""
     return json.dumps(
         {
             "type": "tool_call",
@@ -49,7 +47,7 @@ def _plan_envelope(
     steps: list[dict[str, Any]],
     final_format: str = "summary",
 ) -> str:
-    """Сформировать JSON-ответ LLM в формате plan."""
+    """Build JSON-response LLM in formate plan."""
     return json.dumps(
         {
             "type": "plan",
@@ -61,7 +59,7 @@ def _plan_envelope(
 
 
 class MockSandbox:
-    """Fake SandboxProvider — in-memory файловая система для тестов."""
+    """Fake SandboxProvider - in-memory fileovaya sistema for testov."""
 
     def __init__(self) -> None:
         self._files: dict[str, str] = {}
@@ -87,7 +85,7 @@ class MockSandbox:
 
 
 async def _collect_events(runtime: ThinRuntime, **run_kwargs: Any) -> list[RuntimeEvent]:
-    """Собрать все RuntimeEvent из stream."""
+    """Collect vse RuntimeEvent from stream."""
     events: list[RuntimeEvent] = []
     async for event in runtime.run(**run_kwargs):
         events.append(event)
@@ -106,8 +104,8 @@ class TestThinConversationalE2E:
     async def test_thin_conversational_full_cycle(self) -> None:
         """Agent(runtime="thin") -> query("What is 2+2?") -> result.text contains answer.
 
-        Fake LLM возвращает JSON envelope {"type": "final", "final_message": "4"}.
-        """
+    Fake LLM returns JSON envelope {"type": "final", "final_message": "4"}.
+    """
         call_count = 0
 
         async def fake_llm(
@@ -150,10 +148,7 @@ class TestThinReactE2E:
 
     @pytest.mark.asyncio
     async def test_thin_react_with_tool_call_cycle(self) -> None:
-        """Agent + calculate tool -> LLM вызывает tool -> tool executes -> final.
-
-        Проверяем полный цикл: tool_call_started, tool_call_finished, final.
-        """
+        """Agent + calculate tool -> LLM vyzyvaet tool -> tool executes -> final. Verify full tsikl: tool_call_started, tool_call_finished, final. """
         tool_called = False
         call_sequence: list[str] = []
 
@@ -173,9 +168,9 @@ class TestThinReactE2E:
             llm_turn += 1
             call_sequence.append(f"llm_call_{llm_turn}")
             if llm_turn == 1:
-                # Первый вызов: LLM хочет вызвать tool
+                # Pervyy call: LLM hochet vyzvat tool
                 return _tool_call_envelope("calculate", {"a": 15, "b": 23})
-            # Второй вызов: получили результат, отдаём final
+            # Vtoroy call: poluchili result, otdaem final
             return _final_envelope("15 * 23 = 345")
 
         runtime = ThinRuntime(
@@ -234,10 +229,7 @@ class TestThinPlannerE2E:
 
     @pytest.mark.asyncio
     async def test_thin_planner_multi_step_cycle(self) -> None:
-        """LLM возвращает PlanSchema с 2 шагами -> executes each -> assembly.
-
-        Проверяем: result.text содержит результаты обоих шагов.
-        """
+        """LLM returns PlanSchema with 2 stepami -> executes each -> assembly. Verify: result.text contains results oboih stepov. """
         llm_call_count = 0
 
         async def fake_llm(
@@ -246,7 +238,7 @@ class TestThinPlannerE2E:
             nonlocal llm_call_count
             llm_call_count += 1
 
-            # Вызов 1: LLM возвращает план
+            # Vyzov 1: LLM returns plan
             if llm_call_count == 1:
                 return _plan_envelope(
                     goal="Research and summarize",
@@ -271,15 +263,15 @@ class TestThinPlannerE2E:
                     final_format="concise summary",
                 )
 
-            # Вызов 2: шаг 1 (conversational) -> результат
+            # Vyzov 2: step 1 (conversational) -> result
             if llm_call_count == 2:
                 return _final_envelope("AI research findings: transformers are powerful")
 
-            # Вызов 3: шаг 2 (conversational) -> результат
+            # Vyzov 3: step 2 (conversational) -> result
             if llm_call_count == 3:
                 return _final_envelope("Summary: AI uses transformer architecture")
 
-            # Вызов 4: финальная сборка
+            # Vyzov 4: finalnaya assembly
             return _final_envelope(
                 "Research: transformers are powerful. Summary: AI uses transformer architecture."
             )
@@ -300,25 +292,25 @@ class TestThinPlannerE2E:
         event_types = [e.type for e in events]
         assert "final" in event_types, "Planner должен emit final event"
 
-        # Должны быть status events для шагов плана
+        # Should byt status events for stepov plana
         status_events = [e for e in events if e.type == "status"]
         assert len(status_events) >= 3, "Должны быть status events: режим + шаги + plan"
 
-        # Финальный текст содержит оба результата
+        # Finalnyy tekst contains oba resulta
         final = next(e for e in events if e.type == "final")
         assert "transformer" in final.data["text"].lower(), "Финал содержит результаты шагов"
 
-        # LLM была вызвана минимум 4 раза (план + 2 шага + сборка)
+        # LLM byla vyzvana minimum 4 raza (plan + 2 stepa + assembly)
         assert llm_call_count >= 4
 
 
 # ---------------------------------------------------------------------------
-# 4. Builtin tools — доступны при наличии sandbox
+# 4. Builtin tools - available pri nalichii sandbox
 # ---------------------------------------------------------------------------
 
 
 class TestThinBuiltinToolsE2E:
-    """Builtin tools доступны agent'у через sandbox."""
+    """Builtin tools available agent'u cherez sandbox."""
 
     @pytest.mark.asyncio
     async def test_thin_builtin_tools_available_in_agent(self) -> None:
@@ -345,7 +337,7 @@ class TestThinBuiltinToolsE2E:
             sandbox=sandbox,
         )
 
-        # Builtin tools должны быть зарегистрированы как local_tools
+        # Builtin tools should byt zaregistrirovany kak local_tools
         assert "read_file" in runtime._executor.local_tool_names
 
         events = await _collect_events(
@@ -374,22 +366,19 @@ class TestThinBuiltinToolsE2E:
 
 
 class TestThinStreamingE2E:
-    """Streaming: ThinRuntime emit'ит assistant_delta events."""
+    """Streaming: ThinRuntime emit'it assistant_delta events."""
 
     @pytest.mark.asyncio
     async def test_thin_streaming_token_level(self) -> None:
-        """Agent.stream() -> collect events -> multiple assistant_delta events.
-
-        Fake LLM поддерживает streaming (возвращает AsyncIterator).
-        """
+        """Agent.stream() -> collect events -> multiple assistant_delta events. Fake LLM supports streaming (returns AsyncIterator). """
 
         async def fake_llm_streaming(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str | AsyncIterator[str]:
             if kwargs.get("stream"):
-                # Возвращаем async iterator с несколькими chunks
+                # Return async iterator with notskolkimi chunks
                 async def _gen() -> AsyncIterator[str]:
-                    # Отправляем JSON частями
+                    # Otpravlyaem JSON chastyami
                     yield '{"type": "final",'
                     yield ' "final_message": "Token '
                     yield 'by token response"}'
@@ -423,7 +412,7 @@ class TestThinStreamingE2E:
 
 
 class TestThinFeatureModeE2E:
-    """Feature mode portable: builtin tools отфильтровываются."""
+    """Feature mode portable: builtin tools otfiltrovyvayutsya."""
 
     @pytest.mark.asyncio
     async def test_thin_feature_mode_portable_no_builtins(self) -> None:
@@ -436,20 +425,20 @@ class TestThinFeatureModeE2E:
         sandbox = MockSandbox()
         specs = get_thin_builtin_specs(sandbox)
 
-        # Без фильтра — есть builtin tools
+        # Without filtra - est builtin tools
         assert len(specs) > 0, "С sandbox должны быть builtin tools"
 
-        # Portable mode — все builtins отфильтрованы
+        # Portable mode - vse builtins otfiltrovany
         portable_specs = filter_thin_builtins_by_mode(specs, feature_mode="portable")
         assert len(portable_specs) == 0, "Portable mode не включает builtins"
 
-        # Hybrid mode — builtins сохранены
+        # Hybrid mode - builtins sohranotny
         hybrid_specs = filter_thin_builtins_by_mode(specs, feature_mode="hybrid")
         assert len(hybrid_specs) > 0, "Hybrid mode включает builtins"
 
     @pytest.mark.asyncio
     async def test_thin_no_sandbox_no_builtins(self) -> None:
-        """Без sandbox — runtime работает без builtin tools."""
+        """Without sandbox - runtime works without builtin tools."""
 
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
@@ -462,7 +451,7 @@ class TestThinFeatureModeE2E:
             sandbox=None,
         )
 
-        # Без sandbox — нет builtin executors
+        # Without sandbox - nott builtin executors
         assert len(runtime._executor.local_tool_names) == 0
 
         events = await _collect_events(

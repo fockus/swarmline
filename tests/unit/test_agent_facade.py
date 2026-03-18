@@ -53,11 +53,11 @@ def _make_cli_process(stdout_lines: list[bytes]) -> MagicMock:
 
 
 class TestAgentQueryBasic:
-    """Agent.query() — one-shot запросы."""
+    """Agent.query() - one-shot queries."""
 
     @pytest.mark.asyncio
     async def test_query_returns_result(self) -> None:
-        """query() → Result с текстом."""
+        """query() -> Result with tekstom."""
         agent = Agent(_make_config())
 
         async def fake_stream(prompt):
@@ -82,7 +82,7 @@ class TestAgentQueryBasic:
 
     @pytest.mark.asyncio
     async def test_query_with_structured_output(self) -> None:
-        """output_format → structured_output в Result."""
+        """output_format -> structured_output in Result."""
         config = _make_config(output_format={"type": "json_schema", "schema": {}})
         agent = Agent(config)
 
@@ -101,7 +101,7 @@ class TestAgentQueryBasic:
 
     @pytest.mark.asyncio
     async def test_query_preserves_runtime_new_messages(self) -> None:
-        """final.new_messages должен быть доступен downstream consumers."""
+        """final.new_messages should byt dostupen downstream consumers."""
         from cognitia.runtime.types import Message
 
         agent = Agent(_make_config())
@@ -132,7 +132,7 @@ class TestAgentQueryBasic:
 
     @pytest.mark.asyncio
     async def test_query_thin_output_format_returns_structured_output(self) -> None:
-        """runtime=thin не должен терять output_format facade-конфига."""
+        """runtime=thin not should teryat output_format facade-konfiga."""
         config = _make_config(
             runtime="thin",
             output_format={
@@ -184,11 +184,11 @@ class TestAgentQueryBasic:
 
 
 class TestAgentQueryWithMiddleware:
-    """Agent.query() с middleware chain."""
+    """Agent.query() with middleware chain."""
 
     @pytest.mark.asyncio
     async def test_middleware_before_query_applied(self) -> None:
-        """before_query модифицирует prompt."""
+        """before_query modifitsiruet prompt."""
         call_log: list[str] = []
 
         class PrefixMiddleware(Middleware):
@@ -213,7 +213,7 @@ class TestAgentQueryWithMiddleware:
 
     @pytest.mark.asyncio
     async def test_middleware_after_result_applied(self) -> None:
-        """after_result обогащает Result."""
+        """after_result obogashchaet Result."""
 
         class TagMiddleware(Middleware):
             async def after_result(self, result: Result) -> Result:
@@ -234,11 +234,11 @@ class TestAgentQueryWithMiddleware:
 
 
 class TestAgentQueryWithTools:
-    """Agent.query() с @tool."""
+    """Agent.query() with @tool."""
 
     @pytest.mark.asyncio
     async def test_tools_from_config_available(self) -> None:
-        """Tools из config доступны при выполнении."""
+        """Tools from config available pri vypolnotnii."""
 
         @tool(name="calc", description="Calculator")
         async def calc(expr: str) -> str:
@@ -288,7 +288,7 @@ class TestAgentRuntimeCapabilities:
 
 
 class TestAgentClaudeSdkWiring:
-    """Claude one-shot path пробрасывает native SDK options."""
+    """Claude one-shot path probrasyvaet native SDK options."""
 
     @pytest.mark.asyncio
     async def test_execute_claude_sdk_passes_hooks_and_native_options(self) -> None:
@@ -367,7 +367,7 @@ class TestAgentClaudeSdkWiring:
 
 
 class TestAgentRuntimeFactoryWiring:
-    """Non-claude runtime path пробрасывает local tool executors."""
+    """Non-claude runtime path probrasyvaet local tool executors."""
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_passes_tool_executors(self) -> None:
@@ -547,12 +547,12 @@ class TestAgentStream:
 
 
 class TestAgentLifecycle:
-    """Agent cleanup и context manager."""
+    """Agent cleanup and context manager."""
 
     @pytest.mark.asyncio
     async def test_cleanup(self) -> None:
         agent = Agent(_make_config())
-        # Cleanup на свежем агенте — не должен ломаться
+        # Cleanup on svezhem agente - not should lomatsya
         await agent.cleanup()
 
     @pytest.mark.asyncio
@@ -560,11 +560,11 @@ class TestAgentLifecycle:
         """async with Agent → auto cleanup."""
         async with Agent(_make_config()) as agent:
             assert isinstance(agent, Agent)
-        # После выхода — cleanup вызван (не ломается)
+        # Posle vyhoda - cleanup vyzvan (not lomaetsya)
 
     @pytest.mark.asyncio
     async def test_conversation_factory(self) -> None:
-        """agent.conversation() создаёт Conversation."""
+        """agent.conversation() sozdaet Conversation."""
         agent = Agent(_make_config())
         conv = agent.conversation()
         assert conv is not None
@@ -582,7 +582,7 @@ class TestAgentLifecycle:
 
 
 class TestCollectStreamResult:
-    """collect_stream_result — сбор Result-полей из потока событий."""
+    """collect_stream_result - sbor Result-poley from streama sobytiy."""
 
     @pytest.mark.asyncio
     async def test_collects_text_deltas(self) -> None:
@@ -732,7 +732,7 @@ class TestApplyBeforeQuery:
 
 
 class TestAgentCleanupWithRuntime:
-    """Agent.cleanup() с назначенным runtime."""
+    """Agent.cleanup() with naznachennym runtime."""
 
     @pytest.mark.asyncio
     async def test_cleanup_calls_runtime_cleanup(self) -> None:
@@ -750,7 +750,7 @@ class TestAgentCleanupWithRuntime:
 
     @pytest.mark.asyncio
     async def test_cleanup_runtime_without_cleanup_method(self) -> None:
-        """Runtime без метода cleanup — не ломается."""
+        """Runtime without metoda cleanup - not lomaetsya."""
         agent = Agent(_make_config())
         agent._runtime = object()
 
@@ -764,7 +764,7 @@ class TestAgentCleanupWithRuntime:
 
 
 class TestRuntimeEventAdapter:
-    """_RuntimeEventAdapter — маппинг RuntimeEvent → StreamEvent-like."""
+    """_RuntimeEventAdapter - mapping RuntimeEvent -> StreamEvent-like."""
 
     def _make_event(self, etype: str, data: dict[str, Any] | None = None) -> Any:
         from cognitia.runtime.types import RuntimeEvent
@@ -901,7 +901,7 @@ class TestRuntimeEventAdapter:
         assert adapted.native_metadata == {"thread_id": "t1"}
 
     def test_defaults_always_set(self) -> None:
-        """Все StreamEvent-like атрибуты всегда присутствуют."""
+        """Vse StreamEvent-like atributy vsegda prisutstvuyut."""
         from cognitia.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(self._make_event("assistant_delta", {"text": "x"}))

@@ -1,9 +1,4 @@
-"""Тесты для SessionRehydrator (секция 8.4 архитектуры).
-
-Контракт: build_rehydration_payload(ctx) -> Mapping с ключами:
-  role_id, active_skill_ids, summary, last_messages, goal, phase_state
-
-ISP: конструктор принимает 5 мелких протоколов, а не монолитный MemoryProvider.
+"""Tests for SessionRehydrator (sektsiya 8.4 arhitektury). Contract: build_rehydration_payload(ctx) -> Mapping with klyuchami: role_id, active_skill_ids, summary, last_messages, goal, phase_state ISP: konstruktor prinimaet 5 melkih protocolov, a not monolitnyy MemoryProvider.
 """
 
 from unittest.mock import AsyncMock
@@ -27,7 +22,7 @@ def _make_ctx(**kwargs) -> TurnContext:
 
 
 def _make_stores() -> dict:
-    """Создать набор мок-хранилищ для rehydrator."""
+    """Create set mock-hranilishch for rehydrator."""
     messages = AsyncMock()
     messages.get_messages.return_value = [
         MemoryMessage(role="user", content="какой вклад лучше?"),
@@ -79,43 +74,43 @@ def rehydrator(stores: dict) -> DefaultSessionRehydrator:
 
 
 class TestBuildPayload:
-    """build_rehydration_payload() возвращает полный payload."""
+    """build_rehydration_payload() returns full payload."""
 
     @pytest.mark.asyncio
     async def test_returns_role_id(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит role_id из БД."""
+        """Payload contains role_id from BD."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["role_id"] == "deposit_advisor"
 
     @pytest.mark.asyncio
     async def test_returns_active_skills(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит active_skill_ids."""
+        """Payload contains active_skill_ids."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["active_skill_ids"] == ["finuslugi", "iss-price"]
 
     @pytest.mark.asyncio
     async def test_returns_summary(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит rolling summary."""
+        """Payload contains rolling summary."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert "вкладами" in payload["summary"]
 
     @pytest.mark.asyncio
     async def test_returns_last_messages(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит last N messages."""
+        """Payload contains last N messages."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert len(payload["last_messages"]) == 2
         assert payload["last_messages"][0].role == "user"
 
     @pytest.mark.asyncio
     async def test_returns_active_goal(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит активную цель."""
+        """Payload contains aktivnuyu tsel."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["goal"].title == "Накопить 500к"
         assert payload["goal"].phase == "savings"
 
     @pytest.mark.asyncio
     async def test_returns_phase_state(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит phase_state (R-703)."""
+        """Payload contains phase_state (R-703)."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["phase_state"] is not None
         assert payload["phase_state"].phase == "savings"
@@ -123,17 +118,17 @@ class TestBuildPayload:
 
     @pytest.mark.asyncio
     async def test_returns_prompt_hash(self, rehydrator: DefaultSessionRehydrator) -> None:
-        """Payload содержит prompt_hash для diagnostics (GAP-2, §8.4)."""
+        """Payload contains prompt_hash for diagnostics (GAP-2, §8.4)."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["prompt_hash"] == "abc123def456"
 
 
 class TestMissingData:
-    """Payload при отсутствии данных в БД."""
+    """Payload pri otsutstvii dannyh in BD."""
 
     @pytest.mark.asyncio
     async def test_no_session_state(self) -> None:
-        """Если нет session_state — используем данные из ctx."""
+        """If nott session_state - ispolzuem dannye from ctx."""
         stores = _make_stores()
         stores["sessions"].get_session_state.return_value = None
         rh = DefaultSessionRehydrator(**stores)
@@ -144,7 +139,7 @@ class TestMissingData:
 
     @pytest.mark.asyncio
     async def test_no_summary(self) -> None:
-        """Если нет summary — None."""
+        """If nott summary - None."""
         stores = _make_stores()
         stores["summaries"].get_summary.return_value = None
         rh = DefaultSessionRehydrator(**stores)
@@ -153,7 +148,7 @@ class TestMissingData:
 
     @pytest.mark.asyncio
     async def test_no_goal(self) -> None:
-        """Если нет цели — None."""
+        """If nott tseli - None."""
         stores = _make_stores()
         stores["goals"].get_active_goal.return_value = None
         rh = DefaultSessionRehydrator(**stores)
@@ -162,7 +157,7 @@ class TestMissingData:
 
     @pytest.mark.asyncio
     async def test_no_messages(self) -> None:
-        """Если нет сообщений — пустой список."""
+        """If nott soobshcheniy - empty list."""
         stores = _make_stores()
         stores["messages"].get_messages.return_value = []
         rh = DefaultSessionRehydrator(**stores)
@@ -171,7 +166,7 @@ class TestMissingData:
 
     @pytest.mark.asyncio
     async def test_no_phase_state(self) -> None:
-        """Если нет phase_state — None."""
+        """If nott phase_state - None."""
         stores = _make_stores()
         stores["phases"].get_phase_state.return_value = None
         rh = DefaultSessionRehydrator(**stores)
@@ -180,15 +175,15 @@ class TestMissingData:
 
 
 class TestPartialData:
-    """Edge cases: частичные данные при rehydration."""
+    """Edge cases: chastichnye dannye pri rehydration."""
 
     @pytest.mark.asyncio
     async def test_session_state_without_skills_key(self) -> None:
-        """Session state без active_skill_ids → пустой список."""
+        """Session state without active_skill_ids -> empty list."""
         stores = _make_stores()
         stores["sessions"].get_session_state.return_value = {
             "role_id": "coach",
-            # нет active_skill_ids
+            # nott active_skill_ids
         }
         rh = DefaultSessionRehydrator(**stores)
         payload = await rh.build_rehydration_payload(_make_ctx())
@@ -197,7 +192,7 @@ class TestPartialData:
 
     @pytest.mark.asyncio
     async def test_all_empty_returns_ctx_defaults(self) -> None:
-        """Все хранилища пустые → используем данные из ctx."""
+        """Vse hranilishcha empty -> ispolzuem dannye from ctx."""
         stores = _make_stores()
         stores["sessions"].get_session_state.return_value = None
         stores["summaries"].get_summary.return_value = None
@@ -218,7 +213,7 @@ class TestPartialData:
 
     @pytest.mark.asyncio
     async def test_last_n_messages_limit(self) -> None:
-        """Rehydrator запрашивает ровно last_n messages."""
+        """Rehydrator zaprashivaet rovno last_n messages."""
         stores = _make_stores()
         rh = DefaultSessionRehydrator(**stores, last_n_messages=3)
         await rh.build_rehydration_payload(_make_ctx())
@@ -226,7 +221,7 @@ class TestPartialData:
 
     @pytest.mark.asyncio
     async def test_phase_state_full_payload(self) -> None:
-        """Phase state с полными данными включается в payload."""
+        """Phase state with polnymi dannymi includessya in payload."""
         stores = _make_stores()
         rh = DefaultSessionRehydrator(**stores)
         payload = await rh.build_rehydration_payload(_make_ctx())

@@ -1,4 +1,4 @@
-"""TddCodeVerifier — CodeVerifier implementation respecting CodingStandardsConfig.
+"""TddCodeVerifier - CodeVerifier implementation respecting CodingStandardsConfig.
 
 Disabled checks return VerificationStatus.SKIP automatically.
 """
@@ -15,10 +15,10 @@ from cognitia.orchestration.verification_types import (
 
 
 class TddCodeVerifier:
-    """CodeVerifier implementation — respects CodingStandardsConfig.
+    """CodeVerifier implementation - respects CodingStandardsConfig.
 
-    Disabled check → auto VerificationStatus.SKIP.
-    """
+  Disabled check -> auto VerificationStatus.SKIP.
+  """
 
     def __init__(self, config: CodingStandardsConfig, runner: CommandRunner) -> None:
         self._config = config

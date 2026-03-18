@@ -1,4 +1,4 @@
-"""Тесты E2BSandboxProvider — мокнутый E2B SDK. TDD."""
+"""Tests E2BSandboxProvider - mocked E2B SDK. TDD."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ class TestE2BSandboxProvider:
             MagicMock(name="a.txt"),
             MagicMock(name="b.py"),
         ]
-        # Мокаем .name явно т.к. MagicMock(name=) перехватывается
+        # Mock .name explicitly because MagicMock(name=) is intercepted
         mock_sandbox.filesystem.list.return_value[0].name = "a.txt"
         mock_sandbox.filesystem.list.return_value[1].name = "b.py"
 
@@ -83,7 +83,7 @@ class TestE2BSandboxProvider:
         from cognitia.tools.sandbox_e2b import E2BSandboxProvider
 
         mock_sandbox = AsyncMock()
-        # Glob через execute + find
+        # Glob via execute + find
         mock_proc = MagicMock()
         mock_proc.stdout = "/home/user/workspace/main.py\n/home/user/workspace/src/utils.py\n"
         mock_proc.stderr = ""

@@ -1,4 +1,4 @@
-"""Тесты для ModelRegistry — мультипровайдерный реестр LLM моделей."""
+"""Tests for ModelRegistry - multi-provider registry of LLM models."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from cognitia.runtime.model_registry import ModelRegistry, get_registry, reset_r
 
 @pytest.fixture
 def tmp_config(tmp_path: Path) -> Path:
-    """Создать временный models.yaml для тестов."""
+    """Create temporary models.yaml for tests."""
     config = {
         "default_model": "claude-sonnet-4-20250514",
         "providers": {
@@ -53,17 +53,17 @@ def tmp_config(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def registry(tmp_config: Path) -> ModelRegistry:
-    """ModelRegistry из temp config."""
+    """ModelRegistry from temp config."""
     return ModelRegistry(config_path=tmp_config)
 
 
 # ---------------------------------------------------------------------------
-# Базовые тесты
+# Basic tests
 # ---------------------------------------------------------------------------
 
 
 class TestModelRegistryBasic:
-    """Базовое поведение: загрузка, default, valid models."""
+    """Basic behavior: loading, default, valid models."""
 
     def test_default_model(self, registry: ModelRegistry) -> None:
         assert registry.default_model == "claude-sonnet-4-20250514"
@@ -147,7 +147,7 @@ class TestModelRegistryResolve:
 
 
 class TestModelRegistryProvider:
-    """get_provider() — определение провайдера по model_id."""
+    """get_provider() - definition of provider by model_id."""
 
     def test_anthropic(self, registry: ModelRegistry) -> None:
         assert registry.get_provider("claude-sonnet-4-20250514") == "anthropic"
@@ -164,8 +164,8 @@ class TestModelRegistryProvider:
         assert registry.get_provider("gemini") == "google"
 
     def test_unknown_model_falls_back_to_default_provider(self, registry: ModelRegistry) -> None:
-        """Неизвестная модель → resolve fallback на default → provider default модели."""
-        # "llama-70b" резолвится в default (claude-sonnet) → provider = anthropic
+        """Not known model -> resolve fallback on default -> provider default models."""
+        # "llama-70b" resolves in default (claude-sonnet) -> provider = anthropic
         assert registry.get_provider("llama-70b") == "anthropic"
 
 
@@ -175,13 +175,13 @@ class TestModelRegistryProvider:
 
 
 class TestModelRegistryDescription:
-    """get_description() — описание модели."""
+    """get_description() - description of models."""
 
     def test_has_description(self, registry: ModelRegistry) -> None:
         assert "Быстрая" in registry.get_description("claude-sonnet-4-20250514")
 
     def test_empty_description(self, registry: ModelRegistry) -> None:
-        # gpt-4o-mini не имеет description в конфиге
+        # gpt-4o-mini does not have a description in the config
         assert registry.get_description("gpt-4o-mini") == ""
 
 
@@ -191,7 +191,7 @@ class TestModelRegistryDescription:
 
 
 class TestModelRegistryAliases:
-    """list_aliases() — полный маппинг alias → model."""
+    """list_aliases() - full mapping alias -> model."""
 
     def test_aliases_count(self, registry: ModelRegistry) -> None:
         aliases = registry.list_aliases()
@@ -211,24 +211,24 @@ class TestModelRegistryAliases:
 
 
 class TestModelRegistryEdgeCases:
-    """Edge cases: отсутствующий файл, пустой YAML, bad data."""
+    """Edge cases: missing file, empty YAML, bad data."""
 
     def test_missing_config_file(self, tmp_path: Path) -> None:
-        """Отсутствующий YAML → fallback на Anthropic default."""
+        """Missing YAML -> fallback on Anthropic default."""
         reg = ModelRegistry(config_path=tmp_path / "nonexistent.yaml")
         assert reg.default_model == "claude-sonnet-4-20250514"
         assert "claude-sonnet-4-20250514" in reg.valid_models
         assert reg.resolve("anything") == "claude-sonnet-4-20250514"
 
     def test_empty_config_file(self, tmp_path: Path) -> None:
-        """Пустой YAML → fallback."""
+        """Empty YAML -> fallback."""
         path = tmp_path / "empty.yaml"
         path.write_text("")
         reg = ModelRegistry(config_path=path)
         assert reg.default_model == "claude-sonnet-4-20250514"
 
     def test_config_without_providers(self, tmp_path: Path) -> None:
-        """YAML без providers → пустой реестр, default работает."""
+        """YAML without providers -> empty registry, default works."""
         path = tmp_path / "no_providers.yaml"
         with open(path, "w") as f:
             yaml.dump({"default_model": "my-model"}, f)
@@ -243,7 +243,7 @@ class TestModelRegistryEdgeCases:
 
 
 class TestModelRegistrySingleton:
-    """get_registry() / reset_registry() — синглтон."""
+    """get_registry() / reset_registry() - singleton."""
 
     def test_get_registry_returns_same_instance(self) -> None:
         reset_registry()
@@ -266,15 +266,15 @@ class TestModelRegistrySingleton:
 
 
 # ---------------------------------------------------------------------------
-# Production config (models.yaml рядом с model_registry.py)
+# Production config (models.yaml next to model_registry.py)
 # ---------------------------------------------------------------------------
 
 
 class TestProductionConfig:
-    """Проверка что production models.yaml загружается корректно."""
+    """Check that production models.yaml is loaded correctly."""
 
     def test_production_config_loads(self) -> None:
-        """Production models.yaml существует и содержит ожидаемые модели."""
+        """Production models.yaml exists and contains the expected models."""
         reset_registry()
         reg = get_registry()
 
@@ -297,7 +297,7 @@ class TestProductionConfig:
         reset_registry()
 
     def test_production_aliases_work(self) -> None:
-        """Production alias работают."""
+        """Production alias work."""
         reset_registry()
         reg = get_registry()
 

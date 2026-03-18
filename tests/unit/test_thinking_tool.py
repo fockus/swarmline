@@ -1,6 +1,4 @@
-"""Тесты ThinkingTool — CoT + ReAct рассуждение.
-
-TDD: RED → GREEN → REFACTOR.
+"""Tests ThinkingTool - CoT + ReAct rassuzhdenie. TDD: RED -> GREEN -> REFACTOR.
 """
 
 from __future__ import annotations
@@ -9,10 +7,10 @@ import json
 
 
 class TestThinkingTool:
-    """thinking executor — standalone, без внешних зависимостей."""
+    """thinking executor - standalone, without vnotshnih zavisimostey."""
 
     async def test_basic_thought(self) -> None:
-        """Мысль записывается и возвращается в JSON."""
+        """Mysl zapisyvaetsya and returnssya in JSON."""
         from cognitia.tools.thinking import thinking_executor
 
         result = await thinking_executor(
@@ -29,7 +27,7 @@ class TestThinkingTool:
         assert "instruction" in data
 
     async def test_empty_thought_returns_error(self) -> None:
-        """Пустая мысль → error."""
+        """Empty mysl -> error."""
         from cognitia.tools.thinking import thinking_executor
 
         result = await thinking_executor({"thought": "", "next_steps": ["step"]})
@@ -37,7 +35,7 @@ class TestThinkingTool:
         assert data["status"] == "error"
 
     async def test_missing_next_steps_returns_error(self) -> None:
-        """Без next_steps → error."""
+        """Without next_steps -> error."""
         from cognitia.tools.thinking import thinking_executor
 
         result = await thinking_executor({"thought": "think"})
@@ -45,7 +43,7 @@ class TestThinkingTool:
         assert data["status"] == "error"
 
     async def test_empty_next_steps_returns_error(self) -> None:
-        """Пустой массив next_steps → error."""
+        """Empty array next_steps -> error."""
         from cognitia.tools.thinking import thinking_executor
 
         result = await thinking_executor({"thought": "think", "next_steps": []})
@@ -53,7 +51,7 @@ class TestThinkingTool:
         assert data["status"] == "error"
 
     def test_tool_spec(self) -> None:
-        """ThinkingTool возвращает корректный ToolSpec."""
+        """ThinkingTool returns correct ToolSpec."""
         from cognitia.tools.thinking import create_thinking_tool
 
         spec, executor = create_thinking_tool()
@@ -64,7 +62,7 @@ class TestThinkingTool:
         assert callable(executor)
 
     def test_schema_required_fields(self) -> None:
-        """JSON Schema содержит required fields."""
+        """JSON Schema contains required fields."""
         from cognitia.tools.thinking import create_thinking_tool
 
         spec, _ = create_thinking_tool()

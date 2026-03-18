@@ -1,17 +1,14 @@
-"""Тесты для RuntimeAdapter — обёртка SDK для stream_reply.
-
-Покрытые кейсы:
+"""Tests for RuntimeAdapter - SDK wrapper for stream_reply. Covered Cases:
 - StreamEvent dataclass
 - Lifecycle: connect / disconnect / is_connected / stderr callback
 - stream_reply: happy path (text, tool_use, done)
-- Multi-turn: subprocess остаётся живым (receive_response, а не receive_messages)
-- BrokenPipe на query → auto-reconnect + retry
-- BrokenPipe на query после reconnect → error event
-- BrokenPipe при receive_response → error event + reconnect
-- Произвольная ошибка на query / receive_response → error event
-- ResultMessage НЕ дублирует текст
-- _reconnect: disconnect старого client → новый connect
-"""
+- Multi-turn: subprocess remains alive (receive_response, not receive_messages)
+- BrokenPipe on query -> auto-reconnect + retry
+- BrokenPipe on query after reconnect -> error event
+- BrokenPipe on receive_response -> error event + reconnect
+- Arbitrary error on query / receive_response -> error event
+- ResultMessage does NOT duplicate text
+- _reconnect: disconnect old client -> new connect"""
 
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -25,12 +22,12 @@ pytestmark = pytest.mark.requires_claude_sdk
 
 
 # ---------------------------------------------------------------------------
-# Фабрики моков для повторного использования
+# Mock factories for reuse
 # ---------------------------------------------------------------------------
 
 
 def _make_text_block(text: str = "Привет!") -> MagicMock:
-    """Мок TextBlock."""
+    """Mock TextBlock."""
     from cognitia.runtime.adapter import TextBlock
 
     block = MagicMock(spec=TextBlock)
@@ -43,7 +40,7 @@ def _make_tool_use_block(
     input_data: dict | None = None,
     tool_use_id: str = "tool-1",
 ) -> MagicMock:
-    """Мок ToolUseBlock."""
+    """Mock ToolUseBlock."""
     from cognitia.runtime.adapter import ToolUseBlock
 
     block = MagicMock(spec=ToolUseBlock)
@@ -59,7 +56,7 @@ def _make_tool_result_block(
     tool_use_id: str = "tool-1",
     is_error: bool = False,
 ) -> MagicMock:
-    """Мок ToolResultBlock."""
+    """Mock ToolResultBlock."""
     from cognitia.runtime.adapter import ToolResultBlock
 
     block = MagicMock(spec=ToolResultBlock)
@@ -70,7 +67,7 @@ def _make_tool_result_block(
 
 
 def _make_thinking_block(thinking: str = "Let me think...", signature: str = "sig") -> MagicMock:
-    """Мок ThinkingBlock."""
+    """Mock ThinkingBlock."""
     from cognitia.runtime.adapter import ThinkingBlock
 
     block = MagicMock(spec=ThinkingBlock)
@@ -80,7 +77,7 @@ def _make_thinking_block(thinking: str = "Let me think...", signature: str = "si
 
 
 def _make_assistant_msg(blocks: list) -> MagicMock:
-    """Мок AssistantMessage с заданными content blocks."""
+    """Mock AssistantMessage with given content blocks."""
     from cognitia.runtime.adapter import AssistantMessage
 
     msg = MagicMock(spec=AssistantMessage)
@@ -89,7 +86,7 @@ def _make_assistant_msg(blocks: list) -> MagicMock:
 
 
 def _make_sdk_stream_event(event: dict[str, Any]) -> MagicMock:
-    """Мок raw SDK StreamEvent."""
+    """Mock raw SDK StreamEvent."""
     from claude_agent_sdk.types import StreamEvent
 
     msg = MagicMock(spec=StreamEvent)
@@ -101,7 +98,7 @@ def _make_sdk_stream_event(event: dict[str, Any]) -> MagicMock:
 
 
 def _make_task_started_msg(description: str = "Research task") -> MagicMock:
-    """Мок TaskStartedMessage (или SystemMessage fallback)."""
+    """Mock TaskStartedMessage (or SystemMessage fallback)."""
     from claude_agent_sdk import SystemMessage
 
     msg = MagicMock(spec=SystemMessage)
@@ -116,7 +113,7 @@ def _make_task_progress_msg(
     description: str = "Working",
     last_tool_name: str | None = None,
 ) -> MagicMock:
-    """Мок TaskProgressMessage (или SystemMessage fallback)."""
+    """Mock TaskProgressMessage (or SystemMessage fallback)."""
     from claude_agent_sdk import SystemMessage
 
     msg = MagicMock(spec=SystemMessage)
@@ -132,7 +129,7 @@ def _make_task_notification_msg(
     summary: str = "Task complete",
     status: str = "completed",
 ) -> MagicMock:
-    """Мок TaskNotificationMessage (или SystemMessage fallback)."""
+    """Mock TaskNotificationMessage (or SystemMessage fallback)."""
     from claude_agent_sdk import SystemMessage
 
     msg = MagicMock(spec=SystemMessage)
@@ -145,7 +142,7 @@ def _make_task_notification_msg(
 
 
 def _make_result_msg() -> MagicMock:
-    """Мок ResultMessage (финальный итог turn'а)."""
+    """Mock ResultMessage (final result of the turn)."""
     from cognitia.runtime.adapter import ResultMessage
 
     msg = MagicMock(spec=ResultMessage)
@@ -156,15 +153,11 @@ def _make_result_msg() -> MagicMock:
 def _make_adapter_with_client(
     mock_client: AsyncMock,
 ) -> tuple[RuntimeAdapter, MagicMock]:
-    """Создать RuntimeAdapter с замоканным ClaudeSDKClient.
-
-    Returns:
-        (adapter, mock_options)
-    """
+    """Create RuntimeAdapter with ClaudeSDKClient mocked. Returns: (adapter, mock_options)"""
     mock_options = MagicMock()
     mock_options.stderr = None
     adapter = RuntimeAdapter(mock_options)
-    # Подставляем клиент напрямую (без реального connect)
+    # We substitute the client directly (without real connect)
     adapter._client = mock_client
     return adapter, mock_options
 
@@ -175,7 +168,7 @@ def _make_adapter_with_client(
 
 
 class TestStreamEvent:
-    """StreamEvent — dataclass для событий потока."""
+    """StreamEvent - dataclass for stream events."""
 
     def test_defaults(self) -> None:
         event = StreamEvent(type="text_delta")
@@ -210,17 +203,17 @@ class TestStreamEvent:
 
 
 class TestRuntimeAdapterLifecycle:
-    """Жизненный цикл адаптера: connect / disconnect / is_connected."""
+    """Adapter life cycle: connect / disconnect / is_connected."""
 
     def test_initial_not_connected(self) -> None:
-        """Новый адаптер — не подключён."""
+        """New adapter - not connected."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
         assert adapter.is_connected is False
 
     @pytest.mark.asyncio
     async def test_connect(self) -> None:
-        """connect создаёт client и вызывает client.connect()."""
+        """connect creates a client and calls client.connect()."""
         mock_options = MagicMock()
         mock_options.stderr = None
         with (
@@ -238,7 +231,7 @@ class TestRuntimeAdapterLifecycle:
 
     @pytest.mark.asyncio
     async def test_connect_sets_stderr_callback(self) -> None:
-        """connect устанавливает stderr callback если не задан."""
+        """connect sets stderr callback if not given."""
         mock_options = MagicMock()
         mock_options.stderr = None
 
@@ -253,13 +246,13 @@ class TestRuntimeAdapterLifecycle:
             await adapter.connect()
 
             mock_replace.assert_called_once()
-            # Проверяем что stderr=_on_stderr передан
+            # Verify that stderr=_on_stderr is passed
             _, kwargs = mock_replace.call_args
             assert kwargs["stderr"] is RuntimeAdapter._on_stderr
 
     @pytest.mark.asyncio
     async def test_connect_preserves_custom_stderr(self) -> None:
-        """connect НЕ перезаписывает пользовательский stderr callback."""
+        """connect does NOT overwrite user stderr callback."""
         custom_cb = MagicMock()
         mock_options = MagicMock()
         mock_options.stderr = custom_cb
@@ -271,12 +264,12 @@ class TestRuntimeAdapterLifecycle:
             adapter = RuntimeAdapter(mock_options)
             await adapter.connect()
 
-            # stderr не должен быть заменён
+            # stderr should not be replaced
             assert adapter._options.stderr is custom_cb
 
     @pytest.mark.asyncio
     async def test_disconnect(self) -> None:
-        """disconnect закрывает client."""
+        """disconnect closes client."""
         mock_options = MagicMock()
         with patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient:
             mock_instance = AsyncMock()
@@ -291,10 +284,10 @@ class TestRuntimeAdapterLifecycle:
 
     @pytest.mark.asyncio
     async def test_disconnect_when_not_connected(self) -> None:
-        """disconnect без подключения — не падает."""
+        """disconnect without connection - not crashes."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
-        await adapter.disconnect()  # Не должно бросать исключение
+        await adapter.disconnect()  # Not should throw an exception
 
 
 # ---------------------------------------------------------------------------
@@ -303,11 +296,11 @@ class TestRuntimeAdapterLifecycle:
 
 
 class TestReconnect:
-    """_reconnect: disconnect старого + connect нового subprocess."""
+    """_reconnect: disconnect old + connect new subprocess."""
 
     @pytest.mark.asyncio
     async def test_reconnect_disconnects_old_creates_new(self) -> None:
-        """_reconnect отключает старый client и создаёт новый."""
+        """_reconnect disconnects the legacy client and creates a new one."""
         mock_client_old = AsyncMock()
         adapter, _ = _make_adapter_with_client(mock_client_old)
 
@@ -317,15 +310,15 @@ class TestReconnect:
 
             await adapter._reconnect()
 
-            # Старый client отключён
+            # Legacy client disabled
             mock_client_old.disconnect.assert_awaited_once()
-            # Новый client подключён
+            # New client connected
             mock_client_new.connect.assert_awaited_once()
             assert adapter._client is mock_client_new
 
     @pytest.mark.asyncio
     async def test_reconnect_handles_disconnect_error(self) -> None:
-        """_reconnect не падает если disconnect старого бросает ошибку."""
+        """_reconnect not crashes if disconnect old throws an error."""
         mock_client_old = AsyncMock()
         mock_client_old.disconnect.side_effect = RuntimeError("already dead")
         adapter, _ = _make_adapter_with_client(mock_client_old)
@@ -336,7 +329,7 @@ class TestReconnect:
 
             await adapter._reconnect()
 
-            # Новый client всё равно создан
+            # New client is still created
             assert adapter._client is mock_client_new
 
 
@@ -346,11 +339,11 @@ class TestReconnect:
 
 
 class TestStreamReply:
-    """stream_reply — стриминг ответов через SDK."""
+    """stream_reply - streaming replies via SDK."""
 
     @pytest.mark.asyncio
     async def test_not_connected_yields_error(self) -> None:
-        """Без подключения — yield error event."""
+        """Without connection - yield error event."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
 
@@ -364,7 +357,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_text_messages(self) -> None:
-        """Стриминг текстовых сообщений → text_delta + done."""
+        """Streaming text messages -> text_delta + done."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -386,7 +379,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_tool_use_events(self) -> None:
-        """Стриминг tool_use_start и tool_use_result."""
+        """Streaming tool_use_start and tool_use_result."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -411,7 +404,7 @@ class TestStreamReply:
         assert "tool_use_result" in types
         assert "text_delta" in types
         assert "done" in types
-        # tool_use_start содержит имя инструмента
+        # tool_use_start contains tool name
         tool_event = next(e for e in events if e.type == "tool_use_start")
         assert tool_event.tool_name == "mcp__iss__search"
         assert tool_event.correlation_id == "tool-1"
@@ -452,7 +445,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_thinking_block_not_emitted_as_text(self) -> None:
-        """ThinkingBlock не стримится пользователю — только логируется."""
+        """ThinkingBlock is not streamed to the user - it is only logged."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -472,7 +465,7 @@ class TestStreamReply:
             events.append(event)
 
         types = [e.type for e in events]
-        # ThinkingBlock не должен генерировать text_delta
+        # ThinkingBlock should not generate text_delta
         text_events = [e for e in events if e.type == "text_delta"]
         assert len(text_events) == 1
         assert text_events[0].text == "Вот ответ"
@@ -480,7 +473,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_result_message_not_emitted_as_text(self) -> None:
-        """ResultMessage НЕ дублирует текст — текст уже был в AssistantMessage."""
+        """ResultMessage does NOT duplicate text - the text was already in AssistantMessage."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -495,17 +488,13 @@ class TestStreamReply:
             events.append(event)
 
         text_events = [e for e in events if e.type == "text_delta"]
-        # Только один text_delta от AssistantMessage, не от ResultMessage
+        # Only one text_delta from AssistantMessage, not from ResultMessage
         assert len(text_events) == 1
         assert text_events[0].text == "Ответ"
 
     @pytest.mark.asyncio
     async def test_multi_turn_subprocess_stays_alive(self) -> None:
-        """2 вызова stream_reply подряд — subprocess не умирает.
-
-        Ключевой тест: receive_response() останавливается на ResultMessage,
-        subprocess остаётся живым для следующего query.
-        """
+        """2 stream_reply calls in a row - subprocess does not die. Key test: receive_response() stops on ResultMessage, subprocess remains alive for the next query."""
         mock_client = AsyncMock()
         call_count = 0
 
@@ -523,33 +512,33 @@ class TestStreamReply:
         async for event in adapter.stream_reply("вопрос 1"):
             events_1.append(event)
 
-        # Turn 2 — subprocess жив, query() НЕ бросает BrokenPipe
+        # Turn 2 - subprocess is alive, query() does NOT throw BrokenPipe
         events_2 = []
         async for event in adapter.stream_reply("вопрос 2"):
             events_2.append(event)
 
-        # Оба turn'а успешны
+        # Both turns are successful
         assert any(e.type == "done" for e in events_1)
         assert any(e.type == "done" for e in events_2)
         assert events_1[-1].text == "Ответ #1"
         assert events_2[-1].text == "Ответ #2"
-        # query вызван 2 раза
+        # query called 2 times
         assert mock_client.query.await_count == 2
 
 
 # ---------------------------------------------------------------------------
-# stream_reply — BrokenPipe и reconnect
+# stream_reply - BrokenPipe and reconnect
 # ---------------------------------------------------------------------------
 
 
 class TestStreamReplyBrokenPipe:
-    """BrokenPipeError — автоматический reconnect."""
+    """BrokenPipeError - automatic reconnect."""
 
     @pytest.mark.asyncio
     async def test_broken_pipe_on_query_reconnects_and_retries(self) -> None:
-        """BrokenPipe на первом query → reconnect → retry → успех."""
+        """BrokenPipe on the first query -> reconnect -> retry -> success."""
         mock_client = AsyncMock()
-        # Первый query бросает BrokenPipe, второй — OK
+        # The first query throws BrokenPipe, the second - OK
         mock_client.query.side_effect = [BrokenPipeError("pipe dead"), None]
 
         async def fake_receive_response():
@@ -559,22 +548,22 @@ class TestStreamReplyBrokenPipe:
         mock_client.receive_response = fake_receive_response
         adapter, _ = _make_adapter_with_client(mock_client)
 
-        # Подменяем _reconnect чтобы не создавать реальный subprocess
+        # Swap _reconnect to not create a real subprocess
         adapter._reconnect = AsyncMock()
 
         events = []
         async for event in adapter.stream_reply("привет"):
             events.append(event)
 
-        # reconnect вызван 1 раз
+        # reconnect called 1 time
         adapter._reconnect.assert_awaited_once()
-        # Ответ получен
+        # Reply received
         assert any(e.type == "done" for e in events)
         assert events[-1].text == "OK после reconnect"
 
     @pytest.mark.asyncio
     async def test_broken_pipe_on_query_both_attempts_fail(self) -> None:
-        """BrokenPipe на оба query → error event."""
+        """BrokenPipe on both query -> error event."""
         mock_client = AsyncMock()
         mock_client.query.side_effect = BrokenPipeError("pipe dead")
 
@@ -591,7 +580,7 @@ class TestStreamReplyBrokenPipe:
 
     @pytest.mark.asyncio
     async def test_oserror_on_query_triggers_reconnect(self) -> None:
-        """OSError (родитель BrokenPipeError) тоже триггерит reconnect."""
+        """OSError (parent of BrokenPipeError) also triggers reconnect."""
         mock_client = AsyncMock()
         mock_client.query.side_effect = [OSError("connection lost"), None]
 
@@ -612,7 +601,7 @@ class TestStreamReplyBrokenPipe:
 
     @pytest.mark.asyncio
     async def test_connection_error_on_query_triggers_reconnect(self) -> None:
-        """ConnectionError тоже триггерит reconnect."""
+        """ConnectionError also triggers reconnect."""
         mock_client = AsyncMock()
         mock_client.query.side_effect = [ConnectionError("reset"), None]
 
@@ -631,7 +620,7 @@ class TestStreamReplyBrokenPipe:
 
     @pytest.mark.asyncio
     async def test_broken_pipe_during_receive_yields_error_and_reconnects(self) -> None:
-        """BrokenPipe при чтении ответа → error + reconnect для будущих запросов."""
+        """BrokenPipe when reading response -> error + reconnect for future requests."""
         mock_client = AsyncMock()
 
         async def broken_receive():
@@ -646,26 +635,26 @@ class TestStreamReplyBrokenPipe:
         async for event in adapter.stream_reply("вопрос"):
             events.append(event)
 
-        # Есть partial text_delta и error
+        # There is partial text_delta and error
         types = [e.type for e in events]
         assert "text_delta" in types
         assert "error" in types
-        assert "done" not in types  # done НЕ отправлен — ответ неполный
-        # reconnect вызван для будущих запросов
+        assert "done" not in types  # done NOT sent - notfull response
+        # reconnect called for future requests
         adapter._reconnect.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------
-# stream_reply — произвольные ошибки
+# stream_reply - arbitrary errors
 # ---------------------------------------------------------------------------
 
 
 class TestStreamReplyGenericErrors:
-    """Произвольные ошибки (не BrokenPipe) — error event без reconnect."""
+    """Arbitrary errors (not BrokenPipe) - error event without reconnect."""
 
     @pytest.mark.asyncio
     async def test_generic_error_on_query(self) -> None:
-        """Произвольная ошибка на query → error event, без reconnect."""
+        """Arbitrary error on query -> error event, without reconnect."""
         mock_client = AsyncMock()
         mock_client.query.side_effect = ValueError("bad input")
 
@@ -679,12 +668,12 @@ class TestStreamReplyGenericErrors:
         assert len(events) == 1
         assert events[0].type == "error"
         assert "Ошибка SDK query" in events[0].text
-        # reconnect НЕ вызван — это не pipe-ошибка
+        # reconnect is NOT called - this is not pipe-error
         adapter._reconnect.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_generic_error_during_receive(self) -> None:
-        """Произвольная ошибка при receive_response → error event."""
+        """Arbitrary error when receive_response -> error event."""
         mock_client = AsyncMock()
 
         async def broken_receive():
@@ -703,7 +692,7 @@ class TestStreamReplyGenericErrors:
         assert len(events) == 1
         assert events[0].type == "error"
         assert "Ошибка SDK" in events[0].text
-        # reconnect НЕ вызван
+        # reconnect is NOT called
         adapter._reconnect.assert_not_awaited()
 
 
@@ -713,11 +702,11 @@ class TestStreamReplyGenericErrors:
 
 
 class TestDynamicControl:
-    """Dynamic control методы RuntimeAdapter."""
+    """Dynamic control methods of RuntimeAdapter."""
 
     @pytest.mark.asyncio
     async def test_set_model_delegates_to_client(self) -> None:
-        """set_model() делегирует в client.set_model()."""
+        """set_model() delegates in client.set_model()."""
         mock_client = AsyncMock()
         adapter, _ = _make_adapter_with_client(mock_client)
 
@@ -727,7 +716,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_set_model_not_connected_raises(self) -> None:
-        """set_model() без подключения → RuntimeError."""
+        """set_model() without connection -> RuntimeError."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
 
@@ -736,7 +725,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_interrupt_delegates_to_client(self) -> None:
-        """interrupt() делегирует в client.interrupt()."""
+        """interrupt() delegates in client.interrupt()."""
         mock_client = AsyncMock()
         adapter, _ = _make_adapter_with_client(mock_client)
 
@@ -746,7 +735,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_interrupt_not_connected_raises(self) -> None:
-        """interrupt() без подключения → RuntimeError."""
+        """interrupt() without connection -> RuntimeError."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
 
@@ -755,7 +744,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_set_permission_mode_delegates_to_client(self) -> None:
-        """set_permission_mode() делегирует в client.set_permission_mode()."""
+        """set_permission_mode() delegates in client.set_permission_mode()."""
         mock_client = AsyncMock()
         adapter, _ = _make_adapter_with_client(mock_client)
 
@@ -765,7 +754,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_set_permission_mode_not_connected_raises(self) -> None:
-        """set_permission_mode() без подключения → RuntimeError."""
+        """set_permission_mode() without connection -> RuntimeError."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
 
@@ -774,7 +763,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_get_mcp_status_delegates_to_client(self) -> None:
-        """get_mcp_status() делегирует в client.get_mcp_status()."""
+        """get_mcp_status() delegates in client.get_mcp_status()."""
         mock_client = AsyncMock()
         mock_client.get_mcp_status.return_value = {
             "mcpServers": [{"name": "iss", "status": "connected"}],
@@ -788,7 +777,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_get_mcp_status_not_connected_raises(self) -> None:
-        """get_mcp_status() без подключения → RuntimeError."""
+        """get_mcp_status() without connection -> RuntimeError."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
 
@@ -797,7 +786,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_rewind_files_delegates_to_client(self) -> None:
-        """rewind_files() делегирует в client.rewind_files()."""
+        """rewind_files() delegates in client.rewind_files()."""
         mock_client = AsyncMock()
         adapter, _ = _make_adapter_with_client(mock_client)
 
@@ -807,7 +796,7 @@ class TestDynamicControl:
 
     @pytest.mark.asyncio
     async def test_rewind_files_not_connected_raises(self) -> None:
-        """rewind_files() без подключения → RuntimeError."""
+        """rewind_files() without connection -> RuntimeError."""
         mock_options = MagicMock()
         adapter = RuntimeAdapter(mock_options)
 
@@ -828,7 +817,7 @@ def _make_result_msg_with_metrics(
     duration_ms: int = 1500,
     num_turns: int = 3,
 ) -> MagicMock:
-    """Мок ResultMessage с метриками."""
+    """Mock ResultMessage with metrics."""
     from cognitia.runtime.adapter import ResultMessage
 
     msg = MagicMock(spec=ResultMessage)
@@ -846,11 +835,11 @@ def _make_result_msg_with_metrics(
 
 
 class TestResultMessageMetrics:
-    """Extraction метрик из ResultMessage в done StreamEvent."""
+    """Extraction of metrics from ResultMessage in done StreamEvent."""
 
     @pytest.mark.asyncio
     async def test_done_event_contains_session_id(self) -> None:
-        """done event содержит session_id из ResultMessage."""
+        """done event contains session_id from ResultMessage."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -870,7 +859,7 @@ class TestResultMessageMetrics:
 
     @pytest.mark.asyncio
     async def test_done_event_contains_cost(self) -> None:
-        """done event содержит total_cost_usd."""
+        """done event contains total_cost_usd."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -889,7 +878,7 @@ class TestResultMessageMetrics:
 
     @pytest.mark.asyncio
     async def test_done_event_contains_usage(self) -> None:
-        """done event содержит usage."""
+        """done event contains usage."""
         mock_client = AsyncMock()
         usage = {"input_tokens": 200, "output_tokens": 100}
 
@@ -909,7 +898,7 @@ class TestResultMessageMetrics:
 
     @pytest.mark.asyncio
     async def test_done_event_contains_structured_output(self) -> None:
-        """done event содержит structured_output."""
+        """done event contains structured_output."""
         mock_client = AsyncMock()
         struct = {"answer": "42", "confidence": 0.99}
 
@@ -929,7 +918,7 @@ class TestResultMessageMetrics:
 
     @pytest.mark.asyncio
     async def test_missing_result_message_emits_error(self) -> None:
-        """Без ResultMessage stream_reply не должен завершаться как done."""
+        """Without ResultMessage stream_reply should not end as done."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -947,7 +936,7 @@ class TestResultMessageMetrics:
 
 
 class TestPartialAndStatusEvents:
-    """Raw partial SDK events и system task messages."""
+    """Raw partial SDK events and system task messages."""
 
     @pytest.mark.asyncio
     async def test_partial_stream_events_emit_text_without_duplication(self) -> None:

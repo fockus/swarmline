@@ -1,4 +1,4 @@
-"""Тесты для ThinRuntime budgets — loop_limit, budget_exceeded."""
+"""Tests for ThinRuntime budgets - loop_limit, budget_exceeded."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpe
 
 
 class MockLLM:
-    """Mock LLM: вечные tool_call для тестирования лимитов."""
+    """Mock LLM: vechnye tool_call for testirovaniya limitov."""
 
     def __init__(self, response: str | None = None, responses: list[str] | None = None) -> None:
         self._response = response
@@ -45,8 +45,8 @@ class TestLoopLimit:
 
     @pytest.mark.asyncio
     async def test_loop_limit_reached(self) -> None:
-        """Превышение max_iterations → RuntimeError(kind=loop_limit)."""
-        # LLM всегда возвращает tool_call — loop не завершится
+        """Exceeding max_iterations -> RuntimeError(kind=loop_limit)."""
+        # LLM vsegda returns tool_call - loop not zavershitsya
         tool_call = json.dumps(
             {
                 "type": "tool_call",
@@ -93,7 +93,7 @@ class TestBudgetExceeded:
 
     @pytest.mark.asyncio
     async def test_tool_calls_budget_exceeded(self) -> None:
-        """Превышение max_tool_calls → RuntimeError(kind=budget_exceeded)."""
+        """Exceeding max_tool_calls -> RuntimeError(kind=budget_exceeded)."""
         tool_call = json.dumps(
             {
                 "type": "tool_call",
@@ -108,8 +108,8 @@ class TestBudgetExceeded:
 
         config = RuntimeConfig(
             runtime_name="thin",
-            max_iterations=20,  # высокий, чтобы не сработал loop_limit
-            max_tool_calls=2,  # низкий — сработает budget_exceeded
+            max_iterations=20,  # vysokiy, chtoby not srabotal loop_limit
+            max_tool_calls=2,  # nizkiy - sworks budget_exceeded
         )
         events = await collect(runtime, config)
 
@@ -124,7 +124,7 @@ class TestBadModelOutput:
 
     @pytest.mark.asyncio
     async def test_bad_json_retries_exceeded_with_fallback(self) -> None:
-        """LLM возвращает текст без JSON > max_model_retries → text fallback (не error)."""
+        """LLM returns tekst without JSON > max_model_retries -> text fallback (not error)."""
         llm = MockLLM(response="это не JSON вообще")
         runtime = ThinRuntime(llm_call=llm)
 
@@ -135,7 +135,7 @@ class TestBadModelOutput:
         )
         events = await collect(runtime, config)
 
-        # Fallback: текст используется как ответ, а не как error
+        # Fallback: tekst uses kak response, a not kak error
         errors = [e for e in events if e.type == "error"]
         finals = [e for e in events if e.type == "final"]
         deltas = [e for e in events if e.type == "assistant_delta"]
@@ -146,7 +146,7 @@ class TestBadModelOutput:
 
     @pytest.mark.asyncio
     async def test_bad_json_retries_exceeded_json_like_no_fallback(self) -> None:
-        """LLM возвращает невалидный JSON-подобный ответ → error (fallback не срабатывает)."""
+        """LLM returns invalid JSON-podobnyy response -> error (fallback not srabatyvaet)."""
         llm = MockLLM(response="{broken json}")
         runtime = ThinRuntime(llm_call=llm)
 
@@ -163,7 +163,7 @@ class TestBadModelOutput:
 
     @pytest.mark.asyncio
     async def test_bad_json_then_recovery(self) -> None:
-        """Плохой JSON → retry → хороший JSON → success."""
+        """Bad JSON -> retry -> good JSON -> success."""
         responses = [
             "bad json",
             json.dumps({"type": "final", "final_message": "Восстановлено"}),

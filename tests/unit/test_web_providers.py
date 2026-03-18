@@ -1,10 +1,8 @@
-"""Тесты pluggable web search providers.
-
-Покрывает:
+"""Tests pluggable web search providers. Pokryvaet:
 - WebSearchProvider Protocol compliance
-- Каждый провайдер: search, edge cases, fallback
-- Factory: создание по имени, unknown → None
-- HttpxWebProvider: делегация search → provider
+- Kazhdyy provayder: search, edge cases, fallback
+- Factory: createdie by imeni, unknown -> None
+- HttpxWebProvider: delegatsiya search -> provider
 """
 
 from __future__ import annotations
@@ -33,7 +31,7 @@ from cognitia.tools.web_providers.tavily import TavilySearchProvider
 
 
 class TestProtocolCompliance:
-    """Все провайдеры реализуют WebSearchProvider Protocol."""
+    """Vse provaydery realizuyut WebSearchProvider Protocol."""
 
     def test_duckduckgo_is_web_search_provider(self) -> None:
         provider = DuckDuckGoSearchProvider()
@@ -58,10 +56,10 @@ class TestProtocolCompliance:
 
 
 class TestDuckDuckGoSearchProvider:
-    """DuckDuckGoSearchProvider — метапоиск через ddgs (9 движков, без API key)."""
+    """DuckDuckGoSearchProvider - metapoisk cherez ddgs (9 dvizhkov, without API key)."""
 
     async def test_search_returns_results(self) -> None:
-        """С установленным ddgs возвращает SearchResult."""
+        """S ustanovlennym ddgs returns SearchResult."""
         import cognitia.tools.web_providers.duckduckgo as ddg_mod
 
         mock_results = [
@@ -69,7 +67,7 @@ class TestDuckDuckGoSearchProvider:
             {"title": "PyPI", "href": "https://pypi.org", "body": "Package index"},
         ]
 
-        # ddgs API: DDGS().text(query, max_results=N, timeout=T) — без context manager
+        # ddgs API: DDGS().text(query, max_results=N, timeout=T) - without context manager
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text = MagicMock(return_value=mock_results)
         mock_ddgs_cls = MagicMock(return_value=mock_ddgs_instance)
@@ -89,7 +87,7 @@ class TestDuckDuckGoSearchProvider:
         assert results[0].snippet == "Official site"
 
     async def test_search_respects_max_results(self) -> None:
-        """max_results и timeout передаются в DDGS().text()."""
+        """max_results and timeout are passed in DDGS().text()."""
         import cognitia.tools.web_providers.duckduckgo as ddg_mod
 
         mock_ddgs_instance = MagicMock()
@@ -107,7 +105,7 @@ class TestDuckDuckGoSearchProvider:
         mock_ddgs_instance.text.assert_called_once_with("test", max_results=3, timeout=20)
 
     async def test_missing_dep_returns_empty(self) -> None:
-        """Без ddgs (не установлен) → пустой список (graceful)."""
+        """Without ddgs (not ustanovlen) -> empty list (graceful)."""
         import cognitia.tools.web_providers.duckduckgo as ddg_mod
 
         original = ddg_mod.DDGS
@@ -121,13 +119,13 @@ class TestDuckDuckGoSearchProvider:
         assert results == []
 
     async def test_empty_query_returns_empty(self) -> None:
-        """Пустой query → пустой список без вызова DDGS."""
+        """Empty query -> empty list without vyzova DDGS."""
         provider = DuckDuckGoSearchProvider()
         assert await provider.search("") == []
         assert await provider.search("   ") == []
 
     async def test_exception_returns_empty_and_logs(self) -> None:
-        """Timeout/network ошибка → пустой список + structlog warning."""
+        """Timeout/network error -> empty list + structlog warning."""
         import cognitia.tools.web_providers.duckduckgo as ddg_mod
 
         mock_ddgs_instance = MagicMock()
@@ -151,21 +149,21 @@ class TestDuckDuckGoSearchProvider:
 
 
 class TestTavilySearchProvider:
-    """TavilySearchProvider — AI-оптимизированный, требует API key."""
+    """TavilySearchProvider - AI-optimizirovannyy, trebuet API key."""
 
     def test_missing_key_raises(self) -> None:
-        """Без API key → ValueError."""
+        """Without API key -> ValueError."""
         with pytest.raises(ValueError, match="TAVILY_API_KEY"):
             TavilySearchProvider(api_key="")
 
     async def test_empty_query_returns_empty(self) -> None:
-        """Пустой query → пустой список."""
+        """Empty query -> empty list."""
         provider = TavilySearchProvider(api_key="test-key")
         assert await provider.search("") == []
         assert await provider.search("   ") == []
 
     async def test_exception_returns_empty(self) -> None:
-        """API ошибка → пустой список (graceful)."""
+        """API error -> empty list (graceful)."""
         import cognitia.tools.web_providers.tavily as tavily_mod
 
         mock_client = MagicMock()
@@ -183,7 +181,7 @@ class TestTavilySearchProvider:
         assert results == []
 
     async def test_search_returns_results(self) -> None:
-        """С установленным tavily-python возвращает SearchResult."""
+        """S ustanovlennym tavily-python returns SearchResult."""
         import cognitia.tools.web_providers.tavily as tavily_mod
 
         mock_response = {
@@ -209,7 +207,7 @@ class TestTavilySearchProvider:
         assert results[0].url == "https://tavily.com"
 
     async def test_missing_dep_returns_empty(self) -> None:
-        """Без TavilyClient → пустой список."""
+        """Without TavilyClient -> empty list."""
         import cognitia.tools.web_providers.tavily as tavily_mod
 
         original = tavily_mod.TavilyClient
@@ -229,15 +227,15 @@ class TestTavilySearchProvider:
 
 
 class TestSearXNGSearchProvider:
-    """SearXNGSearchProvider — self-hosted метапоисковик."""
+    """SearXNGSearchProvider - self-hosted metapoiskovik."""
 
     def test_missing_url_raises(self) -> None:
-        """Без URL → ValueError."""
+        """Without URL -> ValueError."""
         with pytest.raises(ValueError, match="SEARXNG_URL"):
             SearXNGSearchProvider(base_url="")
 
     async def test_empty_query_returns_empty(self) -> None:
-        """Пустой query → пустой список."""
+        """Empty query -> empty list."""
         provider = SearXNGSearchProvider(base_url="http://localhost:8080")
         assert await provider.search("") == []
         assert await provider.search("   ") == []
@@ -272,7 +270,7 @@ class TestSearXNGSearchProvider:
         assert results[0].title == "SearXNG"
 
     async def test_connection_error_returns_empty(self) -> None:
-        """Ошибка подключения → пустой список."""
+        """Error podklyucheniya -> empty list."""
         import httpx as real_httpx
 
         mock_client = AsyncMock()
@@ -296,15 +294,15 @@ class TestSearXNGSearchProvider:
 
 
 class TestBraveSearchProvider:
-    """BraveSearchProvider — 2000 req/month бесплатно."""
+    """BraveSearchProvider - 2000 req/month besplatno."""
 
     def test_missing_key_raises(self) -> None:
-        """Без API key → ValueError."""
+        """Without API key -> ValueError."""
         with pytest.raises(ValueError, match="BRAVE_SEARCH_API_KEY"):
             BraveSearchProvider(api_key="")
 
     async def test_empty_query_returns_empty(self) -> None:
-        """Пустой query → пустой список."""
+        """Empty query -> empty list."""
         provider = BraveSearchProvider(api_key="test-key")
         assert await provider.search("") == []
         assert await provider.search("   ") == []
@@ -348,7 +346,7 @@ class TestBraveSearchProvider:
 
 
 class TestSearchFactory:
-    """create_search_provider() — factory по имени (OCP)."""
+    """create_search_provider() - factory by imeni (OCP)."""
 
     def test_creates_duckduckgo(self) -> None:
         provider = create_search_provider("duckduckgo")
@@ -380,20 +378,20 @@ class TestSearchFactory:
 
 
 class TestJinaReaderFetchProvider:
-    """JinaReaderFetchProvider — URL → markdown через Jina AI."""
+    """JinaReaderFetchProvider - URL -> markdown cherez Jina AI."""
 
     def test_missing_key_raises(self) -> None:
-        """Без API key → ValueError."""
+        """Without API key -> ValueError."""
         with pytest.raises(ValueError, match="JINA_API_KEY"):
             JinaReaderFetchProvider(api_key="")
 
     def test_is_web_fetch_provider(self) -> None:
-        """Реализует WebFetchProvider Protocol."""
+        """Realizuet WebFetchProvider Protocol."""
         provider = JinaReaderFetchProvider(api_key="test-key")
         assert isinstance(provider, WebFetchProvider)
 
     async def test_returns_markdown(self) -> None:
-        """HTTP 200 → markdown контент."""
+        """HTTP 200 -> markdown kontent."""
         mock_response = AsyncMock()
         mock_response.text = "# Title\n\nSome content here"
         mock_response.raise_for_status = MagicMock()
@@ -413,12 +411,12 @@ class TestJinaReaderFetchProvider:
             result = await provider.fetch("https://example.com")
 
         assert result == "# Title\n\nSome content here"
-        # Проверяем что URL собран правильно
+        # Verify chto URL built pravilno
         call_args = mock_client.get.call_args
         assert "r.jina.ai/https://example.com" in call_args[0][0]
 
     async def test_network_error_returns_empty(self) -> None:
-        """Ошибка сети → пустая строка."""
+        """Error seti -> empty string."""
         import httpx as real_httpx
 
         mock_client = AsyncMock()
@@ -436,7 +434,7 @@ class TestJinaReaderFetchProvider:
         assert result == ""
 
     async def test_empty_url_returns_empty(self) -> None:
-        """Пустой URL → пустая строка."""
+        """Empty URL -> empty string."""
         provider = JinaReaderFetchProvider(api_key="test-key")
         assert await provider.fetch("") == ""
         assert await provider.fetch("   ") == ""
@@ -448,15 +446,15 @@ class TestJinaReaderFetchProvider:
 
 
 class TestCrawl4AIFetchProvider:
-    """Crawl4AIFetchProvider — URL → markdown через Crawl4AI."""
+    """Crawl4AIFetchProvider - URL -> markdown cherez Crawl4AI."""
 
     def test_is_web_fetch_provider(self) -> None:
-        """Реализует WebFetchProvider Protocol."""
+        """Realizuet WebFetchProvider Protocol."""
         provider = Crawl4AIFetchProvider()
         assert isinstance(provider, WebFetchProvider)
 
     async def test_missing_dep_returns_empty(self) -> None:
-        """Без crawl4ai (не установлен) → пустая строка."""
+        """Without crawl4ai (not ustanovlen) -> empty string."""
         import cognitia.tools.web_providers.crawl4ai as crawl_mod
 
         original = crawl_mod.AsyncWebCrawler
@@ -470,9 +468,9 @@ class TestCrawl4AIFetchProvider:
         assert result == ""
 
     async def test_empty_url_returns_empty(self) -> None:
-        """Пустой URL → пустая строка."""
+        """Empty URL -> empty string."""
         provider = Crawl4AIFetchProvider()
-        # Даже при установленном crawl4ai, пустой URL -> ""
+        # Dazhe pri ustanovlennom crawl4ai, empty URL -> ""
         import cognitia.tools.web_providers.crawl4ai as crawl_mod
 
         original = crawl_mod.AsyncWebCrawler
@@ -489,10 +487,10 @@ class TestCrawl4AIFetchProvider:
 
 
 class TestFetchFactory:
-    """create_fetch_provider() — factory для fetch провайдеров."""
+    """create_fetch_provider() - factory for fetch provayderov."""
 
     def test_default_returns_none(self) -> None:
-        """'default' → None (используется встроенный httpx)."""
+        """'default' -> None (uses built-in httpx)."""
         assert create_fetch_provider("default") is None
 
     def test_creates_jina_with_key(self) -> None:
@@ -516,10 +514,10 @@ class TestFetchFactory:
 
 
 class TestHttpxWebProviderDelegation:
-    """HttpxWebProvider делегирует search() в search_provider."""
+    """HttpxWebProvider delegates search() in search_provider."""
 
     async def test_delegates_search_to_provider(self) -> None:
-        """search() делегирует в search_provider."""
+        """search() delegates in search_provider."""
         expected = [SearchResult(title="Test", url="https://test.com", snippet="snippet")]
         mock_provider = AsyncMock()
         mock_provider.search = AsyncMock(return_value=expected)
@@ -531,13 +529,13 @@ class TestHttpxWebProviderDelegation:
         mock_provider.search.assert_called_once_with("query", 3)
 
     async def test_no_provider_returns_empty(self) -> None:
-        """Без search_provider → пустой список."""
+        """Without search_provider -> empty list."""
         web = HttpxWebProvider()
         results = await web.search("query")
         assert results == []
 
     async def test_no_provider_explicit_none(self) -> None:
-        """Явный None → пустой список."""
+        """YAvnyy None -> empty list."""
         web = HttpxWebProvider(search_provider=None)
         results = await web.search("query")
         assert results == []
@@ -549,10 +547,10 @@ class TestHttpxWebProviderDelegation:
 
 
 class TestSearchExecutor:
-    """search_executor из builtin.py — JSON wrapper для LLM."""
+    """search_executor from builtin.py - JSON wrapper for LLM."""
 
     async def test_empty_query_returns_error(self) -> None:
-        """Пустой query → status=error."""
+        """Empty query -> status=error."""
         import json
 
         from cognitia.tools.builtin import create_web_tools
@@ -565,7 +563,7 @@ class TestSearchExecutor:
         assert "query" in parsed["message"].lower()
 
     async def test_result_count_in_response(self) -> None:
-        """Ответ содержит result_count."""
+        """Response contains result_count."""
         import json
 
         from cognitia.tools.builtin import create_web_tools
@@ -585,7 +583,7 @@ class TestSearchExecutor:
         assert len(parsed["results"]) == 2
 
     async def test_exception_returns_error_status(self) -> None:
-        """Exception в провайдере → status=error."""
+        """Exception in provaydere -> status=error."""
         import json
 
         from cognitia.tools.builtin import create_web_tools
@@ -617,21 +615,21 @@ class TestSearchExecutor:
 
 
 class TestExtractText:
-    """_extract_text() — извлечение текста из HTML."""
+    """_extract_text() - izvlechenie teksta from HTML."""
 
     def test_removes_script_tags(self) -> None:
-        """script теги полностью удаляются (regex fallback)."""
+        """script tegi polnostyu udalyayutsya (regex fallback)."""
         from cognitia.tools.web_httpx import _extract_text
 
         html = "<html><body><script>var x = 1;</script><p>Hello</p></body></html>"
-        # Принудительно отключаем trafilatura чтобы проверить regex
+        # Prinuditelno otklyuchaem trafilatura chtoby check regex
         with patch("cognitia.tools.web_httpx.trafilatura", None):
             text = _extract_text(html)
         assert "var x" not in text
         assert "Hello" in text
 
     def test_removes_style_tags(self) -> None:
-        """style теги полностью удаляются (regex fallback)."""
+        """style tegi polnostyu udalyayutsya (regex fallback)."""
         from cognitia.tools.web_httpx import _extract_text
 
         html = "<html><body><style>.cls { color: red; }</style><p>World</p></body></html>"
@@ -641,7 +639,7 @@ class TestExtractText:
         assert "World" in text
 
     def test_removes_html_tags(self) -> None:
-        """HTML теги заменяются на пробелы."""
+        """HTML tegi zamenyayutsya on probely."""
         from cognitia.tools.web_httpx import _extract_text
 
         html = "<div><h1>Title</h1><p>Content</p></div>"
@@ -651,7 +649,7 @@ class TestExtractText:
         assert "<" not in text
 
     def test_limits_output_length(self) -> None:
-        """Результат ≤ 50000 символов."""
+        """Result ≤ 50000 simvolov."""
         from cognitia.tools.web_httpx import _extract_text
 
         html = "<p>" + "A" * 100000 + "</p>"
@@ -660,10 +658,10 @@ class TestExtractText:
 
 
 class TestHttpxWebProviderFetchDelegation:
-    """HttpxWebProvider.fetch() делегирует в fetch_provider."""
+    """HttpxWebProvider.fetch() delegates in fetch_provider."""
 
     async def test_delegates_fetch_to_provider(self) -> None:
-        """С fetch_provider — делегирует."""
+        """S fetch_provider - delegates."""
         mock_fetch = AsyncMock()
         mock_fetch.fetch = AsyncMock(return_value="# Markdown content")
 
@@ -674,7 +672,7 @@ class TestHttpxWebProviderFetchDelegation:
         mock_fetch.fetch.assert_called_once_with("https://example.com")
 
     async def test_no_fetch_provider_uses_extract_text(self) -> None:
-        """Без fetch_provider — _extract_text вызывается на html."""
+        """Without fetch_provider - _extract_text vyzyvaetsya on html."""
         from cognitia.tools.web_httpx import _extract_text
 
         html = "<html><body><p>Hello world</p></body></html>"

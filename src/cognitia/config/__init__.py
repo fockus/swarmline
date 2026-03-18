@@ -1,8 +1,8 @@
-"""Config — generic загрузчики конфигурации (YAML loaders, typed configs).
+"""Config - generic configuration loaders (YAML loaders, typed configs).
 
-Модуль предоставляет domain-agnostic загрузчики для:
-- role → skills маппинга (RoleSkillsLoader, реализует RoleSkillsProvider Protocol)
-- role router конфигурации (RoleRouterConfig, load_role_router_config)
+This module provides domain-agnostic loaders for:
+- role -> skills mapping (RoleSkillsLoader, implements the RoleSkillsProvider Protocol)
+- role router configuration (RoleRouterConfig, load_role_router_config)
 """
 
 from cognitia.config.role_router import RoleRouterConfig, load_role_router_config

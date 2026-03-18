@@ -1,16 +1,16 @@
-"""ToolBudget — лимит tool calls per turn (секция 6.3 архитектуры).
+"""ToolBudget - tool call limit per turn (architecture section 6.3).
 
-Контролирует стоимость и latency:
-- max_tool_calls: общий лимит вызовов за turn (по умолчанию 8)
-- max_mcp_calls: лимит MCP вызовов за turn (по умолчанию 6)
-- timeout_per_call_ms: таймаут на один вызов MCP (по умолчанию 30с)
+Controls cost and latency:
+- max_tool_calls: overall call limit per turn (default 8)
+- max_mcp_calls: MCP call limit per turn (default 6)
+- timeout_per_call_ms: timeout for a single MCP call (default 30s)
 """
 
 from __future__ import annotations
 
 
 class ToolBudget:
-    """Счётчик и лимитер tool calls за один turn."""
+    """Counter and limiter for tool calls within one turn."""
 
     def __init__(
         self,
@@ -26,36 +26,36 @@ class ToolBudget:
 
     @property
     def total_calls(self) -> int:
-        """Общее количество вызовов за turn."""
+        """Total number of calls in the turn."""
         return self._total
 
     @property
     def mcp_calls(self) -> int:
-        """Количество MCP вызовов за turn."""
+        """Number of MCP calls in the turn."""
         return self._mcp
 
     def record_call(self, is_mcp: bool = False) -> None:
-        """Зафиксировать вызов инструмента."""
+        """Record a tool call."""
         self._total += 1
         if is_mcp:
             self._mcp += 1
 
     def can_call(self, is_mcp: bool = False) -> bool:
-        """Проверить, можно ли сделать ещё один вызов."""
+        """Check whether another call is allowed."""
         if self._total >= self._max_total:
             return False
         return not (is_mcp and self._mcp >= self._max_mcp)
 
     def is_exhausted(self) -> bool:
-        """Полностью исчерпан ли бюджет (и MCP, и local невозможны)."""
+        """Return whether the budget is fully exhausted (no MCP or local calls left)."""
         return self._total >= self._max_total
 
     @property
     def timeout_per_call_ms(self) -> int:
-        """Таймаут на один вызов MCP в мс (§6.3)."""
+        """Timeout for a single MCP call in ms (§6.3)."""
         return self._timeout_ms
 
     def reset(self) -> None:
-        """Сбросить счётчики (начало нового turn)."""
+        """Reset counters (start of a new turn)."""
         self._total = 0
         self._mcp = 0

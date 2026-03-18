@@ -1,12 +1,4 @@
-"""MessageTools -- send_message tool для inter-agent коммуникации.
-
-Workers используют send_message tool чтобы отправлять сообщения
-другим агентам в команде через MessageBus.
-
-Экспортирует:
-- SEND_MESSAGE_TOOL_SPEC: ToolSpec с JSON Schema (to_agent, content)
-- create_send_message_tool(bus, sender_agent_id, team_members) -> Callable
-"""
+"""Message Tools module."""
 
 from __future__ import annotations
 
@@ -49,14 +41,14 @@ def create_send_message_tool(
 ) -> Callable[[dict[str, Any]], Coroutine[Any, Any, str]]:
     """Create an executor that sends messages through the MessageBus.
 
-    Args:
-        bus: MessageBus instance for the team.
-        sender_agent_id: Name/ID of the sending agent.
-        team_members: List of other agent names (required for broadcast '*').
+  Args:
+    bus: MessageBus instance for the team.
+    sender_agent_id: Name/ID of the sending agent.
+    team_members: List of other agent names (required for broadcast '*').
 
-    Returns:
-        Async callable that accepts a dict with 'to_agent' and 'content' keys.
-    """
+  Returns:
+    Async callable that accepts a dict with 'to_agent' and 'content' keys.
+  """
 
     async def _execute(args: dict[str, Any]) -> str:
         to_agent: str = args["to_agent"]

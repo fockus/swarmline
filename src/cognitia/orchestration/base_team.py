@@ -1,6 +1,6 @@
-"""BaseTeamOrchestrator — общая логика stop/status/send/pause/resume.
+"""BaseTeamOrchestrator — General logic stop/status/send/pause/resume.
 
-Все team orchestrator'ы наследуют этот класс, переопределяя start().
+All team orchestrators inherit this class by redefining start().
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ from cognitia.orchestration.team_types import (
 
 
 class BaseTeamOrchestrator(abc.ABC):
-    """Базовый класс team orchestrator — общие stop/status/send/pause/resume.
+    """The base class of the team orchestrator is general stop/status/send/pause/resume.
 
-    Подклассы реализуют start() с runtime-специфичной логикой spawn'а workers.
+    Subclasses implement start() with runtime-specific spawn workers logic.
     """
 
     def __init__(self, sub_orch: SubagentOrchestrator) -> None:
@@ -32,10 +32,10 @@ class BaseTeamOrchestrator(abc.ABC):
 
     @abc.abstractmethod
     async def start(self, config: TeamConfig, task: str) -> str:
-        """Запустить команду. Возвращает team_id."""
+        """Run command. Returns team_id."""
 
     async def stop(self, team_id: str) -> None:
-        """Остановить всех workers."""
+        """Stop all workers."""
         state = self._teams.get(team_id)
         if not state:
             return
@@ -43,7 +43,7 @@ class BaseTeamOrchestrator(abc.ABC):
             await self._sub_orch.cancel(agent_id)
 
     async def get_team_status(self, team_id: str) -> TeamStatus:
-        """Агрегированный статус команды."""
+        """Aggregated status of the team."""
         state = self._teams.get(team_id)
         if not state:
             return TeamStatus(team_id=team_id)
@@ -72,13 +72,13 @@ class BaseTeamOrchestrator(abc.ABC):
         )
 
     async def send_message(self, team_id: str, message: TeamMessage) -> None:
-        """Отправить сообщение в MessageBus команды."""
+        """Send a message to the MessageBus command."""
         state = self._teams.get(team_id)
         if state:
             await state.bus.send(message)
 
     async def pause_agent(self, team_id: str, agent_id: str) -> None:
-        """Приостановить worker'а (cancel + mark paused)."""
+        """Pause the worker (cancel + mark paused)."""
         state = self._teams.get(team_id)
         if not state:
             return
@@ -92,7 +92,7 @@ class BaseTeamOrchestrator(abc.ABC):
         state.paused_workers.add(worker_name)
 
     async def resume_agent(self, team_id: str, agent_id: str) -> None:
-        """Возобновить worker'а после pause (через повторный spawn)."""
+        """Resume worker after pause (through repeated spawn)."""
         state = self._teams.get(team_id)
         if not state:
             return
@@ -115,12 +115,12 @@ class BaseTeamOrchestrator(abc.ABC):
         state.paused_workers.discard(worker_name)
 
     def _build_resume_task(self, state: InternalTeamState, worker_name: str) -> str:
-        """Построить task для respawn'а worker'а. Подклассы могут переопределить."""
+        """Build a task for the respawn worker. Subclasses may override."""
         return compose_worker_task(
             config=state.config, worker_name=worker_name, task=state.task
         )
 
     def get_message_bus(self, team_id: str) -> MessageBus | None:
-        """Получить MessageBus команды."""
+        """Get the MessageBus command."""
         state = self._teams.get(team_id)
         return state.bus if state else None

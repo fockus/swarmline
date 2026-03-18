@@ -1,4 +1,4 @@
-"""Unit-тесты для InMemoryMemoryProvider (R-521)."""
+"""Unit-tests for InMemoryMemoryProvider (R-521)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def provider() -> InMemoryMemoryProvider:
 
 
 class TestMessages:
-    """Тесты операций с сообщениями."""
+    """Tests of operations with messages."""
 
     @pytest.mark.asyncio
     async def test_save_and_get_messages(self, provider: InMemoryMemoryProvider) -> None:
@@ -62,7 +62,7 @@ class TestMessages:
 
 
 class TestFacts:
-    """Тесты операций с фактами."""
+    """Tests of operations with facts."""
 
     @pytest.mark.asyncio
     async def test_upsert_and_get_facts(self, provider: InMemoryMemoryProvider) -> None:
@@ -72,13 +72,13 @@ class TestFacts:
 
     @pytest.mark.asyncio
     async def test_facts_global_and_topic(self, provider: InMemoryMemoryProvider) -> None:
-        await provider.upsert_fact("u1", "name", "Иван")  # глобальный
+        await provider.upsert_fact("u1", "name", "Иван")  # global
         await provider.upsert_fact("u1", "goal", "вклад", topic_id="t1")
-        # С topic_id — видим оба
+        # With topic_id - we see both
         facts = await provider.get_facts("u1", topic_id="t1")
         assert "name" in facts
         assert "goal" in facts
-        # Без topic_id — только глобальные
+        # Without topic_id - only global
         facts_global = await provider.get_facts("u1")
         assert "name" in facts_global
         assert "goal" not in facts_global
@@ -148,7 +148,7 @@ class TestSessionState:
 
     @pytest.mark.asyncio
     async def test_session_state_delegation_persist(self, provider: InMemoryMemoryProvider) -> None:
-        """Delegation fields сохраняются и восстанавливаются."""
+        """Delegation fields are saved and restored."""
         await provider.save_session_state(
             "u1",
             "t1",
@@ -195,7 +195,7 @@ class TestProfile:
 
 
 class TestPhaseState:
-    """Тесты фазы 5-Phase (R-703)."""
+    """5-Phase Tests (R-703)."""
 
     @pytest.mark.asyncio
     async def test_save_and_get_phase(self, provider: InMemoryMemoryProvider) -> None:
@@ -219,7 +219,7 @@ class TestPhaseState:
 
 
 class TestToolEvents:
-    """Тесты событий инструментов (§9.1)."""
+    """Tool Event Tests (§9.1)."""
 
     @pytest.mark.asyncio
     async def test_save_tool_event(self, provider: InMemoryMemoryProvider) -> None:

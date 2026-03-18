@@ -1,7 +1,7 @@
-"""Типы для orchestration: Plan, PlanStep, PlanApproval.
+"""Types for orchestration: Plan, PlanStep, and PlanApproval.
 
-State machine: draft → approved → executing → completed/cancelled.
-Все dataclass frozen — immutable, методы возвращают новые экземпляры.
+State machine: draft -> approved -> executing -> completed/cancelled.
+All dataclasses are frozen and return new instances from state transitions.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ ApprovalSource = Literal["user", "system", "agent"]
 
 @dataclass(frozen=True)
 class PlanStep:
-    """Шаг плана — immutable, методы возвращают новые экземпляры."""
+    """Immutable plan step with state-transition helpers."""
 
     id: str
     description: str
@@ -29,25 +29,25 @@ class PlanStep:
     verification_log: str | None = None
 
     def start(self) -> PlanStep:
-        """pending → in_progress."""
+        """pending -> in_progress."""
         return replace(self, status="in_progress")
 
     def complete(self, result: str) -> PlanStep:
-        """* → completed с результатом."""
+        """* -> completed with result."""
         return replace(self, status="completed", result=result)
 
     def fail(self, reason: str) -> PlanStep:
-        """* → failed с причиной."""
+        """Transition to failed with the provided reason."""
         return replace(self, status="failed", result=reason)
 
     def skip(self, reason: str) -> PlanStep:
-        """* → skipped с причиной."""
+        """Transition to skipped with the provided reason."""
         return replace(self, status="skipped", result=reason)
 
 
 @dataclass(frozen=True)
 class PlanApproval:
-    """Запись об одобрении плана."""
+    """Approval record for a plan."""
 
     plan_id: str
     approved_by: ApprovalSource
@@ -57,10 +57,10 @@ class PlanApproval:
 
 @dataclass(frozen=True)
 class Plan:
-    """План выполнения — immutable state machine.
+    """Plan execution - immutable state machine.
 
-    State machine: draft → approved → executing → completed/cancelled.
-    cancel() доступен из любого состояния.
+    State machine: draft -> approved -> executing -> completed/cancelled.
+    `cancel()` is available from any state.
     """
 
     id: str
@@ -71,10 +71,10 @@ class Plan:
     approved_by: ApprovalSource | None = None
 
     def approve(self, by: ApprovalSource) -> Plan:
-        """draft → approved.
+        """draft -> approved.
 
         Raises:
-            ValueError: Если план не в статусе draft.
+          ValueError: if the plan is not in draft status.
         """
         if self.status != "draft":
             msg = f"Одобрение возможно только из статуса 'draft', текущий: '{self.status}'"
@@ -89,10 +89,10 @@ class Plan:
         )
 
     def start_execution(self) -> Plan:
-        """approved → executing.
+        """approved -> executing.
 
         Raises:
-            ValueError: Если план не в статусе approved.
+          ValueError: if the plan is not in approved status.
         """
         if self.status != "approved":
             msg = f"Запуск возможен только из статуса 'approved', текущий: '{self.status}'"
@@ -107,10 +107,10 @@ class Plan:
         )
 
     def mark_completed(self) -> Plan:
-        """executing → completed.
+        """executing -> completed.
 
         Raises:
-            ValueError: Если план не в статусе executing.
+          ValueError: if the plan is not in executing status.
         """
         if self.status != "executing":
             msg = f"Завершение возможно только из статуса 'executing', текущий: '{self.status}'"
@@ -125,7 +125,7 @@ class Plan:
         )
 
     def cancel(self) -> Plan:
-        """Любой статус → cancelled."""
+        """Any status -> cancelled."""
         return Plan(
             id=self.id,
             goal=self.goal,
@@ -136,10 +136,10 @@ class Plan:
         )
 
     def update_step(self, updated_step: PlanStep) -> Plan:
-        """Обновить шаг по id, вернуть новый Plan.
+        """Update a step by id and return a new plan.
 
         Raises:
-            ValueError: Шаг с указанным id не найден.
+          ValueError: if the step id is not found.
         """
         new_steps: list[PlanStep] = []
         found = False

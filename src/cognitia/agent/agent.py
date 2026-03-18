@@ -1,4 +1,4 @@
-"""Agent — high-level executor для cognitia."""
+"""Agent - high-level executor for cognitia."""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 class Agent:
-    """High-level facade для взаимодействия с AI-агентом.
+    """High-level facade for interacting with the AI agent.
 
-    Поддерживает:
+    Supports:
     - query(prompt) → Result (one-shot)
     - stream(prompt) → AsyncIterator[StreamEvent] (streaming)
     - conversation() → Conversation (multi-turn)
@@ -32,7 +32,7 @@ class Agent:
 
     @property
     def runtime_capabilities(self) -> Any:
-        """Capability descriptor выбранного runtime для app-level introspection."""
+        """Capability descriptor for the selected runtime for app-level introspection."""
         from cognitia.runtime.factory import RuntimeFactory
 
         factory = RuntimeFactory()
@@ -40,7 +40,7 @@ class Agent:
         return factory.get_capabilities(config)
 
     async def query(self, prompt: str) -> Result:
-        """One-shot запрос → Result.
+        """One-shot request -> Result.
 
         1. Apply middleware.before_query chain
         2. Execute stream
@@ -72,9 +72,9 @@ class Agent:
         return result
 
     async def stream(self, prompt: str) -> AsyncIterator[Any]:
-        """Streaming запрос → AsyncIterator[StreamEvent].
+        """Streaming request -> AsyncIterator[StreamEvent].
 
-        Middleware before_query применяется, after_result — нет (streaming).
+        Middleware before_query applies, after_result does not (streaming).
         """
         effective_prompt = await apply_before_query(
             prompt,
@@ -86,13 +86,13 @@ class Agent:
             yield event
 
     def conversation(self, session_id: str | None = None) -> Any:
-        """Создать multi-turn Conversation."""
+        """Create a multi-turn Conversation."""
         from cognitia.agent.conversation import Conversation
 
         return Conversation(agent=self, session_id=session_id)
 
     async def cleanup(self) -> None:
-        """Освободить ресурсы (runtime, adapter, subprocess)."""
+        """Release resources (runtime, adapter, subprocess)."""
         if self._runtime is not None:
             if hasattr(self._runtime, "cleanup"):
                 await self._runtime.cleanup()
@@ -109,7 +109,7 @@ class Agent:
     # -----------------------------------------------------------------------
 
     async def _execute_stream(self, prompt: str) -> AsyncIterator[Any]:
-        """Выполнить prompt через выбранный runtime.
+        """Execute the prompt via the selected runtime.
 
         Routing:
         - claude_sdk → RuntimeAdapter + ClaudeOptionsBuilder (warm subprocess)
@@ -125,11 +125,11 @@ class Agent:
                 yield event
 
     async def _execute_claude_sdk(self, prompt: str) -> AsyncIterator[Any]:
-        """Execute через Claude Agent SDK (one-shot streaming query)."""
+        """Execute via Claude Agent SDK (one-shot streaming query)."""
         from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks
         from cognitia.runtime.sdk_query import stream_one_shot_query
 
-        # Собираем MCP серверы из tools
+        # Build MCP servers from tools
         mcp_servers = dict(self._config.mcp_servers)
         if self._config.tools:
             sdk_server = self._build_tools_mcp_server()
@@ -168,7 +168,7 @@ class Agent:
             yield StreamEvent(type="error", text=str(exc))
 
     async def _execute_agent_runtime(self, prompt: str, runtime_name: str) -> AsyncIterator[Any]:
-        """Execute через AgentRuntime (thin/deepagents)."""
+        """Execute via AgentRuntime (thin/deepagents)."""
         from cognitia.agent.runtime_wiring import build_portable_runtime_plan
         from cognitia.runtime.factory import RuntimeFactory
         from cognitia.runtime.types import Message
@@ -188,7 +188,7 @@ class Agent:
                 system_prompt=self._config.system_prompt,
                 active_tools=runtime_plan.active_tools,
             ):
-                # Конвертируем RuntimeEvent → StreamEvent-like
+                # Convert RuntimeEvent -> StreamEvent-like
                 yield _RuntimeEventAdapter(event)
         except Exception as exc:
             logger.exception("Agent._execute_agent_runtime error")
@@ -197,11 +197,11 @@ class Agent:
             await runtime.cleanup()
 
     def _build_tools_mcp_server(self) -> Any:
-        """Создать in-process MCP server из @tool definitions."""
+        """Create an in-process MCP server from @tool definitions."""
         return build_tools_mcp_server(self._config.tools)
 
     def _build_runtime_config(self, runtime_name: str) -> Any:
-        """Собрать RuntimeConfig из AgentConfig для portable/native runtime path."""
+        """Build RuntimeConfig from AgentConfig for the portable/native runtime path."""
         from cognitia.runtime.types import RuntimeConfig
 
         return RuntimeConfig(
@@ -215,12 +215,12 @@ class Agent:
         )
 
     def _merge_hooks(self) -> Any:
-        """Merge hooks из config.hooks + middleware.get_hooks()."""
+        """Merge hooks from config.hooks + middleware.get_hooks()."""
         return merge_hooks(self._config.hooks, self._config.middleware)
 
 
 def build_tools_mcp_server(tools: tuple[Any, ...]) -> Any:
-    """Создать in-process MCP server из ToolDefinition tuple."""
+    """Create an in-process MCP server from a ToolDefinition tuple."""
     from cognitia.runtime.sdk_tools import create_mcp_server, mcp_tool
 
     sdk_tools = []
@@ -233,7 +233,7 @@ def build_tools_mcp_server(tools: tuple[Any, ...]) -> Any:
 
 
 def merge_hooks(config_hooks: Any, middleware: tuple[Any, ...]) -> Any:
-    """Merge hooks из config и middleware.get_hooks()."""
+    """Merge hooks from config and middleware.get_hooks()."""
     from cognitia.hooks.registry import HookRegistry
 
     registries: list[HookRegistry] = []
@@ -262,10 +262,10 @@ def merge_hooks(config_hooks: Any, middleware: tuple[Any, ...]) -> Any:
 
 
 def _adapt_handler(handler: Any) -> Any:
-    """Адаптировать user handler → SDK MCP handler contract.
+    """Adapt a user handler to the SDK MCP handler contract.
 
-    SDK ожидает: handler(args_dict) -> {"content": [{"type": "text", "text": "..."}]}
-    User handler: handler(a=1, b=2) -> "result" или любой тип.
+    SDK expects: handler(args_dict) -> {"content": [{"type": "text", "text": "..."}]}
+    User handler: handler(a=1, b=2) -> "result" or any type.
     """
 
     async def adapted(args: dict[str, Any]) -> dict[str, Any]:
@@ -277,11 +277,11 @@ def _adapt_handler(handler: Any) -> Any:
                 "is_error": True,
             }
 
-        # Если handler уже вернул MCP-формат — passthrough
+        # If the handler already returned MCP format - passthrough
         if isinstance(result, dict) and "content" in result:
             return result
 
-        # Оборачиваем в MCP-формат
+        # Wrap into MCP format
         return {
             "content": [{"type": "text", "text": str(result)}],
         }
@@ -294,17 +294,17 @@ async def apply_before_query(
     middleware: tuple[Any, ...],
     config: Any,
 ) -> str:
-    """Применить middleware.before_query chain к prompt."""
+    """Apply the middleware.before_query chain to the prompt."""
     for mw in middleware:
         prompt = await mw.before_query(prompt, config)
     return prompt
 
 
 async def collect_stream_result(stream: AsyncIterator[Any]) -> dict[str, Any]:
-    """Собрать Result-поля из потока StreamEvent-like объектов.
+    """Collect Result fields from a stream of StreamEvent-like objects.
 
-    Используется в Agent.query() и Conversation.say() для единообразного
-    сбора text/session_id/cost/usage/structured_output/error из потока.
+    Used in Agent.query() and Conversation.say() for consistent
+    collection of text/session_id/cost/usage/structured_output/error from the stream.
     """
     text = ""
     session_id = None
@@ -375,14 +375,14 @@ def _runtime_messages_from_payloads(payloads: Any) -> list[Message]:
 
 
 class _RuntimeEventAdapter:
-    """Адаптер RuntimeEvent → StreamEvent-like interface."""
+    """Adapter from RuntimeEvent to a StreamEvent-like interface."""
 
     def __init__(self, event: Any) -> None:
         self._event = event
         etype = event.type
         data = event.data or {}
 
-        # Маппинг RuntimeEvent → StreamEvent types
+        # Map RuntimeEvent to StreamEvent types
         if etype == "assistant_delta":
             self.type = "text_delta"
             self.text = data.get("text", "")

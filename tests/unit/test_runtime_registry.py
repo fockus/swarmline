@@ -1,4 +1,4 @@
-"""Тесты для RuntimeRegistry — extensible adapter registry."""
+"""Tests for RuntimeRegistry - extensible adapter registry."""
 
 from __future__ import annotations
 

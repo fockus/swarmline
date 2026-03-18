@@ -1,4 +1,4 @@
-"""Тесты McpBridge — library-level MCP tool discovery."""
+"""Tests McpBridge - library-level MCP tool discovery."""
 
 from __future__ import annotations
 

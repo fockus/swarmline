@@ -1,7 +1,5 @@
-"""E2E: Agent Facade — полные сценарии с mock SDK.
-
-Проверяет end-to-end: от @tool декорации до Result,
-включая middleware chain, SecurityGuard, CostTracker.
+"""E2E: Agent Facade - full scenarios with mock SDK. Verifies end-to-end: ot @tool dekoratsii do Result,
+vklyuchaya middleware chain, SecurityGuard, CostTracker.
 """
 
 from __future__ import annotations
@@ -30,7 +28,7 @@ class TestE2EOneShot:
 
     @pytest.mark.asyncio
     async def test_one_shot_query_full_cycle(self) -> None:
-        """Agent.query() → mock stream → Result с метриками."""
+        """Agent.query() -> mock stream -> Result with metricmi."""
         agent = Agent(AgentConfig(system_prompt="Be concise"))
 
         async def fake_stream(prompt):
@@ -158,7 +156,7 @@ class TestE2ESecurityGuard:
 
     @pytest.mark.asyncio
     async def test_security_guard_in_agent_config(self) -> None:
-        """SecurityGuard в middleware → Agent config валиден."""
+        """SecurityGuard in middleware -> Agent config validen."""
         guard = SecurityGuard(block_patterns=["rm -rf"])
         config = AgentConfig(
             system_prompt="test",

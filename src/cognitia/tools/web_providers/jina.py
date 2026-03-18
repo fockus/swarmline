@@ -1,7 +1,7 @@
-"""Jina Reader fetch provider — URL → markdown через Jina AI Reader API.
+"""Jina Reader fetch provider - URL -> markdown via Jina AI Reader API.
 
-Free tier: 1 млн токенов. Требует JINA_API_KEY.
-Зависимость: httpx (уже в cognitia[web]).
+Free tier: 1 million tokens. Requires JINA_API_KEY.
+Dependency: httpx (already included in cognitia[web]).
 API docs: https://jina.ai/reader
 """
 
@@ -16,10 +16,10 @@ _JINA_READER_BASE = "https://r.jina.ai/"
 
 
 class JinaReaderFetchProvider:
-    """Fetch URL через Jina Reader API → чистый markdown.
+    """Fetch a URL via the Jina Reader API -> clean markdown.
 
-    Jina Reader конвертирует HTML в LLM-friendly markdown,
-    включая таблицы, код, LaTeX. Поддерживает 29 языков.
+    Jina Reader converts HTML to LLM-friendly markdown,
+    including tables, code, and LaTeX. Supports 29 languages.
     """
 
     def __init__(self, api_key: str, timeout: int = 30) -> None:
@@ -29,13 +29,13 @@ class JinaReaderFetchProvider:
         self._timeout = timeout
 
     async def fetch(self, url: str) -> str:
-        """Извлечь контент страницы через Jina Reader API.
+        """Extract page content via the Jina Reader API.
 
         Args:
-            url: URL для загрузки.
+            url: URL to load.
 
         Returns:
-            Markdown контент. Пустая строка при ошибке.
+            Markdown content. Empty string on error.
         """
         if not url or not url.strip():
             return ""

@@ -1,4 +1,4 @@
-"""Shared helpers для strategy functions ThinRuntime."""
+"""Shared helpers for strategy functions ThinRuntime."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from cognitia.runtime.types import (
 
 
 def _messages_to_lm(messages: list[Message]) -> list[dict[str, str]]:
-    """Конвертировать Message -> dict для LLM."""
+    """Messages to lm."""
     result = []
     for m in messages:
         d: dict[str, str] = {"role": m.role, "content": m.content}
@@ -30,7 +30,7 @@ def _build_metrics(
     tokens_in: int = 0,
     tokens_out: int = 0,
 ) -> TurnMetrics:
-    """Собрать метрики turn'а."""
+    """Build metrics."""
     return TurnMetrics(
         latency_ms=int((time.monotonic() - start_time) * 1000),
         iterations=iterations,
@@ -42,7 +42,7 @@ def _build_metrics(
 
 
 def _should_buffer_postprocessing(config: RuntimeConfig) -> bool:
-    """Нужен ли buffered output path для безопасного post-processing."""
+    """Should buffer postprocessing."""
     return bool(
         config.output_guardrails
         or config.output_type is not None

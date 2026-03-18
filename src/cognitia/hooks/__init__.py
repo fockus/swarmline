@@ -1,4 +1,4 @@
-"""Модуль хуков — перехват событий агента."""
+"""Hooks module - agent event interception."""
 
 from __future__ import annotations
 

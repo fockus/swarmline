@@ -19,11 +19,11 @@ class WeatherReport(BaseModel):
 
 
 class TestThinRuntimeStructuredOutputIntegration:
-    """ThinRuntime с output_type — validate, retry, backward compat."""
+    """ThinRuntime with output_type - validate, retry, backward compat."""
 
     @pytest.mark.asyncio
     async def test_thin_runtime_structured_output_success(self) -> None:
-        """Mock LLM возвращает валидный JSON -> final event с parsed model."""
+        """Mock LLM returns valid JSON -> final event with parsed model."""
         valid_json = json.dumps(
             {"city": "Moscow", "temperature": -5.0, "summary": "Cold"}
         )
@@ -62,7 +62,7 @@ class TestThinRuntimeStructuredOutputIntegration:
 
     @pytest.mark.asyncio
     async def test_thin_runtime_structured_output_retry(self) -> None:
-        """Mock LLM: первый ответ невалидный, второй валидный -> retry works."""
+        """Mock LLM: pervyy response invalid, vtoroy valid -> retry works."""
         call_count = 0
 
         async def fake_llm(
@@ -72,11 +72,11 @@ class TestThinRuntimeStructuredOutputIntegration:
             call_count += 1
 
             if call_count == 1:
-                # Первый вызов — final с невалидным JSON
+                # Pervyy call - final with notvalidnym JSON
                 return json.dumps(
                     {"type": "final", "final_message": "not a json"}
                 )
-            # Retry — валидный ответ
+            # Retry - valid response
             valid = json.dumps(
                 {"city": "SPb", "temperature": 2.0, "summary": "Cloudy"}
             )
@@ -156,7 +156,7 @@ class TestThinRuntimeStructuredOutputIntegration:
 
     @pytest.mark.asyncio
     async def test_thin_runtime_structured_output_backward_compat(self) -> None:
-        """output_format dict без output_type работает как раньше."""
+        """output_format dict without output_type works kak ranshe."""
 
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
@@ -184,17 +184,17 @@ class TestThinRuntimeStructuredOutputIntegration:
         assert len(final_events) == 1
 
         structured = final_events[0].data.get("structured_output")
-        # С dict output_format (без output_type) — structured output это dict, не model
+        # S dict output_format (without output_type) - structured output eto dict, not model
         assert structured == {"x": 42}
 
     @pytest.mark.asyncio
     async def test_thin_runtime_structured_output_retry_exhausted(self) -> None:
-        """Все retry-попытки исчерпаны -> error event."""
+        """Vse retry-popytki ischerpany -> error event."""
 
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            # Всегда возвращает final с невалидным JSON для output_type
+            # Vsegda returns final with notvalidnym JSON for output_type
             return json.dumps(
                 {"type": "final", "final_message": "not valid json ever"}
             )

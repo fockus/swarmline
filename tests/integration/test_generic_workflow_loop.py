@@ -1,9 +1,7 @@
-"""Integration: GenericWorkflowEngine — execute/verify retry loop.
-
-Real executor + real verifier (не mock).
+"""Integration: GenericWorkflowEngine - execute/verify retry loop. Real executor + real verifier (not mock).
 1st attempt: executor returns incomplete -> verifier fail -> retry.
 2nd attempt: executor returns complete -> verifier pass.
-Проверить: status=success, loop_count=2, verification_log.
+Check: status=success, loop_count=2, verification_log.
 """
 
 from __future__ import annotations
@@ -19,7 +17,7 @@ from cognitia.orchestration.generic_workflow_engine import (
 
 
 class TestGenericWorkflowExecuteVerifyLoop:
-    """GenericWorkflowEngine с real executor и real verifier."""
+    """GenericWorkflowEngine with real executor and real verifier."""
 
     @pytest.mark.asyncio
     async def test_generic_workflow_execute_verify_loop(self) -> None:
@@ -27,7 +25,7 @@ class TestGenericWorkflowExecuteVerifyLoop:
         attempt_counter = 0
 
         async def real_executor(task: str, context: dict[str, Any]) -> str:
-            """Executor: первый раз incomplete, второй — complete."""
+            """Executor: pervyy raz incomplete, vtoroy - complete."""
             nonlocal attempt_counter
             attempt_counter += 1
             if attempt_counter == 1:
@@ -35,7 +33,7 @@ class TestGenericWorkflowExecuteVerifyLoop:
             return "Complete analysis. SUMMARY: market is bullish, growth 15% YoY"
 
         async def real_verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
-            """Verifier: проверяет наличие маркера 'SUMMARY:' в output."""
+            """Verifier: verifies nalichie markera 'SUMMARY:' in output."""
             if "SUMMARY:" in output:
                 return True, "Verification passed: summary section present"
             return False, "Verification failed: missing SUMMARY section"
@@ -56,7 +54,7 @@ class TestGenericWorkflowExecuteVerifyLoop:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_max_retries_exceeded(self) -> None:
-        """Все попытки fail -> status=max_retries_exceeded."""
+        """Vse popytki fail -> status=max_retries_exceeded."""
 
         async def failing_executor(task: str, context: dict[str, Any]) -> str:
             return "always incomplete"
@@ -75,12 +73,12 @@ class TestGenericWorkflowExecuteVerifyLoop:
         assert result.status == GenericWorkflowStatus.MAX_RETRIES_EXCEEDED
         assert result.loop_count == 2
         assert "Missing required sections" in result.verification_log
-        # Verification log содержит записи обеих попыток
+        # Verification log contains zapisi obeih popytok
         assert result.verification_log.count("Attempt") == 2
 
     @pytest.mark.asyncio
     async def test_generic_workflow_pass_on_first_try(self) -> None:
-        """Первая попытка сразу проходит -> loop_count=1."""
+        """Pervaya popytka srazu prohodit -> loop_count=1."""
 
         async def good_executor(task: str, context: dict[str, Any]) -> str:
             return "Perfect output with all required data"

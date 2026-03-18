@@ -1,4 +1,4 @@
-"""Тесты для ToolExecutor ThinRuntime."""
+"""Tests for ToolExecutor ThinRuntime."""
 
 import json
 
@@ -9,11 +9,11 @@ from cognitia.runtime.thin.executor import ToolExecutor
 
 
 class TestToolExecutorLocal:
-    """Выполнение local tools."""
+    """Execution local tools."""
 
     @pytest.mark.asyncio
     async def test_sync_local_tool(self) -> None:
-        """Sync local tool выполняется через asyncio.to_thread."""
+        """Sync local tool runs via asyncio.to_thread."""
 
         def calc(args):
             return {"result": args["a"] + args["b"]}
@@ -25,7 +25,7 @@ class TestToolExecutorLocal:
 
     @pytest.mark.asyncio
     async def test_async_local_tool(self) -> None:
-        """Async local tool выполняется напрямую."""
+        """Async local tool runs directly."""
 
         async def acalc(args):
             return {"result": args["x"] * 2}
@@ -37,7 +37,7 @@ class TestToolExecutorLocal:
 
     @pytest.mark.asyncio
     async def test_local_tool_error(self) -> None:
-        """Ошибка local tool → JSON с error."""
+        """Error local tool -> JSON with error."""
 
         def bad_tool(args):
             raise ValueError("bad input")
@@ -50,7 +50,7 @@ class TestToolExecutorLocal:
 
     @pytest.mark.asyncio
     async def test_local_tool_returns_string(self) -> None:
-        """Local tool возвращает строку — не переоборачиваем."""
+        """Local tool returns the string - not reversed."""
 
         def str_tool(args):
             return "hello world"
@@ -61,7 +61,7 @@ class TestToolExecutorLocal:
 
     @pytest.mark.asyncio
     async def test_decorated_tool_receives_keyword_arguments(self) -> None:
-        """@tool handler(name=...) должен получать kwargs, а не весь args dict."""
+        """@tool handler(name=...) should receive kwargs, not the entire args dict."""
 
         @tool(name="greet", description="Greet user")
         async def greet(name: str) -> str:
@@ -74,7 +74,7 @@ class TestToolExecutorLocal:
 
     @pytest.mark.asyncio
     async def test_decorated_tool_with_multiple_args_receives_kwargs(self) -> None:
-        """Многопараметрический @tool handler(a, b) должен вызываться через kwargs."""
+        """Multiparameter @tool handler(a, b) should be called via kwargs."""
 
         @tool(name="add", description="Add two numbers")
         async def add(a: int, b: int) -> int:
@@ -87,11 +87,11 @@ class TestToolExecutorLocal:
 
 
 class TestToolExecutorMcp:
-    """MCP tools через HTTP JSON-RPC."""
+    """MCP tools via HTTP JSON-RPC."""
 
     @pytest.mark.asyncio
     async def test_mcp_tool_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """MCP tool успешно вызывается через configured server URL."""
+        """MCP tool is successfully called via configured server URL."""
 
         class _Response:
             def raise_for_status(self) -> None:
@@ -124,7 +124,7 @@ class TestToolExecutorMcp:
 
     @pytest.mark.asyncio
     async def test_mcp_tool_unknown_server(self) -> None:
-        """MCP tool с неизвестным server id возвращает ошибку."""
+        """MCP tool with not known server id returns error."""
         executor = ToolExecutor(mcp_servers={"funds": "https://example.test/mcp"})
         result = await executor.execute("mcp__iss__get_bonds", {"q": "test"})
         data = json.loads(result)
@@ -133,7 +133,7 @@ class TestToolExecutorMcp:
 
     @pytest.mark.asyncio
     async def test_mcp_tool_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Таймаут MCP вызова возвращает понятную ошибку."""
+        """MCP call timeout returns an understandable error."""
 
         class _Client:
             def __init__(self, *args, **kwargs) -> None:
@@ -162,7 +162,7 @@ class TestToolExecutorMcp:
 
 
 class TestToolExecutorUnknown:
-    """Неизвестный инструмент."""
+    """Not a known tool."""
 
     @pytest.mark.asyncio
     async def test_unknown_tool(self) -> None:
@@ -174,7 +174,7 @@ class TestToolExecutorUnknown:
 
 
 class TestToolExecutorProperties:
-    """Свойства и проверки."""
+    """Properties and checks."""
 
     def test_has_tool_local(self) -> None:
         executor = ToolExecutor(local_tools={"calc": lambda x: x})

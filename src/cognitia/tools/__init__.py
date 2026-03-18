@@ -1,4 +1,4 @@
-"""Cognitia Tools — sandbox-изоляция и встроенные инструменты для агентов."""
+"""Cognitia Tools - sandbox isolation and built-in tools for agents."""
 
 from cognitia.agent.tool import ToolDefinition, tool
 

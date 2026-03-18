@@ -1,4 +1,4 @@
-"""Unit: HITL/interrupt helpers для DeepAgents native path."""
+"""Unit: HITL/interrupt helpers for DeepAgents native path."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from langgraph.types import Interrupt
 
 
 def test_validate_hitl_config_requires_checkpointer() -> None:
-    """interrupt_on без checkpointer должен fail-fast."""
+    """interrupt_on without checkpointer should fail-fast."""
     error = validate_hitl_config({"interrupt_on": {"edit_file": True}})
 
     assert error is not None
@@ -23,7 +23,7 @@ def test_validate_hitl_config_requires_checkpointer() -> None:
 
 
 def test_build_interrupt_events_maps_hitl_request_to_approval_required() -> None:
-    """HITLRequest payload маппится в approval_required event."""
+    """HITLRequest payload mappitsya in approval_required event."""
     interrupt = Interrupt(
         value={
             "action_requests": [
@@ -56,7 +56,7 @@ def test_build_interrupt_events_maps_hitl_request_to_approval_required() -> None
 
 
 def test_build_interrupt_events_maps_string_interrupt_to_user_input_requested() -> None:
-    """Строковый interrupt value маппится в user_input_requested."""
+    """Strokovyy interrupt value mappitsya in user_input_requested."""
     interrupt = Interrupt(value="Need human answer", id="interrupt-2")
 
     events = build_interrupt_events({"__interrupt__": (interrupt,)})

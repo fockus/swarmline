@@ -1,7 +1,5 @@
-"""Integration: DefaultContextBuilder + ContextBudget + Skills — сборка system_prompt.
-
-Сценарий: реальная сборка контекста с ролью, скиллами, профилем, целью и summary.
-Проверяем слои, бюджет, truncation.
+"""Integration: DefaultContextBuilder + ContextBudget + Skills - assembly system_prompt. Scenario: real assembly contexta with rolyu, skillami, profilem, tselyu and summary.
+Verify sloi, byudzhet, truncation.
 """
 
 from pathlib import Path
@@ -15,7 +13,7 @@ from cognitia.skills.types import LoadedSkill, McpServerSpec, SkillSpec
 
 @pytest.fixture
 def prompts_dir(tmp_path: Path) -> Path:
-    """Создать директорию с промптами для тестов."""
+    """Create directory with promptami for testov."""
     # identity.md
     (tmp_path / "identity.md").write_text("Ты — Freedom, финансовый AI-помощник.", encoding="utf-8")
     # guardrails.md
@@ -74,13 +72,13 @@ def finuslugi_skill() -> LoadedSkill:
 
 
 class TestBasicAssembly:
-    """Базовая сборка — identity + guardrails + роль."""
+    """Basic assembly - identity + guardrails + rol."""
 
     @pytest.mark.asyncio
     async def test_identity_and_guardrails_always_present(
         self, builder: DefaultContextBuilder
     ) -> None:
-        """Identity и guardrails всегда в промпте."""
+        """Identity and guardrails vsegda in prompte."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -94,7 +92,7 @@ class TestBasicAssembly:
 
     @pytest.mark.asyncio
     async def test_role_included(self, builder: DefaultContextBuilder) -> None:
-        """Роль включена в промпт."""
+        """Rol vklyuchena in prompt."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -107,7 +105,7 @@ class TestBasicAssembly:
 
     @pytest.mark.asyncio
     async def test_missing_role_no_error(self, builder: DefaultContextBuilder) -> None:
-        """Несуществующая роль — не падает, просто без роли."""
+        """Notsushchestvuyushchaya rol - not fails, prosto without roli."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -120,13 +118,13 @@ class TestBasicAssembly:
 
 
 class TestWithSkills:
-    """Сборка с активными скиллами."""
+    """Sborka with aktivnymi skillami."""
 
     @pytest.mark.asyncio
     async def test_skill_instructions_added(
         self, builder: DefaultContextBuilder, iss_skill: LoadedSkill
     ) -> None:
-        """Инструкции активных скиллов добавляются."""
+        """Instruktsii aktivnyh skillov are added."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -141,7 +139,7 @@ class TestWithSkills:
     async def test_inactive_skill_not_included(
         self, builder: DefaultContextBuilder, iss_skill: LoadedSkill
     ) -> None:
-        """Неактивный скилл не добавляется."""
+        """Notactive skill not is added."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -159,7 +157,7 @@ class TestWithSkills:
         iss_skill: LoadedSkill,
         finuslugi_skill: LoadedSkill,
     ) -> None:
-        """Несколько активных скиллов."""
+        """Notskolko aktivnyh skillov."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -173,11 +171,11 @@ class TestWithSkills:
 
 
 class TestWithGoalAndProfile:
-    """Сборка с целью пользователя и профилем."""
+    """Sborka with tselyu user and profilem."""
 
     @pytest.mark.asyncio
     async def test_goal_included(self, builder: DefaultContextBuilder) -> None:
-        """Цель пользователя включена в контекст."""
+        """TSel user vklyuchena in context."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -200,7 +198,7 @@ class TestWithGoalAndProfile:
 
     @pytest.mark.asyncio
     async def test_profile_facts_included(self, builder: DefaultContextBuilder) -> None:
-        """Факты профиля включены в контекст."""
+        """Fakty profilya included in context."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -218,7 +216,7 @@ class TestWithGoalAndProfile:
 
     @pytest.mark.asyncio
     async def test_empty_profile_not_added(self, builder: DefaultContextBuilder) -> None:
-        """Пустой профиль не добавляет секцию."""
+        """Empty profil not dobavlyaet sektsiyu."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -232,11 +230,11 @@ class TestWithGoalAndProfile:
 
 
 class TestSummaryAndBudget:
-    """Сборка с summary и бюджетирование."""
+    """Sborka with summary and byudzhetirovanie."""
 
     @pytest.mark.asyncio
     async def test_summary_included(self, builder: DefaultContextBuilder) -> None:
-        """Summary включен в контекст."""
+        """Summary vklyuchen in context."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -249,7 +247,7 @@ class TestSummaryAndBudget:
 
     @pytest.mark.asyncio
     async def test_summary_truncated_on_overflow(self, builder: DefaultContextBuilder) -> None:
-        """Summary обрезается при превышении бюджета."""
+        """Summary obrezaetsya pri prevyshenii byudzheta."""
         tiny_budget = ContextBudget(total_tokens=500, summary_max=50)
         inp = ContextInput(
             user_id="u1",
@@ -265,7 +263,7 @@ class TestSummaryAndBudget:
 
     @pytest.mark.asyncio
     async def test_truncated_packs_tracked(self, builder: DefaultContextBuilder) -> None:
-        """Отслеживание обрезанных пакетов."""
+        """Otslezhivanie obrezannyh paketov."""
         tiny_budget = ContextBudget(total_tokens=200, goal_max=10)
         inp = ContextInput(
             user_id="u1",
@@ -281,7 +279,7 @@ class TestSummaryAndBudget:
 
     @pytest.mark.asyncio
     async def test_notes_contain_metadata(self, builder: DefaultContextBuilder) -> None:
-        """BuiltContext.notes содержит метаданные."""
+        """BuiltContext.notes contains metadata."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -295,11 +293,11 @@ class TestSummaryAndBudget:
 
 
 class TestPhasePack:
-    """Тесты Phase pack в контексте."""
+    """Tests Phase pack in contexte."""
 
     @pytest.mark.asyncio
     async def test_phase_included_in_context(self, builder: DefaultContextBuilder) -> None:
-        """Phase text включается в system_prompt."""
+        """Phase text includessya in system_prompt."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -314,7 +312,7 @@ class TestPhasePack:
 
     @pytest.mark.asyncio
     async def test_phase_includes_next_phase(self, builder: DefaultContextBuilder) -> None:
-        """Phase pack включает следующую фазу, если текст её содержит."""
+        """Phase pack includes sleduyushchuyu fazu, if tekst ee contains."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -328,7 +326,7 @@ class TestPhasePack:
 
     @pytest.mark.asyncio
     async def test_phase_notes_in_context(self, builder: DefaultContextBuilder) -> None:
-        """Заметки фазы включены в контекст."""
+        """Zametki fazy included in context."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -342,7 +340,7 @@ class TestPhasePack:
 
     @pytest.mark.asyncio
     async def test_no_phase_no_pack(self, builder: DefaultContextBuilder) -> None:
-        """Без phase_text — нет Phase pack."""
+        """Without phase_text - nott Phase pack."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -355,19 +353,15 @@ class TestPhasePack:
 
 
 class TestBudgetEdgeCases:
-    """Edge cases для бюджета — критичные сценарии (§10.3)."""
+    """Edge cases for byudzheta - kritichnye scenarios (§10.3)."""
 
     @pytest.mark.asyncio
     async def test_guardrails_always_survive_tiny_budget(
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """P0 Guardrails ВСЕГДА остаются даже при минимальном бюджете.
-
-        Это КРИТИЧНЫЙ тест безопасности: identity + guardrails
-        не должны быть обрезаны ни при каких условиях.
-        """
-        # Бюджет = 50 токенов — меньше чем guardrails, но они всё равно есть
+        """P0 Guardrails VSEGDA ostayutsya dazhe pri minimalnom byudzhete. Eto KRITICHNYY test withoutopasnosti: identity + guardrails not should byt obrezany ni pri kakih usloviyah. """
+        # Byudzhet = 50 tokenov - menshe chem guardrails, no oni vse ravno est
         tiny = ContextBudget(total_tokens=50, summary_max=10)
         inp = ContextInput(
             user_id="u1",
@@ -382,7 +376,7 @@ class TestBudgetEdgeCases:
             summary="Очень длинный summary " * 100,
             goal_text="- Название: " + ("Цель " * 50),
         )
-        # Identity и guardrails ВСЕГДА на месте
+        # Identity and guardrails VSEGDA on meste
         assert "Freedom" in result.system_prompt
         assert "рекомендаций" in result.system_prompt
 
@@ -391,8 +385,8 @@ class TestBudgetEdgeCases:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """Summary (P5) отбрасывается первым при нехватке бюджета."""
-        # Бюджет чуть больше guardrails, но не хватает для summary
+        """Summary (P5) otbrasyvaetsya pervym pri nothvatke byudzheta."""
+        # Byudzhet chut bolshe guardrails, no not hvataet for summary
         budget = ContextBudget(total_tokens=200, summary_max=50)
         inp = ContextInput(
             user_id="u1",
@@ -412,7 +406,7 @@ class TestBudgetEdgeCases:
         builder: DefaultContextBuilder,
         iss_skill: LoadedSkill,
     ) -> None:
-        """Все пакеты превышают бюджет — guardrails остаются, остальное обрезано/отброшено."""
+        """Vse pakety prevyshayut byudzhet - guardrails ostayutsya, ostalnoe obrezano/otbrosheno."""
         budget = ContextBudget(
             total_tokens=100,
             goal_max=5,
@@ -435,9 +429,9 @@ class TestBudgetEdgeCases:
             goal_text="- Название: " + ("A" * 1000),
             summary="S" * 5000,
         )
-        # Guardrails на месте
+        # Guardrails on meste
         assert "Freedom" in result.system_prompt
-        # Что-то было обрезано
+        # CHto-to bylo obrezano
         assert len(result.truncated_packs) > 0
 
     @pytest.mark.asyncio
@@ -445,7 +439,7 @@ class TestBudgetEdgeCases:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """Даже при отрицательном remaining бюджете — система не падает."""
+        """Dazhe pri otritsatelnom remaining byudzhete - sistema not fails."""
         budget = ContextBudget(total_tokens=10)
         inp = ContextInput(
             user_id="u1",
@@ -455,17 +449,17 @@ class TestBudgetEdgeCases:
             active_skill_ids=[],
             budget=budget,
         )
-        # Не должно быть exception
+        # Not should byt exception
         result = await builder.build(inp, summary="text " * 100)
         assert isinstance(result, BuiltContext)
-        assert result.prompt_hash  # hash всё равно вычислен
+        assert result.prompt_hash  # hash vse ravno vychislen
 
     @pytest.mark.asyncio
     async def test_prompt_hash_changes_with_different_content(
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """Разный контент → разный prompt_hash."""
+        """Raznyy kontent -> raznyy prompt_hash."""
         inp1 = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -486,11 +480,11 @@ class TestBudgetEdgeCases:
 
 
 class TestPromptHash:
-    """Тесты prompt_hash в BuiltContext (R-300, §12.1)."""
+    """Tests prompt_hash in BuiltContext (R-300, §12.1)."""
 
     @pytest.mark.asyncio
     async def test_hash_present(self, builder: DefaultContextBuilder) -> None:
-        """prompt_hash присутствует."""
+        """prompt_hash prisutstvuet."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -504,7 +498,7 @@ class TestPromptHash:
 
     @pytest.mark.asyncio
     async def test_hash_deterministic(self, builder: DefaultContextBuilder) -> None:
-        """Одинаковый prompt → одинаковый hash."""
+        """Odinakovyy prompt -> odinakovyy hash."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -518,7 +512,7 @@ class TestPromptHash:
 
     @pytest.mark.asyncio
     async def test_hash_in_notes(self, builder: DefaultContextBuilder) -> None:
-        """prompt_hash доступен через notes."""
+        """prompt_hash dostupen cherez notes."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",

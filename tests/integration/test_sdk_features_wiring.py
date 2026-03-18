@@ -1,11 +1,9 @@
-"""Integration: SDK 0.1.48 features wiring — сборка ClaudeAgentOptions со всеми новыми фичами.
-
-Проверяет что компоненты cognitia корректно собираются вместе:
-- HookRegistry → SDK hooks через bridge → ClaudeAgentOptions
-- In-process MCP tools → ClaudeAgentOptions.mcp_servers
-- Structured output + session management + betas → ClaudeAgentOptions
+"""Integration: SDK 0.1.48 features wiring - assembly ClaudeAgentOptions so vsemi novymi fichami. Verifies chto komponotnty cognitia correctly are assembled vmeste:
+- HookRegistry -> SDK hooks cherez bridge -> ClaudeAgentOptions
+- In-process MCP tools -> ClaudeAgentOptions.mcp_servers
+- Structured output + session management + betas -> ClaudeAgentOptions
 - RuntimeAdapter dynamic control delegation chain
-- ResultMessage metrics → StreamEvent → ClaudeCodeRuntime → RuntimeEvent
+- ResultMessage metrics -> StreamEvent -> ClaudeCodeRuntime -> RuntimeEvent
 """
 
 from __future__ import annotations
@@ -34,7 +32,7 @@ class TestHookRegistryToOptions:
     """HookRegistry → sdk_bridge → ClaudeOptionsBuilder → ClaudeAgentOptions."""
 
     def test_hooks_pipeline_end_to_end(self) -> None:
-        """Полный pipeline: register hooks → convert → build options."""
+        """Full pipeline: register hooks -> convert -> build options."""
         registry = HookRegistry()
 
         async def block_rm(
@@ -68,7 +66,7 @@ class TestHookRegistryToOptions:
 
     @pytest.mark.asyncio
     async def test_hook_callback_execution_in_pipeline(self) -> None:
-        """Hook callback выполняется корректно через SDK bridge."""
+        """Hook callback runs correctly cherez SDK bridge."""
         registry = HookRegistry()
         invocations: list[str] = []
 
@@ -101,7 +99,7 @@ class TestHookRegistryToOptions:
         assert invocations == ["Read"]
 
     def test_multiple_hook_events_in_options(self) -> None:
-        """Несколько типов хуков → все попадают в options."""
+        """Notskolko tipov hookov -> vse popadayut in options."""
         registry = HookRegistry()
 
         async def noop(**kwargs: Any) -> dict[str, Any]:
@@ -153,7 +151,7 @@ class TestMcpToolsToOptions:
         assert opts.mcp_servers["greeting"]["type"] == "sdk"
 
     def test_mixed_mcp_servers_in_options(self) -> None:
-        """Remote MCP + in-process MCP в одних options."""
+        """Remote MCP + in-process MCP in odnih options."""
         from cognitia.skills.types import McpServerSpec
 
         @mcp_tool("local_calc", "Calculator", {"expr": str})
@@ -174,7 +172,7 @@ class TestMcpToolsToOptions:
             sdk_mcp_servers={"calc": sdk_server},
         )
 
-        # Оба сервера присутствуют
+        # Oba servera prisutstvuyut
         assert "iss" in opts.mcp_servers
         assert "calc" in opts.mcp_servers
         assert opts.mcp_servers["iss"]["type"] == "http"
@@ -187,7 +185,7 @@ class TestMcpToolsToOptions:
 
 
 class TestFullOptionsAssembly:
-    """Сборка ClaudeAgentOptions со всеми новыми фичами SDK 0.1.48."""
+    """Sborka ClaudeAgentOptions so vsemi novymi fichami SDK 0.1.48."""
 
     def test_structured_output_with_session_management(self) -> None:
         """output_format + continue_conversation + fork_session."""
@@ -224,7 +222,7 @@ class TestFullOptionsAssembly:
         assert opts.enable_file_checkpointing is True
 
     def test_all_features_combined(self) -> None:
-        """Все фичи одновременно — ничего не конфликтует."""
+        """Vse fichi odnovremenno - nichego not konfliktuet."""
         from claude_agent_sdk import AgentDefinition
 
         registry = HookRegistry()
@@ -272,7 +270,7 @@ class TestFullOptionsAssembly:
         assert opts.sandbox is not None
         assert opts.env == {"MY_KEY": "val"}
         assert opts.fallback_model == "haiku"
-        # Default ModelPolicy → sonnet (escalate_roles пустой)
+        # Default ModelPolicy -> sonnet (escalate_roles empty)
         assert opts.model == "sonnet"
 
 
@@ -286,7 +284,7 @@ class TestAdapterDynamicControlPipeline:
 
     @pytest.mark.asyncio
     async def test_set_model_propagates_through_claude_code_runtime(self) -> None:
-        """set_model на adapter доступен через ClaudeCodeRuntime.adapter."""
+        """set_model on adapter dostupen cherez ClaudeCodeRuntime.adapter."""
         from cognitia.runtime.claude_code import ClaudeCodeRuntime
 
         mock_client = AsyncMock()
@@ -297,13 +295,13 @@ class TestAdapterDynamicControlPipeline:
 
         runtime = ClaudeCodeRuntime(adapter=adapter)
 
-        # Вызываем через runtime.adapter
+        # Vyzyvaem cherez runtime.adapter
         await runtime.adapter.set_model("opus")
         mock_client.set_model.assert_awaited_once_with("opus")
 
     @pytest.mark.asyncio
     async def test_interrupt_propagates_through_claude_code_runtime(self) -> None:
-        """interrupt() доступен через ClaudeCodeRuntime.adapter."""
+        """interrupt() dostupen cherez ClaudeCodeRuntime.adapter."""
         from cognitia.runtime.claude_code import ClaudeCodeRuntime
 
         mock_client = AsyncMock()
@@ -319,7 +317,7 @@ class TestAdapterDynamicControlPipeline:
 
     @pytest.mark.asyncio
     async def test_get_mcp_status_propagates_through_runtime(self) -> None:
-        """get_mcp_status() через ClaudeCodeRuntime.adapter."""
+        """get_mcp_status() cherez ClaudeCodeRuntime.adapter."""
         from cognitia.runtime.claude_code import ClaudeCodeRuntime
 
         mock_client = AsyncMock()
@@ -351,14 +349,14 @@ class TestMetricsPropagation:
 
     @pytest.mark.asyncio
     async def test_stream_event_metrics_reach_claude_code_runtime(self) -> None:
-        """Метрики из ResultMessage → StreamEvent.done → ClaudeCodeRuntime final event."""
+        """Metrics from ResultMessage -> StreamEvent.done -> ClaudeCodeRuntime final event."""
         from cognitia.runtime.adapter import ResultMessage
         from cognitia.runtime.claude_code import ClaudeCodeRuntime
         from cognitia.runtime.types import Message, RuntimeConfig
 
         mock_client = AsyncMock()
 
-        # Mock ResultMessage с метриками
+        # Mock ResultMessage with metricmi
         result_msg = MagicMock(spec=ResultMessage)
         result_msg.session_id = "sess-abc"
         result_msg.total_cost_usd = 0.123
@@ -391,7 +389,7 @@ class TestMetricsPropagation:
             adapter=adapter,
         )
 
-        # Запускаем runtime
+        # Run runtime
         messages = [Message(role="user", content="Проанализируй")]
         events = []
         async for event in runtime.run(
@@ -401,15 +399,15 @@ class TestMetricsPropagation:
         ):
             events.append(event)
 
-        # Проверяем что StreamEvent.done с метриками дошёл до финала
-        # RuntimeEvent.final содержит text
+        # Verify chto StreamEvent.done with metricmi doshel do finala
+        # RuntimeEvent.final contains text
         final_events = [e for e in events if e.type == "final"]
         assert len(final_events) == 1
         assert final_events[0].data["text"] == "Результат анализа"
 
     @pytest.mark.asyncio
     async def test_structured_output_in_stream_event(self) -> None:
-        """structured_output из ResultMessage доступен в StreamEvent.done."""
+        """structured_output from ResultMessage dostupen in StreamEvent.done."""
         from cognitia.runtime.adapter import ResultMessage
 
         mock_client = AsyncMock()

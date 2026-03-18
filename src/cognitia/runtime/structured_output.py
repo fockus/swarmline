@@ -1,4 +1,4 @@
-"""Helpers для portable structured output в thin/deepagents runtimes."""
+"""Helpers for portable structured output in Thin/DeepAgents runtimes."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from cognitia.runtime.thin.parsers import strip_markdown_fences as _strip_markdo
 
 
 class _StructuredOutputModel(Protocol):
-    """Минимальный контракт для Pydantic-like моделей."""
+    """Structured Output Model protocol."""
 
     @classmethod
     def model_validate_json(cls, json_data: str) -> Any: ...
@@ -21,12 +21,12 @@ class _StructuredOutputModel(Protocol):
 def validate_structured_output(text: str, output_type: _StructuredOutputModel) -> Any:
     """Parse JSON from text and validate against a Pydantic model.
 
-    Strips markdown fences before parsing. Returns a validated model instance.
+  Strips markdown fences before parsing. Returns a validated model instance.
 
-    Raises:
-        ValueError: if text is not valid JSON.
-        pydantic.ValidationError: if JSON does not match the model schema.
-    """
+  Raises:
+    ValueError: if text is not valid JSON.
+    pydantic.ValidationError: if JSON does not match the model schema.
+  """
     cleaned = _strip_markdown_fences(text).strip()
     try:
         json.loads(cleaned)  # validate JSON syntax first
@@ -47,15 +47,15 @@ def resolve_structured_output(
 ) -> Any | None:
     """Resolve structured output: validate via Pydantic if output_type set, else extract JSON.
 
-    Returns:
-        - Pydantic model instance if output_type is set and validation succeeds
-        - dict/list if output_format is set (no output_type) and JSON parses
-        - None if no structured output configured
+  Returns:
+    - Pydantic model instance if output_type is set and validation succeeds
+    - dict/list if output_format is set (no output_type) and JSON parses
+    - None if no structured output configured
 
-    Raises:
-        ValueError: if output_type is set but text is not valid JSON
-        pydantic.ValidationError: if output_type is set but JSON doesn't match schema
-    """
+  Raises:
+    ValueError: if output_type is set but text is not valid JSON
+    pydantic.ValidationError: if output_type is set but JSON doesn't match schema
+  """
     if output_type is not None:
         model = cast(_StructuredOutputModel, output_type)
         return validate_structured_output(text, model)
@@ -69,10 +69,10 @@ def try_resolve_structured_output(
 ) -> tuple[Any | None, str | None]:
     """Try to resolve structured output, returning (result, error_message).
 
-    If output_type is set and validation fails, returns (None, error_str).
-    If no output_type, falls back to extract_structured_output (never errors).
-    On success returns (parsed_output, None).
-    """
+  If output_type is set and validation fails, returns (None, error_str).
+  If no output_type, falls back to extract_structured_output (never errors).
+  On success returns (parsed_output, None).
+  """
     if output_type is not None:
         try:
             model = cast(_StructuredOutputModel, output_type)
@@ -89,7 +89,7 @@ def append_structured_output_instruction(
     *,
     final_response_field: str | None = None,
 ) -> str:
-    """Добавить в system prompt инструкции для structured output."""
+    """Append structured output instruction."""
     schema = normalize_output_schema(output_format)
     if schema is None:
         return system_prompt
@@ -116,7 +116,7 @@ def extract_structured_output(
     text: str,
     output_format: dict[str, Any] | None,
 ) -> Any | None:
-    """Извлечь JSON structured output из финального текста."""
+    """Extract structured output."""
     if not output_format:
         return None
 
@@ -135,7 +135,7 @@ def extract_structured_output(
 
 
 def normalize_output_schema(output_format: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Нормализовать facade/output_format в обычную JSON Schema."""
+    """Normalize output schema."""
     if not output_format:
         return None
     if output_format.get("type") == "json_schema":

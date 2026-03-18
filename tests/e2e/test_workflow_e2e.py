@@ -1,7 +1,5 @@
-"""E2E: WorkflowGraph — разные паттерны выполнения.
-
-Linear, conditional, loop, parallel, ThinRuntime nodes.
-Реальные компоненты: WorkflowGraph, ThinWorkflowExecutor.
+"""E2E: WorkflowGraph - raznye patterny vypolnotniya. Linear, conditional, loop, parallel, ThinRuntime nodes.
+Real komponotnty: WorkflowGraph, ThinWorkflowExecutor.
 """
 
 from __future__ import annotations
@@ -40,7 +38,7 @@ class TestWorkflowLinearE2E:
 
     @pytest.mark.asyncio
     async def test_workflow_linear_three_nodes(self) -> None:
-        """Линейный граф: state flows through all nodes, final state correct."""
+        """Linotynyy graf: state flows through all nodes, final state correct."""
         graph = WorkflowGraph(name="linear_test")
 
         async def node_a(state: State) -> State:
@@ -85,7 +83,7 @@ class TestWorkflowConditionalE2E:
 
     @pytest.mark.asyncio
     async def test_workflow_conditional_branch_path_a(self) -> None:
-        """Condition на основе state value -> выбирает path_a."""
+        """Condition on osnove state value -> vybiraet path_a."""
         graph = WorkflowGraph(name="conditional_test")
 
         async def start_node(state: State) -> State:
@@ -121,7 +119,7 @@ class TestWorkflowConditionalE2E:
 
     @pytest.mark.asyncio
     async def test_workflow_conditional_branch_path_b(self) -> None:
-        """Condition на основе state value -> выбирает path_b."""
+        """Condition on osnove state value -> vybiraet path_b."""
         graph = WorkflowGraph(name="conditional_test_b")
 
         async def start_node(state: State) -> State:
@@ -164,7 +162,7 @@ class TestWorkflowLoopE2E:
 
     @pytest.mark.asyncio
     async def test_workflow_loop_with_retry(self) -> None:
-        """Первые 2 попытки fail, 3-я succeeds. Проверяем loop count."""
+        """Pervye 2 popytki fail, 3-ya succeeds. Verify loop count."""
         graph = WorkflowGraph(name="loop_test")
 
         async def process(state: State) -> State:
@@ -185,13 +183,13 @@ class TestWorkflowLoopE2E:
         graph.add_node("verify", verify)
         graph.add_edge("process", "verify")
 
-        # Conditional: если verified -> end, иначе -> process (loop)
+        # Conditional: if verified -> end, inache -> process (loop)
         graph.add_conditional_edge(
             "verify",
             condition=lambda s: END_NODE if s.get("verified") else "process",
         )
         graph.set_entry("process")
-        # Safety: max 5 loops через process
+        # Safety: max 5 loops cherez process
         graph.set_max_loops("process", max_loops=5)
 
         result = await graph.execute({})
@@ -211,7 +209,7 @@ class TestWorkflowParallelE2E:
 
     @pytest.mark.asyncio
     async def test_workflow_parallel_execution(self) -> None:
-        """Parallel: 3 nodes выполняются параллельно, результаты merge в state."""
+        """Parallel: 3 nodes run in parallel, results merge in state."""
         graph = WorkflowGraph(name="parallel_test")
 
         async def node_a(state: State) -> State:
@@ -260,11 +258,11 @@ class TestWorkflowParallelE2E:
 
 
 class TestWorkflowWithThinRuntimeE2E:
-    """WorkflowGraph + ThinWorkflowExecutor: каждый node = ThinRuntime call."""
+    """WorkflowGraph + ThinWorkflowExecutor: kazhdyy node = ThinRuntime call."""
 
     @pytest.mark.asyncio
     async def test_workflow_with_thin_runtime_nodes(self) -> None:
-        """End-to-end от graph definition до final result с real ThinRuntime."""
+        """End-to-end ot graph definition do final result with real ThinRuntime."""
         llm_call_count = 0
 
         async def fake_llm(
@@ -282,7 +280,7 @@ class TestWorkflowWithThinRuntimeE2E:
 
         graph = WorkflowGraph(name="runtime_workflow")
 
-        # Создаём node functions, которые вызывают ThinRuntime через executor
+        # Create node functions, kotorye vyzyvayut ThinRuntime cherez executor
         async def analyze_node(state: State) -> State:
             result = await executor.run_node(
                 system_prompt="Analyze data",
@@ -317,7 +315,7 @@ class TestWorkflowWithThinRuntimeE2E:
 
     @pytest.mark.asyncio
     async def test_thin_runtime_executor_direct(self) -> None:
-        """ThinRuntimeExecutor: прямой вызов node functions без LLM."""
+        """ThinRuntimeExecutor: pryamoy call node functions without LLM."""
         graph = WorkflowGraph(name="direct_test")
 
         async def double_node(state: State) -> State:

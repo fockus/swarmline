@@ -1,19 +1,17 @@
-"""Тесты для ModelPolicy.select_for_turn() — keyword triggers (секция 3.2 архитектуры).
-
-Триггеры Opus:
-- Слова: 'план', 'стратеги', 'пошагово', 'дорожн'
-- 2+ skills одновременно
-- Fallback на Sonnet
+"""Tests for ModelPolicy.select_for_turn() - keyword triggers (sektsiya 3.2 arhitektury). Triggery Opus:
+- Slova: 'plan', 'strategi', 'postepovo', 'dorozhn'
+- 2+ skills odnovremenno
+- Fallback on Sonnet
 """
 
 from cognitia.runtime.model_policy import ModelPolicy
 
 
 class TestSelectForTurn:
-    """select_for_turn() — расширенный выбор модели."""
+    """select_for_turn() - rasshirennyy selection models."""
 
     def test_default_sonnet(self) -> None:
-        """Обычный запрос → sonnet."""
+        """Obychnyy query -> sonnet."""
         policy = ModelPolicy()
         result = policy.select_for_turn(
             role_id="coach",
@@ -23,7 +21,7 @@ class TestSelectForTurn:
         assert result == "sonnet"
 
     def test_keyword_plan_triggers_opus(self) -> None:
-        """Слово 'план' → opus."""
+        """Slovo 'plan' -> opus."""
         policy = ModelPolicy()
         result = policy.select_for_turn(
             role_id="coach",
@@ -33,7 +31,7 @@ class TestSelectForTurn:
         assert result == "opus"
 
     def test_keyword_strategy_triggers_opus(self) -> None:
-        """'стратеги' → opus."""
+        """'strategi' -> opus."""
         policy = ModelPolicy()
         result = policy.select_for_turn(
             role_id="coach",
@@ -43,7 +41,7 @@ class TestSelectForTurn:
         assert result == "opus"
 
     def test_keyword_step_by_step_triggers_opus(self) -> None:
-        """'пошагово' → opus."""
+        """'postepovo' -> opus."""
         policy = ModelPolicy()
         result = policy.select_for_turn(
             role_id="coach",
@@ -63,7 +61,7 @@ class TestSelectForTurn:
         assert result == "opus"
 
     def test_one_skill_stays_sonnet(self) -> None:
-        """1 skill → sonnet (если нет keywords)."""
+        """1 skill -> sonnet (if nott keywords)."""
         policy = ModelPolicy()
         result = policy.select_for_turn(
             role_id="coach",
@@ -73,7 +71,7 @@ class TestSelectForTurn:
         assert result == "sonnet"
 
     def test_role_escalates_when_configured(self) -> None:
-        """Роль эскалируется, только если явно указана в escalate_roles."""
+        """Rol eskaliruetsya, tolko if yavno ukazana in escalate_roles."""
         policy = ModelPolicy(escalate_roles={"strategy_planner"})
         result = policy.select_for_turn(
             role_id="strategy_planner",
@@ -83,7 +81,7 @@ class TestSelectForTurn:
         assert result == "opus"
 
     def test_old_select_still_works(self) -> None:
-        """Обратная совместимость: старый select() работает."""
+        """Obratnaya sovmestimost: legacy select() works."""
         policy = ModelPolicy()
         assert policy.select("coach") == "sonnet"
         assert policy.select("strategy_planner") == "sonnet"

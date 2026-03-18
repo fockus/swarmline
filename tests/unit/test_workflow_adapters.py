@@ -1,6 +1,4 @@
-"""TDD RED: Runtime adapters для WorkflowGraph.
-
-CRP-4.2: thin executor, LangGraph compiler (stub), mixed runtimes.
+"""TDD RED: Runtime adapters for WorkflowGraph. CRP-4.2: thin executor, LangGraph compiler (stub), mixed runtimes.
 """
 
 from __future__ import annotations

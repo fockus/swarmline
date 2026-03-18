@@ -1,6 +1,4 @@
-"""Тесты InMemoryPlanStore — TDD: RED → GREEN.
-
-CRUD операции, edge cases, multi-tenant.
+"""Tests InMemoryPlanStore - TDD: RED -> GREEN. CRUD operatsii, edge cases, multi-tenant.
 """
 
 from __future__ import annotations
@@ -24,7 +22,7 @@ def _make_plan(plan_id: str = "p1", goal: str = "test") -> Plan:
 
 
 class TestInMemoryPlanStoreCRUD:
-    """Базовые CRUD операции."""
+    """Basic CRUD operatsii."""
 
     async def test_save_and_load(self) -> None:
         from cognitia.orchestration.plan_store import InMemoryPlanStore
@@ -75,7 +73,7 @@ class TestInMemoryPlanStoreCRUD:
         assert loaded.steps[1].status == "pending"
 
     async def test_save_overwrites(self) -> None:
-        """Повторный save перезаписывает план."""
+        """Povtornyy save overwrites plan."""
         from cognitia.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
@@ -90,12 +88,12 @@ class TestInMemoryPlanStoreCRUD:
         assert loaded.status == "approved"
 
     async def test_update_step_missing_plan(self) -> None:
-        """update_step для несуществующего плана → graceful."""
+        """update_step for notsushchestvuyushchego plana -> graceful."""
         from cognitia.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         step = PlanStep(id="s1", description="x").complete("y")
-        # Не бросает исключение
+        # Not brosaet isklyuchenie
         await store.update_step("missing", step)
 
     async def test_isinstance_protocol(self) -> None:

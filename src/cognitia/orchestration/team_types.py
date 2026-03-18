@@ -1,4 +1,4 @@
-"""Типы для team orchestration — multi-agent команды.
+"""Types for team orchestration - multi-agent teams.
 
 TeamConfig, TeamStatus, TeamMessage, InternalTeamState, compose_worker_task.
 """
@@ -19,7 +19,7 @@ TeamState = Literal["idle", "running", "completed", "failed"]
 
 @dataclass(frozen=True)
 class TeamConfig:
-    """Конфигурация команды агентов."""
+    """Configuration teams agents."""
 
     lead_prompt: str
     worker_specs: list[SubagentSpec]
@@ -29,7 +29,7 @@ class TeamConfig:
 
 @dataclass(frozen=True)
 class TeamMessage:
-    """Сообщение между агентами в команде."""
+    """Message between agentamand and toomande."""
 
     from_agent: str
     to_agent: str
@@ -39,7 +39,7 @@ class TeamMessage:
 
 @dataclass(frozen=True)
 class TeamStatus:
-    """Текущий статус команды."""
+    """Team Status status object."""
 
     team_id: str
     state: TeamState = "idle"
@@ -48,7 +48,7 @@ class TeamStatus:
 
 
 class InternalTeamState:
-    """Внутреннее состояние команды (shared across all team orchestrators)."""
+    """Internal Team State implementation."""
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class InternalTeamState:
 
 
 def compose_worker_task(*, config: TeamConfig, worker_name: str, task: str) -> str:
-    """Сформировать worker task из lead_prompt и общей задачи."""
+    """Compose worker task."""
     return (
         f"{config.lead_prompt}\n\n"
         f"Ты worker '{worker_name}'.\n"

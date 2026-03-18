@@ -1,4 +1,4 @@
-"""Тесты ToolBudgetConfig + ToolSelector — TDD."""
+"""Tests ToolBudgetConfig + ToolSelector - TDD."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ def _spec(name: str) -> ToolSpec:
 
 
 class TestToolBudgetConfig:
-    """Конфиг выносит настройки из хардкода."""
+    """Konfig vynosit nastroyki from hardkoda."""
 
     def test_defaults(self) -> None:
         from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
@@ -29,7 +29,7 @@ class TestToolBudgetConfig:
         assert cfg.max_tools == 15
 
     def test_custom_priority(self) -> None:
-        """Пользователь может переопределить порядок приоритетов."""
+        """User mozhet override poryadok prioritetov."""
         from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
         cfg = ToolBudgetConfig(
@@ -38,7 +38,7 @@ class TestToolBudgetConfig:
         assert cfg.group_priority[0] == ToolGroup.MCP
 
     def test_group_limits(self) -> None:
-        """Per-group лимиты."""
+        """Per-group limity."""
         from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
         cfg = ToolBudgetConfig(group_limits={ToolGroup.SANDBOX: 3, ToolGroup.MCP: 10})
@@ -53,7 +53,7 @@ class TestToolBudgetConfig:
 
 
 class TestToolSelector:
-    """ToolSelector — отбирает tools по конфигу."""
+    """ToolSelector - otbiraet tools by konfigu."""
 
     def test_always_tools_included(self) -> None:
         from cognitia.policy.tool_selector import ToolGroup, ToolSelector
@@ -97,7 +97,7 @@ class TestToolSelector:
         assert len(selected) == 5
 
     def test_config_based_selector(self) -> None:
-        """ToolSelector с явным config."""
+        """ToolSelector with yavnym config."""
         from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
 
         cfg = ToolBudgetConfig(max_tools=4, group_limits={ToolGroup.SANDBOX: 2})
@@ -114,7 +114,7 @@ class TestToolSelector:
         assert len([n for n in names if n.startswith(("bash", "read", "write", "edit"))]) <= 2
 
     def test_custom_priority_order(self) -> None:
-        """Кастомный порядок: SANDBOX перед MCP."""
+        """Kastomnyy poryadok: SANDBOX pered MCP."""
         from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
 
         cfg = ToolBudgetConfig(
@@ -127,7 +127,7 @@ class TestToolSelector:
 
         selected = selector.select()
         names = [s.name for s in selected]
-        # Sandbox первый по кастомному приоритету
+        # Sandbox pervyy by kastomnomu prioritetu
         assert names[0] == "bash"
         assert names[1] == "read"
         assert len(selected) == 3

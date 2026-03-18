@@ -1,4 +1,4 @@
-"""Tests for CodingStandardsConfig и связанные config classes с factory methods."""
+"""Tests for CodingStandardsConfig and related config classes with factory methods."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Result — unified результат запроса Agent facade."""
+"""Result - unified request result for the Agent facade."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Result:
-    """Immutable результат query/stream запроса.
+    """Immutable result of a query/stream request.
 
-    ok=True если error is None (запрос успешен).
+    ok=True if error is None (request succeeded).
     """
 
     text: str = ""
@@ -23,5 +23,5 @@ class Result:
 
     @property
     def ok(self) -> bool:
-        """True если запрос завершился без ошибки."""
+        """True if the request completed without error."""
         return self.error is None

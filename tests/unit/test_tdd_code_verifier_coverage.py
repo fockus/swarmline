@@ -1,4 +1,4 @@
-"""Coverage тесты: TddCodeVerifier — все verify_* методы + skip paths."""
+"""Coverage tests: TddCodeVerifier - vse verify_* metody + skip paths."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from cognitia.orchestration.verification_types import VerificationStatus
 
 
 class FakeRunner:
-    """InMemory CommandRunner — возвращает заданный результат."""
+    """InMemory CommandRunner - returns zadannyy result."""
 
     def __init__(self, exit_code: int = 0, stdout: str = "ok", stderr: str = "") -> None:
         self._result = CommandResult(exit_code=exit_code, stdout=stdout, stderr=stderr)

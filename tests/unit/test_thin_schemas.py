@@ -1,4 +1,4 @@
-"""Тесты для Pydantic-схем ThinRuntime — ActionEnvelope, PlanSchema."""
+"""Tests for Pydantic-shem ThinRuntime - ActionEnvelope, PlanSchema."""
 
 import pytest
 from cognitia.runtime.thin.schemas import (
@@ -93,7 +93,7 @@ class TestActionEnvelopeClarify:
 
 
 class TestActionEnvelopeValidation:
-    """Валидация ActionEnvelope."""
+    """Validation ActionEnvelope."""
 
     def test_invalid_type_rejected(self) -> None:
         with pytest.raises(ValidationError):
@@ -105,7 +105,7 @@ class TestActionEnvelopeValidation:
 
 
 class TestPlanSchema:
-    """PlanSchema — плановая структура."""
+    """PlanSchema - planovaya struktura."""
 
     def test_parse_plan(self) -> None:
         data = {

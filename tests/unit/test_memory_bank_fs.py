@@ -1,4 +1,4 @@
-"""Тесты FilesystemMemoryBankProvider — TDD."""
+"""Tests for FilesystemMemoryBankProvider - TDD."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ class TestFSMemoryBankListDelete:
         assert await provider.read_file("tmp.md") is None
 
     async def test_delete_nonexistent_graceful(self, provider) -> None:
-        await provider.delete_file("missing.md")  # Не бросает
+        await provider.delete_file("missing.md")  # Does not raise
 
 
 class TestFSMemoryBankSecurity:

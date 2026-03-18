@@ -1,8 +1,4 @@
-"""ToolExecutor — исполнитель инструментов для ThinRuntime.
-
-Local tools: вызываются напрямую (pure python functions).
-MCP tools: HTTP JSON-RPC через httpx (если доступен).
-"""
+"""Executor module."""
 
 from __future__ import annotations
 
@@ -20,12 +16,7 @@ from cognitia.runtime.thin.mcp_client import (
 
 
 class ToolExecutor:
-    """Исполнитель инструментов для ThinRuntime.
-
-    Args:
-        local_tools: Маппинг tool_name → callable (sync или async).
-        timeout_seconds: Таймаут на одно выполнение.
-    """
+    """Tool Executor implementation."""
 
     def __init__(
         self,
@@ -40,24 +31,12 @@ class ToolExecutor:
         self._mcp_client = mcp_client or McpClient(timeout_seconds=timeout_seconds)
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> str:
-        """Выполнить инструмент по имени.
-
-        Args:
-            tool_name: Полное имя (mcp__server__tool или local_name).
-            args: Аргументы вызова.
-
-        Returns:
-            JSON-строка с результатом.
-
-        Raises:
-            asyncio.TimeoutError: При превышении timeout.
-            Exception: При ошибке выполнения.
-        """
+        """Execute."""
         # Local tool
         if tool_name in self._local_tools:
             return await self._execute_local(tool_name, args)
 
-        # MCP tool (формат mcp__server__tool)
+
         if tool_name.startswith("mcp__"):
             return await self._execute_mcp(tool_name, args)
 
@@ -67,7 +46,7 @@ class ToolExecutor:
         )
 
     async def _execute_local(self, tool_name: str, args: dict[str, Any]) -> str:
-        """Выполнить local tool."""
+        """Execute local tool."""
         func = self._local_tools[tool_name]
 
         try:
@@ -91,7 +70,7 @@ class ToolExecutor:
 
     @staticmethod
     async def _call_func(func: Callable[..., Any], args: dict[str, Any]) -> Any:
-        """Вызвать функцию (sync или async)."""
+        """Call func."""
         call_with_kwargs = ToolExecutor._should_call_with_kwargs(func, args)
 
         if asyncio.iscoroutinefunction(func):
@@ -109,11 +88,7 @@ class ToolExecutor:
 
     @staticmethod
     def _should_call_with_kwargs(func: Callable[..., Any], args: dict[str, Any]) -> bool:
-        """Определить, поддерживает ли функция keyword-вызов.
-
-        Предпочитаем kwargs для handler'ов из `@tool`, но сохраняем backward
-        compatibility для legacy local tools вида `tool(args)`.
-        """
+        """Should call with kwargs."""
         if hasattr(func, "__tool_definition__"):
             return True
 
@@ -155,7 +130,7 @@ class ToolExecutor:
         return set(args).issubset(accepted_names)
 
     async def _execute_mcp(self, tool_name: str, args: dict[str, Any]) -> str:
-        """Выполнить MCP tool через HTTP JSON-RPC."""
+        """Execute MCP tool via HTTP JSON-RPC."""
         parsed = self._parse_mcp_tool_name(tool_name)
         if parsed is None:
             return json.dumps(
@@ -194,15 +169,15 @@ class ToolExecutor:
 
     @staticmethod
     def _parse_mcp_tool_name(tool_name: str) -> tuple[str, str] | None:
-        """Разобрать mcp__server__tool -> (server, tool)."""
+        """Parse MCP__server__tool -> (server, tool)."""
         return parse_mcp_tool_name(tool_name)
 
     def _resolve_server_url(self, server_id: str) -> str | None:
-        """Получить URL MCP сервера по id."""
+        """Resolve server url."""
         return resolve_mcp_server_url(self._mcp_servers, server_id)
 
     def has_tool(self, tool_name: str) -> bool:
-        """Проверить доступность инструмента."""
+        """Has tool."""
         if tool_name in self._local_tools:
             return True
         parsed = self._parse_mcp_tool_name(tool_name)
@@ -212,5 +187,5 @@ class ToolExecutor:
 
     @property
     def local_tool_names(self) -> list[str]:
-        """Список имён зарегистрированных local tools."""
+        """Local tool names."""
         return list(self._local_tools.keys())

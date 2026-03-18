@@ -1,4 +1,4 @@
-"""Тесты для ClaudeCodeRuntime — обёртка SDK под AgentRuntime v1."""
+"""Tests for ClaudeCodeRuntime - obertka SDK pod AgentRuntime v1."""
 
 from __future__ import annotations
 
@@ -11,13 +11,13 @@ from cognitia.runtime.claude_code import ClaudeCodeRuntime
 from cognitia.runtime.types import Message, RuntimeEvent
 
 # ---------------------------------------------------------------------------
-# Фейковый StreamEvent (совместим с cognitia.runtime.adapter.StreamEvent)
+# Fake StreamEvent (sovmestim with cognitia.runtime.adapter.StreamEvent)
 # ---------------------------------------------------------------------------
 
 
 @dataclass
 class FakeStreamEvent:
-    """Мок StreamEvent для тестирования без SDK."""
+    """Mock StreamEvent for testirovaniya without SDK."""
 
     type: str
     text: str = ""
@@ -34,12 +34,12 @@ class FakeStreamEvent:
 
 
 # ---------------------------------------------------------------------------
-# Фейковый RuntimeAdapter
+# Fake RuntimeAdapter
 # ---------------------------------------------------------------------------
 
 
 class FakeAdapter:
-    """Мок RuntimeAdapter для тестов."""
+    """Mock RuntimeAdapter for testov."""
 
     def __init__(
         self,
@@ -64,7 +64,7 @@ class FakeAdapter:
 
 
 # ---------------------------------------------------------------------------
-# Хелпер для сбора событий
+# Helper for sbora sobytiy
 # ---------------------------------------------------------------------------
 
 
@@ -80,16 +80,16 @@ async def collect_events(runtime: ClaudeCodeRuntime, messages: list[Message]) ->
 
 
 # ---------------------------------------------------------------------------
-# Тесты
+# Tests
 # ---------------------------------------------------------------------------
 
 
 class TestClaudeCodeRuntimeBasic:
-    """Базовые сценарии ClaudeCodeRuntime."""
+    """Basic scenarios ClaudeCodeRuntime."""
 
     @pytest.mark.asyncio
     async def test_no_adapter_yields_error(self) -> None:
-        """Без adapter → error event."""
+        """Without adapter -> error event."""
         runtime = ClaudeCodeRuntime()
         events = await collect_events(runtime, [Message(role="user", content="hi")])
 
@@ -99,7 +99,7 @@ class TestClaudeCodeRuntimeBasic:
 
     @pytest.mark.asyncio
     async def test_not_connected_yields_error(self) -> None:
-        """Adapter не подключён → error event."""
+        """Adapter not connected -> error event."""
         adapter = FakeAdapter(connected=False)
         runtime = ClaudeCodeRuntime(adapter=adapter)
         events = await collect_events(runtime, [Message(role="user", content="hi")])
@@ -110,7 +110,7 @@ class TestClaudeCodeRuntimeBasic:
 
     @pytest.mark.asyncio
     async def test_no_user_message_yields_error(self) -> None:
-        """Нет user message → error event."""
+        """Nott user message -> error event."""
         adapter = FakeAdapter()
         runtime = ClaudeCodeRuntime(adapter=adapter)
         events = await collect_events(
@@ -124,11 +124,11 @@ class TestClaudeCodeRuntimeBasic:
 
 
 class TestClaudeCodeRuntimeStreaming:
-    """Стриминг и конвертация событий."""
+    """Striming and conversion sobytiy."""
 
     @pytest.mark.asyncio
     async def test_text_stream_to_final(self) -> None:
-        """text_delta → assistant_delta; done → final с full_text."""
+        """text_delta -> assistant_delta; done -> final with full_text."""
         adapter = FakeAdapter(
             events=[
                 FakeStreamEvent(type="text_delta", text="Привет"),
@@ -147,11 +147,11 @@ class TestClaudeCodeRuntimeStreaming:
         runtime = ClaudeCodeRuntime(adapter=adapter)
         events = await collect_events(runtime, [Message(role="user", content="say hi")])
 
-        # Должны быть: 2x assistant_delta + 1x final (done не пробрасывается)
+        # Should byt: 2x assistant_delta + 1x final (done not probrasyvaetsya)
         types = [e.type for e in events]
         assert types == ["assistant_delta", "assistant_delta", "final"]
 
-        # final содержит полный текст
+        # final contains full tekst
         final = events[-1]
         assert final.data["text"] == "Привет, мир!"
         assert len(final.data["new_messages"]) == 1
@@ -164,7 +164,7 @@ class TestClaudeCodeRuntimeStreaming:
 
     @pytest.mark.asyncio
     async def test_tool_events_converted(self) -> None:
-        """tool_use_start/result конвертируются правильно."""
+        """tool_use_start/result are converted pravilno."""
         adapter = FakeAdapter(
             events=[
                 FakeStreamEvent(
@@ -221,7 +221,7 @@ class TestClaudeCodeRuntimeStreaming:
 
     @pytest.mark.asyncio
     async def test_extracts_last_user_message(self) -> None:
-        """Использует последнее user message из истории."""
+        """Ispolzuet poslednote user message from history."""
         adapter = FakeAdapter(
             events=[
                 FakeStreamEvent(type="text_delta", text="OK"),
@@ -245,7 +245,7 @@ class TestClaudeCodeRuntimeCleanup:
 
     @pytest.mark.asyncio
     async def test_cleanup_disconnects(self) -> None:
-        """cleanup() вызывает adapter.disconnect()."""
+        """cleanup() vyzyvaet adapter.disconnect()."""
         adapter = FakeAdapter()
         runtime = ClaudeCodeRuntime(adapter=adapter)
         await runtime.cleanup()
@@ -253,16 +253,16 @@ class TestClaudeCodeRuntimeCleanup:
 
     @pytest.mark.asyncio
     async def test_cleanup_without_adapter(self) -> None:
-        """cleanup() без adapter — не падает."""
+        """cleanup() without adapter - not fails."""
         runtime = ClaudeCodeRuntime()
-        await runtime.cleanup()  # не должно бросить
+        await runtime.cleanup()  # not should brosit
 
 
 class TestClaudeCodeRuntimeConvert:
-    """Тесты _convert_event."""
+    """Tests _convert_event."""
 
     def test_unknown_type_becomes_status(self) -> None:
-        """Неизвестный тип → status."""
+        """Notizvestnyy tip -> status."""
         event = FakeStreamEvent(type="unknown_type", text="something")
         result = ClaudeCodeRuntime._convert_event(event)
         assert result is not None
@@ -270,7 +270,7 @@ class TestClaudeCodeRuntimeConvert:
         assert result.data["text"] == "something"
 
     def test_done_returns_none(self) -> None:
-        """done → None (формируем final сами)."""
+        """done -> None (formiruem final sami)."""
         event = FakeStreamEvent(type="done")
         result = ClaudeCodeRuntime._convert_event(event)
         assert result is None

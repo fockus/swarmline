@@ -1,13 +1,4 @@
-"""Shared ProviderResolver — единый резолвер провайдеров для всех рунтаймов.
-
-Резолвит модель через ModelRegistry, определяет провайдера, SDK type и base_url.
-Используется ThinRuntime, DeepAgentsRuntime и portable path.
-
-SDK types:
-- "anthropic" → anthropic SDK (messages API)
-- "openai_compat" → openai SDK (chat.completions API, покрывает OpenAI/OpenRouter/Ollama/vLLM/Groq/etc)
-- "google" → google-genai SDK
-"""
+"""Provider Resolver module."""
 
 from __future__ import annotations
 
@@ -21,7 +12,7 @@ SdkType = Literal["anthropic", "openai_compat", "google"]
 
 @dataclass(frozen=True)
 class ResolvedProvider:
-    """Результат резолва провайдера."""
+    """Resolved Provider implementation."""
 
     model_id: str
     provider: str
@@ -29,7 +20,7 @@ class ResolvedProvider:
     base_url: str | None
 
 
-# Провайдеры с OpenAI-compatible API и их default base_url
+
 _OPENAI_COMPAT_PROVIDERS: dict[str, str | None] = {
     "openai": None,  # standard OpenAI endpoint
     "openrouter": "https://openrouter.ai/api/v1",
@@ -41,7 +32,7 @@ _OPENAI_COMPAT_PROVIDERS: dict[str, str | None] = {
     "deepseek": "https://api.deepseek.com/v1",
 }
 
-# Провайдер → SDK type
+# Provider -> SDK type
 _PROVIDER_SDK_MAP: dict[str, SdkType] = {
     "anthropic": "anthropic",
     "google": "google",
@@ -49,12 +40,7 @@ _PROVIDER_SDK_MAP: dict[str, SdkType] = {
 }
 
 def _parse_prefix(raw: str) -> tuple[str | None, str]:
-    """Разобрать 'provider:model' notation.
-
-    Returns:
-        (provider, model_id) если есть prefix.
-        (None, raw) если prefix нет.
-    """
+    """Parse prefix."""
     if ":" not in raw:
         return None, raw
 
@@ -68,12 +54,12 @@ def _parse_prefix(raw: str) -> tuple[str | None, str]:
     if normalized in _PROVIDER_SDK_MAP:
         return normalized, model_part.strip()
 
-    # Не наш prefix (может быть часть model_id типа "accounts/fireworks/models/x")
+
     return None, raw
 
 
 def _get_default_base_url(provider: str) -> str | None:
-    """Default base_url для провайдера (None = стандартный endpoint SDK)."""
+    """Get default base url."""
     return _OPENAI_COMPAT_PROVIDERS.get(provider)
 
 
@@ -82,21 +68,7 @@ def resolve_provider(
     *,
     base_url: str | None = None,
 ) -> ResolvedProvider:
-    """Резолвить модель и провайдера.
-
-    Поддерживает:
-    - Aliases: "sonnet" → claude-sonnet-4-20250514 (anthropic)
-    - Explicit prefix: "openai:gpt-4o", "ollama:llama3"
-    - Auto base_url: openrouter → openrouter.ai, ollama → localhost:11434
-    - Custom base_url: перезаписывает auto-detected
-
-    Args:
-        raw_model: Имя модели, alias или "provider:model".
-        base_url: Custom base URL (перезаписывает auto-detected).
-
-    Returns:
-        ResolvedProvider с model_id, provider, sdk_type, base_url.
-    """
+    """Resolve provider."""
     registry = get_registry()
 
     if not raw_model or not raw_model.strip():

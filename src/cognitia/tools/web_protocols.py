@@ -1,7 +1,7 @@
-"""Протоколы для веб-доступа агента.
+"""Protocols for agent web access.
 
-WebProvider — ISP-совместимый интерфейс (2 метода) для fetch URL и search.
-WebSearchProvider — ISP-совместимый интерфейс (1 метод) для pluggable search.
+WebProvider is an ISP-compliant interface (2 methods) for URL fetch and search.
+WebSearchProvider is an ISP-compliant interface (1 method) for pluggable search.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from typing import Protocol, runtime_checkable
 
 @dataclass(frozen=True)
 class SearchResult:
-    """Результат поиска: title, url, snippet."""
+    """Search result: title, url, snippet."""
 
     title: str
     url: str
@@ -21,72 +21,72 @@ class SearchResult:
 
 @runtime_checkable
 class WebSearchProvider(Protocol):
-    """Провайдер поиска в интернете (ISP: 1 метод).
+    """Internet search provider (ISP: 1 method).
 
-    Pluggable: пользователь выбирает реализацию
+    Pluggable: the user selects an implementation
     (DuckDuckGo, Tavily, SearXNG, Brave Search).
     """
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск в интернете.
+        """Search the internet.
 
         Args:
-            query: Поисковый запрос.
-            max_results: Максимальное количество результатов.
+            query: Search query.
+            max_results: Maximum number of results.
 
         Returns:
-            Список SearchResult.
+            List of SearchResult.
         """
         ...
 
 
 @runtime_checkable
 class WebFetchProvider(Protocol):
-    """Провайдер извлечения контента из URL (ISP: 1 метод).
+    """URL content extraction provider (ISP: 1 method).
 
-    Pluggable: пользователь выбирает реализацию
+    Pluggable: the user selects an implementation
     (default httpx+trafilatura, Jina Reader, Crawl4AI).
     """
 
     async def fetch(self, url: str) -> str:
-        """Извлечь контент страницы по URL.
+        """Extract page content by URL.
 
         Args:
-            url: URL для загрузки.
+            url: URL to load.
 
         Returns:
-            Текстовое содержимое (markdown или plain text).
-            Пустая строка при ошибке.
+            Text content (markdown or plain text).
+            Empty string on error.
         """
         ...
 
 
 @runtime_checkable
 class WebProvider(Protocol):
-    """Провайдер веб-доступа для агентов.
+    """Web access provider for agents.
 
-    ISP: 2 метода — fetch и search.
+    ISP: 2 methods - fetch and search.
     """
 
     async def fetch(self, url: str) -> str:
-        """Получить содержимое URL (HTML → текст/markdown).
+        """Get URL content (HTML → text/markdown).
 
         Args:
-            url: URL для загрузки.
+            url: URL to load.
 
         Returns:
-            Текстовое содержимое страницы.
+            Page content text.
         """
         ...
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск в интернете.
+        """Search the internet.
 
         Args:
-            query: Поисковый запрос.
-            max_results: Максимальное количество результатов.
+            query: Search query.
+            max_results: Maximum number of results.
 
         Returns:
-            Список SearchResult.
+            List of SearchResult.
         """
         ...

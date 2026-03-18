@@ -1,4 +1,4 @@
-"""Provider-aware model resolution для DeepAgents runtime."""
+"""Provider-aware model resolution for DeepAgents runtime."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ _PROVIDER_IMPORTS = {
 
 @dataclass(frozen=True)
 class DeepAgentsResolvedModel:
-    """Результат разрешения модели для DeepAgents runtime."""
+    """Model resolution result for DeepAgents runtime."""
 
     requested_model: str
     model_name: str
@@ -39,7 +39,7 @@ class DeepAgentsResolvedModel:
 
 
 class DeepAgentsModelError(RuntimeError):
-    """Typed error для provider/model resolution."""
+    """Typed error for provider/model resolution."""
 
     def __init__(self, error: RuntimeErrorData) -> None:
         super().__init__(error.message)
@@ -47,7 +47,7 @@ class DeepAgentsModelError(RuntimeError):
 
 
 def _parse_prefixed_model(raw_model: str | None) -> tuple[str | None, str | None]:
-    """Разобрать provider:model notation."""
+    """Parse provider:model notation."""
     if not raw_model:
         return None, None
     value = raw_model.strip()
@@ -70,7 +70,7 @@ def _parse_prefixed_model(raw_model: str | None) -> tuple[str | None, str | None
 
 
 def resolve_deepagents_model(raw_model: str | None) -> DeepAgentsResolvedModel:
-    """Разрешить модель и provider для DeepAgents runtime."""
+    """Resolve the model and provider for DeepAgents runtime."""
     explicit_provider, unprefixed_model = _parse_prefixed_model(raw_model)
     model_name = (
         unprefixed_model
@@ -103,7 +103,7 @@ def resolve_deepagents_model(raw_model: str | None) -> DeepAgentsResolvedModel:
 
 
 def _load_provider_class(provider: str) -> type[Any]:
-    """Загрузить provider-specific chat model class."""
+    """Load the provider-specific chat model class."""
     module_name, class_name, package_hint = _PROVIDER_IMPORTS[provider]
 
     try:
@@ -142,7 +142,7 @@ def build_deepagents_chat_model(
     *,
     base_url: str | None = None,
 ) -> Any:
-    """Создать provider-specific chat model для DeepAgents runtime."""
+    """Create a provider-specific chat model for DeepAgents runtime."""
     resolved = resolve_deepagents_model(raw_model)
 
     if resolved.provider == "google":

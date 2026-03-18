@@ -1,14 +1,10 @@
-"""E2E: полный user flow с SDK 0.1.48 features.
-
-Тесты проверяют полные сценарии использования новых фич cognitia:
-1. Hook-based security guard → blocks dangerous commands
-2. In-process MCP tool → used in runtime adapter flow
-3. Structured output → query returns structured result
-4. Dynamic control → model switching mid-session
-5. Session resume/fork → conversation continuity
-6. File checkpointing → rewind to checkpoint
-
-Все тесты используют реальные компоненты cognitia, мокая только
+"""E2E: full user flow with SDK 0.1.48 features. Tests verify full scenarios ispolzovaniya novyh fich cognitia:
+1. Hook-based security guard -> blocks dangerous commands
+2. In-process MCP tool -> used in runtime adapter flow
+3. Structured output -> query returns structured result
+4. Dynamic control -> model switching mid-session
+5. Session resume/fork -> conversation continuity
+6. File checkpointing -> rewind to checkpoint Vse tests ispolzuyut real komponotnty cognitia, mockaya tolko
 ClaudeSDKClient (subprocess boundary).
 """
 
@@ -97,7 +93,7 @@ def _mock_result_msg(
 
 
 def _make_connected_adapter(fake_receive_response) -> RuntimeAdapter:
-    """Создать RuntimeAdapter с замоканным client."""
+    """Create RuntimeAdapter with zamockannym client."""
     mock_client = AsyncMock()
     mock_client.receive_response = fake_receive_response
     mock_options = MagicMock()
@@ -113,18 +109,11 @@ def _make_connected_adapter(fake_receive_response) -> RuntimeAdapter:
 
 
 class TestE2EHookSecurityGuard:
-    """Сценарий: зарегистрировать hook → собрать options → выполнить через runtime."""
+    """Scenario: zaregister hook -> collect options -> run cherez runtime."""
 
     @pytest.mark.asyncio
     async def test_hook_blocks_dangerous_command_end_to_end(self) -> None:
-        """Полный цикл: hook registration → bridge → options → callback execution.
-
-        Сценарий:
-        1. User регистрирует PreToolUse hook через HookRegistry
-        2. Bridge конвертирует в SDK формат
-        3. Options собираются с hooks
-        4. При вызове Bash с 'rm -rf' hook возвращает block
-        """
+        """Full tsikl: hook registration -> bridge -> options -> callback execution. Scenario: 1. User registers PreToolUse hook cherez HookRegistry 2. Bridge converts in SDK format 3. Options are assembled with hooks 4. Pri vyzove Bash with 'rm -rf' hook returns block """
         # Step 1: Register hook
         registry = HookRegistry()
         blocked_commands: list[str] = []
@@ -198,14 +187,10 @@ class TestE2EHookSecurityGuard:
 
 
 class TestE2EMcpToolFlow:
-    """Сценарий: создать MCP tool → собрать options → runtime стримит tool usage."""
+    """Scenario: create MCP tool -> collect options -> runtime strimit tool usage."""
 
     def test_mcp_tool_to_options_to_runtime_setup(self) -> None:
-        """Полный цикл: @mcp_tool → create_mcp_server → options.
-
-        Проверяет что in-process MCP tool попадает в options и может
-        быть использован runtime'ом.
-        """
+        """Full tsikl: @mcp_tool -> create_mcp_server -> options. Verifies chto in-process MCP tool pofails in options and mozhet byt ispolzovan runtime'om. """
 
         @mcp_tool(
             "calculate_goal", "Calculate financial goal plan", {"target": float, "years": int}
@@ -239,7 +224,7 @@ class TestE2EMcpToolFlow:
 
     @pytest.mark.asyncio
     async def test_mcp_tool_handler_execution(self) -> None:
-        """MCP tool handler вызывается и возвращает корректный результат."""
+        """MCP tool handler vyzyvaetsya and returns correct result."""
 
         @mcp_tool("assess_health", "Assess financial health", {"income": float, "expenses": float})
         async def assess_health(args: dict[str, Any]) -> dict[str, Any]:
@@ -259,11 +244,11 @@ class TestE2EMcpToolFlow:
 
 
 class TestE2EStructuredOutput:
-    """Сценарий: structured output → query → parse result."""
+    """Scenario: structured output -> query -> parse result."""
 
     @pytest.mark.asyncio
     async def test_structured_output_end_to_end(self) -> None:
-        """Полный цикл: output_format в options → ResultMessage.structured_output → QueryResult."""
+        """Full tsikl: output_format in options -> ResultMessage.structured_output -> QueryResult."""
         structured_data = {"diagnosis": "healthy", "score": 85, "recommendations": ["save more"]}
 
         async def fake_query(**kwargs):
@@ -301,11 +286,11 @@ class TestE2EStructuredOutput:
 
 
 class TestE2EDynamicModelSwitch:
-    """Сценарий: начать с sonnet → esclalate to opus → back to sonnet."""
+    """Scenario: nachat with sonnet -> esclalate to opus -> back to sonnet."""
 
     @pytest.mark.asyncio
     async def test_model_switch_during_session(self) -> None:
-        """Полный цикл: connect → query → set_model → query → results."""
+        """Full tsikl: connect -> query -> set_model -> query -> results."""
         mock_client = AsyncMock()
         set_model_calls: list[str] = []
 
@@ -359,19 +344,11 @@ class TestE2EDynamicModelSwitch:
 
 
 class TestE2EMultiTurnWithMetrics:
-    """Сценарий: полный multi-turn flow с thinking, tools и метриками."""
+    """Scenario: full multi-turn flow with thinking, tools and metricmi."""
 
     @pytest.mark.asyncio
     async def test_full_turn_with_thinking_tools_and_metrics(self) -> None:
-        """Turn: thinking → tool call → tool result → text → metrics.
-
-        Проверяет весь pipeline через ClaudeCodeRuntime:
-        1. ThinkingBlock — логируется, не стримится
-        2. ToolUseBlock → tool_call_started event
-        3. ToolResultBlock → tool_call_finished event
-        4. TextBlock → assistant_delta event
-        5. ResultMessage → metrics в final event
-        """
+        """Turn: thinking -> tool call -> tool result -> text -> metrics. Verifies ves pipeline cherez ClaudeCodeRuntime: 1. ThinkingBlock - logiruetsya, not strimitsya 2. ToolUseBlock -> tool_call_started event 3. ToolResultBlock -> tool_call_finished event 4. TextBlock -> assistant_delta event 5. ResultMessage -> metrics in final event """
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -434,10 +411,10 @@ class TestE2EMultiTurnWithMetrics:
 
 
 class TestE2ESessionManagement:
-    """Сценарий: session resume и fork через options."""
+    """Scenario: session resume and fork cherez options."""
 
     def test_resume_session_options(self) -> None:
-        """Options для resume сессии."""
+        """Options for resume sessions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -449,7 +426,7 @@ class TestE2ESessionManagement:
         assert opts.continue_conversation is True
 
     def test_fork_session_options(self) -> None:
-        """Options для fork сессии (resume + fork)."""
+        """Options for fork sessions (resume + fork)."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -467,10 +444,10 @@ class TestE2ESessionManagement:
 
 
 class TestE2EFileCheckpointing:
-    """Сценарий: enable checkpointing → get checkpoint → rewind."""
+    """Scenario: enable checkpointing -> get checkpoint -> rewind."""
 
     def test_checkpointing_options(self) -> None:
-        """Options с file checkpointing."""
+        """Options with file checkpointing."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -481,7 +458,7 @@ class TestE2EFileCheckpointing:
 
     @pytest.mark.asyncio
     async def test_rewind_files_flow(self) -> None:
-        """Полный flow: enable checkpointing → query → rewind."""
+        """Full flow: enable checkpointing -> query -> rewind."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -511,10 +488,10 @@ class TestE2EFileCheckpointing:
 
 
 class TestE2EBudgetAndBeta:
-    """Сценарий: 1M context beta + budget limit."""
+    """Scenario: 1M context beta + budget limit."""
 
     def test_1m_context_with_budget(self) -> None:
-        """Options с 1M context beta и бюджетом."""
+        """Options with 1M context beta and byudzhetom."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -530,7 +507,7 @@ class TestE2EBudgetAndBeta:
 
     @pytest.mark.asyncio
     async def test_cost_tracking_through_full_pipeline(self) -> None:
-        """Метрики стоимости проходят через полный pipeline."""
+        """Metrics stoimosti prohodyat cherez full pipeline."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():

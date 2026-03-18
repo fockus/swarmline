@@ -1,12 +1,12 @@
-"""ToolSelector — умный отбор инструментов под бюджет контекста.
+"""ToolSelector - smart tool selection under a context budget.
 
-Проблема: 40+ tools = 5000-7000 токенов только на schema.
-Решение: приоритетные группы + конфигурируемый бюджет.
+Problem: 40+ tools = 5000-7000 tokens just for schema.
+Solution: priority groups + configurable budget.
 
-Всё настраивается через ToolBudgetConfig:
-- max_tools: общий лимит
-- group_priority: порядок приоритетов (можно переопределить)
-- group_limits: лимит per-group (опционально)
+Everything is configured through ToolBudgetConfig:
+- max_tools: overall limit
+- group_priority: priority order (overridable)
+- group_limits: per-group limit (optional)
 """
 
 from __future__ import annotations
@@ -18,14 +18,14 @@ from cognitia.runtime.types import ToolSpec
 
 
 class ToolGroup(IntEnum):
-    """Приоритетные группы инструментов.
+    """Priority tool groups.
 
-    Меньше значение = выше приоритет.
-    Дефолтный порядок переопределяется через ToolBudgetConfig.group_priority.
+    Lower value = higher priority.
+    The default order can be overridden via ToolBudgetConfig.group_priority.
     """
 
-    ALWAYS = 0  # thinking, todo — всегда включены
-    MCP = 1  # MCP tools текущей роли — бизнес-логика
+    ALWAYS = 0  # thinking, todo - always included
+    MCP = 1  # current-role MCP tools - business logic
     MEMORY = 2  # memory_* tools
     PLANNING = 3  # plan_* tools
     SANDBOX = 4  # bash, read, write, edit, ...
@@ -34,10 +34,10 @@ class ToolGroup(IntEnum):
 
 @dataclass(frozen=True)
 class ToolBudgetConfig:
-    """Конфигурация бюджета инструментов.
+    """Tool budget configuration.
 
-    Все настройки вынесены из хардкода — пользователь библиотеки
-    контролирует бюджет через конфиг.
+    All settings are moved out of hardcode - library users
+    control the budget through config.
     """
 
     max_tools: int = 30
@@ -55,10 +55,10 @@ class ToolBudgetConfig:
 
 
 class ToolSelector:
-    """Отбирает tools по приоритету и бюджету.
+    """Selects tools by priority and budget.
 
-    Заполняет бюджет сверху вниз по группам из config.group_priority.
-    Если group_limits задан — ограничивает per-group.
+    Fills the budget from top to bottom by groups from config.group_priority.
+    If group_limits is set, limits each group.
     """
 
     def __init__(self, config: ToolBudgetConfig | None = None, *, max_tools: int = 30) -> None:
@@ -69,25 +69,25 @@ class ToolSelector:
         self._groups: dict[ToolGroup, list[ToolSpec]] = {}
 
     def add_group(self, group: ToolGroup, tools: list[ToolSpec]) -> None:
-        """Добавить группу инструментов."""
+        """Add a tool group."""
         self._groups[group] = tools
 
     def select(self) -> list[ToolSpec]:
-        """Отобрать инструменты в рамках бюджета.
+        """Select tools within the budget.
 
         Returns:
-            Список ToolSpec, отсортированный по приоритету из config.
+            List of ToolSpec objects sorted by priority from config.
         """
         result: list[ToolSpec] = []
         remaining = self._config.max_tools
 
-        # Обходим группы в порядке приоритета из конфига
+        # Traverse groups in the order specified by the config
         for group in self._config.group_priority:
             tools = self._groups.get(group, [])
             if remaining <= 0 or not tools:
                 continue
 
-            # Per-group лимит (если задан)
+            # Per-group limit (if set)
             group_limit = self._config.group_limits.get(group, remaining)
             take = min(len(tools), remaining, group_limit)
 

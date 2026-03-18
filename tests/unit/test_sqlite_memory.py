@@ -1,4 +1,4 @@
-"""Интеграционные unit-тесты для SQLiteMemoryProvider (parity с Postgres)."""
+"""Integration unit-tests for SQLiteMemoryProvider (parity with Postgres)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # no
 
 
 async def _init_schema(session_factory: async_sessionmaker) -> None:
-    """Создать минимальную схему для memory provider."""
+    """Create a minimal schema for a memory provider."""
     async with session_factory() as session:
         # Users
         await session.execute(
@@ -341,7 +341,7 @@ class TestSQLiteSessionAndPhase:
         assert state["role_id"] == "coach"
         assert state["active_skill_ids"] == ["finuslugi"]
         assert state["prompt_hash"] == "abc"
-        # Delegation fields — дефолты
+        # Delegation fields - defaults
         assert state["delegated_from"] is None
         assert state["delegation_turn_count"] == 0
         assert state["pending_delegation"] is None
@@ -355,7 +355,7 @@ class TestSQLiteSessionAndPhase:
 
     @pytest.mark.asyncio
     async def test_session_state_delegation_persist(self, provider: SQLiteMemoryProvider) -> None:
-        """Delegation fields корректно сохраняются и восстанавливаются."""
+        """Delegation fields are correctly saved and restored."""
         await provider.save_session_state(
             "u1",
             "t1",
@@ -389,5 +389,5 @@ class TestSQLiteToolEventsAndProfile:
             output_json={"status": "ok"},
             latency_ms=42,
         )
-        # Должно сохраняться без исключений.
+        # Should save without exceptions.
         await provider.save_tool_event("u1", event)

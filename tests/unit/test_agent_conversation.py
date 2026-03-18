@@ -1,4 +1,4 @@
-"""Unit: Conversation — explicit multi-turn управление диалогом."""
+"""Unit: Conversation - explicit multi-turn upravlenie dialogom."""
 
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ class TestConversationSay:
 
     @pytest.mark.asyncio
     async def test_say_preserves_runtime_new_messages_in_history(self) -> None:
-        """final.new_messages должен попадать в conversation history."""
+        """final.new_messages should pofail in conversation history."""
         from cognitia.runtime.types import Message
 
         agent = _make_agent()
@@ -114,7 +114,7 @@ class TestConversationSay:
 
     @pytest.mark.asyncio
     async def test_say_passes_mcp_servers_to_portable_runtime(self) -> None:
-        """Portable runtime path должен получать AgentConfig.mcp_servers."""
+        """Portable runtime path should poluchat AgentConfig.mcp_servers."""
         from cognitia.skills.types import McpServerSpec
 
         agent = _make_agent(
@@ -144,7 +144,7 @@ class TestConversationSay:
 
     @pytest.mark.asyncio
     async def test_multi_turn_accumulates_history(self) -> None:
-        """Несколько say() → history растёт."""
+        """Notskolko say() -> history rastet."""
         agent = _make_agent()
         conv = Conversation(agent=agent)
 
@@ -245,7 +245,7 @@ class TestConversationStream:
 
     @pytest.mark.asyncio
     async def test_stream_preserves_runtime_new_messages_in_history(self) -> None:
-        """stream() должен использовать canonical new_messages для истории."""
+        """stream() should use canonical new_messages for history."""
         from cognitia.runtime.types import Message
 
         agent = _make_agent()
@@ -277,7 +277,7 @@ class TestConversationStream:
 
     @pytest.mark.asyncio
     async def test_stream_passes_mcp_servers_to_portable_runtime(self) -> None:
-        """Portable runtime path в stream() тоже должен видеть AgentConfig.mcp_servers."""
+        """Portable runtime path in stream() tozhe should videt AgentConfig.mcp_servers."""
         from cognitia.skills.types import McpServerSpec
 
         agent = _make_agent(
@@ -405,7 +405,7 @@ class TestConversationLifecycle:
 
     @pytest.mark.asyncio
     async def test_close_fresh_conversation(self) -> None:
-        """close() на свежей conversation — не ломается."""
+        """close() on svezhey conversation - not lomaetsya."""
         agent = _make_agent()
         conv = Conversation(agent=agent)
         await conv.close()
@@ -418,7 +418,7 @@ class TestConversationLifecycle:
 
     @pytest.mark.asyncio
     async def test_close_disconnects_adapter(self) -> None:
-        """Если adapter подключён → close() отключает."""
+        """If adapter connected -> close() otklyuchaet."""
         agent = _make_agent()
         conv = Conversation(agent=agent)
 
@@ -434,7 +434,7 @@ class TestConversationLifecycle:
 
     @pytest.mark.asyncio
     async def test_create_adapter_propagates_runtime_options(self) -> None:
-        """_create_adapter пробрасывает remote MCP, max_turns, permission_mode и setting_sources."""
+        """_create_adapter probrasyvaet remote MCP, max_turns, permission_mode and setting_sources."""
         pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
         from cognitia.hooks.registry import HookRegistry
         from cognitia.skills.types import McpServerSpec
@@ -615,16 +615,16 @@ class TestConversationLifecycle:
 
 
 class TestConversationMergeHooks:
-    """_merge_hooks — merge hooks из config и middleware."""
+    """_merge_hooks - merge hooks from config and middleware."""
 
     def test_no_hooks_returns_none(self) -> None:
-        """Без hooks и middleware → None."""
+        """Without hooks and middleware -> None."""
         agent = _make_agent()
         conv = Conversation(agent=agent)
         assert conv._merge_hooks() is None
 
     def test_only_config_hooks(self) -> None:
-        """Только config.hooks → возвращает тот же registry."""
+        """Tolko config.hooks -> returns tot zhe registry."""
         from cognitia.hooks.registry import HookRegistry
 
         hooks = HookRegistry()
@@ -640,7 +640,7 @@ class TestConversationMergeHooks:
         assert merged is hooks  # same object, no merge needed
 
     def test_only_middleware_hooks(self) -> None:
-        """Middleware с hooks, без config.hooks → middleware hooks."""
+        """Middleware with hooks, without config.hooks -> middleware hooks."""
         from cognitia.agent.middleware import SecurityGuard
 
         guard = SecurityGuard(block_patterns=["rm -rf"])

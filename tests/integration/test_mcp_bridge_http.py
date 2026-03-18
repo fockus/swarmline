@@ -1,7 +1,5 @@
-"""Integration: McpBridge + McpClient — real HTTP через httpx mock transport.
-
-httpx.MockTransport: tools/list -> JSON, tools/call -> result.
-Проверить: discover_tools() -> ToolSpec[], call_tool() -> result payload.
+"""Integration: McpBridge + McpClient - real HTTP cherez httpx mock transport. httpx.MockTransport: tools/list -> JSON, tools/call -> result.
+Check: discover_tools() -> ToolSpec[], call_tool() -> result payload.
 """
 
 from __future__ import annotations
@@ -17,7 +15,7 @@ from cognitia.runtime.thin.mcp_client import McpClient
 
 
 def _create_mock_transport() -> httpx.MockTransport:
-    """httpx MockTransport: обрабатывает tools/list и tools/call JSON-RPC."""
+    """httpx MockTransport: obrabatyvaet tools/list and tools/call JSON-RPC."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
@@ -94,20 +92,20 @@ def _create_mock_transport() -> httpx.MockTransport:
 
 
 class TestMcpBridgeHttpRoundtrip:
-    """McpBridge + McpClient: real HTTP через httpx MockTransport."""
+    """McpBridge + McpClient: real HTTP cherez httpx MockTransport."""
 
     @pytest.mark.asyncio
     async def test_mcp_bridge_http_roundtrip(self) -> None:
         """discover_tools() -> ToolSpec[], call_tool() -> result payload."""
         transport = _create_mock_transport()
 
-        # Подменяем httpx.AsyncClient через bridge с real McpClient
+        # Swap httpx.AsyncClient cherez bridge with real McpClient
         bridge = McpBridge(
             mcp_servers={"weather": "http://weather.test/mcp"},
             timeout_seconds=5.0,
         )
 
-        # Подменяем internal client transport для тестов
+        # Swap internal client transport for testov
         async def _patched_list_tools(server_url: str, **kwargs: Any) -> Any:
             async with httpx.AsyncClient(transport=transport) as http:
                 payload = {
@@ -148,7 +146,7 @@ class TestMcpBridgeHttpRoundtrip:
         assert "mcp__weather__get_weather" in tool_names
         assert "mcp__weather__get_forecast" in tool_names
 
-        # ToolSpec fields заполнены
+        # ToolSpec fields zapolnotny
         weather_tool = next(t for t in tools if "get_weather" in t.name)
         assert weather_tool.description == "Get current weather"
         assert weather_tool.is_local is False

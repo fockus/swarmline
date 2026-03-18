@@ -1,6 +1,6 @@
-"""Протоколы для orchestration: PlanStore, PlannerMode.
+"""Protocols for orchestration: PlanStore, PlannerMode.
 
-ISP-совместимые интерфейсы для персистентности планов и управления режимом.
+ISP-joint interfaces for persistence and planoin and managed mode.
 """
 
 from __future__ import annotations
@@ -13,50 +13,47 @@ from cognitia.orchestration.types import ApprovalSource, Plan, PlanStep
 
 @runtime_checkable
 class PlanStore(Protocol):
-    """Хранилище планов — ISP: ≤4 метода.
+    """Store planoin - ISP: <=4 methods.
 
-    Multi-tenant: user_id + topic_id в каждом вызове.
-    """
+  Multi-tenant: user_id + topic_id in each other.
+  """
 
     async def save(self, plan: Plan) -> None:
-        """Сохранить или обновить план."""
+        """Save or update plan."""
         ...
 
     async def load(self, plan_id: str) -> Plan | None:
-        """Загрузить план по id. None если не найден."""
+        """Load."""
         ...
 
     async def list_plans(self, user_id: str, topic_id: str) -> list[Plan]:
-        """Список планов пользователя/топика."""
+        """List plans."""
         ...
 
     async def update_step(self, plan_id: str, step: PlanStep) -> None:
-        """Обновить статус шага в плане."""
+        """Update step."""
         ...
 
 
 class PlannerMode(Protocol):
-    """Режим планирования — ISP: ≤5 методов.
-
-    Реализации: ThinPlannerMode, DeepAgentsPlannerMode.
-    """
+    """Planner Mode protocol."""
 
     async def generate_plan(self, goal: str, context: str) -> Plan:
-        """Сгенерировать план через LLM."""
+        """Generate plan via LLM."""
         ...
 
     async def approve(self, plan: Plan, by: ApprovalSource) -> Plan:
-        """Одобрить план (программно или через пользователя)."""
+        """Approve plan (programmatically or via user)."""
         ...
 
     async def execute_step(self, plan: Plan, step_id: str) -> PlanStep:
-        """Выполнить один шаг плана."""
+        """Execute step."""
         ...
 
     def execute_all(self, plan: Plan) -> AsyncIterator[PlanStep]:
-        """Выполнить все шаги последовательно, стримить результаты."""
+        """Execute everything step and by, therefore, the results."""
         ...
 
     async def replan(self, plan: Plan, feedback: str) -> Plan:
-        """Перегенерировать план с учётом feedback."""
+        """Regenerate plan taking into account feedback."""
         ...

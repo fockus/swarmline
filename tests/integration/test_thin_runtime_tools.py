@@ -1,8 +1,6 @@
-"""Integration: ThinRuntime react mode + ToolExecutor + real SandboxProvider.
-
-Fake LLM возвращает tool_call для read_file, ToolExecutor вызывает sandbox.read_file,
-затем LLM возвращает final с содержимым файла.
-Проверяем: tool_call_started event, tool_call_finished event, final result содержит file content.
+"""Integration: ThinRuntime react mode + ToolExecutor + real SandboxProvider. Fake LLM returns tool_call for read_file, ToolExecutor vyzyvaet sandbox.read_file,
+zatem LLM returns final with soderzhimym filea.
+Verify: tool_call_started event, tool_call_finished event, final result contains file content.
 """
 
 from __future__ import annotations
@@ -20,7 +18,7 @@ from cognitia.tools.types import SandboxConfig
 
 
 def _make_sandbox(tmp_path: Path) -> LocalSandboxProvider:
-    """Создать реальный LocalSandboxProvider с workspace в tmp."""
+    """Create real LocalSandboxProvider with workspace in tmp."""
     config = SandboxConfig(
         root_path=str(tmp_path),
         user_id="u1",
@@ -40,7 +38,7 @@ class TestThinRuntimeReactWithRealTools:
         sandbox = _make_sandbox(tmp_path)
         workspace = Path(sandbox._config.workspace_path)
 
-        # Подготовим файл в workspace
+        # Podgotovim file in workspace
         test_file = workspace / "hello.txt"
         test_file.write_text("hello from sandbox", encoding="utf-8")
 
@@ -53,7 +51,7 @@ class TestThinRuntimeReactWithRealTools:
             call_count += 1
 
             if call_count == 1:
-                # Первый вызов: LLM хочет прочитать файл
+                # Pervyy call: LLM hochet prochitat file
                 return json.dumps(
                     {
                         "type": "tool_call",
@@ -63,7 +61,7 @@ class TestThinRuntimeReactWithRealTools:
                         },
                     }
                 )
-            # Второй вызов: LLM возвращает финальный ответ
+            # Vtoroy call: LLM returns finalnyy response
             return json.dumps(
                 {
                     "type": "final",
@@ -93,7 +91,7 @@ class TestThinRuntimeReactWithRealTools:
         ):
             events.append(event)
 
-        # Проверяем event types в потоке
+        # Verify event types in streame
         event_types = [e.type for e in events]
 
         assert "tool_call_started" in event_types, (
@@ -104,15 +102,15 @@ class TestThinRuntimeReactWithRealTools:
         )
         assert "final" in event_types, "Должен быть final event"
 
-        # Проверяем tool_call_started содержит имя инструмента
+        # Verify tool_call_started contains imya toola
         tc_started = [e for e in events if e.type == "tool_call_started"][0]
         assert tc_started.data["name"] == "read_file"
 
-        # Проверяем tool_call_finished ok=True
+        # Verify tool_call_finished ok=True
         tc_finished = [e for e in events if e.type == "tool_call_finished"][0]
         assert tc_finished.data["ok"] is True
         assert "hello from sandbox" in tc_finished.data["result_summary"]
 
-        # Проверяем final содержит file content
+        # Verify final contains file content
         final_event = [e for e in events if e.type == "final"][0]
         assert "hello from sandbox" in final_event.data["text"]

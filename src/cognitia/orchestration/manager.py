@@ -1,7 +1,7 @@
-"""PlanManager — программное управление планами из app layer.
+"""PlanManager - programmatic plan management from the application layer.
 
 Orchestration: create, approve, execute, cancel, get, list.
-DIP: зависит от PlannerMode Protocol и PlanStore Protocol.
+DIP: depends on the `PlannerMode` and `PlanStore` protocols.
 """
 
 from __future__ import annotations
@@ -13,10 +13,11 @@ from cognitia.orchestration.types import ApprovalSource, Plan, PlanStep
 
 
 class PlanManager:
-    """Управление планами — единая точка входа для приложения.
+    """Plan management - a single entry point for the application.
 
-    SRP: orchestration only. LLM — в PlannerMode. Persistence — в PlanStore.
-    """
+  SRP: orchestration only. The LLM lives in `PlannerMode`.
+  Persistence lives in `PlanStore`.
+  """
 
     def __init__(self, planner: PlannerMode, plan_store: PlanStore) -> None:
         self._planner = planner
@@ -29,9 +30,9 @@ class PlanManager:
         topic_id: str,
         auto_approve: bool = False,
     ) -> Plan:
-        """Создать план. Если auto_approve — сразу approve."""
+        """Create a plan and auto-approve it when requested."""
         plan = await self._planner.generate_plan(goal, context=f"user={user_id}, topic={topic_id}")
-        # Устанавливаем namespace для multi-tenant изоляции (если store поддерживает)
+        # Set the namespace for multi-tenant isolation when the store supports it.
         if hasattr(self._store, "set_namespace"):
             self._store.set_namespace(user_id, topic_id)
         await self._store.save(plan)
@@ -43,7 +44,7 @@ class PlanManager:
         return plan
 
     async def approve_plan(self, plan_id: str, by: ApprovalSource = "system") -> Plan:
-        """Программное одобрение плана."""
+        """Approve a plan programmatically."""
         plan = await self._store.load(plan_id)
         if plan is None:
             msg = f"План '{plan_id}' не найден"
@@ -54,7 +55,7 @@ class PlanManager:
         return approved
 
     async def execute_plan(self, plan_id: str) -> AsyncIterator[PlanStep]:
-        """Выполнить план: стримит результаты шагов."""
+        """Execute a plan and stream step results."""
         plan = await self._store.load(plan_id)
         if plan is None:
             msg = f"План '{plan_id}' не найден"
@@ -64,7 +65,7 @@ class PlanManager:
             yield step
 
     async def cancel_plan(self, plan_id: str) -> Plan:
-        """Отменить план."""
+        """Cancel plan."""
         plan = await self._store.load(plan_id)
         if plan is None:
             msg = f"План '{plan_id}' не найден"
@@ -75,9 +76,9 @@ class PlanManager:
         return cancelled
 
     async def get_plan(self, plan_id: str) -> Plan | None:
-        """Получить план по id."""
+        """Get plan by id."""
         return await self._store.load(plan_id)
 
     async def list_plans(self, user_id: str, topic_id: str) -> list[Plan]:
-        """Список планов пользователя/топика."""
+        """List plans for a user/topic pair."""
         return await self._store.list_plans(user_id, topic_id)

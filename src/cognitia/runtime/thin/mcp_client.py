@@ -1,13 +1,4 @@
-"""McpClient — lightweight JSON-RPC клиент для MCP серверов.
-
-Поддерживает:
-- tools/call
-- tools/list (discovery) + in-memory cache
-
-Module-level utilities (D7, D8):
-- resolve_mcp_server_url — resolve server_id to URL from servers dict.
-- parse_mcp_tool_name — parse "mcp__server__tool" into (server_id, tool_name).
-"""
+"""Mcp Client module."""
 
 from __future__ import annotations
 
@@ -26,11 +17,11 @@ def resolve_mcp_server_url(
 ) -> str | None:
     """Resolve server_id to URL string from a servers mapping.
 
-    Supports:
-    - str values (used as-is)
-    - Objects with a `url` attribute (McpServerSpec-like)
-    - None / missing -> None
-    """
+  Supports:
+  - str values (used as-is)
+  - Objects with a `URL` attribute (MCPServerSpec-like)
+  - None / missing -> None
+  """
     server = servers.get(server_id)
     if server is None:
         return None
@@ -47,11 +38,11 @@ def resolve_mcp_server_url(
 
 
 def parse_mcp_tool_name(tool_name: str) -> tuple[str, str] | None:
-    """Parse 'mcp__server__tool' into (server_id, remote_tool_name).
+    """Parse 'MCP__server__tool' into (server_id, remote_tool_name).
 
-    Returns None if the format is invalid.
-    Format: mcp__{server_id}__{tool_name} where both parts are non-empty.
-    """
+  Returns None if the format is invalid.
+  Format: MCP__{server_id}__{tool_name} where both parts are non-empty.
+  """
     parts = tool_name.split("__", 2)
     if len(parts) != 3 or parts[0] != "mcp" or not parts[1] or not parts[2]:
         return None
@@ -59,12 +50,7 @@ def parse_mcp_tool_name(tool_name: str) -> tuple[str, str] | None:
 
 
 class McpClient:
-    """Клиент MCP JSON-RPC по HTTP(S).
-
-    Args:
-        timeout_seconds: Таймаут HTTP вызова.
-        tools_cache_ttl_seconds: TTL кеша tools/list по server_url.
-    """
+    """Mcp Client implementation."""
 
     def __init__(
         self,
@@ -81,11 +67,7 @@ class McpClient:
         tool_name: str,
         arguments: dict[str, Any] | None = None,
     ) -> Any:
-        """Вызвать MCP tool через JSON-RPC method=tools/call.
-
-        Returns:
-            payload из `result` или объект ошибки вида {"error": ...}.
-        """
+        """Call tool."""
         payload = {
             "jsonrpc": "2.0",
             "id": uuid.uuid4().hex[:8],
@@ -124,11 +106,7 @@ class McpClient:
         force_refresh: bool = False,
         request_timeout: float | None = None,
     ) -> list[ToolSpec]:
-        """Получить список tools с MCP сервера (method=tools/list).
-
-        Кеширует результат по `server_url` на `tools_cache_ttl_seconds`.
-        При ошибке возвращает кеш (если есть), иначе пустой список.
-        """
+        """List tools."""
         now = time.monotonic()
         cached = self._tools_cache.get(server_url)
         if not force_refresh and cached is not None and (now - cached[0]) < self._tools_cache_ttl:
@@ -159,8 +137,8 @@ class McpClient:
 
     @staticmethod
     def _parse_tools_from_response(data: Any) -> list[ToolSpec]:
-        """Нормализовать разные форматы ответа tools/list в list[ToolSpec]."""
-        # Возможные форматы:
+        """Parse tools from response."""
+
         # 1) {"result": {"tools": [...]}}
         # 2) {"result": [...]}
         # 3) {"tools": [...]}

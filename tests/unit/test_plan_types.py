@@ -1,6 +1,4 @@
-"""Тесты Plan types и state machine — TDD: RED → GREEN.
-
-Контрактные тесты для PlanStep, Plan, PlanStore Protocol.
+"""Tests Plan types and state machine - TDD: RED -> GREEN. Contractnye tests for PlanStep, Plan, PlanStore Protocol.
 """
 
 from __future__ import annotations
@@ -15,7 +13,7 @@ def _now() -> datetime:
 
 
 class TestPlanStep:
-    """Валидация PlanStep dataclass."""
+    """Validation PlanStep dataclass."""
 
     def test_create_step(self) -> None:
         from cognitia.orchestration.types import PlanStep
@@ -33,7 +31,7 @@ class TestPlanStep:
         updated = step.complete("Найдено 5 вкладов")
         assert updated.status == "completed"
         assert updated.result == "Найдено 5 вкладов"
-        # Оригинал не мутировался
+        # Original not mutirovalsya
         assert step.status == "pending"
 
     def test_step_fail(self) -> None:
@@ -60,7 +58,7 @@ class TestPlanStep:
 
 
 class TestPlan:
-    """Валидация Plan dataclass и state machine."""
+    """Validation Plan dataclass and state machine."""
 
     def test_create_plan(self) -> None:
         from cognitia.orchestration.types import Plan, PlanStep
@@ -131,7 +129,7 @@ class TestPlan:
         assert completed.status == "completed"
 
     def test_cancel_plan(self) -> None:
-        """Любой статус → cancelled."""
+        """Lyuboy status -> cancelled."""
         from cognitia.orchestration.types import Plan, PlanStep
 
         plan = Plan(
@@ -175,7 +173,7 @@ class TestPlan:
             plan.mark_completed()
 
     def test_update_step(self) -> None:
-        """Обновить конкретный шаг в плане."""
+        """Update konkretnyy step in planot."""
         from cognitia.orchestration.types import Plan, PlanStep
 
         plan = Plan(
@@ -190,7 +188,7 @@ class TestPlan:
         assert updated_plan.steps[1].status == "pending"
 
     def test_update_step_not_found(self) -> None:
-        """Обновление несуществующего шага → ValueError."""
+        """Obnovlenie notsushchestvuyushchego stepa -> ValueError."""
         from cognitia.orchestration.types import Plan, PlanStep
 
         plan = Plan(
@@ -202,7 +200,7 @@ class TestPlan:
 
 
 class TestPlanStoreProtocol:
-    """Контрактные тесты для PlanStore Protocol."""
+    """Contractnye tests for PlanStore Protocol."""
 
     def test_runtime_checkable(self) -> None:
         from cognitia.orchestration.protocols import PlanStore

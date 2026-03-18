@@ -1,7 +1,4 @@
-"""SubagentOrchestrator Protocol — ISP ≤5 методов.
-
-Управление lifecycle subagent'ов: spawn, status, cancel, wait, list.
-"""
+"""Subagent Protocol module."""
 
 from __future__ import annotations
 
@@ -12,24 +9,24 @@ from cognitia.orchestration.subagent_types import SubagentResult, SubagentSpec, 
 
 @runtime_checkable
 class SubagentOrchestrator(Protocol):
-    """Оркестратор subagent'ов — ISP: ≤5 методов."""
+    """Subagent Orchestrator protocol."""
 
     async def spawn(self, spec: SubagentSpec, task: str) -> str:
-        """Запустить subagent. Возвращает agent_id."""
+        """Run subagent. Returns agent_id."""
         ...
 
     async def get_status(self, agent_id: str) -> SubagentStatus:
-        """Получить статус subagent'а."""
+        """Get status."""
         ...
 
     async def cancel(self, agent_id: str) -> None:
-        """Отменить subagent."""
+        """Cancel subagent."""
         ...
 
     async def wait(self, agent_id: str) -> SubagentResult:
-        """Дождаться завершения subagent'а."""
+        """Wait for the subagent to complete."""
         ...
 
     async def list_active(self) -> list[str]:
-        """Список активных subagent id'ов."""
+        """List active."""
         ...

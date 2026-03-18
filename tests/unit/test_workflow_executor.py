@@ -1,6 +1,4 @@
-"""Тесты WorkflowExecutor — runtime adapters для WorkflowGraph.
-
-CRP-4.2: thin executor, LangGraph compiler, mixed runtimes.
+"""Tests WorkflowExecutor - runtime adapters for WorkflowGraph. CRP-4.2: thin executor, LangGraph compiler, mixed runtimes.
 """
 
 from __future__ import annotations
@@ -15,7 +13,7 @@ class TestWorkflowThinExecutor:
     """Workflow runs via ThinRuntimeExecutor per node."""
 
     async def test_workflow_thin_executor_executes_linear_graph(self) -> None:
-        """ThinRuntimeExecutor выполняет линейный граф — все nodes вызываются."""
+        """ThinRuntimeExecutor executes linotynyy graf - vse nodes vyzyvayutsya."""
         from cognitia.orchestration.workflow_executor import ThinRuntimeExecutor
 
         async def step1(state: dict[str, Any]) -> dict[str, Any]:
@@ -38,7 +36,7 @@ class TestWorkflowThinExecutor:
         assert result["execution_order"] == ["STEP1", "STEP2"]
 
     async def test_workflow_thin_executor_propagates_state(self) -> None:
-        """ThinRuntimeExecutor передаёт state между nodes — данные не теряются."""
+        """ThinRuntimeExecutor passes state mezhdu nodes - dannye not teryayutsya."""
         from cognitia.orchestration.workflow_executor import ThinRuntimeExecutor
 
         async def producer(state: dict[str, Any]) -> dict[str, Any]:
@@ -59,11 +57,11 @@ class TestWorkflowThinExecutor:
         executor = ThinRuntimeExecutor()
         result = await executor.run(wf, initial_state={})
 
-        # Данные из producer дошли до consumer
+        # Dannye from producer doshli do consumer
         assert result["consumed"] == 84
 
     async def test_workflow_thin_executor_with_llm_call(self) -> None:
-        """ThinWorkflowExecutor.run_node выполняет ThinRuntime per-node через llm_call."""
+        """ThinWorkflowExecutor.run_node executes ThinRuntime per-node cherez llm_call."""
         import json
 
         from cognitia.orchestration.workflow_executor import ThinWorkflowExecutor
@@ -95,14 +93,14 @@ class TestWorkflowThinExecutor:
 
         result = await wf.execute({})
 
-        # Оба nodes выполнились и записали результат
+        # Oba nodes vypolnilis and zapisali result
         assert "research" in result
         assert "plan" in result
-        # llm_call вызывался дважды (по одному разу на каждый node)
+        # llm_call vyzyvalsya dvazhdy (by odnomu razu on kazhdyy node)
         assert len(llm_calls) == 2
 
     async def test_workflow_thin_executor_advertises_local_tools(self) -> None:
-        """Local tools попадают в active_tools для runtime advertising."""
+        """Local tools popadayut in active_tools for runtime advertising."""
         import json
 
         import cognitia.orchestration.workflow_executor as workflow_executor_module
@@ -164,7 +162,7 @@ class TestWorkflowLangGraphCompile:
     """WorkflowGraph → LangGraph StateGraph compile."""
 
     def test_workflow_langgraph_compile_raises_import_error_if_not_installed(self) -> None:
-        """compile_to_langgraph raises ImportError если langgraph не установлен."""
+        """compile_to_langgraph raises ImportError if langgraph not ustanovlen."""
         from cognitia.orchestration.workflow_langgraph import compile_to_langgraph
 
         async def noop(state: dict[str, Any]) -> dict[str, Any]:
@@ -176,8 +174,8 @@ class TestWorkflowLangGraphCompile:
         wf.add_edge("a", "b")
         wf.set_entry("a")
 
-        # Если langgraph установлен — возвращает объект с invoke/ainvoke.
-        # Если нет — поднимает ImportError с упоминанием langgraph.
+        # If langgraph ustanovlen - returns obekt with invoke/ainvoke.
+        # If nott - podnimaet ImportError with upominaniem langgraph.
         try:
             compiled = compile_to_langgraph(wf)
             assert hasattr(compiled, "invoke") or hasattr(compiled, "ainvoke")
@@ -185,7 +183,7 @@ class TestWorkflowLangGraphCompile:
             assert "langgraph" in str(exc).lower()
 
     def test_workflow_langgraph_spec_has_correct_structure(self) -> None:
-        """compile_to_langgraph_spec возвращает dict с nodes, edges, entry."""
+        """compile_to_langgraph_spec returns dict with nodes, edges, entry."""
         from cognitia.orchestration.workflow_executor import compile_to_langgraph_spec
 
         async def node_fn(state: dict[str, Any]) -> dict[str, Any]:
@@ -235,7 +233,7 @@ class TestWorkflowMixedRuntimes:
     """Mixed runtimes: observability metadata per node."""
 
     async def test_workflow_mixed_runtimes_records_runtime_per_node(self) -> None:
-        """MixedRuntimeExecutor записывает __runtime_executions__ в state для observability."""
+        """MixedRuntimeExecutor zapisyvaet __runtime_executions__ in state for observability."""
         from cognitia.orchestration.workflow_executor import MixedRuntimeExecutor
 
         async def thin_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -260,15 +258,15 @@ class TestWorkflowMixedRuntimes:
         )
         result = await executor.run(wf, initial_state={})
 
-        # Оба nodes выполнились
+        # Oba nodes vypolnilis
         assert result["thin_done"] is True
         assert result["deep_done"] is True
-        # Метаданные о runtime routing записаны в state
+        # Metadannye o runtime routing zapisany in state
         assert result["__runtime_executions__"]["thin_step"] == "thin"
         assert result["__runtime_executions__"]["deep_step"] == "deepagents"
 
     async def test_workflow_mixed_runtimes_unmapped_node_uses_thin_fallback(self) -> None:
-        """Node без mapping получает thin metadata, но execution stays direct."""
+        """Node without mapping gets thin metadata, no execution stays direct."""
         from cognitia.orchestration.workflow_executor import MixedRuntimeExecutor
 
         async def unmapped_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -279,10 +277,10 @@ class TestWorkflowMixedRuntimes:
         wf.add_node("unmapped", unmapped_node)
         wf.set_entry("unmapped")
 
-        # Пустой runtime_map — node "unmapped" не имеет назначенного runtime
+        # Empty runtime_map - node "unmapped" not imeet naznachennogo runtime
         executor = MixedRuntimeExecutor(runtime_map={})
         result = await executor.run(wf, initial_state={})
 
         assert result["unmapped_done"] is True
-        # Fallback runtime записывается как "thin"
+        # Fallback runtime zapisyvaetsya kak "thin"
         assert result["__runtime_executions__"]["unmapped"] == "thin"

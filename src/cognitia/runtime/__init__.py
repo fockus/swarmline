@@ -1,21 +1,11 @@
-"""Модуль runtime — типы, протоколы, фабрика и политика моделей.
-
-AgentRuntime v1 контракт:
-- AgentRuntime Protocol (base.py)
-- RuntimeEvent, Message, ToolSpec, RuntimeConfig (types.py)
-- RuntimeFactory (factory.py)
-
-Legacy:
-- StreamEvent, RuntimeAdapter — backward compat (adapter.py)
-- ClaudeOptionsBuilder — infrastructure (options_builder.py)
-"""
+"""Runtime package."""
 
 from __future__ import annotations
 
 from importlib import import_module
 from typing import Any
 
-# --- AgentRuntime v1 контракт ---
+# --- AgentRuntime v1 contract ---
 from cognitia.runtime.base import AgentRuntime
 from cognitia.runtime.capabilities import (
     RUNTIME_CAPABILITY_FLAGS,
@@ -37,7 +27,7 @@ from cognitia.runtime.registry import (
 )
 from cognitia.runtime.model_registry import ModelRegistry, get_registry, reset_registry
 
-# --- Runtime Ports (каноничные адаптеры AgentRuntime → RuntimePort) ---
+
 from cognitia.runtime.ports import BaseRuntimePort
 from cognitia.runtime.ports.base import StreamEvent, convert_event
 

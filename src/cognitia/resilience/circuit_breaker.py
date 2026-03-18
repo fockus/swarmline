@@ -1,7 +1,7 @@
-"""CircuitBreaker — защита от каскадных сбоев MCP (секция 13 архитектуры).
+"""CircuitBreaker - protection from cascading MCP failures (architecture section 13).
 
-Один breaker per server_id.
-Состояния: CLOSED → OPEN → HALF_OPEN → CLOSED (или обратно в OPEN).
+One breaker per server_id.
+States: CLOSED -> OPEN -> HALF_OPEN -> CLOSED (or back to OPEN).
 """
 
 from __future__ import annotations
@@ -11,18 +11,18 @@ import time
 
 
 class CircuitState(enum.Enum):
-    """Состояние circuit breaker."""
+    """Circuit breaker state."""
 
-    CLOSED = "closed"  # Нормальная работа
-    OPEN = "open"  # Отклоняет запросы
-    HALF_OPEN = "half_open"  # Одна probe-попытка
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Rejects requests
+    HALF_OPEN = "half_open"  # One probe attempt
 
 
 class CircuitBreaker:
-    """Circuit breaker для одного MCP-сервера.
+    """Circuit breaker for a single MCP server.
 
-    - failure_threshold: после скольких подряд ошибок открывается
-    - cooldown_seconds: время в OPEN перед переходом в HALF_OPEN
+    - failure_threshold: number of consecutive failures before opening
+    - cooldown_seconds: time spent in OPEN before transitioning to HALF_OPEN
     """
 
     def __init__(
@@ -38,11 +38,11 @@ class CircuitBreaker:
 
     @property
     def state(self) -> CircuitState:
-        """Текущее состояние breaker."""
+        """Current breaker state."""
         return self._state
 
     def allow_request(self) -> bool:
-        """Разрешить запрос? Если OPEN и cooldown истёк → HALF_OPEN."""
+        """Allow the request? If OPEN and cooldown has elapsed -> HALF_OPEN."""
         if self._state == CircuitState.CLOSED:
             return True
 
@@ -53,22 +53,22 @@ class CircuitBreaker:
                 return True
             return False
 
-        # HALF_OPEN — пропускаем одну probe-попытку
+        # HALF_OPEN - allow one probe attempt
         return True
 
     def record_success(self) -> None:
-        """Зафиксировать успешный вызов."""
+        """Record a successful call."""
         self._consecutive_failures = 0
         if self._state in (CircuitState.HALF_OPEN, CircuitState.CLOSED):
             self._state = CircuitState.CLOSED
 
     def record_failure(self) -> None:
-        """Зафиксировать ошибку."""
+        """Record a failure."""
         self._consecutive_failures += 1
         self._last_failure_time = time.monotonic()
 
         if self._state == CircuitState.HALF_OPEN:
-            # Probe провалился — обратно в OPEN
+            # Probe failed - back to OPEN
             self._state = CircuitState.OPEN
             return
 
@@ -77,7 +77,7 @@ class CircuitBreaker:
 
 
 class CircuitBreakerRegistry:
-    """Реестр circuit breakers per server_id."""
+    """Registry of circuit breakers per server_id."""
 
     def __init__(
         self,
@@ -89,7 +89,7 @@ class CircuitBreakerRegistry:
         self._breakers: dict[str, CircuitBreaker] = {}
 
     def get(self, server_id: str) -> CircuitBreaker:
-        """Получить или создать breaker для сервера."""
+        """Get or create a breaker for the server."""
         if server_id not in self._breakers:
             self._breakers[server_id] = CircuitBreaker(
                 failure_threshold=self._threshold,

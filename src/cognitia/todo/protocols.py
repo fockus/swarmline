@@ -1,6 +1,6 @@
-"""Протокол TodoProvider — ISP-совместимый интерфейс (2 метода).
+"""TodoProvider protocol - ISP-compliant interface (2 methods).
 
-Bulk write API совместим с Claude Code TodoRead/TodoWrite.
+Bulk write API is compatible with Claude Code TodoRead/TodoWrite.
 """
 
 from __future__ import annotations
@@ -12,27 +12,27 @@ from cognitia.todo.types import TodoItem
 
 @runtime_checkable
 class TodoProvider(Protocol):
-    """Провайдер хранения todo-списка.
+    """Todo list storage provider.
 
-    ISP: 2 метода — read_todos и write_todos (bulk replace).
-    Multi-tenant: изоляция по user_id + topic_id.
+    ISP: 2 methods - read_todos and write_todos (bulk replace).
+    Multi-tenant: isolation by user_id + topic_id.
     """
 
     async def read_todos(self) -> list[TodoItem]:
-        """Прочитать все todos.
+        """Read all todos.
 
         Returns:
-            Список TodoItem, отсортированный по created_at.
+            A list of TodoItem objects sorted by created_at.
         """
         ...
 
     async def write_todos(self, todos: list[TodoItem]) -> None:
-        """Записать todos (bulk replace — полная замена списка).
+        """Write todos (bulk replace - full list replacement).
 
         Args:
-            todos: Новый список todos.
+            todos: New list of todos.
 
         Raises:
-            ValueError: Превышен лимит max_todos.
+            ValueError: max_todos limit exceeded.
         """
         ...

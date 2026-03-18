@@ -265,7 +265,7 @@ class TestCoreImportsWithoutOptionalDeps:
             assert Agent is not None
 
     def test_block_packages_restores_cognitia_module_identity(self) -> None:
-        """Isolation helper восстанавливает исходные cognitia module objects."""
+        """Isolation helper restores the original cognitia module objects."""
         from cognitia.memory_bank.types import MemoryBankViolation
 
         original = MemoryBankViolation

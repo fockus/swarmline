@@ -1,4 +1,4 @@
-"""ClaudeOptionsBuilder — фабрика для ClaudeAgentOptions."""
+"""ClaudeOptionsBuilder - factory for ClaudeAgentOptions."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from cognitia.protocols import ModelSelector
 
 
-# Тип callback для can_use_tool
+# Type callback for can_use_tool
 CanUseToolFn = Callable[
     [str, dict[str, Any], ToolPermissionContext],
     Awaitable[PermissionResultAllow | PermissionResultDeny],
@@ -35,7 +35,7 @@ CanUseToolFn = Callable[
 
 
 class ClaudeOptionsBuilder:
-    """Строитель ClaudeAgentOptions из компонентов Cognitia."""
+    """Claude Options Builder implementation."""
 
     def __init__(
         self,
@@ -81,35 +81,15 @@ class ClaudeOptionsBuilder:
         fallback_model: str | None = None,
         hooks: dict[str, list[HookMatcher]] | None = None,
     ) -> ClaudeAgentOptions:
-        """Собрать ClaudeAgentOptions.
+        """Build."""
 
-        Args:
-            setting_sources: источники настроек SDK.
-                По умолчанию [] — не читаем CLAUDE.md и .claude/settings.json.
-            max_thinking_tokens: лимит токенов для extended thinking.
-            sandbox: настройки sandbox для Bash-команд.
-            agents: определения sub-agents (AgentDefinition).
-            env: переменные окружения для subprocess.
-            output_format: JSON Schema для structured output.
-            continue_conversation: продолжить предыдущую сессию.
-            resume: session_id для возобновления.
-            fork_session: форкнуть сессию при resume (новый session_id).
-            betas: список beta-фич (например, 1M context).
-            plugins: список SDK plugin конфигураций.
-            include_partial_messages: включить partial StreamEvent.
-            enable_file_checkpointing: трекинг изменений файлов.
-            max_budget_usd: лимит бюджета в USD.
-            fallback_model: fallback модель при ошибке.
-            hooks: SDK hooks (dict[HookEvent, list[HookMatcher]]).
-        """
-        # override_model имеет приоритет над ModelPolicy
         model = (
             self._override_model
             if self._override_model
             else self._model_policy.select(role_id, tool_failure_count)
         )
 
-        # Сливаем MCP серверы: remote (HTTP) + SDK (in-process)
+
         all_mcp: dict[str, Any] = {}
 
         if mcp_servers:
@@ -119,7 +99,7 @@ class ClaudeOptionsBuilder:
         if sdk_mcp_servers:
             all_mcp.update(sdk_mcp_servers)
 
-        # По умолчанию НЕ читаем project/user settings (CLAUDE.md, .claude/settings.json).
+
         sources: list[SettingSource] = setting_sources if setting_sources is not None else []
 
         opts = ClaudeAgentOptions(
@@ -153,28 +133,22 @@ class ClaudeOptionsBuilder:
 
 
 # ---------------------------------------------------------------------------
-# OCP: dispatch table вместо if/elif цепочки
+
 # ---------------------------------------------------------------------------
 
 
 def _build_url_config(spec: McpServerSpec) -> dict[str, Any]:
-    """Конфиг для URL транспорта (Streamable HTTP).
-
-    MCP серверы calculado.ru используют Streamable HTTP (MCP 2024-11-05+):
-    - POST с Accept: application/json, text/event-stream
-    - Сессия через заголовок mcp-session-id
-    Claude SDK тип "http" = McpHttpServerConfig (Streamable HTTP).
-    """
+    """Build url config."""
     return {"type": "http", "url": spec.url or ""}
 
 
 def _build_sse_config(spec: McpServerSpec) -> dict[str, Any]:
-    """Конфиг для SSE транспорта."""
+    """Build sse config."""
     return {"type": "sse", "url": spec.url or ""}
 
 
 def _build_stdio_config(spec: McpServerSpec) -> dict[str, Any]:
-    """Конфиг для stdio транспорта."""
+    """Build stdio config."""
     cfg: dict[str, Any] = {
         "type": "stdio",
         "command": spec.command or "",
@@ -195,9 +169,6 @@ _TRANSPORT_BUILDERS: dict[str, Callable[[McpServerSpec], dict[str, Any]]] = {
 
 
 def _spec_to_sdk_config(spec: McpServerSpec) -> dict[str, Any]:
-    """Преобразовать McpServerSpec в SDK-совместимый dict (TypedDict).
-
-    OCP: новый transport → добавить в _TRANSPORT_BUILDERS, не менять эту функцию.
-    """
+    """Spec to sdk config."""
     builder = _TRANSPORT_BUILDERS.get(spec.transport, _build_url_config)
     return builder(spec)

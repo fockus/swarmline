@@ -1,10 +1,4 @@
-"""Plan tools — инструменты планирования для агента.
-
-Агент сам решает когда ему нужен план и вызывает plan_create.
-Prompt addon описывает правила: когда планировать, когда не нужно.
-
-KISS: 3 инструмента — create, status, execute.
-"""
+"""Plan Tools module."""
 
 from __future__ import annotations
 
@@ -64,19 +58,10 @@ def create_plan_tools(
     user_id: str,
     topic_id: str,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
-    """Создать plan_* tools для агента.
-
-    Args:
-        manager: PlanManager с инжектированными PlannerMode и PlanStore.
-        user_id: ID пользователя для namespace.
-        topic_id: ID топика для namespace.
-
-    Returns:
-        Tuple: (specs, executors).
-    """
+    """Create plan tools."""
 
     async def plan_create(args: dict) -> str:
-        """Создать план для сложной задачи."""
+        """Create a plan for a complex taskand."""
         goal = args.get("goal", "")
         if not goal:
             return json.dumps({"status": "error", "message": "goal обязателен"})
@@ -106,7 +91,7 @@ def create_plan_tools(
             return json.dumps({"status": "error", "message": str(e)})
 
     async def plan_status(args: dict) -> str:
-        """Показать текущие планы."""
+        """Show your plans."""
         try:
             plans = await manager.list_plans(user_id, topic_id)
             return json.dumps(
@@ -128,7 +113,7 @@ def create_plan_tools(
             return json.dumps({"status": "error", "message": str(e)})
 
     async def plan_execute(args: dict) -> str:
-        """Выполнить план по шагам."""
+        """Plan execute."""
         plan_id = args.get("plan_id", "")
         if not plan_id:
             return json.dumps({"status": "error", "message": "plan_id обязателен"})

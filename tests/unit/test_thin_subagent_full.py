@@ -1,13 +1,9 @@
-"""TDD Red Phase: ThinSubagent полная реализация (Этап 2.1).
-
-Тесты проверяют:
-- spawn worker → get result (через ThinRuntime с llm_call)
-- cancel mid-execution → status=cancelled
-- max_concurrent=2 → 3rd raises ValueError
-- LLM error → status=failed, error message
-- Worker inherits tools from spec
-
-Contract: ThinSubagentOrchestrator с llm_call → per-worker ThinRuntime
+"""TDD Red Phase: ThinSubagent full implementation (Etap 2.1). Tests verify:
+- spawn worker -> get result (cherez ThinRuntime with llm_call)
+- cancel mid-execution -> status=cancelled
+- max_concurrent=2 -> 3rd raises ValueError
+- LLM error -> status=failed, error message
+- Worker inherits tools from spec Contract: ThinSubagentOrchestrator with llm_call -> per-worker ThinRuntime
 """
 
 from __future__ import annotations
@@ -30,7 +26,7 @@ def _make_final(text: str) -> str:
 
 
 class MockLLMForSubagent:
-    """Mock LLM для subagent workers."""
+    """Mock LLM for subagent workers."""
 
     def __init__(self, response_text: str = "done", delay: float = 0.0) -> None:
         self._response_text = response_text
@@ -45,14 +41,14 @@ class MockLLMForSubagent:
 
 
 class ErrorLLM:
-    """Mock LLM который всегда возвращает ошибку."""
+    """Mock LLM kotoryy vsegda returns oshibku."""
 
     async def __call__(self, messages: list[dict], system_prompt: str) -> str:
         raise RuntimeError("LLM API connection failed")
 
 
 class SlowLLM:
-    """Mock LLM с задержкой (для cancel тестов)."""
+    """Mock LLM with zaderzhkoy (for cancel testov)."""
 
     async def __call__(self, messages: list[dict], system_prompt: str) -> str:
         await asyncio.sleep(10)
@@ -65,18 +61,18 @@ class SlowLLM:
 
 
 class TestThinSubagentEdgeCases:
-    """Edge cases для ThinSubagentOrchestrator."""
+    """Edge cases for ThinSubagentOrchestrator."""
 
     @pytest.mark.asyncio
     async def test_thin_subagent_get_status_unknown_agent(self) -> None:
-        """get_status для несуществующего agent → pending."""
+        """get_status for notsushchestvuyushchego agent -> pending."""
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
         status = await orch.get_status("nonexistent-id")
         assert status.state == "pending"
 
     @pytest.mark.asyncio
     async def test_thin_subagent_wait_unknown_agent(self) -> None:
-        """wait для несуществующего agent → pending result."""
+        """wait for notsushchestvuyushchego agent -> pending result."""
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
         result = await orch.wait("nonexistent-id")
         assert result.status.state == "pending"
@@ -84,14 +80,14 @@ class TestThinSubagentEdgeCases:
 
     @pytest.mark.asyncio
     async def test_thin_subagent_list_active_empty(self) -> None:
-        """list_active при отсутствии workers → пустой список."""
+        """list_active pri otsutstvii workers -> empty list."""
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
         active = await orch.list_active()
         assert active == []
 
     @pytest.mark.asyncio
     async def test_thin_subagent_list_active_after_complete(self) -> None:
-        """list_active после завершения worker → пустой список."""
+        """list_active posle zaversheniya worker -> empty list."""
         llm = MockLLMForSubagent(response_text="done")
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=llm)
         spec = SubagentSpec(name="worker", system_prompt="Work.")
@@ -102,22 +98,22 @@ class TestThinSubagentEdgeCases:
 
     @pytest.mark.asyncio
     async def test_thin_subagent_cancel_nonexistent_noop(self) -> None:
-        """cancel для несуществующего agent → не crash."""
+        """cancel for notsushchestvuyushchego agent -> not crash."""
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=MockLLMForSubagent())
-        await orch.cancel("nonexistent-id")  # Не должно raise
+        await orch.cancel("nonexistent-id")  # Not should raise
 
 
 # ---------------------------------------------------------------------------
-# Тесты
+# Tests
 # ---------------------------------------------------------------------------
 
 
 class TestThinSubagentFullImplementation:
-    """ThinSubagent с реальным ThinRuntime через llm_call."""
+    """ThinSubagent with realnym ThinRuntime cherez llm_call."""
 
     @pytest.mark.asyncio
     async def test_thin_subagent_spawn_and_complete(self) -> None:
-        """Spawn worker через ThinRuntime → get result."""
+        """Spawn worker cherez ThinRuntime -> get result."""
         llm = MockLLMForSubagent(response_text="Research complete: X is Y")
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=llm)
 
@@ -164,7 +160,7 @@ class TestThinSubagentFullImplementation:
 
     @pytest.mark.asyncio
     async def test_thin_subagent_error_propagated(self) -> None:
-        """LLM error → status=failed, error message сохранён."""
+        """LLM error -> status=failed, error message saved."""
         orch = ThinSubagentOrchestrator(max_concurrent=4, llm_call=ErrorLLM())
 
         spec = SubagentSpec(
@@ -181,7 +177,7 @@ class TestThinSubagentFullImplementation:
 
     @pytest.mark.asyncio
     async def test_thin_subagent_tools_inherited(self) -> None:
-        """Worker inherits tools from SubagentSpec — tools передаются в runtime.run()."""
+        """Worker inherits tools from SubagentSpec - tools are passed in runtime.run()."""
         tool_call_json = json.dumps({
             "type": "tool_call",
             "tool": {"name": "my_tool", "args": {"x": 1}, "correlation_id": "c1"},

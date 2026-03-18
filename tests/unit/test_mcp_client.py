@@ -1,4 +1,4 @@
-"""Тесты для McpClient (tools/call + tools/list cache)."""
+"""Tests for McpClient (tools/call + tools/list cache)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from cognitia.runtime.thin.mcp_client import McpClient
 
 
 class TestMcpClientCallTool:
-    """Вызов tools/call."""
+    """Vyzov tools/call."""
 
     @pytest.mark.asyncio
     async def test_call_tool_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -74,7 +74,7 @@ class TestMcpClientCallTool:
 
 
 class TestMcpClientListTools:
-    """Discovery tools/list + кеширование."""
+    """Discovery tools/list + keshirovanie."""
 
     @pytest.mark.asyncio
     async def test_list_tools_success(self, monkeypatch: pytest.MonkeyPatch) -> None:

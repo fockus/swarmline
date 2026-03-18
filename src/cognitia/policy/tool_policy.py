@@ -1,7 +1,7 @@
-"""ToolPolicy — контроль доступа к инструментам агента.
+"""ToolPolicy - access control for agent tools.
 
-Жёстко запрещает file/bash tools, разрешает только MCP tools из активных скилов
-и явно перечисленные local tools.
+Strictly denies file/bash tools, allows only MCP tools from active skills
+and explicitly listed local tools.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 _log = structlog.get_logger(component="tool_policy")
 
 
-# Инструменты, которые ВСЕГДА запрещены (file-system, shell, etc.)
-# Содержит ОБА варианта именования: PascalCase (SDK) и snake_case (builtin)
+# Tools that are ALWAYS denied (file-system, shell, etc.)
+# Includes BOTH naming variants: PascalCase (SDK) and snake_case (builtin)
 ALWAYS_DENIED_TOOLS: frozenset[str] = frozenset(
     {
         # PascalCase (Claude SDK naming)
@@ -54,7 +54,7 @@ ALWAYS_DENIED_TOOLS: frozenset[str] = frozenset(
 
 @dataclass(frozen=True)
 class ToolPolicyInput:
-    """Контекст для принятия решения о tool-доступе."""
+    """Context used to decide tool access."""
 
     tool_name: str
     input_data: dict[str, Any]
@@ -64,26 +64,26 @@ class ToolPolicyInput:
 
 @dataclass(frozen=True)
 class PermissionAllow:
-    """Разрешение на вызов инструмента."""
+    """Permission to invoke a tool."""
 
     updated_input: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
 class PermissionDeny:
-    """Отказ в вызове инструмента."""
+    """Permission denial for a tool call."""
 
     message: str = "Инструмент не разрешён текущей политикой"
 
 
 class DefaultToolPolicy:
-    """Политика доступа к инструментам.
+    """Tool access policy.
 
-    Логика:
-    1. Если tool в ALWAYS_DENIED → deny
-    2. Если tool в allowed_local_tools → allow (включая mcp__app_tools__*)
-    3. Если tool начинается с "mcp__" и MCP-сервер в активных скилах → allow
-    4. Иначе → deny
+    Logic:
+    1. If tool is in ALWAYS_DENIED -> deny
+    2. If tool is in allowed_local_tools -> allow (including mcp__app_tools__*)
+    3. If tool starts with "mcp__" and the MCP server is in active skills -> allow
+    4. Otherwise -> deny
     """
 
     def __init__(
@@ -94,7 +94,7 @@ class DefaultToolPolicy:
         allowed_system_tools: set[str] | None = None,
     ) -> None:
         self._allowed_system_tools = allowed_system_tools or set()
-        # Whitelist: убираем из deny-list разрешённые system tools
+        # Whitelist: remove allowed system tools from the deny list
         base_denied = ALWAYS_DENIED_TOOLS - self._allowed_system_tools
         self._denied = base_denied | (extra_denied or set())
         if codec is None:
@@ -111,7 +111,7 @@ class DefaultToolPolicy:
         reason: str,
         server_id: str = "",
     ) -> None:
-        """Логировать решение политики (§6.2, §12.1)."""
+        """Log the policy decision (§6.2, §12.1)."""
         event = "tool_allowed" if allowed else "tool_denied"
         _log.info(event, tool_name=tool_name, reason=reason, server_id=server_id)
         if self._agent_logger:
@@ -128,25 +128,25 @@ class DefaultToolPolicy:
         input_data: dict[str, Any],
         state: ToolPolicyInput,
     ) -> PermissionAllow | PermissionDeny:
-        """Проверить, разрешён ли вызов инструмента (§6.2: логируем allow/deny)."""
-        # Шаг 1: жёсткий deny-list
+        """Check whether a tool call is allowed (§6.2: log allow/deny)."""
+        # Step 1: hard deny list
         if tool_name in self._denied:
             self._log_policy(tool_name, allowed=False, reason="always_denied")
             return PermissionDeny(
                 message=f"Инструмент '{tool_name}' запрещён политикой безопасности",
             )
 
-        # Шаг 2: local tools (проверяем до MCP, т.к. local tools тоже имеют mcp__ префикс)
+        # Step 2: local tools (checked before MCP because local tools also use the mcp__ prefix)
         if tool_name in state.allowed_local_tools:
             self._log_policy(tool_name, allowed=True, reason="local_tool")
             return PermissionAllow(updated_input=input_data)
 
-        # Шаг 2b: явно разрешённые system tools (например WebSearch/WebFetch в SDK).
+        # Step 2b: explicitly allowed system tools (for example WebSearch/WebFetch in the SDK).
         if tool_name in self._allowed_system_tools:
             self._log_policy(tool_name, allowed=True, reason="allowed_system_tool")
             return PermissionAllow(updated_input=input_data)
 
-        # Шаг 3: MCP tools — проверяем через ToolIdCodec
+        # Step 3: MCP tools - check via ToolIdCodec
         if tool_name.startswith("mcp__"):
             server_name = self._codec.extract_server(tool_name)
             if server_name and server_name in state.active_skill_ids:
@@ -157,7 +157,7 @@ class DefaultToolPolicy:
                     server_id=server_name,
                 )
                 return PermissionAllow(updated_input=input_data)
-            # MCP tool от неактивного скилa
+            # MCP tool from an inactive skill
             self._log_policy(
                 tool_name,
                 allowed=False,
@@ -168,6 +168,6 @@ class DefaultToolPolicy:
                 message=f"MCP сервер '{server_name}' не активен для текущей роли",
             )
 
-        # Шаг 4: всё остальное запрещено
+        # Step 4: everything else is denied
         self._log_policy(tool_name, allowed=False, reason="not_in_allowlist")
         return PermissionDeny(message=f"Инструмент '{tool_name}' не входит в allowlist")

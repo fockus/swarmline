@@ -1,4 +1,4 @@
-"""Тесты policy/mapping слоя для built-ins DeepAgents."""
+"""Tests policy/mapping layer for built-ins DeepAgents."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from cognitia.runtime.types import ToolSpec
 
 
 def test_builtin_tool_names_match_upstream_contract() -> None:
-    """Canonical built-ins совпадают с upstream create_deep_agent()."""
+    """Canonical built-ins are the same as upstream create_deep_agent()."""
     from cognitia.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_TOOLS
 
     assert {
@@ -23,7 +23,7 @@ def test_builtin_tool_names_match_upstream_contract() -> None:
 
 
 def test_canonicalize_builtin_name_maps_claude_style_aliases() -> None:
-    """Claude-style alias names маппятся в canonical DeepAgents built-ins."""
+    """Claude-style alias names are mapped in canonical DeepAgents built-ins."""
     from cognitia.runtime.deepagents_builtins import canonicalize_builtin_name
 
     assert canonicalize_builtin_name("Bash") == "execute"
@@ -34,7 +34,7 @@ def test_canonicalize_builtin_name_maps_claude_style_aliases() -> None:
 
 
 def test_filter_native_builtin_tools_removes_aliases_and_canonical_names() -> None:
-    """Portable filter вырезает и alias, и canonical native built-ins."""
+    """Portable filter cuts out both aliases and canonical native built-ins."""
     from cognitia.runtime.deepagents_builtins import filter_native_builtin_tools
 
     tools = [
@@ -50,7 +50,7 @@ def test_filter_native_builtin_tools_removes_aliases_and_canonical_names() -> No
 
 
 def test_split_native_builtin_tools_returns_custom_tools_and_mappings() -> None:
-    """Native path отделяет built-ins от кастомных tools и dedupe'ит canonical names."""
+    """Native path separates built-ins from custom tools and dedupe and canonical names."""
     from cognitia.runtime.deepagents_builtins import split_native_builtin_tools
 
     tools = [

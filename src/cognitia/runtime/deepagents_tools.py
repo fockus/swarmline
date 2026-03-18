@@ -1,4 +1,4 @@
-"""LangChain tool wrappers для DeepAgents runtime."""
+"""LangChain tool wrappers for DeepAgents runtime."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from cognitia.runtime.types import ToolSpec
 
 
 def create_langchain_tool(spec: ToolSpec, executor: Callable | None = None) -> Any:
-    """Обернуть ToolSpec в LangChain StructuredTool."""
+    """Create langchain tool."""
     from langchain_core.tools import StructuredTool
 
     schema = dict(spec.parameters or {})

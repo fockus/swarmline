@@ -1,4 +1,4 @@
-"""Middleware — composable обработка запросов Agent facade."""
+"""Middleware - composable request handling for the Agent facade."""
 
 from __future__ import annotations
 
@@ -14,30 +14,30 @@ if TYPE_CHECKING:
 
 
 class BudgetExceededError(RuntimeError):
-    """Превышен бюджет (max_budget_usd)."""
+    """Budget exceeded (max_budget_usd)."""
 
 
 class Middleware:
-    """Базовый middleware для Agent facade.
+    """Base middleware for the Agent facade.
 
-    Все методы — default passthrough (переопределяйте нужные в подклассах).
+    All methods are default passthrough (override the ones you need in subclasses).
     """
 
     async def before_query(self, prompt: str, config: AgentConfig) -> str:
-        """Перед запросом. Можно модифицировать prompt. Raise → блокировать."""
+        """Before the request. Can modify the prompt. Raise -> block."""
         return prompt
 
     async def after_result(self, result: Result) -> Result:
-        """После результата. Можно модифицировать/обогатить Result."""
+        """After the result. Can modify/enrich the Result."""
         return result
 
     def get_hooks(self) -> HookRegistry | None:
-        """Хуки для runtime (optional)."""
+        """Hooks for the runtime (optional)."""
         return None
 
 
 class CostTracker(Middleware):
-    """Middleware: аккумуляция стоимости и контроль бюджета."""
+    """Middleware: accumulate cost and enforce a budget."""
 
     def __init__(self, budget_usd: float) -> None:
         self._budget_usd = budget_usd
@@ -56,13 +56,13 @@ class CostTracker(Middleware):
             self._total_cost += cost
             if self._total_cost > self._budget_usd:
                 raise BudgetExceededError(
-                    f"Бюджет превышен: ${self._total_cost:.4f} > ${self._budget_usd:.2f}"
+                    f"Budget exceeded: ${self._total_cost:.4f} > ${self._budget_usd:.2f}"
                 )
         return result
 
 
 class SecurityGuard(Middleware):
-    """Middleware: блокировка опасных паттернов в tool input через PreToolUse hook."""
+    """Middleware: block dangerous patterns in tool input via a PreToolUse hook."""
 
     def __init__(self, block_patterns: list[str]) -> None:
         self._patterns = block_patterns
@@ -110,7 +110,7 @@ class ToolOutputCompressor(Middleware):
         return {"tool_result": compressed}
 
     def compress(self, text: str) -> str:
-        """Compress text based on detected content type."""
+        """Compress text based on the detected content type."""
         if len(text) <= self.max_result_chars:
             return text
         if self._looks_like_json(text):

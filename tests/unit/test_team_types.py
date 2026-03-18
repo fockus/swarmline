@@ -1,4 +1,4 @@
-"""Тесты team types и protocol — TDD."""
+"""Tests team types and protocol - TDD."""
 
 from __future__ import annotations
 

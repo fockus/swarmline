@@ -1,7 +1,5 @@
-"""Integration: Agent Facade — полный pipeline сборки компонентов.
-
-Проверяет что Agent, AgentConfig, @tool, Middleware корректно
-собираются вместе через реальные компоненты cognitia.
+"""Integration: Agent Facade - full pipeline sborki komponotntov. Verifies chto Agent, AgentConfig, @tool, Middleware correctly
+are assembled vmeste cherez real komponotnty cognitia.
 """
 
 from __future__ import annotations
@@ -27,11 +25,11 @@ from conftest import FakeStreamEvent
 
 
 class TestAgentFullPipeline:
-    """Agent + все компоненты → query → Result."""
+    """Agent + vse komponotnty -> query -> Result."""
 
     @pytest.mark.asyncio
     async def test_config_to_agent_with_all_features(self) -> None:
-        """AgentConfig со всеми фичами → Agent создаётся без ошибок."""
+        """AgentConfig so vsemi fichami -> Agent sozdaetsya without oshibok."""
 
         @tool(name="calc", description="Calculator")
         async def calc(expr: str) -> str:
@@ -66,7 +64,7 @@ class TestAgentFullPipeline:
 
     @pytest.mark.asyncio
     async def test_middleware_chain_integration(self) -> None:
-        """CostTracker + SecurityGuard → Agent → query через mock stream."""
+        """CostTracker + SecurityGuard -> Agent -> query cherez mock stream."""
 
         tracker = CostTracker(budget_usd=5.0)
         guard = SecurityGuard(block_patterns=["DROP TABLE"])
@@ -123,7 +121,7 @@ class TestAgentFullPipeline:
 
 
 class TestAgentConfigToOptionsBuilder:
-    """AgentConfig → ClaudeOptionsBuilder.build() — пробрасывание параметров."""
+    """AgentConfig -> ClaudeOptionsBuilder.build() - probrasyvanie parameterov."""
 
     def test_config_resolves_model(self) -> None:
         """Model alias → resolved model."""
@@ -131,7 +129,7 @@ class TestAgentConfigToOptionsBuilder:
         assert config.resolved_model.startswith("claude-sonnet")
 
     def test_config_with_betas_and_budget(self) -> None:
-        """Betas и budget из config доступны."""
+        """Betas and budget from config available."""
         config = AgentConfig(
             system_prompt="test",
             betas=("context-1m-2025-08-07",),
@@ -144,7 +142,7 @@ class TestAgentConfigToOptionsBuilder:
 
 
 class TestConversationPipeline:
-    """Conversation multi-turn через mock adapter."""
+    """Conversation multi-turn cherez mock adapter."""
 
     @pytest.mark.asyncio
     async def test_conversation_3_turns(self) -> None:
@@ -178,7 +176,7 @@ class TestConversationPipeline:
 
     @pytest.mark.asyncio
     async def test_conversation_with_middleware(self) -> None:
-        """Middleware applied в каждый turn conversation."""
+        """Middleware applied in kazhdyy turn conversation."""
         tracker = CostTracker(budget_usd=10.0)
         config = AgentConfig(system_prompt="test", middleware=(tracker,))
         agent = Agent(config)
@@ -200,10 +198,10 @@ class TestConversationPipeline:
 
 
 class TestHooksMerging:
-    """Merge hooks из config.hooks + middleware.get_hooks()."""
+    """Merge hooks from config.hooks + middleware.get_hooks()."""
 
     def test_merge_config_and_middleware_hooks(self) -> None:
-        """Hooks из config + SecurityGuard → merged registry."""
+        """Hooks from config + SecurityGuard -> merged registry."""
         config_hooks = HookRegistry()
 
         async def noop(**kwargs: Any) -> dict[str, Any]:

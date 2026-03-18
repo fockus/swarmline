@@ -1,19 +1,16 @@
-"""Тесты для DeepAgentsRuntime — Deep Agents runtime.
-
-Покрытые кейсы:
+"""Tests for DeepAgentsRuntime - Deep Agents runtime. Covered Cases:
 - Built-in tools filtering (frozenset, filter_builtin_tools)
 - Dependency check (_check_langchain_available)
 - run(): missing deps, happy path, empty response, exception, base_url, tool events
-- run(): built-in tools фильтруются внутри run()
-- run(): new_messages содержит assistant text
-- run(): multiple tool_call_finished → metrics.tool_calls_count
-- _build_lc_messages: user/assistant/system → LangChain messages
-- _build_llm: wrapper вокруг provider-aware builder
+- run(): built-in tools are filtered inside run()
+- run(): new_messages contains assistant text
+- run(): multiple tool_call_finished -> metrics.tool_calls_count
+- _build_lc_messages: user/assistant/system -> LangChain messages
+- _build_llm: wrapper around provider-aware builder
 - _stream_langchain: event parsing (on_chat_model_stream, on_tool_start, on_tool_end)
-- _stream_langchain: tool correlation (run_id → correlation_id)
-- create_langchain_tool: с executor, без executor (noop), dict-based executor
-- cleanup: noop
-"""
+- _stream_langchain: correlation tool (run_id -> correlation_id)
+- create_langchain_tool: with executor, without executor (noop), dict-based executor
+- cleanup: noop"""
 
 from __future__ import annotations
 
@@ -39,7 +36,7 @@ class TestBuiltinToolsFiltering:
     """DeepAgentsRuntime built-ins policy."""
 
     def test_builtin_tools_list_complete(self) -> None:
-        """Все опасные built-in tools DeepAgents перечислены."""
+        """All dangerous built-in tools DeepAgents are listed."""
         expected = {
             "write_todos",
             "ls",
@@ -54,7 +51,7 @@ class TestBuiltinToolsFiltering:
         assert expected == DEEPAGENTS_NATIVE_BUILTIN_TOOLS
 
     def test_filter_removes_builtins(self) -> None:
-        """filter_builtin_tools убирает built-in tools."""
+        """filter_builtin_tools removes built-in tools."""
         tools = [
             ToolSpec(name="Bash", description="shell", parameters={}),
             ToolSpec(name="read_file", description="read file", parameters={}),
@@ -69,7 +66,7 @@ class TestBuiltinToolsFiltering:
         assert "calculate_goal_plan" in names
 
     def test_filter_preserves_safe_tools(self) -> None:
-        """filter_builtin_tools сохраняет безопасные инструменты."""
+        """filter_builtin_tools saves safe tools."""
         tools = [
             ToolSpec(name="mcp__finuslugi__deposits", description="d", parameters={}),
             ToolSpec(name="assess_health_score", description="h", parameters={}, is_local=True),
@@ -78,11 +75,11 @@ class TestBuiltinToolsFiltering:
         assert len(filtered) == 2
 
     def test_filter_empty_list(self) -> None:
-        """filter_builtin_tools на пустом списке → пустой список."""
+        """filter_builtin_tools on empty list -> empty list."""
         assert DeepAgentsRuntime.filter_builtin_tools([]) == []
 
     def test_all_builtins_removed(self) -> None:
-        """Каждый builtin из frozenset действительно фильтруется."""
+        """Each builtin from frozenset is indeed filtered."""
         tools = [
             ToolSpec(name=name, description="x", parameters={})
             for name in DEEPAGENTS_NATIVE_BUILTIN_TOOLS
@@ -131,10 +128,10 @@ class TestBuiltinToolsFiltering:
 
 
 class TestDependencyCheck:
-    """Проверка наличия langchain deps."""
+    """Check availability of langchain deps."""
 
     def test_check_with_missing_deps(self) -> None:
-        """Если langchain не установлен — возвращает RuntimeErrorData."""
+        """If langchain is not installed - returns RuntimeErrorData."""
         with patch.dict("sys.modules", {"langchain_core": None}):
             error = _check_langchain_available()
             if error is not None:
@@ -142,7 +139,7 @@ class TestDependencyCheck:
                 assert "langchain" in error.message.lower()
 
     def test_check_with_both_missing(self) -> None:
-        """Оба модуля отсутствуют — ошибка."""
+        """Both modules are missing - error."""
         with patch.dict(
             "sys.modules",
             {"langchain_core": None, "deepagents": None},
@@ -153,16 +150,16 @@ class TestDependencyCheck:
 
 
 # ---------------------------------------------------------------------------
-# Runtime run() — основной pipeline
+# Runtime run() - main pipeline
 # ---------------------------------------------------------------------------
 
 
 class TestDeepAgentsRuntimeRun:
-    """DeepAgentsRuntime.run() — полный pipeline."""
+    """DeepAgentsRuntime.run() - full pipeline."""
 
     @pytest.mark.asyncio
     async def test_run_without_deps_yields_error(self) -> None:
-        """Если deps отсутствуют → error event."""
+        """If deps are missing -> error event."""
         from cognitia.runtime.types import RuntimeErrorData
 
         runtime = DeepAgentsRuntime()
@@ -185,7 +182,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_emits_assistant_delta_before_final(self) -> None:
-        """run() стримит assistant_delta перед final."""
+        """run() streams assistant_delta before final."""
         runtime = DeepAgentsRuntime()
 
         async def _fake_stream(**kwargs):
@@ -211,7 +208,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_empty_response_yields_final(self) -> None:
-        """Пустой ответ → только final с пустым текстом."""
+        """Empty response -> only final with empty text."""
         runtime = DeepAgentsRuntime()
 
         async def _fake_stream(**kwargs):
@@ -236,7 +233,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_exception_yields_error(self) -> None:
-        """Ошибка в LangChain → error event, без final."""
+        """Error in LangChain -> error event, without final."""
         runtime = DeepAgentsRuntime()
 
         async def _failing_stream(**kwargs):
@@ -261,7 +258,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_passes_base_url(self) -> None:
-        """base_url из config пробрасывается в _stream_langchain."""
+        """base_url from config is forwarded in _stream_langchain."""
         cfg = RuntimeConfig(
             runtime_name="deepagents",
             model="test",
@@ -290,7 +287,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_parses_structured_output_when_configured(self) -> None:
-        """Если output_format задан и финальный текст — JSON, structured_output заполняется."""
+        """If output_format is specified and the final text is JSON, structured_output is populated."""
         cfg = RuntimeConfig(
             runtime_name="deepagents",
             output_format={
@@ -323,7 +320,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_hybrid_uses_native_stream(self) -> None:
-        """hybrid mode route'ится в native upstream path."""
+        """hybrid mode route is in native upstream path."""
         runtime = DeepAgentsRuntime(
             config=RuntimeConfig(
                 runtime_name="deepagents",
@@ -358,7 +355,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_portable_uses_compat_stream(self) -> None:
-        """portable mode остаётся на compatibility path."""
+        """portable mode remains on compatibility path."""
         runtime = DeepAgentsRuntime(
             config=RuntimeConfig(runtime_name="deepagents", feature_mode="portable"),
         )
@@ -389,7 +386,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_missing_provider_package_yields_typed_error(self) -> None:
-        """Отсутствующий provider package → dependency_missing, а не runtime_crash."""
+        """Missing provider package -> dependency_missing, not runtime_crash."""
         runtime = DeepAgentsRuntime(
             config=RuntimeConfig(runtime_name="deepagents", model="openai:gpt-4o"),
         )
@@ -413,7 +410,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_tool_events_in_stream(self) -> None:
-        """Tool events (started/finished) пробрасываются + metrics."""
+        """Tool events (started/finished) are forwarded + metrics."""
         runtime = DeepAgentsRuntime()
 
         async def _fake_stream_with_tools(**kwargs):
@@ -445,7 +442,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_filters_builtins_from_active_tools(self) -> None:
-        """run() в portable mode фильтрует built-in tools перед _stream_langchain."""
+        """run() in portable mode filters built-in tools before _stream_langchain."""
         runtime = DeepAgentsRuntime()
 
         captured_tools: list[ToolSpec] = []
@@ -483,7 +480,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_keeps_builtins_in_hybrid_mode(self) -> None:
-        """run() в hybrid mode маппит built-ins в native path и не дублирует их как custom tools."""
+        """run() in hybrid mode maps built-ins in native path and does not duplicate them as custom tools."""
         cfg = RuntimeConfig(
             runtime_name="deepagents",
             feature_mode="hybrid",
@@ -523,7 +520,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_native_first_prefers_upstream_builtin_over_local_collision(self) -> None:
-        """native_first не пробрасывает colliding local tool с именем native built-in."""
+        """native_first does not forward colliding local tool named native built-in."""
         cfg = RuntimeConfig(
             runtime_name="deepagents",
             feature_mode="native_first",
@@ -561,7 +558,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_hybrid_with_native_builtins_requires_backend(self) -> None:
-        """Native built-ins без backend должны вернуть typed error вместо StateBackend fallback."""
+        """Native built-ins without backend should return typed error instead of StateBackend fallback."""
         runtime = DeepAgentsRuntime(
             config=RuntimeConfig(runtime_name="deepagents", feature_mode="hybrid"),
         )
@@ -582,7 +579,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_new_messages_in_final(self) -> None:
-        """final event содержит new_messages с assistant text."""
+        """final event contains new_messages with assistant text."""
         runtime = DeepAgentsRuntime()
 
         async def _fake_stream(**kwargs):
@@ -603,7 +600,7 @@ class TestDeepAgentsRuntimeRun:
             final = events[-1]
             new_msgs = final.data["new_messages"]
             assert len(new_msgs) == 1
-            # Message может быть dict или объект с полями role/content
+            # Message can be a dict or an object with role/content fields
             msg = new_msgs[0]
             if isinstance(msg, dict):
                 assert msg["role"] == "assistant"
@@ -614,7 +611,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_preserves_tool_history_in_final(self) -> None:
-        """tool_call_* events должны попадать в final.new_messages."""
+        """tool_call_* events should fall into final.new_messages."""
         runtime = DeepAgentsRuntime()
 
         async def _fake_stream(**kwargs):
@@ -676,7 +673,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_multiple_tool_calls_counted(self) -> None:
-        """Несколько tool_call_finished → metrics.tool_calls_count суммируется."""
+        """Not how much tool_call_finished -> metrics.tool_calls_count is summed up."""
         runtime = DeepAgentsRuntime()
 
         async def _multi_tools(**kwargs):
@@ -705,7 +702,7 @@ class TestDeepAgentsRuntimeRun:
 
     @pytest.mark.asyncio
     async def test_run_uses_override_config(self) -> None:
-        """per-call config имеет приоритет над default."""
+        """per-call config takes precedence over default."""
         default_cfg = RuntimeConfig(runtime_name="deepagents", model="default-model")
         override_cfg = RuntimeConfig(runtime_name="deepagents", model="override-model")
         runtime = DeepAgentsRuntime(config=default_cfg)
@@ -735,13 +732,13 @@ class TestDeepAgentsRuntimeRun:
 
 
 class TestBuildLcMessages:
-    """_build_lc_messages — конвертация cognitia Message → LangChain."""
+    """_build_lc_messages - conversion of cognitia Message -> LangChain."""
 
     def _make_runtime(self) -> DeepAgentsRuntime:
         return DeepAgentsRuntime()
 
     def test_system_prompt_first(self) -> None:
-        """System prompt идёт первым как SystemMessage."""
+        """System prompt comes first as SystemMessage."""
         runtime = self._make_runtime()
         try:
             from langchain_core.messages import SystemMessage
@@ -826,7 +823,7 @@ class TestBuildLcMessages:
         assert lc[2].content == "4"
 
     def test_system_message_in_history(self) -> None:
-        """system в history → SystemMessage (в дополнение к system_prompt)."""
+        """system in history -> SystemMessage (in addition to system_prompt)."""
         runtime = self._make_runtime()
         try:
             from langchain_core.messages import SystemMessage
@@ -841,7 +838,7 @@ class TestBuildLcMessages:
         assert len(system_msgs) == 2
 
     def test_mixed_conversation(self) -> None:
-        """Микс ролей → правильный порядок."""
+        """Mix of roles -> correct order."""
         runtime = self._make_runtime()
         try:
             from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -862,7 +859,7 @@ class TestBuildLcMessages:
         assert isinstance(lc[3], HumanMessage)
 
     def test_empty_history(self) -> None:
-        """Пустая history → только system prompt."""
+        """Empty history -> system prompt only."""
         runtime = self._make_runtime()
         try:
             from langchain_core.messages import SystemMessage
@@ -880,10 +877,10 @@ class TestBuildLcMessages:
 
 
 class TestBuildLlm:
-    """_build_llm — wrapper вокруг provider-aware builder."""
+    """_build_llm - wrapper around provider-aware builder."""
 
     def test_build_llm_delegates_to_provider_builder(self) -> None:
-        """_build_llm делегирует в отдельный provider resolver."""
+        """_build_llm delegates in separate provider resolver."""
         runtime = DeepAgentsRuntime()
         sentinel = object()
 
@@ -903,11 +900,11 @@ class TestBuildLlm:
 
 
 class TestStreamLangchain:
-    """_stream_langchain — парсинг LangChain astream_events → RuntimeEvent."""
+    """_stream_langchain - parsing LangChain astream_events -> RuntimeEvent."""
 
     @pytest.mark.asyncio
     async def test_on_chat_model_stream_yields_delta(self) -> None:
-        """on_chat_model_stream с текстовым chunk → assistant_delta."""
+        """on_chat_model_stream with text chunk -> assistant_delta."""
         runtime = DeepAgentsRuntime()
 
         mock_chunk = MagicMock()
@@ -986,7 +983,7 @@ class TestStreamLangchain:
 
     @pytest.mark.asyncio
     async def test_tool_correlation_id_linked(self) -> None:
-        """correlation_id из started пробрасывается в finished через run_id."""
+        """correlation_id from started is forwarded in finished through run_id."""
         runtime = DeepAgentsRuntime()
         mock_runnable = AsyncMock()
 
@@ -1016,11 +1013,11 @@ class TestStreamLangchain:
 
     @pytest.mark.asyncio
     async def test_empty_chunk_content_ignored(self) -> None:
-        """on_chat_model_stream с пустым content → ничего не yield'ит."""
+        """on_chat_model_stream with empty content -> nothing not yield."""
         runtime = DeepAgentsRuntime()
 
         mock_chunk = MagicMock()
-        mock_chunk.content = ""  # пустой
+        mock_chunk.content = ""  # empty
 
         mock_runnable = AsyncMock()
 
@@ -1046,11 +1043,11 @@ class TestStreamLangchain:
 
     @pytest.mark.asyncio
     async def test_non_string_content_ignored(self) -> None:
-        """on_chat_model_stream с не-строковым content (list) → игнорируется."""
+        """on_chat_model_stream with not-string content (list) -> is ignored."""
         runtime = DeepAgentsRuntime()
 
         mock_chunk = MagicMock()
-        mock_chunk.content = [{"type": "tool_use"}]  # не строка
+        mock_chunk.content = [{"type": "tool_use"}]  # not string
 
         mock_runnable = AsyncMock()
 
@@ -1076,7 +1073,7 @@ class TestStreamLangchain:
 
     @pytest.mark.asyncio
     async def test_tools_bound_when_provided(self) -> None:
-        """Если tools переданы — вызывается llm.bind_tools()."""
+        """If tools are passed, llm.bind_tools() is called."""
         runtime = DeepAgentsRuntime()
         mock_llm = MagicMock()
         mock_bound = AsyncMock()
@@ -1107,7 +1104,7 @@ class TestStreamLangchain:
 
     @pytest.mark.asyncio
     async def test_no_tools_no_bind(self) -> None:
-        """Без tools — llm используется напрямую (без bind_tools)."""
+        """Without tools - llm uses directly (without bind_tools)."""
         runtime = DeepAgentsRuntime()
         mock_llm = MagicMock()
 
@@ -1138,10 +1135,10 @@ class TestStreamLangchain:
 
 
 class TestCreateLangchainTool:
-    """create_langchain_tool — обёртка ToolSpec в LangChain."""
+    """create_langchain_tool - wrapper ToolSpec in LangChain."""
 
     def test_create_tool_requires_langchain(self) -> None:
-        """create_langchain_tool требует langchain-core."""
+        """create_langchain_tool requires langchain-core."""
         spec = ToolSpec(name="test_tool", description="test", parameters={})
         try:
             tool = create_langchain_tool(spec)
@@ -1151,7 +1148,7 @@ class TestCreateLangchainTool:
             pytest.skip("langchain_core не установлен")
 
     def test_create_tool_with_executor(self) -> None:
-        """create_langchain_tool с кастомным executor."""
+        """create_langchain_tool with custom executor."""
         spec = ToolSpec(name="calc", description="calculator", parameters={}, is_local=True)
 
         async def my_executor(**kwargs):
@@ -1164,7 +1161,7 @@ class TestCreateLangchainTool:
             pytest.skip("langchain_core не установлен")
 
     def test_create_tool_without_executor(self) -> None:
-        """create_langchain_tool без executor — noop, не падает."""
+        """create_langchain_tool without executor - noop, not crashes."""
         spec = ToolSpec(name="noop", description="noop", parameters={})
         try:
             tool = create_langchain_tool(spec, executor=None)
@@ -1174,7 +1171,7 @@ class TestCreateLangchainTool:
 
     @pytest.mark.asyncio
     async def test_noop_executor_returns_error_json(self) -> None:
-        """Tool без executor → coroutine возвращает JSON с ошибкой."""
+        """Tool without executor -> coroutine returns JSON with error."""
         spec = ToolSpec(name="noexec", description="d", parameters={})
         try:
             tool = create_langchain_tool(spec, executor=None)
@@ -1185,7 +1182,7 @@ class TestCreateLangchainTool:
 
     @pytest.mark.asyncio
     async def test_executor_receives_kwargs(self) -> None:
-        """Executor получает kwargs из tool call."""
+        """Executor gets kwargs from tool call."""
         spec = ToolSpec(name="adder", description="add", parameters={})
         received = {}
 
@@ -1202,7 +1199,7 @@ class TestCreateLangchainTool:
 
     @pytest.mark.asyncio
     async def test_executor_dict_fallback(self) -> None:
-        """Executor с сигнатурой (dict) → backward compat."""
+        """Executor with signature (dict) -> backward compat."""
         spec = ToolSpec(name="old_style", description="d", parameters={})
         received = {}
 
@@ -1219,7 +1216,7 @@ class TestCreateLangchainTool:
 
     @pytest.mark.asyncio
     async def test_executor_returns_dict_serialized(self) -> None:
-        """Executor возвращает dict → сериализуется в JSON."""
+        """Executor returns dict -> serialized in JSON."""
         import json
 
         spec = ToolSpec(name="json_tool", description="d", parameters={})
@@ -1242,16 +1239,16 @@ class TestCreateLangchainTool:
 
 
 class TestDeepAgentsCleanup:
-    """Cleanup — stateless, нечего очищать."""
+    """Cleanup - stateless, nothing to clean."""
 
     @pytest.mark.asyncio
     async def test_cleanup_noop(self) -> None:
         runtime = DeepAgentsRuntime()
-        await runtime.cleanup()  # не должно бросить
+        await runtime.cleanup()  # shouldn't quit
 
     @pytest.mark.asyncio
     async def test_cleanup_idempotent(self) -> None:
-        """Многократный cleanup — безопасен."""
+        """Repeated cleanup is safe."""
         runtime = DeepAgentsRuntime()
         await runtime.cleanup()
         await runtime.cleanup()

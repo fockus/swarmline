@@ -1,6 +1,4 @@
-"""Тесты CommandRegistry v2 — typed params, YAML discovery, LLM tools.
-
-CRP-5.1: расширение CommandRegistry с backward compatibility.
+"""Tests CommandRegistry v2 - typed params, YAML discovery, LLM tools. CRP-5.1: rasshirenie CommandRegistry with backward compatibility.
 """
 
 from __future__ import annotations
@@ -13,10 +11,10 @@ from cognitia.commands.registry import CommandRegistry
 
 
 class TestCommandTypedParams:
-    """JSON Schema параметры валидируются при execute."""
+    """JSON Schema parameters validiruyutsya pri execute."""
 
     async def test_command_typed_params_stored_in_command_def(self) -> None:
-        """JSON Schema сохраняется в CommandDef.parameters и доступна через resolve."""
+        """JSON Schema is preserved in CommandDef.parameters and dostupna cherez resolve."""
         reg = CommandRegistry()
 
         async def create_topic(name: str, **kwargs: Any) -> str:
@@ -39,14 +37,14 @@ class TestCommandTypedParams:
 
         cmd = reg.resolve("topic.new")
         assert cmd is not None
-        # Схема сохранена без изменений для передачи LLM
+        # Shema sohranotna without izmenotniy for peredachi LLM
         assert cmd.parameters is not None
         assert cmd.parameters["type"] == "object"
         assert "name" in cmd.parameters["properties"]
         assert cmd.category == "agent"
 
     async def test_command_typed_params_validated(self) -> None:
-        """Команда с typed params выполняется с валидными аргументами."""
+        """Command with typed params runs with validnymi argumentami."""
         reg = CommandRegistry()
 
         async def create_topic(name: str, **kwargs: Any) -> str:
@@ -71,10 +69,10 @@ class TestCommandTypedParams:
 
 
 class TestCommandYamlAutoDiscovery:
-    """Commands из YAML загружаются автоматически."""
+    """Commands from YAML zagruzhayutsya avtomaticheski."""
 
     async def test_command_yaml_auto_discovery(self, tmp_path: Path) -> None:
-        """load_commands_from_yaml читает YAML-файл и возвращает list[LoadedCommand]."""
+        """load_commands_from_yaml chitaet YAML-file and returns list[LoadedCommand]."""
         from cognitia.commands.loader import load_commands_from_yaml
 
         yaml_content = """
@@ -100,7 +98,7 @@ commands:
         commands = load_commands_from_yaml(str(yaml_file))
 
         assert len(commands) == 2
-        # load_commands_from_yaml возвращает list[LoadedCommand] — dataclass с атрибутами
+        # load_commands_from_yaml returns list[LoadedCommand] - dataclass with atributami
         assert commands[0].name == "deploy.staging"
         assert commands[0].category == "admin"
         assert commands[0].description == "Deploy to staging environment"
@@ -109,7 +107,7 @@ commands:
     async def test_command_yaml_with_parameters_loaded_correctly(
         self, tmp_path: Path
     ) -> None:
-        """YAML-параметры (JSON Schema) корректно десериализуются в LoadedCommand.parameters."""
+        """YAML-parameters (JSON Schema) correctly deserializuyutsya in LoadedCommand.parameters."""
         from cognitia.commands.loader import load_commands_from_yaml
 
         yaml_content = """
@@ -132,17 +130,17 @@ commands:
         assert len(commands) == 1
 
         cmd = commands[0]
-        # LoadedCommand — dataclass, доступ через атрибуты
+        # LoadedCommand - dataclass, dostup cherez atributy
         assert cmd.name == "test.cmd"
         assert cmd.parameters is not None
         assert "arg1" in cmd.parameters.get("properties", {})
 
 
 class TestCommandToToolDefinition:
-    """CommandSpec → ToolDefinition для LLM."""
+    """CommandSpec -> ToolDefinition for LLM."""
 
     def test_command_to_tool_definition(self) -> None:
-        """to_tool_definitions() возвращает list[dict] с name, description, parameters."""
+        """to_tool_definitions() returns list[dict] with name, description, parameters."""
         reg = CommandRegistry()
 
         async def handler(**kwargs: Any) -> str:
@@ -166,13 +164,13 @@ class TestCommandToToolDefinition:
         assert len(tool_defs) == 1
 
         tool = tool_defs[0]
-        # to_tool_definitions возвращает list[dict], не объекты с атрибутами
+        # to_tool_definitions returns list[dict], not obekty with atributami
         assert tool["name"] == "data.query"
         assert tool["description"] == "Query data from database"
         assert "sql" in json.dumps(tool["parameters"])
 
     def test_command_to_tool_definition_multiple_commands(self) -> None:
-        """to_tool_definitions() возвращает tool definition для каждой команды."""
+        """to_tool_definitions() returns tool definition for kazhdoy commands."""
         reg = CommandRegistry()
 
         async def h(**kwargs: Any) -> str:
@@ -189,10 +187,10 @@ class TestCommandToToolDefinition:
 
 
 class TestCommandBackwardCompatible:
-    """Старый string API работает без изменений."""
+    """Legacy string API works without izmenotniy."""
 
     async def test_command_backward_compatible(self) -> None:
-        """Старый API (без parameters/category) выполняется и возвращает результат."""
+        """Legacy API (without parameters/category) runs and returns result."""
         reg = CommandRegistry()
 
         async def old_handler(*args: Any, **kwargs: Any) -> str:
@@ -204,7 +202,7 @@ class TestCommandBackwardCompatible:
         assert "Old handler" in result
 
     async def test_command_alias_resolution(self) -> None:
-        """Алиасы работают — execute('tn') вызывает команду 'topic.new'."""
+        """Aliasy work - execute('tn') vyzyvaet komandu 'topic.new'."""
         reg = CommandRegistry()
 
         async def handler(**kwargs: Any) -> str:
@@ -216,7 +214,7 @@ class TestCommandBackwardCompatible:
         assert result == "aliased"
 
     def test_command_parameters_none_by_default(self) -> None:
-        """Команда без parameters имеет parameters=None (backward compat)."""
+        """Command without parameters imeet parameters=None (backward compat)."""
         reg = CommandRegistry()
 
         async def h(**kwargs: Any) -> str:
@@ -230,10 +228,10 @@ class TestCommandBackwardCompatible:
 
 
 class TestCommandCategoriesListed:
-    """list_commands(category='admin') фильтрует."""
+    """list_commands(category='admin') filtruet."""
 
     def test_command_categories_listed(self) -> None:
-        """list_commands(category='admin') возвращает только команды с category='admin'."""
+        """list_commands(category='admin') returns tolko commands with category='admin'."""
         reg = CommandRegistry()
 
         async def h(**kw: Any) -> str:
@@ -251,7 +249,7 @@ class TestCommandCategoriesListed:
         assert len(all_cmds) == 3
 
     def test_command_list_without_filter_returns_all(self) -> None:
-        """list_commands() без аргументов возвращает все зарегистрированные команды."""
+        """list_commands() without argumentov returns vse zaregistrirovannye commands."""
         reg = CommandRegistry()
 
         async def h(**kw: Any) -> str:
@@ -264,7 +262,7 @@ class TestCommandCategoriesListed:
         assert len(reg.list_commands()) == 3
 
     def test_command_nonexistent_category_returns_empty(self) -> None:
-        """list_commands(category='unknown') возвращает пустой список."""
+        """list_commands(category='unknown') returns empty list."""
         reg = CommandRegistry()
 
         async def h(**kw: Any) -> str:

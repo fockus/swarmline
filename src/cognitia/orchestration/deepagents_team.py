@@ -1,8 +1,4 @@
-"""DeepAgentsTeamOrchestrator — team mode с MessageBus для коммуникации.
-
-Lead + workers через SubagentOrchestrator.
-Сообщения доставляются через MessageBus (inbox/outbox).
-"""
+"""Deepagents Team module."""
 
 from __future__ import annotations
 
@@ -26,13 +22,13 @@ from cognitia.orchestration.team_types import (
 
 
 class DeepAgentsTeamOrchestrator(BaseTeamOrchestrator):
-    """TeamOrchestrator для DeepAgents — supervisor pattern + MessageBus."""
+    """TeamOrchestrator for DeepAgents - supervisor pattern + MessageBus."""
 
     def __init__(self, subagent_orchestrator: SubagentOrchestrator) -> None:
         super().__init__(subagent_orchestrator)
 
     async def start(self, config: TeamConfig, task: str) -> str:
-        """Запустить команду: spawn workers + создать MessageBus."""
+        """Start."""
         team_id = str(uuid.uuid4())
         worker_ids: dict[str, str] = {}
         bus = MessageBus()
@@ -80,7 +76,7 @@ class DeepAgentsTeamOrchestrator(BaseTeamOrchestrator):
         return team_id
 
     def _build_resume_task(self, state: InternalTeamState, worker_name: str) -> str:
-        """DeepAgents resume: повторяем compose как и при первом spawn."""
+        """Build resume task."""
         return compose_worker_task(
             config=state.config,
             worker_name=worker_name,

@@ -1,7 +1,7 @@
 """YAML command definitions loader.
 
-Загружает определения команд из YAML файлов для auto-discovery.
-Поддерживает: single file, directory scan, single-command и multi-command форматы.
+Loads command definitions from YAML files for auto-discovery.
+Supports: single file, directory scan, single-command and multi-command formats.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ import yaml
 
 @dataclass
 class LoadedCommand:
-    """Определение команды, загруженное из YAML.
+    """Command definition loaded from YAML.
 
-    Поддерживает как атрибутный (cmd.name), так и dict-подобный (cmd['name']) доступ
-    для backward compatibility с кодом, ожидающим dict.
+    Supports both attribute access (cmd.name) and dict-like access (cmd['name'])
+    for backward compatibility with code expecting a dict.
     """
 
     name: str
@@ -29,12 +29,12 @@ class LoadedCommand:
     aliases: list[str] = field(default_factory=list)
 
     def __getitem__(self, key: str) -> Any:
-        """Dict-like доступ: cmd['name'], cmd['category']."""
+        """Dict-like access: cmd['name'], cmd['category']."""
         return getattr(self, key)
 
 
 def _parse_yaml_data(data: Any) -> list[LoadedCommand]:
-    """Парсит YAML data в список LoadedCommand."""
+    """Parse YAML data into a list of LoadedCommand objects."""
     if not isinstance(data, dict):
         return []
 
@@ -74,18 +74,18 @@ def load_commands_from_yaml(
     path: str | Path,
     handler_registry: dict[str, Callable[..., Awaitable[str]]] | None = None,
 ) -> list[LoadedCommand]:
-    """Загрузить определения команд из YAML файла или директории.
+    """Load command definitions from a YAML file or directory.
 
-    Если path — директория: сканирует все .yaml/.yml файлы (single-command формат).
-    Если path — файл: поддерживает multi-command (commands: [...]) и
-    single-command (name: ...) форматы.
+    If path is a directory: scans all .yaml/.yml files (single-command format).
+    If path is a file: supports multi-command (commands: [...]) and
+    single-command (name: ...) formats.
 
     Args:
-        path: Путь к директории или YAML-файлу (str или Path).
-        handler_registry: Зарезервировано для совместимости с auto_discover_commands.
+        path: Path to a directory or YAML file (str or Path).
+        handler_registry: Reserved for compatibility with auto_discover_commands.
 
     Returns:
-        Список LoadedCommand с атрибутным и dict-подобным (cmd['name']) доступом.
+        List of LoadedCommand objects with attribute and dict-like (cmd['name']) access.
     """
     p = Path(path)
 
@@ -101,7 +101,7 @@ def load_commands_from_yaml(
 
 
 def _load_single_file(path: Path) -> list[LoadedCommand]:
-    """Загрузить команды из одного YAML файла. Возвращает [] при ошибке."""
+    """Load commands from a single YAML file. Returns [] on error."""
     try:
         data = yaml.safe_load(path.read_text())
     except Exception:
@@ -114,18 +114,18 @@ def auto_discover_commands(
     directory: Path,
     handler_registry: dict[str, Callable[..., Awaitable[str]]] | None = None,
 ) -> int:
-    """Discover и зарегистрировать команды из YAML-директории в CommandRegistry.
+    """Discover and register commands from a YAML directory in CommandRegistry.
 
-    Загружает LoadedCommand из каждого .yaml/.yml файла в директории
-    и регистрирует их через registry.add().
+    Loads LoadedCommand objects from each .yaml/.yml file in the directory
+    and registers them via registry.add().
 
     Args:
-        registry: CommandRegistry для регистрации команд.
-        directory: Директория с YAML-файлами (single-command формат).
-        handler_registry: Опциональный маппинг имя → handler.
+        registry: CommandRegistry used to register commands.
+        directory: Directory with YAML files (single-command format).
+        handler_registry: Optional name -> handler mapping.
 
     Returns:
-        Количество успешно загруженных и зарегистрированных команд.
+        Number of successfully loaded and registered commands.
     """
     effective_handlers: dict[str, Callable[..., Awaitable[str]]] = handler_registry or {}
     commands = load_commands_from_yaml(directory, effective_handlers)

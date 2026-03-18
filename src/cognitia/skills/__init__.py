@@ -1,7 +1,7 @@
-"""Модуль скилов — SkillRegistry + типы.
+"""Skills module - SkillRegistry + types.
 
-YamlSkillLoader перенесён в infrastructure layer приложения.
-Здесь — чистый registry без IO.
+YamlSkillLoader has been moved to the application's infrastructure layer.
+This module contains only the pure registry without IO.
 """
 
 from __future__ import annotations

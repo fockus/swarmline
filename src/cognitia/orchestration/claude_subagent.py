@@ -1,4 +1,4 @@
-"""ClaudeSubagentOrchestrator — SDK-specific orchestration для subagent-ов."""
+"""ClaudeSubagentOrchestrator — SDK-specific orchestration for subagents."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
 
 
 class ClaudeSubagentOrchestrator(ThinSubagentOrchestrator):
-    """SubagentOrchestrator с execution path через Claude RuntimeAdapter.
+    """SubagentOrchestrator with execution path via Claude RuntimeAdapter.
 
-    Lifecycle (spawn/cancel/wait/status) берётся из ThinSubagentOrchestrator,
-    а run(task) выполняется через SDK stream events.
+    Lifecycle (spawn/cancel/wait/status) is taken from ThinSubagentOrchestrator,
+    and run(task) is performed via SDK stream events.
     """
 
     def __init__(
@@ -34,7 +34,7 @@ class ClaudeSubagentOrchestrator(ThinSubagentOrchestrator):
 
 
 class _ClaudeWorkerRuntime:
-    """Запуск subagent через RuntimeAdapter.stream_reply()."""
+    """Run subagent via RuntimeAdapter.stream_reply()."""
 
     def __init__(
         self,
@@ -46,7 +46,7 @@ class _ClaudeWorkerRuntime:
         self._adapter_factory = adapter_factory
 
     async def run(self, task: str) -> str:
-        """Выполнить задачу через Claude SDK stream."""
+        """Complete the task via the Claude SDK stream."""
         adapter = self._adapter_factory(self._spec)
         if hasattr(adapter, "connect"):
             await adapter.connect()

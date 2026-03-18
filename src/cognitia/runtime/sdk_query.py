@@ -1,19 +1,4 @@
-"""SDK Query — обёртки для one-shot и streaming запросов к Claude Code.
-
-Предоставляет простой async API для single-shot запросов без
-управления subprocess lifecycle (ClaudeSDKClient).
-
-Пример:
-    from cognitia.runtime.sdk_query import one_shot_query
-
-    result = await one_shot_query(
-        "What is 2+2?",
-        system_prompt="Be concise",
-        model="sonnet",
-    )
-    print(result.text)
-    print(result.total_cost_usd)
-"""
+"""Sdk Query module."""
 
 from __future__ import annotations
 
@@ -43,7 +28,7 @@ from cognitia.runtime.adapter import (
 
 @dataclass
 class QueryResult:
-    """Результат one-shot запроса."""
+    """Query Result result."""
 
     text: str = ""
     session_id: str | None = None
@@ -119,28 +104,7 @@ async def one_shot_query(
     env: dict[str, str] | None = None,
     setting_sources: list[str] | None = None,
 ) -> QueryResult:
-    """Выполнить one-shot запрос к Claude Code.
-
-    Args:
-        prompt: текст запроса.
-        system_prompt: системный промпт.
-        model: модель (например, "sonnet", "opus").
-        permission_mode: режим permissions.
-        cwd: рабочая директория.
-        output_format: JSON Schema для structured output.
-        max_turns: максимальное число turn'ов.
-        mcp_servers: MCP серверы.
-        allowed_tools: разрешённые инструменты.
-        hooks: SDK hooks.
-        max_budget_usd: лимит бюджета.
-        fallback_model: fallback модель.
-        betas: SDK beta-фичи.
-        env: переменные окружения для subprocess.
-        setting_sources: источники project/user/local settings.
-
-    Returns:
-        QueryResult с текстом, метриками и structured_output.
-    """
+    """One shot query."""
     options = _build_options(
         system_prompt=system_prompt,
         model=model,
@@ -198,13 +162,7 @@ async def stream_one_shot_query(
     setting_sources: list[str] | None = None,
     include_partial_messages: bool = False,
 ) -> AsyncIterator[StreamEvent]:
-    """Выполнить one-shot запрос и отдать unified StreamEvent.
-
-    Безопасный default: raw SDK partial events не обрабатываются, чтобы
-    не дублировать текст с финальными AssistantMessage. Для native parsing
-    partial events используйте include_partial_messages вместе с отдельной
-    дедупликацией на app/runtime уровне.
-    """
+    """Stream one shot query."""
     options = _build_options(
         system_prompt=system_prompt,
         model=model,

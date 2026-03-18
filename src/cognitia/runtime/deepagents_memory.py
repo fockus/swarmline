@@ -1,4 +1,4 @@
-"""Native thread/checkpointer/store helpers для DeepAgents."""
+"""Native thread/checkpointer/store helpers for DeepAgents."""
 
 from __future__ import annotations
 
@@ -8,13 +8,13 @@ from cognitia.runtime.types import RuntimeErrorData
 
 
 def _build_resume_command(resume_value: Any) -> Any:
-    """Собрать langgraph Command lazily, чтобы base-install оставался import-safe."""
+    """Build a langgraph Command lazily so the base install stays import-safe."""
     try:
         from langgraph.types import Command  # type: ignore[import-not-found]
     except ImportError as exc:
         raise RuntimeError(
-            "DeepAgents native resume требует optional dependency `langgraph` "
-            "(установите `cognitia[deepagents]`)."
+            "DeepAgents native resume requires the optional dependency `langgraph` "
+            "(install `cognitia[deepagents]`)."
         ) from exc
     return Command(resume=resume_value)
 
@@ -22,11 +22,11 @@ def _build_resume_command(resume_value: Any) -> Any:
 def validate_native_state_config(
     native_config: dict[str, Any],
 ) -> RuntimeErrorData | None:
-    """Проверить совместимость native thread state config."""
+    """Check native thread state config compatibility."""
     if native_config.get("resume") is not None and native_config.get("checkpointer") is None:
         return RuntimeErrorData(
             kind="capability_unsupported",
-            message=("DeepAgents native resume требует checkpointer в native_config."),
+            message=("DeepAgents native resume requires a checkpointer in native_config."),
             recoverable=False,
         )
     return None
@@ -37,7 +37,7 @@ def build_native_invocation(
     messages: list[Any],
     native_config: dict[str, Any],
 ) -> tuple[Any, dict[str, Any], dict[str, Any]]:
-    """Собрать graph input/config/native metadata для native DeepAgents path."""
+    """Build graph input/config/native metadata for the native DeepAgents path."""
     thread_id = native_config.get("thread_id")
     checkpointer = native_config.get("checkpointer")
     store = native_config.get("store")
@@ -68,7 +68,7 @@ def build_native_invocation(
 
 
 def build_native_state_notice(native_metadata: dict[str, Any]) -> str | None:
-    """Явный notice, когда native thread semantics отличаются от portable history replay."""
+    """Explicit notice when native thread semantics differ from portable history replay."""
     if native_metadata.get("history_source") != "native_thread" and not native_metadata.get(
         "resume_requested"
     ):

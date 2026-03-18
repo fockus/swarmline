@@ -1,6 +1,4 @@
-"""TDD RED: GenericWorkflowEngine — pluggable VerifierPort + ExecutorPort.
-
-CRP-5.2: Обобщение CodeWorkflowEngine для произвольных verifiers.
+"""TDD RED: GenericWorkflowEngine - pluggable VerifierPort + ExecutorPort. CRP-5.2: Obobshchenie CodeWorkflowEngine for proizvolnyh verifiers.
 """
 
 from __future__ import annotations

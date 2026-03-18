@@ -1,9 +1,4 @@
-"""VerifierPort — pluggable verification protocol.
-
-Обобщённый Protocol для верификации результатов.
-Не привязан к code-specific проверкам (в отличие от CodeVerifier).
-Используется GenericWorkflowEngine для произвольных verify/retry loops.
-"""
+"""Verifier Port module."""
 
 from __future__ import annotations
 

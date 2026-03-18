@@ -1,6 +1,4 @@
-"""Тесты DeepAgentsPlannerMode — TDD с мокнутым LangChain.
-
-Optional dependency: если langchain не установлен → ошибка.
+"""Tests DeepAgentsPlannerMode - TDD with mocknutym LangChain. Optional dependency: if langchain not ustanovlen -> error.
 """
 
 from __future__ import annotations
@@ -22,7 +20,7 @@ def _plan_json(goal: str = "test") -> str:
 
 
 class TestDeepAgentsPlannerGenerate:
-    """generate_plan с мокнутым LLM."""
+    """generate_plan with mocknutym LLM."""
 
     async def test_generate_plan(self) -> None:
         from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
@@ -112,7 +110,7 @@ class TestDeepAgentsPlannerGenerate:
         assert new_plan.status == "draft"
 
     def test_has_all_protocol_methods(self) -> None:
-        """DeepAgentsPlannerMode имеет все методы PlannerMode."""
+        """DeepAgentsPlannerMode imeet vse metody PlannerMode."""
         from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
 
         assert hasattr(DeepAgentsPlannerMode, "generate_plan")

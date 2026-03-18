@@ -1,7 +1,7 @@
-"""SummaryGenerator — генерация rolling summary из истории сообщений.
+"""SummaryGenerator - generate a rolling summary from message history.
 
-MVP: template-based (без LLM-вызова).
-Позже можно заменить на LLM-based реализацию через тот же Protocol.
+MVP: template-based (no LLM call).
+Can later be replaced with an LLM-based implementation via the same Protocol.
 """
 
 from __future__ import annotations
@@ -10,12 +10,12 @@ from cognitia.memory.types import MemoryMessage
 
 
 class TemplateSummaryGenerator:
-    """Template-based генератор summary (KISS для MVP).
+    """Template-based summary generator (KISS for the MVP).
 
-    Берёт последние N сообщений, обрезает длинные, формирует
-    краткий текстовый пересказ в формате:
-    - [user]: текст
-    - [assistant]: текст
+    Takes the last N messages, truncates long ones, and builds
+    a short textual summary in the format:
+    - [user]: text
+    - [assistant]: text
     """
 
     def __init__(
@@ -27,18 +27,18 @@ class TemplateSummaryGenerator:
         self._max_message_chars = max_message_chars
 
     def summarize(self, messages: list[MemoryMessage]) -> str:
-        """Сгенерировать summary из списка сообщений.
+        """Generate a summary from a list of messages.
 
         Args:
-            messages: Список сообщений (от старых к новым).
+            messages: List of messages (oldest to newest).
 
         Returns:
-            Текст summary или пустая строка если сообщений нет.
+            Summary text or an empty string if there are no messages.
         """
         if not messages:
             return ""
 
-        # Берём только последние N
+        # Take only the latest N messages
         recent = messages[-self._max_messages :]
 
         lines: list[str] = []

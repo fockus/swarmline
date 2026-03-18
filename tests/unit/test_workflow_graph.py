@@ -1,6 +1,4 @@
-"""TDD RED: WorkflowGraph — декларативные графы выполнения.
-
-CRP-4.1: linear, conditional, loop, parallel, subgraph, interrupt, mermaid.
+"""TDD RED: WorkflowGraph - deklarativnye grafy vypolnotniya. CRP-4.1: linear, conditional, loop, parallel, subgraph, interrupt, mermaid.
 """
 
 from __future__ import annotations
@@ -36,7 +34,7 @@ async def _failing_node(state: dict) -> dict:
 
 
 class TestWorkflowLinearExecution:
-    """A→B→C выполняется последовательно."""
+    """A->B->C runs sequentially."""
 
     async def test_workflow_linear_execution(self) -> None:
         from cognitia.orchestration.workflow_graph import WorkflowGraph
@@ -100,7 +98,7 @@ class TestWorkflowLoopWithMax:
 
 
 class TestWorkflowParallelNodes:
-    """A,B,C параллельно → D."""
+    """A,B,C in parallel -> D."""
 
     async def test_workflow_parallel_nodes(self) -> None:
         from cognitia.orchestration.workflow_graph import WorkflowGraph

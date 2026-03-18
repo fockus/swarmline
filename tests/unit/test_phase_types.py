@@ -1,4 +1,4 @@
-"""Unit-тесты для PhaseState и связанных типов."""
+"""Unit-tests for PhaseState and svyazannyh tipov."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from cognitia.memory.types import PhaseState, ToolEvent
 
 
 class TestPhaseState:
-    """Тесты PhaseState."""
+    """Tests PhaseState."""
 
     def test_default_phase_is_empty(self) -> None:
         ps = PhaseState(user_id="u1")
@@ -20,7 +20,7 @@ class TestPhaseState:
 
 
 class TestToolEvent:
-    """Тесты ToolEvent."""
+    """Tests ToolEvent."""
 
     def test_create(self) -> None:
         event = ToolEvent(

@@ -1,4 +1,4 @@
-"""Тесты DockerSandboxProvider — мокнутый Docker SDK. TDD."""
+"""Tests DockerSandboxProvider - mocked Docker SDK. TDD."""
 
 from __future__ import annotations
 

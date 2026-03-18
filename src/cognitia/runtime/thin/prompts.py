@@ -1,8 +1,4 @@
-"""Шаблоны system prompt для ThinRuntime.
-
-Для каждого mode (conversational, react, planner) — свой prompt suffix,
-инструктирующий LLM возвращать structured JSON.
-"""
+"""Prompts module."""
 
 from __future__ import annotations
 
@@ -13,10 +9,7 @@ def build_react_prompt(
     system_prompt: str,
     tools: list[ToolSpec],
 ) -> str:
-    """Собрать system prompt для react mode.
-
-    Инструктирует LLM: возвращать JSON ActionEnvelope (tool_call | final).
-    """
+    """Build react prompt."""
     tool_descs = _format_tools(tools)
 
     return f"""{system_prompt}
@@ -42,10 +35,7 @@ def build_react_prompt(
 
 
 def build_conversational_prompt(system_prompt: str) -> str:
-    """Собрать system prompt для conversational mode (без tools).
-
-    Инструктирует LLM: возвращать JSON с type="final".
-    """
+    """Build conversational prompt."""
     return f"""{system_prompt}
 
 ## Инструкции по формату ответа
@@ -62,10 +52,7 @@ def build_planner_prompt(
     system_prompt: str,
     tools: list[ToolSpec],
 ) -> str:
-    """Собрать system prompt для planner mode.
-
-    Инструктирует LLM: вернуть JSON PlanSchema с шагами.
-    """
+    """Build planner prompt."""
     tool_descs = _format_tools(tools)
 
     return f"""{system_prompt}
@@ -103,7 +90,7 @@ def build_plan_step_prompt(
     step_context: str,
     tools: list[ToolSpec],
 ) -> str:
-    """Собрать prompt для выполнения одного шага плана."""
+    """Build plan step prompt."""
     tool_descs = _format_tools(tools)
 
     return f"""{system_prompt}
@@ -130,7 +117,7 @@ def build_final_assembly_prompt(
     step_results: list[str],
     final_format: str,
 ) -> str:
-    """Собрать prompt для финальной сборки результатов плана."""
+    """Build final assembly prompt."""
     results_text = "\n\n".join(f"### Шаг {i + 1}\n{r}" for i, r in enumerate(step_results))
 
     return f"""{system_prompt}
@@ -153,7 +140,7 @@ def build_final_assembly_prompt(
 
 
 def _format_tools(tools: list[ToolSpec]) -> str:
-    """Форматировать описания инструментов для prompt."""
+    """Format tools."""
     if not tools:
         return "Инструменты: нет доступных."
 

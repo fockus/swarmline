@@ -9,9 +9,9 @@ from dataclasses import dataclass, field
 class CliConfig:
     """Configuration for CLI-based agent runtime.
 
-    Describes how to invoke an external CLI agent process
-    and how to interpret its output.
-    """
+  Describes how to invoke an external CLI agent process
+  and how to interpret its output.
+  """
 
     command: list[str]  # e.g. ["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]
     output_format: str = "stream-json"

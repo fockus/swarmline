@@ -1,4 +1,4 @@
-"""Модуль устойчивости — circuit breaker, retry."""
+"""Resilience module - circuit breaker and retry."""
 
 from cognitia.resilience.circuit_breaker import (
     CircuitBreaker,

@@ -1,8 +1,4 @@
-"""Portable memory — lightweight AGENTS.md support для portable/thin path.
-
-Read-only: читает AGENTS.md файлы и инжектит в system prompt.
-Запись — через native path или вручную.
-"""
+"""Portable Memory module."""
 
 from __future__ import annotations
 
@@ -15,14 +11,7 @@ _MAX_FILE_SIZE = 10_240  # 10KB per file
 
 
 def load_agents_md(paths: list[str]) -> str:
-    """Прочитать и смержить AGENTS.md файлы.
-
-    Args:
-        paths: Список путей к AGENTS.md файлам.
-
-    Returns:
-        Merged content. Пустая строка если файлов нет или все отсутствуют.
-    """
+    """Load agents md."""
     parts: list[str] = []
     for raw_path in paths:
         p = Path(raw_path).expanduser()
@@ -40,15 +29,7 @@ def load_agents_md(paths: list[str]) -> str:
 
 
 def inject_memory_into_prompt(system_prompt: str, memory_content: str) -> str:
-    """Добавить memory в system prompt как <agent_memory> XML блок.
-
-    Args:
-        system_prompt: Базовый system prompt.
-        memory_content: Содержимое memory (из load_agents_md).
-
-    Returns:
-        Prompt с инжектированной memory. Без изменений если content пуст.
-    """
+    """Inject memory into prompt."""
     if not memory_content:
         return system_prompt
     return f"{system_prompt}\n\n<agent_memory>\n{memory_content}\n</agent_memory>"

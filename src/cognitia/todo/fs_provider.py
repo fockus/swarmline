@@ -1,6 +1,6 @@
-"""FilesystemTodoProvider — persistent todos через файловую систему.
+"""FilesystemTodoProvider - persistent todos via the filesystem.
 
-Хранит todos в {root}/{user_id}/{topic_id}/todos.json.
+Stores todos in {root}/{user_id}/{topic_id}/todos.json.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from cognitia.todo.types import TodoItem
 
 
 def _parse_dt(value: str | datetime) -> datetime:
-    """Парсинг datetime из JSON (ISO string) или passthrough."""
+    """Parse a datetime from JSON (ISO string) or pass through."""
     if isinstance(value, datetime):
         return value
     if not value:
@@ -26,14 +26,14 @@ def _parse_dt(value: str | datetime) -> datetime:
 
 
 class FilesystemTodoProvider:
-    """TodoProvider через JSON файл."""
+    """TodoProvider via a JSON file."""
 
     def __init__(self, root_path: Path, user_id: str, topic_id: str, max_todos: int = 100) -> None:
         self._max_todos = max_todos
         self._file = Path(root_path) / user_id / topic_id / "todos.json"
 
     async def read_todos(self) -> list[TodoItem]:
-        """Прочитать todos из файла."""
+        """Read todos from the file."""
         if not self._file.exists():
             return []
         raw = json.loads(self._file.read_text(encoding="utf-8"))
@@ -49,7 +49,7 @@ class FilesystemTodoProvider:
         ]
 
     async def write_todos(self, todos: list[TodoItem]) -> None:
-        """Записать todos в файл (bulk replace)."""
+        """Write todos to the file (bulk replace)."""
         if len(todos) > self._max_todos:
             msg = f"Превышен лимит max_todos ({self._max_todos})"
             raise ValueError(msg)

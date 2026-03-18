@@ -1,4 +1,4 @@
-"""SQLiteMemoryProvider — реализация MemoryProvider на SQLAlchemy + SQLite."""
+"""SQLiteMemoryProvider - MemoryProvider implementation on SQLAlchemy + SQLite."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ _SQLITE_INCOMING_SOURCE_PRIORITY = (
 
 
 class SQLiteMemoryProvider:
-    """Провайдер памяти на базе SQLite (SQLAlchemy async)."""
+    """Memory provider backed by SQLite (SQLAlchemy async)."""
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._sf = session_factory
@@ -42,7 +42,7 @@ class SQLiteMemoryProvider:
             if commit:
                 await session.commit()
 
-    # --- Сообщения ---
+    # --- Messages ---
 
     async def save_message(
         self,
@@ -140,7 +140,7 @@ class SQLiteMemoryProvider:
             )
             return int(getattr(result, "rowcount", 0) or 0)
 
-    # --- Факты ---
+    # --- Facts ---
 
     async def upsert_fact(
         self,
@@ -547,7 +547,7 @@ def _load_json_value(raw: Any) -> Any:
 
 
 def _merge_scoped_sqlite_facts(rows: Sequence[Any]) -> dict[str, Any]:
-    """Слить global + topic rows так, чтобы topic-scoped значения перекрывали global."""
+    """Merge global + topic rows so topic-scoped values override global ones."""
     merged: dict[str, Any] = {}
     global_rows = [row for row in rows if getattr(row, "topic_id", None) is None]
     topic_rows = [row for row in rows if getattr(row, "topic_id", None) is not None]

@@ -1,4 +1,4 @@
-"""Тесты SubagentOrchestrator types и Protocol — TDD."""
+"""Tests SubagentOrchestrator types and Protocol - TDD."""
 
 from __future__ import annotations
 

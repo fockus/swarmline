@@ -1,4 +1,4 @@
-"""Тесты plan_* tools — инструменты планирования для агента. TDD."""
+"""Tests plan_* tools - tooly planirovaniya for agent. TDD."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def plan_store() -> InMemoryPlanStore:
 
 @pytest.fixture()
 def mock_planner(plan_store) -> AsyncMock:
-    """Мокнутый PlannerMode."""
+    """Mocked PlannerMode."""
     planner = AsyncMock()
     _counter = {"n": 0}
 

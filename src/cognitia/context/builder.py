@@ -1,4 +1,4 @@
-"""DefaultContextBuilder — сборка system_prompt из контекстных пакетов."""
+"""DefaultContextBuilder - build system_prompt from context packets."""
 
 from __future__ import annotations
 
@@ -15,13 +15,13 @@ from cognitia.skills.types import LoadedSkill
 
 
 def compute_prompt_hash(prompt: str) -> str:
-    """Вычислить SHA256-хеш system_prompt (R-300, §12.1)."""
+    """Compute the SHA256 hash of system_prompt (R-300, §12.1)."""
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:16]
 
 
 @dataclass(frozen=True)
 class ContextInput:
-    """Входные данные для сборки контекста."""
+    """Input data for context assembly."""
 
     user_id: str
     topic_id: str
@@ -33,29 +33,29 @@ class ContextInput:
 
 @dataclass(frozen=True)
 class BuiltContext:
-    """Результат сборки контекста."""
+    """Result of context assembly."""
 
     system_prompt: str
-    prompt_hash: str  # SHA256-хеш system_prompt (§12.1)
-    tool_budget: int  # сколько tools можно дать в контекст
-    truncated_packs: list[str]  # какие пакеты были обрезаны
+    prompt_hash: str  # SHA256 hash of system_prompt (§12.1)
+    tool_budget: int  # how many tools can be given to the context
+    truncated_packs: list[str]  # which packets were truncated
     notes: dict[str, str] = field(default_factory=dict)
 
 
 class DefaultContextBuilder:
-    """Сборщик system_prompt из многослойных контекстных пакетов.
+    """Build system_prompt from layered context packets.
 
-    Слои (от base к dynamic, §10.1):
-    P0: Guardrails (Identity + Guardrails) — никогда не отбрасываются
-    P0.5: Role — никогда не отбрасывается, но учитывает remaining
+    Layers (from base to dynamic, §10.1):
+    P0: Guardrails (Identity + Guardrails) - never dropped
+    P0.5: Role - never dropped, but counts toward remaining
     P1: Goal text
     P1.5: Phase text
     P2: Skill instructions (tool hints)
-    P3: Memory recall (кросс-topic факты)
+    P3: Memory recall (cross-topic facts)
     P4: User profile
-    P5: Summary (отбрасывается первым при переполнении, §10.3)
+    P5: Summary (dropped first on overflow, §10.3)
 
-    Hot-reload: файлы промптов перечитываются автоматически при изменении на диске.
+    Hot-reload: prompt files are automatically re-read when changed on disk.
     """
 
     def __init__(self, prompts_dir: str | Path) -> None:
@@ -69,7 +69,7 @@ class DefaultContextBuilder:
     # ---------- Hot-reload ----------
 
     def _reload(self) -> None:
-        """Загрузить или перезагрузить все промпт-файлы с диска."""
+        """Load or reload all prompt files from disk."""
         self._identity = self._load_file("identity.md")
         self._guardrails = self._load_file("guardrails.md")
         self._roles = {}
@@ -77,7 +77,7 @@ class DefaultContextBuilder:
         self._snapshot_mtimes()
 
     def _snapshot_mtimes(self) -> None:
-        """Запомнить mtime всех загруженных промпт-файлов."""
+        """Remember the mtime of all loaded prompt files."""
         self._file_mtimes = {}
         for name in ("identity.md", "guardrails.md"):
             path = self._dir / name
@@ -90,11 +90,11 @@ class DefaultContextBuilder:
                     self._file_mtimes[f] = f.stat().st_mtime
 
     def _files_changed(self) -> bool:
-        """Проверить, изменились ли файлы промптов с момента последней загрузки."""
+        """Check whether prompt files changed since the last load."""
         for path, old_mtime in self._file_mtimes.items():
             if not path.exists() or path.stat().st_mtime != old_mtime:
                 return True
-        # Проверяем появление новых файлов ролей
+        # Check for newly added role files
         roles_dir = self._dir / "roles"
         if roles_dir.exists():
             for f in roles_dir.iterdir():
@@ -103,21 +103,21 @@ class DefaultContextBuilder:
         return False
 
     def _maybe_reload(self) -> None:
-        """Перезагрузить файлы, если они изменились на диске."""
+        """Reload files if they changed on disk."""
         if self._files_changed():
             self._reload()
 
-    # ---------- Загрузка файлов ----------
+    # ---------- File loading ----------
 
     def _load_file(self, filename: str) -> str:
-        """Загрузить промпт-файл."""
+        """Load a prompt file."""
         path = self._dir / filename
         if path.exists():
             return path.read_text(encoding="utf-8")
         return ""
 
     def _load_roles(self) -> None:
-        """Загрузить все файлы ролей из prompts/roles/."""
+        """Load all role files from prompts/roles/."""
         roles_dir = self._dir / "roles"
         if not roles_dir.exists():
             return
@@ -139,33 +139,33 @@ class DefaultContextBuilder:
         memory_bank_content: str | None = None,
         memory_bank_prompt: str | None = None,
     ) -> BuiltContext:
-        """Собрать system_prompt с учётом бюджета (§10.1-10.3).
+        """Build system_prompt with budget awareness (§10.1-10.3).
 
-        Порядок drop при overflow (§10.3):
-        summary → user_profile → memory_recall → tool_hints → goal.
-        Guardrails и Role — никогда не отбрасываются.
+        Drop order on overflow (§10.3):
+        summary -> user_profile -> memory_recall -> tool_hints -> goal.
+        Guardrails and Role are never dropped.
 
-        Hot-reload: перед сборкой проверяем, не изменились ли файлы на диске.
+        Hot-reload: before building, we check whether files changed on disk.
         """
         self._maybe_reload()
         budget = inp.budget
         truncated: list[str] = []
         packs: list[str] = []
 
-        # P0: Guardrails (никогда не отбрасываются)
+        # P0: Guardrails (never dropped)
         guardrails_pack = f"{self._identity}\n\n{self._guardrails}"
         guardrails_tokens = estimate_tokens(guardrails_pack)
         packs.append(guardrails_pack)
         remaining = budget.total_tokens - guardrails_tokens
 
-        # P0.5: Role (никогда не отбрасывается, но учитываем в remaining — GAP-7)
+        # P0.5: Role (never dropped, but counted in remaining - GAP-7)
         role_text = self._roles.get(inp.role_id, "")
         if role_text:
             role_pack = f"\n## Текущая роль: {inp.role_id}\n{role_text}"
             remaining -= estimate_tokens(role_pack)
             packs.append(role_pack)
 
-        # P_MEMORY: Memory Bank prompt + auto-loaded MEMORY.md (между Role и Goal)
+        # P_MEMORY: Memory Bank prompt + auto-loaded MEMORY.md (between Role and Goal)
         if memory_bank_prompt and remaining > 0:
             mem_pack = f"\n{memory_bank_prompt}"
             if memory_bank_content:
@@ -179,7 +179,7 @@ class DefaultContextBuilder:
         elif memory_bank_prompt:
             truncated.append("memory_bank")
 
-        # P1: Goal text (drop при remaining <= 0)
+        # P1: Goal text (drop when remaining <= 0)
         if goal_text and remaining > 0:
             goal_pack = f"\n## Текущая цель\n{goal_text.strip()}"
             goal_tokens = estimate_tokens(goal_pack)
@@ -216,19 +216,19 @@ class DefaultContextBuilder:
         elif skills:
             truncated.append("tool_hints")
 
-        # P2.5: Последние сообщения диалога (rehydration)
-        # Фильтруем ошибочные сообщения (MCP errors, пустые) чтобы не загрязнять контекст.
+        # P2.5: Latest conversation messages (rehydration)
+        # Filter out error messages (MCP errors, empty ones) so they do not pollute context.
         if last_messages and remaining > 0:
             msg_lines = []
             for msg in last_messages:
                 content = (msg.content or "").strip()
                 if not content:
                     continue
-                # Пропускаем MCP error / runtime error сообщения
+                # Skip MCP error / runtime error messages
                 if _is_error_message(content):
                     continue
                 role_label = "user" if msg.role == "user" else "assistant"
-                # Обрезаем слишком длинные сообщения (макс 500 символов)
+                # Truncate overly long messages (max 500 chars)
                 if len(content) > 500:
                     content = content[:500] + "..."
                 msg_lines.append(f"- [{role_label}]: {content}")
@@ -242,7 +242,7 @@ class DefaultContextBuilder:
         elif last_messages:
             truncated.append("last_messages")
 
-        # P3: Memory recall — кросс-topic факты (GAP-1, §10.1)
+        # P3: Memory recall - cross-topic facts (GAP-1, §10.1)
         if recall_facts and remaining > 0:
             facts_lines = [f"- {k}: {v}" for k, v in recall_facts.items()]
             recall_pack = "\n## Воспоминания из прошлых диалогов\n" + "\n".join(facts_lines)
@@ -268,7 +268,7 @@ class DefaultContextBuilder:
         elif user_profile and user_profile.facts:
             truncated.append("user_profile")
 
-        # P5: Summary (отбрасывается первым при переполнении, §10.3)
+        # P5: Summary (dropped first on overflow, §10.3)
         if summary and remaining > 100:
             summary_pack = f"\n## Контекст диалога (summary)\n{summary}"
             summary_tokens = estimate_tokens(summary_pack)
@@ -300,9 +300,9 @@ class DefaultContextBuilder:
         )
 
 
-# ---------- Утилиты для фильтрации сообщений ----------
+# ---------- Message filtering utilities ----------
 
-# Маркеры ошибочных сообщений, которые не несут полезного контекста для модели.
+# Markers for error messages that do not provide useful context to the model.
 _ERROR_MARKERS = (
     '{"error"',
     "MCP error",
@@ -317,12 +317,12 @@ _ERROR_MARKERS = (
 
 
 def _is_error_message(content: str) -> bool:
-    """Проверить, является ли сообщение ошибкой / шумом, который не стоит класть в контекст."""
+    """Check whether a message is an error/noise that should not be added to context."""
     if not content:
         return True
-    # Быстрая проверка по первым символам
+    # Quick check by the first characters
     if content.startswith(('{"error"', "⚠️")):
         return True
-    # Проверка по маркерам (в первых 200 символах для скорости)
+    # Check markers (within the first 200 characters for speed)
     prefix = content[:200]
     return any(marker in prefix for marker in _ERROR_MARKERS)

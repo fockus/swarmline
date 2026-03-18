@@ -1,8 +1,6 @@
-"""Integration: CommandRegistry + YamlCommandLoader — load, discover, execute.
-
-CommandRegistry + load_commands_from_yaml: load from real YAML string (tmp file).
-Register -> discover -> execute_validated -> проверить результат.
-Без mock'ов -- real YAML, real validation, real execution.
+"""Integration: CommandRegistry + YamlCommandLoader - load, discover, execute. CommandRegistry + load_commands_from_yaml: load from real YAML string (tmp file).
+Register -> discover -> execute_validated -> check result.
+Without mock'ov -- real YAML, real validation, real execution.
 """
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ class TestCommandRegistryYamlDiscoveryExecute:
     @pytest.mark.asyncio
     async def test_command_registry_yaml_discovery_execute(self, tmp_path: Path) -> None:
         """Load YAML -> register -> discover -> execute_validated."""
-        # Создаем YAML файл с multi-command форматом
+        # Create YAML file with multi-command formatom
         yaml_content = """\
 commands:
   - name: greet
@@ -124,7 +122,7 @@ commands:
     @pytest.mark.asyncio
     async def test_auto_discover_commands_from_directory(self, tmp_path: Path) -> None:
         """auto_discover_commands: scan directory -> register all commands."""
-        # Создаем отдельные YAML файлы (single-command формат)
+        # Create otdelnye YAML files (single-command format)
         (tmp_path / "deploy.yaml").write_text(
             "name: deploy\ndescription: Deploy to prod\ncategory: devops\n"
         )
@@ -144,18 +142,18 @@ commands:
         assert "deploy" in cmd_names
         assert "rollback" in cmd_names
 
-        # auto_discover создает noop handler
+        # auto_discover sozdaet noop handler
         result = await registry.execute("deploy")
         assert "deploy" in result.lower()
 
-        # Alias работает
+        # Alias works
         resolved = registry.resolve("rb")
         assert resolved is not None
         assert resolved.name == "rollback"
 
     @pytest.mark.asyncio
     async def test_to_tool_definitions(self, tmp_path: Path) -> None:
-        """Команды конвертируются в ToolDefinition для LLM."""
+        """Commands are converted in ToolDefinition for LLM."""
         registry = CommandRegistry()
 
         async def noop(**kwargs: Any) -> str:

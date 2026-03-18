@@ -1,7 +1,7 @@
-"""Todo tools — todo_read и todo_write для агентов.
+"""Todo tools - todo_read and todo_write for agents.
 
-Совместимы с Claude Code TodoRead/TodoWrite.
-Standalone: работают без sandbox и memory bank.
+Compatible with Claude Code TodoRead/TodoWrite.
+Standalone: works without sandbox and memory bank.
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ _TODO_WRITE_SCHEMA: dict[str, Any] = {
 def create_todo_tools(
     provider: TodoProvider,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
-    """Создать todo_read и todo_write tools.
+    """Create todo_read and todo_write tools.
 
     Args:
         provider: TodoProvider (InMemory, FS, DB).
@@ -63,7 +63,7 @@ def create_todo_tools(
     """
 
     async def todo_read_executor(args: dict) -> str:
-        """Прочитать todos с опциональным фильтром по статусу."""
+        """Read todos with an optional status filter."""
         try:
             todos = await provider.read_todos()
             status_filter = args.get("status_filter")
@@ -78,7 +78,7 @@ def create_todo_tools(
             return json.dumps({"status": "error", "message": str(e)})
 
     async def todo_write_executor(args: dict) -> str:
-        """Записать todos (bulk replace)."""
+        """Write todos (bulk replace)."""
         raw_todos = args.get("todos", [])
         if not isinstance(raw_todos, list):
             return json.dumps({"status": "error", "message": "todos должен быть массивом"})

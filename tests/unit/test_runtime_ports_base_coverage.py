@@ -1,4 +1,4 @@
-"""Coverage тесты: BaseRuntimePort + convert_event — все event types и stream_reply paths."""
+"""Coverage tests: BaseRuntimePort + convert_event - vse event types and stream_reply paths."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from cognitia.agent.tool import tool
 
 
 class TestConvertEvent:
-    """convert_event маппит все типы RuntimeEvent → StreamEvent."""
+    """convert_event mappit vse tipy RuntimeEvent -> StreamEvent."""
 
     def test_convert_assistant_delta(self) -> None:
         e = RuntimeEvent(type="assistant_delta", data={"text": "hello"})
@@ -108,7 +108,7 @@ class TestConvertEvent:
 
 
 class FakeRuntimePort(BaseRuntimePort):
-    """Тестовая реализация BaseRuntimePort."""
+    """Testovaya implementation BaseRuntimePort."""
 
     def __init__(
         self,
@@ -210,7 +210,7 @@ class TestBaseRuntimePortStreamReply:
 
 
 class TestBaseRuntimePortHistory:
-    """Sliding window и summarization."""
+    """Sliding window and summarization."""
 
     async def test_history_sliding_window(self) -> None:
         port = FakeRuntimePort(history_max=3)
@@ -291,7 +291,7 @@ class _FakeThinRuntime:
 
 
 class TestThinRuntimePort:
-    """ThinRuntimePort должен передавать advertised tools в runtime."""
+    """ThinRuntimePort should peredavat advertised tools in runtime."""
 
     async def test_run_runtime_forwards_local_tools_as_active_tools(self) -> None:
         @tool("calc", "Add numbers")

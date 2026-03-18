@@ -34,14 +34,14 @@ class SessionState:
 
     key: SessionKey
     adapter: RuntimePort | None = None
-    # AgentRuntime v1 contract. SessionManager uses this in priority.
+    # AgentRuntime v1 contract. SessionManager prefers this path.
     runtime: AgentRuntime | None = None
     runtime_config: RuntimeConfig | None = None
     system_prompt: str = ""
     active_tools: list[ToolSpec] = field(default_factory=list)
     role_id: str = "default"
     active_skill_ids: list[str] = field(default_factory=list)
-    # History for legacy stream_reply-path (runtime without adapter).
+    # History for the legacy stream_reply path (runtime without adapter).
     runtime_messages: list[Message] = field(default_factory=list)
     is_rehydrated: bool = False
     tool_failure_count: int = 0
@@ -57,7 +57,7 @@ class SessionState:
     delegation_summary: str | None = None
     # Turn counter inside delegated role (for auto-return)
     delegation_turn_count: int = 0
-    # Deferred delegation: role_id for next turn (set by delegate_to_role)
+    # Deferred delegation: role_id for the next turn (set by delegate_to_role)
     pending_delegation: str | None = None
 
     def __post_init__(self) -> None:

@@ -1,4 +1,4 @@
-"""ClaudeTeamOrchestrator — SDK-specific team orchestration с lead delegation."""
+"""ClaudeTeamOrchestrator — SDK-specific team orchestration with lead delegation."""
 
 from __future__ import annotations
 
@@ -16,18 +16,18 @@ from cognitia.orchestration.team_types import (
 
 
 class ClaudeTeamOrchestrator(BaseTeamOrchestrator):
-    """TeamOrchestrator для Claude SDK.
+    """TeamOrchestrator for Claude SDK.
 
-    Отличие от DeepAgents:
-    - lead_prompt реально влияет на worker task assignment;
-    - worker получает персонализированный prompt для координации.
+    Difference from DeepAgents:
+    - lead_prompt really affects the worker task assignment;
+    - the worker receives a personalized prompt for coordination.
     """
 
     def __init__(self, subagent_orchestrator: SubagentOrchestrator) -> None:
         super().__init__(subagent_orchestrator)
 
     async def start(self, config: TeamConfig, task: str) -> str:
-        """Запустить команду и назначить каждому worker его подзадачу."""
+        """Run the command and assign each worker their subtask."""
         team_id = str(uuid.uuid4())
         worker_ids: dict[str, str] = {}
         bus = MessageBus()

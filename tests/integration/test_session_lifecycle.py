@@ -1,6 +1,4 @@
-"""Integration: SessionManager + Rehydrator + RoleRouter + ModelPolicy — жизненный цикл сессии.
-
-Сценарий: создание сессии → определение роли → выбор модели → rehydration.
+"""Integration: SessionManager + Rehydrator + RoleRouter + ModelPolicy - zhiznotnnyy tsikl sessions. Scenario: createdie sessions -> opredelenie roli -> selection models -> rehydration.
 """
 
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
@@ -69,12 +67,12 @@ def memory() -> AsyncMock:
 
 
 class TestRoleRoutingToModelSelection:
-    """Цепочка: текст пользователя → роль → модель."""
+    """TSepochka: tekst user -> rol -> model."""
 
     def test_deposit_question_sonnet(
         self, router: KeywordRoleRouter, model_policy: ModelPolicy
     ) -> None:
-        """Вопрос про вклады → deposit_advisor → sonnet."""
+        """Vopros pro vklady -> deposit_advisor -> sonnet."""
         role = router.resolve("какой вклад выгоднее?")
         assert role == "deposit_advisor"
         model = model_policy.select(role)
@@ -83,7 +81,7 @@ class TestRoleRoutingToModelSelection:
     def test_strategy_question_opus(
         self, router: KeywordRoleRouter, model_policy: ModelPolicy
     ) -> None:
-        """Вопрос про стратегию → strategy_planner → opus."""
+        """Vopros pro strategiyu -> strategy_planner -> opus."""
         role = router.resolve("составь стратегию на год")
         assert role == "strategy_planner"
         model = model_policy.select(role)
@@ -92,7 +90,7 @@ class TestRoleRoutingToModelSelection:
     def test_keyword_escalation_to_opus(
         self, router: KeywordRoleRouter, model_policy: ModelPolicy
     ) -> None:
-        """Keyword 'план' в тексте → opus даже для coach."""
+        """Keyword 'plan' in tekste -> opus dazhe for coach."""
         role = router.resolve("привет")
         assert role == "coach"
         model = model_policy.select_for_turn(
@@ -104,7 +102,7 @@ class TestRoleRoutingToModelSelection:
     def test_multi_skill_escalation(
         self, router: KeywordRoleRouter, model_policy: ModelPolicy
     ) -> None:
-        """2+ скилла → opus."""
+        """2+ skilla -> opus."""
         role = router.resolve("сравни вклады и облигации")
         model = model_policy.select_for_turn(
             role_id=role,
@@ -115,39 +113,39 @@ class TestRoleRoutingToModelSelection:
 
 
 class TestSessionLifecycle:
-    """Полный жизненный цикл сессии с менеджером."""
+    """Full zhiznotnnyy tsikl sessions with menotdzherom."""
 
     @pytest.mark.asyncio
     async def test_create_session_manage_close(self) -> None:
-        """Создать → использовать → закрыть сессию."""
+        """Create -> use -> zakryt sessiyu."""
         mgr = InMemorySessionManager()
         key = SessionKey("u1", "t1")
         adapter = _mock_adapter()
         state = SessionState(key=key, adapter=adapter, role_id="coach")
 
-        # Создать
+        # Create
         mgr.register(state)
         assert mgr.get(key) is state
         assert len(mgr.list_sessions()) == 1
 
-        # Обновить роль
+        # Update rol
         mgr.update_role(key, "deposit_advisor", ["finuslugi"])
         assert mgr.get(key).role_id == "deposit_advisor"
         assert mgr.get(key).active_skill_ids == ["finuslugi"]
 
-        # Закрыть
+        # Zakryt
         await mgr.close(key)
         assert mgr.get(key) is None
         adapter.disconnect.assert_awaited_once()
 
 
 class TestRehydrationFlow:
-    """Rehydration: восстановление состояния сессии из памяти."""
+    """Rehydration: rehydration sostoyaniya sessions from pamyati."""
 
     @pytest.mark.asyncio
     async def test_full_rehydration(self, memory: AsyncMock) -> None:
-        """Полный payload при наличии всех данных."""
-        # ISP: передаём 5 мелких store вместо одного монолитного MemoryProvider
+        """Full payload pri nalichii vseh dannyh."""
+        # ISP: peredaem 5 melkih store vmesto odnogo monolitnogo MemoryProvider
         memory.get_phase_state.return_value = None
         rehydrator = DefaultSessionRehydrator(
             messages=memory,
@@ -166,7 +164,7 @@ class TestRehydrationFlow:
         )
         payload = await rehydrator.build_rehydration_payload(ctx)
 
-        assert payload["role_id"] == "deposit_advisor"  # Из БД, не из ctx
+        assert payload["role_id"] == "deposit_advisor"  # Iz BD, not from ctx
         assert payload["active_skill_ids"] == ["finuslugi"]
         assert "вклады" in payload["summary"].lower()
         assert len(payload["last_messages"]) == 1
@@ -174,7 +172,7 @@ class TestRehydrationFlow:
 
     @pytest.mark.asyncio
     async def test_rehydration_fallback_to_ctx(self, memory: AsyncMock) -> None:
-        """Без данных в БД — fallback на ctx."""
+        """Without dannyh in BD - fallback on ctx."""
         memory.get_session_state.return_value = None
         memory.get_phase_state.return_value = None
         rehydrator = DefaultSessionRehydrator(

@@ -1,7 +1,5 @@
-"""E2E: MCP bridge — discovery to execution.
-
-McpBridge + McpClient с fake HTTP transport (httpx mock).
-Единственный mock: HTTP transport (внешняя граница MCP server).
+"""E2E: MCP bridge - discovery to execution. McpBridge + McpClient with fake HTTP transport (httpx mock).
+Edinstvennyy mock: HTTP transport (external boundary MCP server).
 """
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ from cognitia.runtime.thin.mcp_client import McpClient
 
 
 def _mcp_tools_list_response(tools: list[dict[str, Any]]) -> dict[str, Any]:
-    """Ответ MCP server на tools/list."""
+    """Response MCP server on tools/list."""
     return {
         "jsonrpc": "2.0",
         "id": "test",
@@ -30,7 +28,7 @@ def _mcp_tools_list_response(tools: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _mcp_tool_call_response(result: Any) -> dict[str, Any]:
-    """Ответ MCP server на tools/call."""
+    """Response MCP server on tools/call."""
     return {
         "jsonrpc": "2.0",
         "id": "test",
@@ -39,7 +37,7 @@ def _mcp_tool_call_response(result: Any) -> dict[str, Any]:
 
 
 class FakeHttpResponse:
-    """Fake httpx Response для MCP тестов."""
+    """Fake httpx Response for MCP testov."""
 
     def __init__(self, data: dict[str, Any], status_code: int = 200) -> None:
         self._data = data
@@ -63,11 +61,8 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_bridge_discover_and_call(self) -> None:
-        """Full roundtrip: discover tools -> call tool -> result.
-
-        Mock HTTP transport возвращает tools/list и tools/call responses.
-        """
-        # Настраиваем fake MCP server responses
+        """Full roundtrip: discover tools -> call tool -> result. Mock HTTP transport returns tools/list and tools/call responses. """
+        # Nastraivaem fake MCP server responses
         tools_response = _mcp_tools_list_response(
             [
                 {
@@ -94,10 +89,10 @@ class TestMcpBridgeDiscoverAndCallE2E:
             {"temperature": 22, "condition": "sunny", "city": "Moscow"}
         )
 
-        # Подменяем McpClient через DI — создаём client с переопределёнными методами
+        # Swap McpClient cherez DI - create client with pereopredelennymi metodami
         client = McpClient(timeout_seconds=5.0)
 
-        # Сохраняем оригинальные методы и подменяем
+        # Save originalnye metody and podmenyaem
         async def fake_list_tools(server_url: str, **kwargs: Any) -> list:
             data = tools_response
             return client._parse_tools_from_response(data)
@@ -123,7 +118,7 @@ class TestMcpBridgeDiscoverAndCallE2E:
         assert "mcp__weather_api__get_weather" in tool_names
         assert "mcp__weather_api__get_time" in tool_names
 
-        # Проверяем параметры tool
+        # Verify parameters tool
         weather_tool = next(t for t in all_tools if "get_weather" in t.name)
         assert weather_tool.description == "Get weather for a city"
         assert "city" in weather_tool.parameters.get("properties", {})
@@ -136,7 +131,7 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_bridge_unknown_server_returns_error(self) -> None:
-        """Call tool на несуществующем server -> error dict."""
+        """Call tool on notsushchestvuyushchem server -> error dict."""
         bridge = McpBridge(mcp_servers={"known": "http://known:8080/mcp"})
 
         result = await bridge.call_tool("unknown_server", "some_tool", {})
@@ -145,7 +140,7 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_bridge_discover_from_single_server(self) -> None:
-        """Discover tools от конкретного server_id."""
+        """Discover tools ot konkretnogo server_id."""
         client = McpClient()
 
         async def fake_list(server_url: str, **kwargs: Any) -> list:
@@ -165,7 +160,7 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_bridge_create_tool_executor(self) -> None:
-        """create_tool_executor возвращает callable для конкретного tool."""
+        """create_tool_executor returns callable for konkretnogo tool."""
         client = McpClient()
 
         async def fake_call(server_url: str, tool_name: str, arguments: dict | None = None) -> Any:
@@ -190,17 +185,14 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
 
 class TestMcpBridgeInThinRuntimeE2E:
-    """McpBridge tool доступен через ToolExecutor в ThinRuntime."""
+    """McpBridge tool dostupen cherez ToolExecutor in ThinRuntime."""
 
     @pytest.mark.asyncio
     async def test_mcp_tool_execution_via_executor(self) -> None:
-        """ThinRuntime ToolExecutor вызывает MCP tool через mcp__server__tool формат.
-
-        Проверяем полный roundtrip через ToolExecutor.execute().
-        """
+        """ThinRuntime ToolExecutor vyzyvaet MCP tool cherez mcp__server__tool format. Verify full roundtrip cherez ToolExecutor.execute(). """
         from cognitia.runtime.thin.executor import ToolExecutor
 
-        # Создаём McpClient с fake responses
+        # Create McpClient with fake responses
         client = McpClient()
 
         async def fake_call(server_url: str, tool_name: str, arguments: dict | None = None) -> Any:
@@ -217,7 +209,7 @@ class TestMcpBridgeInThinRuntimeE2E:
             mcp_client=client,
         )
 
-        # Вызываем MCP tool через стандартный формат
+        # Vyzyvaem MCP tool cherez standartnyy format
         result_str = await executor.execute(
             "mcp__translator__translate", {"text": "Hello"}
         )
@@ -226,7 +218,7 @@ class TestMcpBridgeInThinRuntimeE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_tool_not_found_returns_error(self) -> None:
-        """Неизвестный MCP server -> error JSON."""
+        """Notizvestnyy MCP server -> error JSON."""
         from cognitia.runtime.thin.executor import ToolExecutor
 
         executor = ToolExecutor(

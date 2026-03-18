@@ -1,4 +1,4 @@
-"""Тесты для ThinRuntime — react loop: tool_call → final (mock LLM)."""
+"""Tests for ThinRuntime - react loop: tool_call -> final (mock LLM)."""
 
 from __future__ import annotations
 
@@ -19,12 +19,12 @@ from cognitia.runtime.types import (
 )
 
 # ---------------------------------------------------------------------------
-# Mock LLM — возвращает заранее заданные ответы
+# Mock LLM - returns zaranote zadannye responsey
 # ---------------------------------------------------------------------------
 
 
 class MockLLM:
-    """Mock LLM: возвращает ответы из очереди."""
+    """Mock LLM: returns responsey from ocheredi."""
 
     def __init__(self, responses: list[str]) -> None:
         self._responses = list(responses)
@@ -39,7 +39,7 @@ class MockLLM:
 
 
 # ---------------------------------------------------------------------------
-# Хелперы
+# Helpers
 # ---------------------------------------------------------------------------
 
 
@@ -148,7 +148,7 @@ class TestThinRuntimeReact:
 
     @pytest.mark.asyncio
     async def test_direct_final_no_tools(self) -> None:
-        """LLM сразу возвращает final (без tool_call)."""
+        """LLM srazu returns final (without tool_call)."""
         llm = MockLLM([make_final_response("Простой ответ")])
         runtime = ThinRuntime(llm_call=llm)
 
@@ -159,7 +159,7 @@ class TestThinRuntimeReact:
 
     @pytest.mark.asyncio
     async def test_clarify_response(self) -> None:
-        """LLM возвращает clarify → final с вопросами."""
+        """LLM returns clarify -> final with voprosami."""
         llm = MockLLM(
             [
                 make_clarify_response(
@@ -176,7 +176,7 @@ class TestThinRuntimeReact:
 
     @pytest.mark.asyncio
     async def test_tool_execution_error(self) -> None:
-        """Tool raises → tool_call_finished с ok=False, loop продолжается."""
+        """Tool raises -> tool_call_finished with ok=False, loop prodolzhaetsya."""
 
         def bad_tool(args):
             raise ValueError("broken")
@@ -218,7 +218,7 @@ class TestThinRuntimeConversational:
 
     @pytest.mark.asyncio
     async def test_conversational_bad_json_retry(self) -> None:
-        """Плохой JSON → retry → успех."""
+        """Bad JSON -> retry -> success."""
         llm = MockLLM(
             [
                 "это не JSON",
@@ -250,7 +250,7 @@ class TestThinRuntimeConversational:
 
     @pytest.mark.asyncio
     async def test_conversational_streaming_without_postprocessing_keeps_eager_deltas(self) -> None:
-        """Без guardrails/output_type/retry чанки стримятся eagerly как раньше."""
+        """Without guardrails/output_type/retry chanki strimyatsya eagerly kak ranshe."""
 
         async def streaming_llm(
             messages: list[dict[str, str]],
@@ -276,7 +276,7 @@ class TestThinRuntimeConversational:
 
     @pytest.mark.asyncio
     async def test_parse_json_inside_wrapped_text(self) -> None:
-        """Парсер умеет извлекать JSON из текста до/после блока."""
+        """Parser can izvlekat JSON from teksta do/posle bloka."""
         wrapped = (
             "Сейчас отвечу.\n\n"
             '{"type":"final","final_message":"Ок","citations":[],"next_suggestions":[]}\n'
@@ -291,7 +291,7 @@ class TestThinRuntimeConversational:
 
     @pytest.mark.asyncio
     async def test_stream_init_dependency_error_emits_runtime_error(self) -> None:
-        """Ошибка инициализации stream path не превращается в assistant_delta JSON."""
+        """Error initsializatsii stream path not prevrashchaetsya in assistant_delta JSON."""
         runtime = ThinRuntime(
             config=RuntimeConfig(runtime_name="thin", model="google:gemini-2.5-pro")
         )
@@ -315,7 +315,7 @@ class TestThinRuntimeConversational:
 
     @pytest.mark.asyncio
     async def test_non_stream_dependency_error_emits_runtime_error(self) -> None:
-        """Non-stream fallback path также отдаёт typed error event."""
+        """Non-stream fallback path takzhe otdaet typed error event."""
 
         async def failing_llm(messages: list[dict], system_prompt: str) -> str:
             raise ThinLlmError(
@@ -336,11 +336,11 @@ class TestThinRuntimeConversational:
 
 
 class TestThinRuntimeReactFallback:
-    """React mode fallback при систематически невалидном JSON."""
+    """React mode fallback pri sistematicheski notvalidnom JSON."""
 
     @pytest.mark.asyncio
     async def test_react_fallback_on_non_json_after_retries(self) -> None:
-        """После лимита retry runtime отдает текстовый fallback вместо error."""
+        """Posle limita retry runtime otdaet tekstovyy fallback vmesto error."""
         llm = MockLLM(
             [
                 "Я думаю, вам подойдет вклад с капитализацией.",

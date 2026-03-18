@@ -1,10 +1,10 @@
-"""DDL export для Todos — app-level миграции."""
+"""DDL export for Todos - app-level migrations."""
 
 from __future__ import annotations
 
 
 def get_todo_ddl() -> list[str]:
-    """Dialect-agnostic DDL для таблицы todos."""
+    """Dialect-agnostic DDL for the todos table."""
     return [
         """
         CREATE TABLE IF NOT EXISTS todos (

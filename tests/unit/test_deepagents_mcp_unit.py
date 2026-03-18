@@ -1,4 +1,4 @@
-"""Тесты DeepAgents MCP integration."""
+"""Tests DeepAgents MCP integration."""
 
 from __future__ import annotations
 

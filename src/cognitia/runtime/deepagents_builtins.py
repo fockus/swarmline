@@ -1,4 +1,4 @@
-"""Policy helpers для native built-ins DeepAgents."""
+"""Policy helpers for native built-ins DeepAgents."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ DEEPAGENTS_NATIVE_BUILTIN_ALIASES: dict[str, str] = BUILTIN_ALIASES
 
 @dataclass(frozen=True)
 class DeepAgentsBuiltinSelection:
-    """Результат выделения native built-ins из списка tools."""
+    """Deep Agents Builtin Selection implementation."""
 
     custom_tools: list[ToolSpec]
     native_tool_names: list[str]
@@ -22,7 +22,7 @@ class DeepAgentsBuiltinSelection:
 
 
 def canonicalize_builtin_name(name: str) -> str | None:
-    """Вернуть canonical native built-in name или None."""
+    """Return canonical native built-in name or None."""
     if name in DEEPAGENTS_NATIVE_BUILTIN_TOOLS:
         return name
     return DEEPAGENTS_NATIVE_BUILTIN_ALIASES.get(name)
@@ -31,7 +31,7 @@ def canonicalize_builtin_name(name: str) -> str | None:
 def split_native_builtin_tools(
     tools: list[ToolSpec],
 ) -> DeepAgentsBuiltinSelection:
-    """Отделить native built-ins от custom tools."""
+    """Split native builtin tools."""
     custom_tools: list[ToolSpec] = []
     native_tool_names: list[str] = []
     alias_mappings: list[tuple[str, str]] = []
@@ -62,12 +62,12 @@ def split_native_builtin_tools(
 
 
 def filter_native_builtin_tools(tools: list[ToolSpec]) -> list[ToolSpec]:
-    """Убрать native built-ins и их aliases из portable tool list."""
+    """Filter native builtin tools."""
     return split_native_builtin_tools(tools).custom_tools
 
 
 def build_portable_notice(tools: list[ToolSpec]) -> str | None:
-    """Собрать status notice для portable mode, если built-ins были отброшены."""
+    """Build portable notice."""
     selection = split_native_builtin_tools(tools)
     if not selection.native_tool_names:
         return None
@@ -81,7 +81,7 @@ def build_native_notice(
     *,
     feature_mode: str,
 ) -> str | None:
-    """Собрать status notice для native/hybrid path."""
+    """Build status notice for native/hybrid path."""
     selection = split_native_builtin_tools(tools)
     if not selection.native_tool_names:
         return None

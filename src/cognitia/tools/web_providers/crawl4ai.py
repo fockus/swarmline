@@ -1,8 +1,8 @@
-"""Crawl4AI fetch provider — URL → markdown через Crawl4AI + Playwright.
+"""Crawl4AI fetch provider - URL -> markdown via Crawl4AI + Playwright.
 
 Optional dependency: crawl4ai (pip install cognitia[web-crawl4ai]).
-Использует DefaultMarkdownGenerator для качественной конвертации HTML.
-Поддерживает JS-heavy сайты через Playwright.
+Uses DefaultMarkdownGenerator for high-quality HTML conversion.
+Supports JS-heavy sites via Playwright.
 """
 
 from __future__ import annotations
@@ -25,23 +25,23 @@ except ImportError:
 
 
 class Crawl4AIFetchProvider:
-    """Fetch URL через Crawl4AI → markdown с BM25-фильтрацией.
+    """Fetch a URL via Crawl4AI -> markdown with BM25 filtering.
 
-    Crawl4AI использует Playwright для рендеринга JS-heavy страниц
-    и DefaultMarkdownGenerator для чистой конвертации HTML → markdown.
+    Crawl4AI uses Playwright to render JS-heavy pages
+    and DefaultMarkdownGenerator for clean HTML -> markdown conversion.
     """
 
     def __init__(self, timeout: int = 30) -> None:
         self._timeout = timeout
 
     async def fetch(self, url: str) -> str:
-        """Извлечь контент страницы через Crawl4AI.
+        """Extract page content via Crawl4AI.
 
         Args:
-            url: URL для загрузки.
+            url: URL to load.
 
         Returns:
-            Markdown контент. Пустая строка при отсутствии crawl4ai или ошибке.
+            Markdown content. Empty string if crawl4ai is unavailable or an error occurs.
         """
         if AsyncWebCrawler is None:
             return ""

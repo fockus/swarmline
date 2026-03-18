@@ -1,4 +1,4 @@
-"""Тесты ThinSubagentOrchestrator — TDD."""
+"""Tests ThinSubagentOrchestrator - TDD."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ class TestThinSubagentSpawn:
     async def test_list_active(self, orchestrator) -> None:
         mock_runtime = AsyncMock()
 
-        # Задержка чтобы задача была active
+        # Zaderzhka chtoby zadacha byla active
         async def slow_run(*args, **kwargs):
             await asyncio.sleep(0.5)
             return "done"
@@ -69,16 +69,16 @@ class TestThinSubagentSpawn:
 
         spec = SubagentSpec(name="w", system_prompt="p")
         agent_id = await orchestrator.spawn(spec, "t")
-        # Ждём чтобы task стартовал
+        # Wait chtoby task startoval
         await asyncio.sleep(0.05)
         await orchestrator.cancel(agent_id)
 
         status = await orchestrator.get_status(agent_id)
-        # После cancel: cancelled или failed (из-за CancelledError)
+        # Posle cancel: cancelled ili failed (from-za CancelledError)
         assert status.state in ("cancelled", "failed")
 
     async def test_max_concurrent(self, orchestrator) -> None:
-        """Превышение max_concurrent → ValueError."""
+        """Exceeding max_concurrent -> ValueError."""
         mock_runtime = AsyncMock()
 
         async def slow_run(*args, **kwargs):

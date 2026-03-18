@@ -1,12 +1,8 @@
-"""TDD Red Phase: MessageBus wiring + send_message tool (Этап 2.3).
-
-Тесты проверяют:
-- Agent A sends → Agent B receives через MessageBus
-- broadcast → all agents receive
-- send_message tool → message appears in bus
-
-Contract: cognitia.orchestration.message_tools.send_message tool
-+ MessageBus integration с ThinTeamOrchestrator
+"""TDD Red Phase: MessageBus wiring + send_message tool (Etap 2.3). Tests verify:
+- Agent A sends -> Agent B receives cherez MessageBus
+- broadcast -> all agents receive
+- send_message tool -> message appears in bus Contract: cognitia.orchestration.message_tools.send_message tool
++ MessageBus integration with ThinTeamOrchestrator
 """
 
 from __future__ import annotations
@@ -18,12 +14,12 @@ from cognitia.orchestration.message_bus import MessageBus
 from cognitia.orchestration.team_types import TeamMessage
 
 # ---------------------------------------------------------------------------
-# MessageBus direct tests (существующий функционал — smoke)
+# MessageBus direct tests (sushchestvuyushchiy funktsional - smoke)
 # ---------------------------------------------------------------------------
 
 
 class TestMessageBusSendReceive:
-    """Базовая шина сообщений: send → receive."""
+    """Basic shina soobshcheniy: send -> receive."""
 
     @pytest.mark.asyncio
     async def test_message_bus_send_receive(self) -> None:
@@ -43,7 +39,7 @@ class TestMessageBusSendReceive:
         assert inbox_b[0].content == "Hello from A"
         assert inbox_b[0].from_agent == "agent_a"
 
-        # Agent A не видит сообщение в своём inbox
+        # Agent A not vidit message in svoem inbox
         inbox_a = await bus.get_inbox("agent_a")
         assert len(inbox_a) == 0
 
@@ -64,18 +60,18 @@ class TestMessageBusSendReceive:
             assert inbox[0].content == "Everyone stop"
             assert inbox[0].from_agent == "lead"
 
-        # Lead не получает своё broadcast
+        # Lead not gets svoe broadcast
         inbox_lead = await bus.get_inbox("lead")
         assert len(inbox_lead) == 0
 
 
 # ---------------------------------------------------------------------------
-# send_message tool (новый модуль)
+# send_message tool (new modul)
 # ---------------------------------------------------------------------------
 
 
 class TestSendMessageTool:
-    """send_message tool — workers отправляют сообщения через tool call."""
+    """send_message tool - workers otpravlyayut messages cherez tool call."""
 
     @pytest.mark.asyncio
     async def test_message_tool_sends_via_bus(self) -> None:
@@ -88,13 +84,13 @@ class TestSendMessageTool:
             sender_agent_id="worker_0",
         )
 
-        # Вызываем tool как если бы LLM его вызвала
+        # Vyzyvaem tool kak if by LLM ego vyzvala
         await send_message_executor({
             "to_agent": "worker_1",
             "content": "I found the answer",
         })
 
-        # Сообщение должно быть в шине
+        # Message should byt in shinot
         inbox = await bus.get_inbox("worker_1")
         assert len(inbox) == 1
         assert inbox[0].content == "I found the answer"
@@ -102,7 +98,7 @@ class TestSendMessageTool:
 
     @pytest.mark.asyncio
     async def test_message_tool_broadcast_via_bus(self) -> None:
-        """Tool call send_message с to_agent='*' → broadcast."""
+        """Tool call send_message with to_agent='*' -> broadcast."""
         from cognitia.orchestration.message_tools import create_send_message_tool
 
         bus = MessageBus()
@@ -122,7 +118,7 @@ class TestSendMessageTool:
             assert len(inbox) == 1
 
     def test_message_tool_spec_has_correct_schema(self) -> None:
-        """send_message tool имеет правильный ToolSpec."""
+        """send_message tool imeet pravilnyy ToolSpec."""
         from cognitia.orchestration.message_tools import SEND_MESSAGE_TOOL_SPEC
 
         assert SEND_MESSAGE_TOOL_SPEC.name == "send_message"

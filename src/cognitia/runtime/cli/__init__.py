@@ -1,4 +1,4 @@
-"""CLI Agent Runtime — run external CLI agents via subprocess + NDJSON parsing."""
+"""CLI Agent Runtime - run external CLI agents via subprocess + NDJSON parsing."""
 
 from cognitia.runtime.cli.parser import (
     ClaudeNdjsonParser,

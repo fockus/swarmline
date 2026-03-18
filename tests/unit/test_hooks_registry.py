@@ -1,10 +1,10 @@
-"""Тесты для HookRegistry — регистрация и получение хуков событий."""
+"""Tests for HookRegistry - registratsiya and receiving hookov sobytiy."""
 
 from cognitia.hooks.registry import HookEntry, HookRegistry
 
 
 async def _dummy_hook(**kwargs):  # type: ignore[no-untyped-def]
-    """Фиктивный хук для тестов."""
+    """Fiktivnyy hook for testov."""
     return "ok"
 
 
@@ -13,15 +13,15 @@ async def _another_hook(**kwargs):  # type: ignore[no-untyped-def]
 
 
 class TestHookRegistry:
-    """Основной контракт: регистрация и извлечение хуков по событию."""
+    """Osnovnoy contract: registratsiya and izvlechenie hookov by sobytiyu."""
 
     def test_empty_registry_returns_no_hooks(self) -> None:
-        """Пустой реестр — нет хуков."""
+        """Empty reestr - nott hookov."""
         reg = HookRegistry()
         assert reg.get_hooks("PreToolUse") == []
 
     def test_on_pre_tool_use_registers(self) -> None:
-        """on_pre_tool_use сохраняет хук."""
+        """on_pre_tool_use sohranyaet hook."""
         reg = HookRegistry()
         reg.on_pre_tool_use(_dummy_hook, matcher="mcp__iss__*")
         hooks = reg.get_hooks("PreToolUse")
@@ -31,7 +31,7 @@ class TestHookRegistry:
         assert hooks[0].matcher == "mcp__iss__*"
 
     def test_on_post_tool_use_registers(self) -> None:
-        """on_post_tool_use сохраняет хук."""
+        """on_post_tool_use sohranyaet hook."""
         reg = HookRegistry()
         reg.on_post_tool_use(_dummy_hook)
         hooks = reg.get_hooks("PostToolUse")
@@ -39,19 +39,19 @@ class TestHookRegistry:
         assert hooks[0].matcher == ""
 
     def test_on_stop_registers(self) -> None:
-        """on_stop сохраняет хук."""
+        """on_stop sohranyaet hook."""
         reg = HookRegistry()
         reg.on_stop(_dummy_hook)
         assert len(reg.get_hooks("Stop")) == 1
 
     def test_on_user_prompt_registers(self) -> None:
-        """on_user_prompt сохраняет хук."""
+        """on_user_prompt sohranyaet hook."""
         reg = HookRegistry()
         reg.on_user_prompt(_dummy_hook)
         assert len(reg.get_hooks("UserPromptSubmit")) == 1
 
     def test_multiple_hooks_same_event(self) -> None:
-        """Несколько хуков на одно событие."""
+        """Notskolko hookov on odno event."""
         reg = HookRegistry()
         reg.on_pre_tool_use(_dummy_hook)
         reg.on_pre_tool_use(_another_hook, matcher="iss")
@@ -61,12 +61,12 @@ class TestHookRegistry:
         assert hooks[1].callback is _another_hook
 
     def test_list_events_empty(self) -> None:
-        """Без хуков — пустой список событий."""
+        """Without hookov - empty list sobytiy."""
         reg = HookRegistry()
         assert reg.list_events() == []
 
     def test_list_events_returns_registered(self) -> None:
-        """list_events возвращает все события с хуками."""
+        """list_events returns vse events with hookami."""
         reg = HookRegistry()
         reg.on_pre_tool_use(_dummy_hook)
         reg.on_stop(_another_hook)
@@ -74,14 +74,14 @@ class TestHookRegistry:
         assert set(events) == {"PreToolUse", "Stop"}
 
     def test_get_hooks_unknown_event(self) -> None:
-        """Незарегистрированное событие — пустой список."""
+        """Notzaregistrirovannoe event - empty list."""
         reg = HookRegistry()
         reg.on_pre_tool_use(_dummy_hook)
         assert reg.get_hooks("NonExistent") == []
 
 
 class TestHookEntry:
-    """HookEntry — dataclass хука."""
+    """HookEntry - dataclass hooka."""
 
     def test_defaults(self) -> None:
         entry = HookEntry(event="PreToolUse", callback=_dummy_hook)

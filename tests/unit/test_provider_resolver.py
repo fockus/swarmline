@@ -1,4 +1,4 @@
-"""Тесты для ProviderResolver — shared provider resolution для всех рунтаймов."""
+"""Tests for ProviderResolver - shared provider resolution for vseh runtaymov."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from cognitia.runtime.provider_resolver import (
 
 
 class TestResolveProviderAnthropicByAlias:
-    """Anthropic модели резолвятся через alias из ModelRegistry."""
+    """Anthropic models rezolvyatsya cherez alias from ModelRegistry."""
 
     def test_resolve_sonnet_alias(self) -> None:
         r = resolve_provider("sonnet")
@@ -56,7 +56,7 @@ class TestResolveProviderWithExplicitPrefix:
 
 
 class TestResolveProviderOpenRouterAutoBaseUrl:
-    """OpenRouter автоматически получает base_url."""
+    """OpenRouter avtomaticheski gets base_url."""
 
     def test_openrouter_prefix(self) -> None:
         r = resolve_provider("openrouter:meta-llama/llama-3-70b")
@@ -67,7 +67,7 @@ class TestResolveProviderOpenRouterAutoBaseUrl:
 
 
 class TestResolveProviderOllamaAutoBaseUrl:
-    """Ollama автоматически получает localhost base_url."""
+    """Ollama avtomaticheski gets localhost base_url."""
 
     def test_ollama_prefix(self) -> None:
         r = resolve_provider("ollama:llama3")
@@ -78,7 +78,7 @@ class TestResolveProviderOllamaAutoBaseUrl:
 
 
 class TestResolveProviderCustomBaseUrl:
-    """Custom base_url перезаписывает auto-detected."""
+    """Custom base_url overwrites auto-detected."""
 
     def test_custom_overrides_default(self) -> None:
         r = resolve_provider(
@@ -96,7 +96,7 @@ class TestResolveProviderCustomBaseUrl:
 
 
 class TestResolveProviderGoogleSpecifics:
-    """Google: sdk_type=google, алиасы работают."""
+    """Google: sdk_type=google, aliasy work."""
 
     def test_gemini_alias(self) -> None:
         r = resolve_provider("gemini")
@@ -110,7 +110,7 @@ class TestResolveProviderGoogleSpecifics:
 
 
 class TestResolveProviderDeepSeek:
-    """DeepSeek использует openai_compat SDK."""
+    """DeepSeek ispolzuet openai_compat SDK."""
 
     def test_deepseek_uses_openai_compat(self) -> None:
         r = resolve_provider("deepseek-chat")
@@ -124,7 +124,7 @@ class TestResolveProviderDeepSeek:
 
 
 class TestResolveProviderOpenAICompatProviders:
-    """Провайдеры с openai-compatible API."""
+    """Provaydery with openai-compatible API."""
 
     def test_together_prefix(self) -> None:
         r = resolve_provider("together:meta-llama/Meta-Llama-3-70B")
@@ -148,7 +148,7 @@ class TestResolveProviderOpenAICompatProviders:
 
 
 class TestResolveProviderDefaultModel:
-    """None или пустая строка → default model."""
+    """None ili empty string -> default model."""
 
     def test_none_returns_default(self) -> None:
         r = resolve_provider(None)
@@ -162,7 +162,7 @@ class TestResolveProviderDefaultModel:
 
 
 class TestResolveProviderUnknownModel:
-    """Неизвестная модель без prefix → fallback на default."""
+    """Notizvestnaya model without prefix -> fallback on default."""
 
     def test_unknown_model_fallback(self) -> None:
         r = resolve_provider("nonexistent-model-xyz")

@@ -1,4 +1,4 @@
-"""PostgresMemoryProvider — реализация MemoryProvider на asyncpg + SQLAlchemy."""
+"""PostgresMemoryProvider - MemoryProvider implementation on asyncpg + SQLAlchemy."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from cognitia.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
 
-# Подзапрос для получения внутреннего id пользователя по external_id (DRY)
+# Subquery for resolving the internal user id by external_id (DRY)
 _USER_ID_SUB = "(SELECT id FROM users WHERE external_id = :user_id)"
 _POSTGRES_EXISTING_SOURCE_PRIORITY = (
     "CASE facts.source "
@@ -31,26 +31,26 @@ _POSTGRES_INCOMING_SOURCE_PRIORITY = (
 
 
 class PostgresMemoryProvider:
-    """Провайдер памяти на базе Postgres (SQLAlchemy async).
+    """Memory provider backed by Postgres (SQLAlchemy async).
 
-    Реализует протоколы: MessageStore, FactStore, SummaryStore,
+    Implements the protocols: MessageStore, FactStore, SummaryStore,
     GoalStore, SessionStateStore, UserStore.
     """
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._sf = session_factory
 
-    # --- Утилиты (DRY) ---
+    # --- Utilities (DRY) ---
 
     @asynccontextmanager
     async def _session(self, *, commit: bool = False) -> AsyncIterator[AsyncSession]:
-        """Контекстный менеджер для сессии БД — устраняет дубликат async with."""
+        """Context manager for a DB session - removes async with duplication."""
         async with self._sf() as session:
             yield session
             if commit:
                 await session.commit()
 
-    # --- Сообщения (MessageStore) ---
+    # --- Messages (MessageStore) ---
 
     async def save_message(
         self,
@@ -60,7 +60,7 @@ class PostgresMemoryProvider:
         content: str,
         tool_calls: list[dict[str, Any]] | None = None,
     ) -> None:
-        """Сохранить сообщение в историю темы."""
+        """Save a message to the topic history."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -81,7 +81,7 @@ class PostgresMemoryProvider:
     async def get_messages(
         self, user_id: str, topic_id: str, limit: int = 10
     ) -> list[MemoryMessage]:
-        """Получить последние N сообщений темы (ASC по времени)."""
+        """Get the last N topic messages (ASC by time)."""
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -96,14 +96,14 @@ class PostgresMemoryProvider:
                 {"user_id": user_id, "topic_id": topic_id, "limit": limit},
             )
             rows = result.fetchall()
-        # Разворачиваем — от старых к новым
+        # Reverse - from oldest to newest
         return [
             MemoryMessage(role=r.role, content=r.content, tool_calls=r.tool_calls)
             for r in reversed(rows)
         ]
 
     async def count_messages(self, user_id: str, topic_id: str) -> int:
-        """Количество сообщений в теме."""
+        """Number of messages in the topic."""
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -118,7 +118,7 @@ class PostgresMemoryProvider:
             return row.cnt if row else 0
 
     async def delete_messages_before(self, user_id: str, topic_id: str, keep_last: int = 10) -> int:
-        """Удалить старые сообщения, оставив последние keep_last."""
+        """Delete old messages, keeping the last keep_last."""
         async with self._session(commit=True) as session:
             result = await session.execute(
                 text(
@@ -140,7 +140,7 @@ class PostgresMemoryProvider:
             )
             return int(result.rowcount)  # type: ignore[attr-defined]
 
-    # --- Факты (FactStore) ---
+    # --- Facts (FactStore) ---
 
     async def upsert_fact(
         self,
@@ -150,16 +150,16 @@ class PostgresMemoryProvider:
         topic_id: str | None = None,
         source: str = "user",
     ) -> None:
-        """Сохранить/обновить факт. Приоритет: user > ai_inferred > mcp.
+        """Save/update a fact. Priority: user > ai_inferred > mcp.
 
-        Использует partial unique indexes (миграция 005):
-        - topic_id IS NOT NULL → ON CONFLICT на uq_facts_user_topic_key
-        - topic_id IS NULL → ON CONFLICT на uq_facts_user_global_key
+        Uses partial unique indexes (migration 005):
+        - topic_id IS NOT NULL -> ON CONFLICT on uq_facts_user_topic_key
+        - topic_id IS NULL -> ON CONFLICT on uq_facts_user_global_key
         """
         json_value = json.dumps(value)
         async with self._session(commit=True) as session:
             if topic_id is not None:
-                # Факт привязан к теме
+                # Topic-scoped fact
                 await session.execute(
                     text(
                         f"""
@@ -184,7 +184,7 @@ class PostgresMemoryProvider:
                     },
                 )
             else:
-                # Глобальный факт (topic_id IS NULL)
+                # Global fact (topic_id IS NULL)
                 await session.execute(
                     text(
                         f"""
@@ -209,7 +209,7 @@ class PostgresMemoryProvider:
                 )
 
     async def get_facts(self, user_id: str, topic_id: str | None = None) -> dict[str, Any]:
-        """Получить факты: глобальные + по теме (если указана)."""
+        """Get facts: global + topic-scoped (if provided)."""
         async with self._session() as session:
             if topic_id:
                 result = await session.execute(
@@ -248,7 +248,7 @@ class PostgresMemoryProvider:
         summary: str,
         messages_covered: int,
     ) -> None:
-        """Сохранить/обновить rolling summary с версионированием."""
+        """Save/update a rolling summary with versioning."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -272,7 +272,7 @@ class PostgresMemoryProvider:
             )
 
     async def get_summary(self, user_id: str, topic_id: str) -> str | None:
-        """Получить summary темы."""
+        """Get the topic summary."""
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -289,7 +289,7 @@ class PostgresMemoryProvider:
     # --- Users (UserStore) ---
 
     async def ensure_user(self, external_id: str) -> str:
-        """Создать пользователя если не существует, вернуть external_id."""
+        """Create the user if needed and return external_id."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -306,7 +306,7 @@ class PostgresMemoryProvider:
     # --- Goals (GoalStore) ---
 
     async def save_goal(self, user_id: str, goal: GoalState) -> None:
-        """Сохранить/обновить цель."""
+        """Save or update a goal."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -341,7 +341,7 @@ class PostgresMemoryProvider:
             )
 
     async def get_active_goal(self, user_id: str, topic_id: str) -> GoalState | None:
-        """Получить активную цель темы."""
+        """Get the active goal for the topic."""
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -370,7 +370,7 @@ class PostgresMemoryProvider:
                 is_main=row.is_main,
             )
 
-    # --- Session state (SessionStateStore — таблица topics) ---
+    # --- Session state (SessionStateStore - topics table) ---
 
     async def save_session_state(
         self,
@@ -385,7 +385,7 @@ class PostgresMemoryProvider:
         pending_delegation: str | None = None,
         delegation_summary: str | None = None,
     ) -> None:
-        """Сохранить состояние сессии для rehydration (таблица topics, §8.4)."""
+        """Save session state for rehydration (topics table, §8.4)."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -420,7 +420,7 @@ class PostgresMemoryProvider:
             )
 
     async def get_session_state(self, user_id: str, topic_id: str) -> dict[str, Any] | None:
-        """Получить состояние сессии (из таблицы topics)."""
+        """Get session state (from the topics table)."""
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -451,7 +451,7 @@ class PostgresMemoryProvider:
     # --- Profile (UserStore) ---
 
     async def get_user_profile(self, user_id: str) -> UserProfile:
-        """Получить профиль с глобальными фактами."""
+        """Get the profile with global facts."""
         facts = await self.get_facts(user_id, topic_id=None)
         return UserProfile(user_id=user_id, facts=facts)
 
@@ -463,7 +463,7 @@ class PostgresMemoryProvider:
         phase: str,
         notes: str = "",
     ) -> None:
-        """Сохранить/обновить текущую фазу пользователя."""
+        """Save or update the user's current phase."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -481,7 +481,7 @@ class PostgresMemoryProvider:
             )
 
     async def get_phase_state(self, user_id: str) -> PhaseState | None:
-        """Получить текущую фазу пользователя."""
+        """Get the user's current phase."""
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -508,7 +508,7 @@ class PostgresMemoryProvider:
         user_id: str,
         event: ToolEvent,
     ) -> None:
-        """Сохранить событие вызова инструмента."""
+        """Save a tool invocation event."""
         async with self._session(commit=True) as session:
             await session.execute(
                 text(
@@ -531,14 +531,14 @@ class PostgresMemoryProvider:
 
 
 def _json_or_none(value: Any) -> str | None:
-    """Сериализовать значение в JSON-строку или вернуть None."""
+    """Serialize a value to a JSON string or return None."""
     if value is None:
         return None
     return json.dumps(value)
 
 
 def _merge_scoped_postgres_facts(rows: Sequence[Any]) -> dict[str, Any]:
-    """Слить global + topic rows так, чтобы topic-scoped значения перекрывали global."""
+    """Merge global + topic rows so topic-scoped values override global ones."""
     merged: dict[str, Any] = {}
     global_rows = [row for row in rows if getattr(row, "topic_id", None) is None]
     topic_rows = [row for row in rows if getattr(row, "topic_id", None) is not None]

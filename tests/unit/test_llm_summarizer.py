@@ -1,4 +1,4 @@
-"""Тесты для LlmSummaryGenerator — LLM-based summarizer с fallback."""
+"""Tests for LlmSummaryGenerator - LLM-based summarizer with fallback."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def _make_messages(n: int = 5) -> list[MemoryMessage]:
 
 
 class TestLlmSummaryGeneratorSync:
-    """Sync summarize() — делегирует в fallback (TemplateSummaryGenerator)."""
+    """Sync summarize() - delegates in fallback (TemplateSummaryGenerator)."""
 
     def test_sync_summarize_returns_text(self) -> None:
         gen = LlmSummaryGenerator()
@@ -31,11 +31,11 @@ class TestLlmSummaryGeneratorSync:
 
 
 class TestLlmSummaryGeneratorAsync:
-    """Async asummarize() — LLM-вызов с fallback."""
+    """Async asummarize() - LLM-call with fallback."""
 
     @pytest.mark.asyncio
     async def test_asummarize_calls_llm(self) -> None:
-        """LLM-вызов используется если задан."""
+        """LLM-call uses if specified."""
         call_log: list[tuple] = []
 
         async def fake_llm(prompt: str, dialog: str) -> str:
@@ -50,7 +50,7 @@ class TestLlmSummaryGeneratorAsync:
 
     @pytest.mark.asyncio
     async def test_asummarize_fallback_on_error(self) -> None:
-        """Ошибка LLM → fallback на template."""
+        """Error LLM -> fallback on template."""
 
         async def failing_llm(prompt: str, dialog: str) -> str:
             raise RuntimeError("API error")
@@ -58,25 +58,25 @@ class TestLlmSummaryGeneratorAsync:
         gen = LlmSummaryGenerator(llm_call=failing_llm)
         result = await gen.asummarize(_make_messages(3))
 
-        # Fallback — template формат
+        # Fallback - template format
         assert "[user]" in result or "[assistant]" in result
 
     @pytest.mark.asyncio
     async def test_asummarize_fallback_on_short_result(self) -> None:
-        """Слишком короткий ответ LLM → fallback."""
+        """Too short answer LLM -> fallback."""
 
         async def short_llm(prompt: str, dialog: str) -> str:
-            return "Ок"  # < 50 символов
+            return "Ок"  # < 50 characters
 
         gen = LlmSummaryGenerator(llm_call=short_llm)
         result = await gen.asummarize(_make_messages(3))
 
-        # Fallback — содержит реальные сообщения
+        # Fallback - contains real messages
         assert "Сообщение" in result
 
     @pytest.mark.asyncio
     async def test_asummarize_no_llm_uses_fallback(self) -> None:
-        """Без llm_call → всегда fallback."""
+        """Without llm_call -> always fallback."""
         gen = LlmSummaryGenerator(llm_call=None)
         result = await gen.asummarize(_make_messages(3))
         assert "Сообщение" in result

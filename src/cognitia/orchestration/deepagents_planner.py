@@ -1,7 +1,7 @@
-"""DeepAgentsPlannerMode — PlannerMode через LangGraph Plan-and-Execute pattern.
+"""DeepAgentsPlannerMode - PlannerMode via LangGraph Plan-and-Execute pattern.
 
-Использует тот же LLM-интерфейс что и ThinPlannerMode, но
-при наличии langchain может использовать нативные graph nodes.
+Uses the same LLM-interface as and ThinPlannerMode, but
+Prand onland and langchain can and can use on-demand graph nodes.
 
 Optional dependency: langchain-core.
 """
@@ -19,12 +19,12 @@ from cognitia.orchestration.types import ApprovalSource, Plan, PlanStep
 
 
 class DeepAgentsPlannerMode:
-    """PlannerMode для DeepAgents runtime.
+    """PlannerMode for DeepAgents runtime.
 
-    Структурно совместим с ThinPlannerMode (LSP).
-    При наличии langchain использует LangGraph nodes;
-    при отсутствии — fallback на direct LLM calls.
-    """
+  Structurally combined with ThinPlannerMode (LSP).
+  Prand onlandand langchain and uses LangGraph nodes;
+  prand absentinandand - fallback on direct LLM calls.
+  """
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class DeepAgentsPlannerMode:
         self._max_steps = max_steps
 
     async def generate_plan(self, goal: str, context: str) -> Plan:
-        """Сгенерировать план через LLM."""
+        """Generate plan via LLM."""
         prompt = (
             f"Создай пошаговый план для: {goal}\n"
             f"Контекст: {context}\n"
@@ -59,13 +59,13 @@ class DeepAgentsPlannerMode:
         return plan
 
     async def approve(self, plan: Plan, by: ApprovalSource) -> Plan:
-        """Одобрить план."""
+        """Approve plan."""
         approved = plan.approve(by=by)
         await self._store.save(approved)
         return approved
 
     async def execute_step(self, plan: Plan, step_id: str) -> PlanStep:
-        """Выполнить один шаг."""
+        """Execute step."""
         step = next((s for s in plan.steps if s.id == step_id), None)
         if step is None:
             msg = f"Шаг '{step_id}' не найден"
@@ -89,7 +89,7 @@ class DeepAgentsPlannerMode:
         return updated
 
     async def execute_all(self, plan: Plan) -> AsyncIterator[PlanStep]:
-        """Выполнить все шаги."""
+        """Execute all."""
         plan = plan.start_execution() if plan.status == "approved" else plan
         await self._store.save(plan)
         execution_failed = False
@@ -108,6 +108,6 @@ class DeepAgentsPlannerMode:
             await self._store.save(plan)
 
     async def replan(self, plan: Plan, feedback: str) -> Plan:
-        """Перегенерировать план."""
+        """Regenerate plan."""
         context = f"Предыдущий: {plan.goal}, feedback: {feedback}"
         return await self.generate_plan(plan.goal, context)

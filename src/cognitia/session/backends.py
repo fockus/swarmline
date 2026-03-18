@@ -1,9 +1,9 @@
 """Session backends and memory scopes (Phase 8A).
 
 Provides pluggable persistence for session state:
-- InMemorySessionBackend — default, no external deps
-- SqliteSessionBackend — zero-config file-based persistence
-- MemoryScope — agent isolation via key namespacing
+- InMemorySessionBackend - default, no external deps
+- SqliteSessionBackend - zero-config file-based persistence
+- MemoryScope - agent isolation via key namespacing
 """
 
 from __future__ import annotations

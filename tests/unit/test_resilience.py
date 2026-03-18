@@ -1,10 +1,7 @@
-"""Тесты для CircuitBreaker и retry (секция 13 архитектуры).
-
-CircuitBreaker per server_id:
-- closed → half_open → open
+"""Tests for CircuitBreaker and retry (architecture section 13). CircuitBreaker per server_id:
+- closed -> half_open -> open
 - opens after N consecutive failures
-- closes after cooldown + successful probe
-"""
+- closes after cooldown + successful probe"""
 
 import time
 
@@ -15,19 +12,19 @@ class TestCircuitBreaker:
     """CircuitBreaker — per server_id."""
 
     def test_initial_state_closed(self) -> None:
-        """Начальное состояние — CLOSED."""
+        """The initial state is CLOSED."""
         cb = CircuitBreaker(failure_threshold=3, cooldown_seconds=5)
         assert cb.state == CircuitState.CLOSED
 
     def test_stays_closed_on_success(self) -> None:
-        """Успешные вызовы не меняют состояние."""
+        """Successful calls do not change state."""
         cb = CircuitBreaker(failure_threshold=3, cooldown_seconds=5)
         cb.record_success()
         cb.record_success()
         assert cb.state == CircuitState.CLOSED
 
     def test_opens_after_threshold_failures(self) -> None:
-        """OPEN после N последовательных ошибок."""
+        """OPEN after N consecutive errors."""
         cb = CircuitBreaker(failure_threshold=3, cooldown_seconds=5)
         cb.record_failure()
         cb.record_failure()
@@ -36,35 +33,35 @@ class TestCircuitBreaker:
         assert cb.state == CircuitState.OPEN
 
     def test_open_rejects_calls(self) -> None:
-        """В состоянии OPEN — allow_request() = False."""
+        """In the OPEN state - allow_request() = False."""
         cb = CircuitBreaker(failure_threshold=2, cooldown_seconds=60)
         cb.record_failure()
         cb.record_failure()
         assert cb.allow_request() is False
 
     def test_half_open_after_cooldown(self) -> None:
-        """После cooldown → HALF_OPEN, одна попытка разрешена."""
+        """After cooldown -> HALF_OPEN, one attempt is allowed."""
         cb = CircuitBreaker(failure_threshold=2, cooldown_seconds=0.1)
         cb.record_failure()
         cb.record_failure()
         assert cb.state == CircuitState.OPEN
-        # Ждём cooldown
+        # Wait cooldown
         time.sleep(0.15)
         assert cb.allow_request() is True
         assert cb.state == CircuitState.HALF_OPEN
 
     def test_half_open_success_closes(self) -> None:
-        """Успех в HALF_OPEN → CLOSED."""
+        """Success in HALF_OPEN -> CLOSED."""
         cb = CircuitBreaker(failure_threshold=2, cooldown_seconds=0.1)
         cb.record_failure()
         cb.record_failure()
         time.sleep(0.15)
-        cb.allow_request()  # Переходим в HALF_OPEN
+        cb.allow_request()  # Go to HALF_OPEN
         cb.record_success()
         assert cb.state == CircuitState.CLOSED
 
     def test_half_open_failure_reopens(self) -> None:
-        """Ошибка в HALF_OPEN → снова OPEN."""
+        """Error in HALF_OPEN -> OPEN again."""
         cb = CircuitBreaker(failure_threshold=2, cooldown_seconds=0.1)
         cb.record_failure()
         cb.record_failure()
@@ -74,29 +71,29 @@ class TestCircuitBreaker:
         assert cb.state == CircuitState.OPEN
 
     def test_success_resets_failure_count(self) -> None:
-        """Успех сбрасывает счётчик ошибок."""
+        """Success resets the error counter."""
         cb = CircuitBreaker(failure_threshold=3, cooldown_seconds=5)
         cb.record_failure()
         cb.record_failure()
-        cb.record_success()  # Сброс
+        cb.record_success()  # Reset
         cb.record_failure()
-        assert cb.state == CircuitState.CLOSED  # 1 ошибка, не 3
+        assert cb.state == CircuitState.CLOSED  # 1 error, not 3
 
 
 class TestCircuitBreakerRegistry:
-    """Реестр breakers per server_id."""
+    """Registry breakers per server_id."""
 
     def test_get_or_create(self) -> None:
-        """Получить или создать breaker для server_id."""
+        """Get or create breaker for server_id."""
         from cognitia.resilience.circuit_breaker import CircuitBreakerRegistry
 
         registry = CircuitBreakerRegistry(failure_threshold=3, cooldown_seconds=5)
         cb1 = registry.get("iss")
         cb2 = registry.get("iss")
-        assert cb1 is cb2  # Тот же объект
+        assert cb1 is cb2  # Same object
 
     def test_different_servers(self) -> None:
-        """Разные серверы — разные breakers."""
+        """Different servers - different breakers."""
         from cognitia.resilience.circuit_breaker import CircuitBreakerRegistry
 
         registry = CircuitBreakerRegistry(failure_threshold=3, cooldown_seconds=5)

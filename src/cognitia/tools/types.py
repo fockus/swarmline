@@ -1,8 +1,8 @@
-"""Типы для sandbox-изоляции агентов.
+"""Types for agent sandbox isolation.
 
-SandboxConfig — конфигурация sandbox (root_path, user/topic изоляция, лимиты).
-ExecutionResult — результат выполнения команды.
-SandboxViolation — исключение при нарушении изоляции.
+SandboxConfig is the sandbox configuration (root_path, user/topic isolation, limits).
+ExecutionResult is the result of command execution.
+SandboxViolation is raised on isolation violations.
 """
 
 from __future__ import annotations
@@ -13,10 +13,10 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class SandboxConfig:
-    """Конфигурация sandbox-изоляции.
+    """Sandbox isolation configuration.
 
-    Sandbox обеспечивает изоляцию файловой системы и выполнения команд
-    по user_id / topic_id. Каждый агент работает в своём workspace:
+    The sandbox isolates filesystem access and command execution
+    by user_id / topic_id. Each agent works in its own workspace:
     {root_path}/{user_id}/{topic_id}/workspace/
     """
 
@@ -30,15 +30,15 @@ class SandboxConfig:
 
     @property
     def workspace_path(self) -> str:
-        """Полный путь к workspace агента."""
+        """Absolute path to the agent workspace."""
         return str(Path(self.root_path) / self.user_id / self.topic_id / "workspace")
 
 
 @dataclass(frozen=True)
 class ExecutionResult:
-    """Результат выполнения команды в sandbox.
+    """Result of executing a command in the sandbox.
 
-    Содержит stdout, stderr, exit_code и флаг timeout.
+    Contains stdout, stderr, exit_code, and a timeout flag.
     """
 
     stdout: str
@@ -48,10 +48,10 @@ class ExecutionResult:
 
 
 class SandboxViolation(Exception):
-    """Нарушение изоляции sandbox.
+    """Sandbox isolation violation.
 
-    Бросается при попытке path traversal, превышении лимитов
-    или выполнении запрещённых команд.
+    Raised when path traversal is attempted, limits are exceeded,
+    or denied commands are executed.
     """
 
     def __init__(self, message: str, *, path: str | None = None) -> None:

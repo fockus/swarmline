@@ -4,7 +4,7 @@ Provides:
 - ModelPricing: per-model token pricing (USD per 1M tokens)
 - CostBudget: budget limits configuration
 - CostTracker: accumulates usage and checks budget
-- load_pricing(): loads pricing.json via importlib.resources
+- load_pricing(): loads pricing.JSON via importlib.resources
 """
 
 from __future__ import annotations
@@ -29,13 +29,13 @@ class ModelPricing:
 class CostBudget:
     """Budget limits for cost tracking.
 
-    Attributes:
-        max_cost_usd: Maximum total cost in USD. None = no limit.
-        max_total_tokens: Maximum total tokens (input + output). None = no limit.
-        action_on_exceed: What to do when budget is exceeded.
-            "error" = emit budget_exceeded error event.
-            "warn" = report warning status but continue.
-    """
+  Attributes:
+    max_cost_usd: Maximum total cost in USD. None = no limit.
+    max_total_tokens: Maximum total tokens (input + output). None = no limit.
+    action_on_exceed: What to do when budget is exceeded.
+      "error" = emit budget_exceeded error event.
+      "warn" = report warning status but continue.
+  """
 
     max_cost_usd: float | None = None
     max_total_tokens: int | None = None
@@ -45,8 +45,8 @@ class CostBudget:
 class CostTracker:
     """Accumulates token usage and checks budget limits.
 
-    Thread-safe for single-threaded async usage (no locks needed).
-    """
+  Thread-safe for single-threaded async usage (no locks needed).
+  """
 
     def __init__(self, budget: CostBudget, pricing: dict[str, ModelPricing]) -> None:
         self._budget = budget
@@ -82,11 +82,11 @@ class CostTracker:
     def check_budget(self) -> BudgetStatus:
         """Check whether budget limits have been exceeded.
 
-        Returns:
-            "ok" — within limits (or no limits set).
-            "exceeded" — over limit with action_on_exceed="error".
-            "warning" — over limit with action_on_exceed="warn".
-        """
+    Returns:
+      "ok" - wiThin limits (or no limits set).
+      "exceeded" - over limit with action_on_exceed="error".
+      "warning" - over limit with action_on_exceed="warn".
+    """
         exceeded = False
         if self._budget.max_cost_usd is not None and self._total_cost > self._budget.max_cost_usd:
             exceeded = True
@@ -111,10 +111,10 @@ class CostTracker:
 
 
 def load_pricing() -> dict[str, ModelPricing]:
-    """Load model pricing from bundled pricing.json.
+    """Load model pricing from bundled pricing.JSON.
 
-    Uses importlib.resources for reliable package-relative loading.
-    """
+  Uses importlib.resources for reliable package-relative loading.
+  """
     ref = importlib.resources.files("cognitia.runtime").joinpath("pricing.json")
     raw = ref.read_text(encoding="utf-8")
     data: dict[str, dict[str, float]] = json.loads(raw)

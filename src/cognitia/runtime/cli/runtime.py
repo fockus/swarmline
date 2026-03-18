@@ -37,14 +37,14 @@ def _build_stdin_payload(messages: list[Message], system_prompt: str) -> str:
 
 
 def _is_claude_command(command: list[str]) -> bool:
-    """Определить, запускает ли команда Claude CLI."""
+    """Is claude command."""
     if not command:
         return False
     return os.path.basename(command[0]) == "claude"
 
 
 def _normalize_claude_command(command: list[str], output_format: str) -> list[str]:
-    """Нормализовать Claude CLI command под NDJSON runtime contract."""
+    """Normalize claude command."""
     if not _is_claude_command(command):
         return list(command)
 
@@ -53,7 +53,7 @@ def _normalize_claude_command(command: list[str], output_format: str) -> list[st
         for token in command
     ]
 
-    # Чаще всего stdin prompt передаётся через trailing "-" placeholder.
+
     prompt_placeholder = normalized[-1] == "-" if normalized else False
     core = normalized[:-1] if prompt_placeholder else normalized[:]
 
@@ -74,9 +74,9 @@ def _normalize_claude_command(command: list[str], output_format: str) -> list[st
 class CliAgentRuntime:
     """Run external CLI agents via subprocess + NDJSON parsing.
 
-    Implements AgentRuntime protocol. Parser is auto-selected based on
-    the command name (``claude`` -> ClaudeNdjsonParser, else Generic).
-    """
+  Implements AgentRuntime protocol. Parser is auto-selected based on
+  the command name (``Claude`` -> ClaudeNdJSONParser, else Generic).
+  """
 
     def __init__(
         self,

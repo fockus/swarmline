@@ -1,7 +1,7 @@
-"""InMemoryMemoryProvider — dev-mode провайдер памяти без БД (R-521).
+"""InMemoryMemoryProvider - dev-mode memory provider without a DB (R-521).
 
-Все данные хранятся в dict'ах в памяти процесса.
-Идеален для разработки, тестов и демонстрации без Postgres.
+All data is stored in process-memory dicts.
+Ideal for development, tests, and demos without Postgres.
 """
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ from cognitia.memory.types import GoalState, MemoryMessage, PhaseState, ToolEven
 
 
 class InMemoryMemoryProvider:
-    """Pluggable memory provider для dev/test без БД.
+    """Pluggable memory provider for dev/test without a DB.
 
-    Реализует полный MemoryProvider Protocol.
+    Implements the full MemoryProvider Protocol.
     """
 
     def __init__(self) -> None:
@@ -42,7 +42,7 @@ class InMemoryMemoryProvider:
         copied["active_skill_ids"] = list(state.get("active_skill_ids", []))
         return copied
 
-    # --- Сообщения ---
+    # --- Messages ---
 
     async def save_message(
         self,
@@ -52,7 +52,7 @@ class InMemoryMemoryProvider:
         content: str,
         tool_calls: list[dict[str, Any]] | None = None,
     ) -> None:
-        """Сохранить сообщение."""
+        """Save a message."""
         key = (user_id, topic_id)
         self._messages[key].append(MemoryMessage(role=role, content=content, tool_calls=tool_calls))
 
@@ -62,13 +62,13 @@ class InMemoryMemoryProvider:
         topic_id: str,
         limit: int = 10,
     ) -> list[MemoryMessage]:
-        """Получить последние N сообщений."""
+        """Get the last N messages."""
         key = (user_id, topic_id)
         msgs = self._messages[key]
         return msgs[-limit:]
 
     async def count_messages(self, user_id: str, topic_id: str) -> int:
-        """Количество сообщений."""
+        """Message count."""
         return len(self._messages[(user_id, topic_id)])
 
     async def delete_messages_before(
@@ -77,7 +77,7 @@ class InMemoryMemoryProvider:
         topic_id: str,
         keep_last: int = 10,
     ) -> int:
-        """Удалить старые сообщения."""
+        """Delete old messages."""
         key = (user_id, topic_id)
         msgs = self._messages[key]
         to_delete = max(0, len(msgs) - keep_last)
@@ -85,7 +85,7 @@ class InMemoryMemoryProvider:
             self._messages[key] = msgs[-keep_last:]
         return to_delete
 
-    # --- Факты ---
+    # --- Facts ---
 
     async def upsert_fact(
         self,
@@ -95,7 +95,7 @@ class InMemoryMemoryProvider:
         topic_id: str | None = None,
         source: str = "user",
     ) -> None:
-        """Сохранить факт."""
+        """Save a fact."""
         fk = (user_id, topic_id)
         self._facts[fk][key] = value
 
@@ -104,11 +104,11 @@ class InMemoryMemoryProvider:
         user_id: str,
         topic_id: str | None = None,
     ) -> dict[str, Any]:
-        """Получить факты: глобальные + по теме."""
+        """Get facts: global + topic-scoped."""
         result: dict[str, Any] = {}
-        # Глобальные
+        # Global
         result.update(self._facts.get((user_id, None), {}))
-        # По теме
+        # Topic-scoped
         if topic_id:
             result.update(self._facts.get((user_id, topic_id), {}))
         return result
@@ -122,28 +122,28 @@ class InMemoryMemoryProvider:
         summary: str,
         messages_covered: int,
     ) -> None:
-        """Сохранить summary."""
+        """Save a summary."""
         self._summaries[(user_id, topic_id)] = summary
 
     async def get_summary(self, user_id: str, topic_id: str) -> str | None:
-        """Получить summary."""
+        """Get a summary."""
         return self._summaries.get((user_id, topic_id))
 
     # --- Users ---
 
     async def ensure_user(self, external_id: str) -> str:
-        """Создать пользователя."""
+        """Create a user."""
         self._users.add(external_id)
         return external_id
 
     # --- Goals ---
 
     async def save_goal(self, user_id: str, goal: GoalState) -> None:
-        """Сохранить цель."""
+        """Save a goal."""
         self._goals[(user_id, goal.goal_id)] = goal
 
     async def get_active_goal(self, user_id: str, topic_id: str) -> GoalState | None:
-        """Получить активную цель."""
+        """Get the active goal."""
         return self._goals.get((user_id, topic_id))
 
     # --- Session state ---
@@ -161,7 +161,7 @@ class InMemoryMemoryProvider:
         pending_delegation: str | None = None,
         delegation_summary: str | None = None,
     ) -> None:
-        """Сохранить состояние сессии."""
+        """Save session state."""
         state = {
             "role_id": role_id,
             "active_skill_ids": list(active_skill_ids),
@@ -178,7 +178,7 @@ class InMemoryMemoryProvider:
         user_id: str,
         topic_id: str,
     ) -> dict[str, Any] | None:
-        """Получить состояние сессии."""
+        """Get session state."""
         state = self._session_states.get((user_id, topic_id))
         if state is None:
             return None
@@ -187,7 +187,7 @@ class InMemoryMemoryProvider:
     # --- Profile ---
 
     async def get_user_profile(self, user_id: str) -> UserProfile:
-        """Получить профиль."""
+        """Get the profile."""
         facts = await self.get_facts(user_id, topic_id=None)
         return UserProfile(user_id=user_id, facts=facts)
 
@@ -199,7 +199,7 @@ class InMemoryMemoryProvider:
         phase: str,
         notes: str = "",
     ) -> None:
-        """Сохранить фазу."""
+        """Save the phase."""
         self._phase_states[user_id] = PhaseState(
             user_id=user_id,
             phase=phase,
@@ -207,7 +207,7 @@ class InMemoryMemoryProvider:
         )
 
     async def get_phase_state(self, user_id: str) -> PhaseState | None:
-        """Получить текущую фазу."""
+        """Get the current phase."""
         return self._phase_states.get(user_id)
 
     # --- Tool events (§9.1) ---
@@ -217,7 +217,7 @@ class InMemoryMemoryProvider:
         user_id: str,
         event: ToolEvent,
     ) -> None:
-        """Сохранить событие вызова инструмента."""
+        """Save a tool invocation event."""
         self._tool_events.append(
             {
                 "user_id": user_id,

@@ -1,4 +1,4 @@
-"""TeamOrchestrator Protocol — ISP ≤5 методов.
+"""TeamOrchestrator protocol - ISP with 5 or fewer methods.
 
 Multi-agent team orchestration: lead + workers.
 """
@@ -12,33 +12,33 @@ from cognitia.orchestration.team_types import TeamConfig, TeamMessage, TeamStatu
 
 @runtime_checkable
 class TeamOrchestrator(Protocol):
-    """Оркестратор команды агентов — ISP: ≤5 методов."""
+    """Team agent orchestrator - ISP with 5 or fewer methods."""
 
     async def start(self, config: TeamConfig, task: str) -> str:
-        """Запустить команду. Возвращает team_id."""
+        """Start the team and return its `team_id`."""
         ...
 
     async def stop(self, team_id: str) -> None:
-        """Остановить команду."""
+        """Stop the team."""
         ...
 
     async def get_team_status(self, team_id: str) -> TeamStatus:
-        """Получить статус команды."""
+        """Get status teams."""
         ...
 
     async def send_message(self, team_id: str, message: TeamMessage) -> None:
-        """Отправить сообщение агенту в команде."""
+        """Send a message to an agent inside the team."""
         ...
 
     async def pause_agent(self, team_id: str, agent_id: str) -> None:
-        """Приостановить конкретного worker'а."""
+        """Pause a specific worker."""
         ...
 
 
 @runtime_checkable
 class ResumableTeamOrchestrator(TeamOrchestrator, Protocol):
-    """Расширение TeamOrchestrator с поддержкой resume lifecycle."""
+    """Extension of `TeamOrchestrator` with resume lifecycle support."""
 
     async def resume_agent(self, team_id: str, agent_id: str) -> None:
-        """Возобновить ранее приостановленного worker'а."""
+        """Resume a previously paused worker."""
         ...

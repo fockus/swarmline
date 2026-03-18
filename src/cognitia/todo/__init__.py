@@ -1,1 +1,1 @@
-"""Cognitia Todo — чеклисты и task tracking для агентов."""
+"""Cognitia Todo - checklists and task tracking for agents."""

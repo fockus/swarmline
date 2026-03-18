@@ -13,7 +13,7 @@ def build_deepagents_chat_model(
     *,
     base_url: str | None = None,
 ) -> Any:
-    """Ленивая прокладка к provider-aware model builder."""
+    """Lazy wrapper around the provider-aware model builder."""
     from cognitia.runtime.deepagents_models import (
         build_deepagents_chat_model as _build_deepagents_chat_model,
     )
@@ -22,7 +22,7 @@ def build_deepagents_chat_model(
 
 
 def create_langchain_tool(spec: ToolSpec, executor: Callable | None) -> Any:
-    """Ленивая прокладка к LangChain tool factory."""
+    """Lazy wrapper around the LangChain tool factory."""
     from cognitia.runtime.deepagents_tools import (
         create_langchain_tool as _create_langchain_tool,
     )
@@ -31,7 +31,7 @@ def create_langchain_tool(spec: ToolSpec, executor: Callable | None) -> Any:
 
 
 def _extract_chunk_text(content: Any) -> str:
-    """Извлечь текст из LangChain/DeepAgents chunk content."""
+    """Extract text from LangChain/DeepAgents chunk content."""
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -61,7 +61,7 @@ def build_deepagents_graph(
     middleware: list[Any] | None = None,
     agent_name: str | None = None,
 ) -> Any:
-    """Собрать native DeepAgents graph через upstream create_deep_agent()."""
+    """Build a native DeepAgents graph via upstream create_deep_agent()."""
     from cognitia.runtime.deepagents_builtins import split_native_builtin_tools
     from deepagents import create_deep_agent  # type: ignore[import-not-found]
 
@@ -105,15 +105,15 @@ def validate_native_backend_config(
     native_tool_names: list[str],
     native_config: dict[str, Any],
 ) -> RuntimeErrorData | None:
-    """Требовать явный backend для native built-ins вместо silent StateBackend fallback."""
+    """Require an explicit backend for native built-ins instead of a silent StateBackend fallback."""
     if not native_tool_names or native_config.get("backend") is not None:
         return None
 
     return RuntimeErrorData(
         kind="capability_unsupported",
         message=(
-            "DeepAgents native built-ins требуют native_config['backend']; "
-            "без него upstream использует StateBackend с эфемерной файловой системой."
+            "DeepAgents native built-ins require native_config['backend']; "
+            "without it, upstream uses StateBackend with an ephemeral filesystem."
         ),
         recoverable=False,
         details={"native_tools": list(native_tool_names)},
@@ -126,7 +126,7 @@ async def stream_deepagents_graph_events(
     input_payload: Any,
     run_config: dict[str, Any] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
-    """Нормализовать upstream graph events в RuntimeEvent."""
+    """Normalize upstream graph events into RuntimeEvent."""
     from cognitia.runtime.deepagents_hitl import build_interrupt_events
 
     tool_correlation: dict[str, str] = {}

@@ -1,6 +1,4 @@
-"""TDD RED: CommandRegistry v2 — typed params, YAML discovery, LLM tool generation.
-
-CRP-5.1: Расширение CommandRegistry с сохранением backward compatibility.
+"""TDD RED: CommandRegistry v2 - typed params, YAML discovery, LLM tool generation. CRP-5.1: Rasshirenie CommandRegistry with sohranotniem backward compatibility.
 """
 
 from __future__ import annotations
@@ -9,7 +7,7 @@ from cognitia.commands.registry import CommandRegistry
 
 
 class TestCommandTypedParamsValidated:
-    """JSON Schema параметры валидируются при execute."""
+    """JSON Schema parameters validiruyutsya pri execute."""
 
     async def test_command_typed_params_validated(self) -> None:
         reg = CommandRegistry()
@@ -38,7 +36,7 @@ class TestCommandTypedParamsValidated:
 
 
 class TestCommandYamlAutoDiscovery:
-    """Commands из YAML загружаются автоматически."""
+    """Commands from YAML zagruzhayutsya avtomaticheski."""
 
     async def test_command_yaml_auto_discovery(self, tmp_path) -> None:
         from cognitia.commands.loader import load_commands_from_yaml
@@ -71,7 +69,7 @@ commands:
 
 
 class TestCommandToToolDefinition:
-    """CommandSpec → ToolDefinition для LLM."""
+    """CommandSpec -> ToolDefinition for LLM."""
 
     async def test_command_to_tool_definition(self) -> None:
         reg = CommandRegistry()
@@ -102,7 +100,7 @@ class TestCommandToToolDefinition:
 
 
 class TestCommandBackwardCompatible:
-    """Старый string API работает без изменений."""
+    """Legacy string API works without izmenotniy."""
 
     async def test_command_backward_compatible(self) -> None:
         reg = CommandRegistry()
@@ -126,7 +124,7 @@ class TestCommandBackwardCompatible:
 
 
 class TestCommandCategoriesListed:
-    """list_commands(category='admin') фильтрует."""
+    """list_commands(category='admin') filtruet."""
 
     async def test_command_categories_listed(self) -> None:
         reg = CommandRegistry()

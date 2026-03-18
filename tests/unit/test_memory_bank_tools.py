@@ -1,4 +1,4 @@
-"""Тесты Memory Bank tools — TDD."""
+"""Tests for Memory Bank tools - TDD."""
 
 from __future__ import annotations
 

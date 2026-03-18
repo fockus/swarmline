@@ -1,7 +1,7 @@
-"""ThinPlannerMode — реализация PlannerMode для ThinRuntime.
+"""ThinPlannerMode - PlannerMode implementation for ThinRuntime.
 
-Генерация плана → сохранение → пошаговое выполнение через LLM.
-Каждый шаг — отдельный LLM вызов. Plan persist между вызовами.
+Plan generation -> persistence -> step-by-step execution through the LLM.
+Each step is a separate LLM call. The plan persists between calls.
 """
 
 from __future__ import annotations
@@ -17,17 +17,17 @@ from cognitia.orchestration.types import ApprovalSource, Plan, PlanStep
 
 
 class LLMCallable(Protocol):
-    """Минимальный интерфейс LLM для planner."""
+    """Minimal LLM interface for the planner."""
 
     async def generate(self, prompt: str) -> str: ...
 
 
 class ThinPlannerMode:
-    """PlannerMode для ThinRuntime — lightweight multi-turn planner.
+    """PlannerMode for ThinRuntime - lightweight multi-turn planner.
 
-    SRP: делегирует LLM-вызовы в llm, персистентность в plan_store.
-    Bounded: max_steps=10.
-    """
+  SRP: delegates LLM calls to the LLM and persistence to `plan_store`.
+  Bounded: max_steps=10.
+  """
 
     def __init__(
         self,
@@ -42,7 +42,7 @@ class ThinPlannerMode:
         self._max_retries = max_retries_per_step
 
     async def generate_plan(self, goal: str, context: str) -> Plan:
-        """Сгенерировать план через LLM."""
+        """Generate a plan through the LLM."""
         prompt = (
             f"Создай пошаговый план для цели: {goal}\n"
             f"Контекст: {context}\n"
@@ -67,19 +67,19 @@ class ThinPlannerMode:
         return plan
 
     async def approve(self, plan: Plan, by: ApprovalSource) -> Plan:
-        """Одобрить план."""
+        """Approve plan."""
         approved = plan.approve(by=by)
         await self._store.save(approved)
         return approved
 
     async def execute_step(self, plan: Plan, step_id: str) -> PlanStep:
-        """Выполнить один шаг плана через LLM."""
+        """Execute a single plan step through the LLM."""
         step = next((s for s in plan.steps if s.id == step_id), None)
         if step is None:
             msg = f"Шаг '{step_id}' не найден"
             raise ValueError(msg)
 
-        # Собираем контекст предыдущих шагов
+        # Collect context from previous steps.
         prev_results = [
             f"[{s.id}] {s.description}: {s.result}"
             for s in plan.steps
@@ -106,7 +106,7 @@ class ThinPlannerMode:
         return updated
 
     async def execute_all(self, plan: Plan) -> AsyncIterator[PlanStep]:
-        """Выполнить все шаги последовательно. Остановка при failure."""
+        """Execute all steps sequentially and stop on failure."""
         plan = plan.start_execution() if plan.status == "approved" else plan
         await self._store.save(plan)
         execution_failed = False
@@ -116,7 +116,7 @@ class ThinPlannerMode:
                 continue
             result = await self.execute_step(plan, step.id)
             yield result
-            # Обновляем локальную копию плана
+            # Update the local plan copy.
             plan = plan.update_step(result)
             if result.status == "failed":
                 execution_failed = True
@@ -127,7 +127,7 @@ class ThinPlannerMode:
             await self._store.save(plan)
 
     async def replan(self, plan: Plan, feedback: str) -> Plan:
-        """Перегенерировать план с feedback."""
+        """Regenerate the plan with feedback."""
         context = (
             f"Предыдущий план: {plan.goal}\n"
             f"Шаги: {json.dumps([{'id': s.id, 'desc': s.description, 'status': s.status} for s in plan.steps])}\n"

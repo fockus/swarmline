@@ -1,8 +1,4 @@
-"""ThinTeamOrchestrator — team orchestration через ThinRuntime workers.
-
-Lead delegation + workers + MessageBus координация.
-Реализует TeamOrchestrator + ResumableTeamOrchestrator protocols.
-"""
+"""Thin Team module."""
 
 from __future__ import annotations
 
@@ -32,23 +28,17 @@ from cognitia.runtime.types import RuntimeConfig
 async def _default_llm_call(
     messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any
 ) -> str:
-    """No-op LLM call -- возвращает минимальный final ответ с небольшой задержкой.
+    """No-op LLM call -- inozin increases manandmal final from inno with not much delay.
 
-    Задержка нужна чтобы workers не завершались мгновенно до вызова
-    pause/resume в тестах и production code.
-    """
+  The delay is necessary so that workers do not finish immediately to the point of collapse
+  pause/resume in test and production code.
+  """
     await asyncio.sleep(0.1)
     return json.dumps({"type": "final", "final_message": "done"})
 
 
 class ThinTeamOrchestrator(BaseTeamOrchestrator):
-    """TeamOrchestrator для ThinRuntime workers.
-
-    SRP: координация команды (lead delegation, worker dispatch, messaging).
-    Execution делегируется ThinSubagentOrchestrator.
-
-    Если llm_call не передан, используется no-op реализация (для тестов/протоколов).
-    """
+    """Thin Team Orchestrator implementation."""
 
     def __init__(
         self,
@@ -74,11 +64,7 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
         super().__init__(sub_orch)
 
     async def start(self, config: TeamConfig, task: str) -> str:
-        """Запустить команду — spawn workers с lead-composed tasks.
-
-        Каждый worker автоматически получает send_message tool
-        для обмена сообщениями через MessageBus.
-        """
+        """Start."""
         team_id = str(uuid.uuid4())
         worker_ids: dict[str, str] = {}
         bus = MessageBus()
@@ -97,8 +83,8 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
         ]
         worker_names = [s.name for s in worker_specs]
 
-        # Регистрируем send_message tool — один executor для всех workers
-        # executor принимает args dict с from_agent (опционально, fallback на sender)
+        # Regandstrandruem send_message tool - odandn executor for inseh workers
+        # executor sends args dict with from_agent (optional, fallback on sender)
         assert isinstance(self._sub_orch, ThinSubagentOrchestrator)
         self._sub_orch.register_tool(
             "send_message",
@@ -130,9 +116,9 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
     ) -> tuple[str, str] | None:
         """Resolve agent_id to (worker_name, actual_agent_uuid).
 
-        Accepts both worker name (from status.workers keys) and UUID (internal).
-        Returns None if not found.
-        """
+    Accepts both worker name (from status.workers keys) and UUID (internal).
+    Returns None if not found.
+    """
         # Try as UUID first
         by_uuid = next(
             (name for name, cur_id in state.worker_ids.items() if cur_id == agent_id),
@@ -148,10 +134,7 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
         return None
 
     async def pause_agent(self, team_id: str, agent_id: str) -> None:
-        """Приостановить worker'а (cancel + mark paused).
-
-        agent_id может быть UUID (внутренний) или worker name (из status.workers).
-        """
+        """Pause agent."""
         state = self._teams.get(team_id)
         if not state:
             return
@@ -163,10 +146,7 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
         state.paused_workers.add(worker_name)
 
     async def resume_agent(self, team_id: str, agent_id: str) -> None:
-        """Возобновить paused worker'а (re-spawn).
-
-        agent_id может быть UUID (внутренний) или worker name (из status.workers).
-        """
+        """Resume agent."""
         state = self._teams.get(team_id)
         if not state:
             return

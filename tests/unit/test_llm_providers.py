@@ -1,4 +1,4 @@
-"""Тесты для LLM provider adapters — multi-provider support для ThinRuntime."""
+"""Tests for LLM provider adapters - multi-provider support for ThinRuntime."""
 
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ def _clear_adapter_cache() -> None:
 
 
 class TestLlmAdapterProtocol:
-    """Все адаптеры реализуют LlmAdapter protocol."""
+    """Vse adaptery realizuyut LlmAdapter protocol."""
 
     def test_anthropic_is_llm_adapter(self) -> None:
         with patch.dict("sys.modules", {"anthropic": _make_mock_anthropic_module()}):
@@ -101,7 +101,7 @@ class TestLlmAdapterProtocol:
 
 
 class TestAnthropicAdapterCall:
-    """AnthropicAdapter вызывает anthropic SDK."""
+    """AnthropicAdapter vyzyvaet anthropic SDK."""
 
     @pytest.fixture
     def mock_anthropic(self):
@@ -173,7 +173,7 @@ class TestAnthropicAdapterCall:
 
 
 class TestOpenAICompatAdapterCall:
-    """OpenAICompatAdapter вызывает openai SDK."""
+    """OpenAICompatAdapter vyzyvaet openai SDK."""
 
     @pytest.fixture
     def mock_openai(self):
@@ -224,7 +224,7 @@ class TestOpenAICompatAdapterCall:
 
 
 class TestGoogleAdapterCall:
-    """GoogleAdapter вызывает google-genai SDK."""
+    """GoogleAdapter vyzyvaet google-genai SDK."""
 
     @pytest.fixture
     def mock_google(self):
@@ -329,7 +329,7 @@ class TestCreateLlmAdapter:
 
 
 class TestMissingPackageErrors:
-    """Понятные ошибки при отсутствии SDK пакетов."""
+    """Ponyatnye errors pri otsutstvii SDK paketov."""
 
     def test_missing_anthropic_package(self) -> None:
         with patch.dict("sys.modules", {"anthropic": None}):
@@ -356,10 +356,10 @@ class TestMissingPackageErrors:
 
 
 class TestAdapterCaching:
-    """create_llm_adapter кеширует адаптеры по (model_id, provider, base_url)."""
+    """create_llm_adapter keshiruet adaptery by (model_id, provider, base_url)."""
 
     def test_same_provider_returns_cached(self) -> None:
-        """Один и тот же ResolvedProvider → тот же адаптер."""
+        """Odin and tot zhe ResolvedProvider -> tot zhe adapter."""
         from cognitia.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
@@ -369,7 +369,7 @@ class TestAdapterCaching:
             assert a1 is a2
 
     def test_different_model_returns_new(self) -> None:
-        """Разные model_id → разные адаптеры."""
+        """Raznye model_id -> raznye adaptery."""
         from cognitia.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
@@ -380,7 +380,7 @@ class TestAdapterCaching:
             assert a1 is not a2
 
     def test_different_base_url_returns_new(self) -> None:
-        """Разные base_url → разные адаптеры."""
+        """Raznye base_url -> raznye adaptery."""
         from cognitia.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("gpt-4o", "openai", "openai_compat", None)
@@ -392,11 +392,11 @@ class TestAdapterCaching:
 
 
 class TestDefaultLlmCallDispatch:
-    """default_llm_call() использует ProviderResolver + create_llm_adapter."""
+    """default_llm_call() ispolzuet ProviderResolver + create_llm_adapter."""
 
     @pytest.mark.asyncio
     async def test_anthropic_model_dispatches_to_adapter(self) -> None:
-        """Anthropic модель → AnthropicAdapter.call()."""
+        """Anthropic model -> AnthropicAdapter.call()."""
         from cognitia.runtime.thin.llm_client import default_llm_call
         from cognitia.runtime.types import RuntimeConfig
 
@@ -419,7 +419,7 @@ class TestDefaultLlmCallDispatch:
 
     @pytest.mark.asyncio
     async def test_openai_model_dispatches_correctly(self) -> None:
-        """OpenAI модель через prefix → OpenAICompatAdapter."""
+        """OpenAI model cherez prefix -> OpenAICompatAdapter."""
         from cognitia.runtime.thin.llm_client import default_llm_call
         from cognitia.runtime.types import RuntimeConfig
 
@@ -440,7 +440,7 @@ class TestDefaultLlmCallDispatch:
 
     @pytest.mark.asyncio
     async def test_base_url_passed_to_resolver(self) -> None:
-        """config.base_url передаётся в resolve_provider()."""
+        """config.base_url peredaetsya in resolve_provider()."""
         from cognitia.runtime.thin.llm_client import default_llm_call
         from cognitia.runtime.types import RuntimeConfig
 
@@ -472,7 +472,7 @@ class TestDefaultLlmCallDispatch:
 
     @pytest.mark.asyncio
     async def test_adapter_error_raises_typed_runtime_crash(self) -> None:
-        """Ошибка адаптера → ThinLlmError(kind=runtime_crash)."""
+        """Error adaptera -> ThinLlmError(kind=runtime_crash)."""
         from cognitia.runtime.thin.llm_client import default_llm_call
         from cognitia.runtime.types import RuntimeConfig
 
@@ -661,7 +661,7 @@ class TestGoogleAdapterStream:
 
 
 class TestDefaultLlmCallStreaming:
-    """default_llm_call с stream=True → adapter.stream()."""
+    """default_llm_call with stream=True -> adapter.stream()."""
 
     @pytest.mark.asyncio
     async def test_stream_true_returns_async_iterator(self) -> None:
@@ -765,7 +765,7 @@ class TestTryStreamLlmCallWithAdapter:
 
     @pytest.mark.asyncio
     async def test_try_stream_propagates_typed_thin_error(self) -> None:
-        """ThinLlmError не должен маскироваться как успешный stream."""
+        """ThinLlmError not should maskirovatsya kak uspeshnyy stream."""
         from cognitia.runtime.thin.llm_client import try_stream_llm_call
 
         thin_error = ThinLlmError(

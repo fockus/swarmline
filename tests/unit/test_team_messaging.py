@@ -1,7 +1,5 @@
-"""Тесты MessageBus + интеграция с TeamOrchestrator — TDD.
-
-Проверяет: доставка сообщений, inbox/outbox, broadcast,
-получение сообщений воркером, лид видит output воркеров.
+"""Tests MessageBus + integration with TeamOrchestrator - TDD. Verifies: dostavka soobshcheniy, inbox/outbox, broadcast,
+receiving soobshcheniy workerom, lid vidit output workerov.
 """
 
 from __future__ import annotations
@@ -18,7 +16,7 @@ def _now() -> datetime:
 
 
 class TestMessageBus:
-    """MessageBus — шина сообщений между агентами."""
+    """MessageBus - shina soobshcheniy mezhdu agentami."""
 
     async def test_send_and_receive(self) -> None:
         from cognitia.orchestration.message_bus import MessageBus
@@ -58,7 +56,7 @@ class TestMessageBus:
         assert len(inbox_w2) == 1
 
     async def test_broadcast(self) -> None:
-        """Broadcast — сообщение всем агентам."""
+        """Broadcast - message vsem agentam."""
         from cognitia.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
@@ -70,7 +68,7 @@ class TestMessageBus:
             assert inbox[0].content == "всем: старт"
 
     async def test_get_outbox(self) -> None:
-        """Outbox — сообщения отправленные агентом."""
+        """Outbox - messages otpravlennye agentom."""
         from cognitia.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
@@ -83,7 +81,7 @@ class TestMessageBus:
         assert outbox[0].content == "результат"
 
     async def test_history(self) -> None:
-        """Полная история сообщений."""
+        """Full history soobshcheniy."""
         from cognitia.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
@@ -103,10 +101,10 @@ class TestMessageBus:
 
 
 class TestTeamWithMessaging:
-    """Интеграция MessageBus с TeamOrchestrator."""
+    """Integration MessageBus with TeamOrchestrator."""
 
     async def test_send_message_delivers(self) -> None:
-        """send_message реально доставляет сообщение в inbox воркера."""
+        """send_message realno dostavlyaet message in inbox workera."""
         from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()
@@ -128,7 +126,7 @@ class TestTeamWithMessaging:
         )
         await orch.send_message(team_id, msg)
 
-        # Проверяем что сообщение в bus
+        # Verify chto message in bus
         bus = orch.get_message_bus(team_id)
         assert bus is not None
         inbox = await bus.get_inbox("w1")
@@ -136,7 +134,7 @@ class TestTeamWithMessaging:
         assert inbox[0].content == "начинай анализ"
 
     async def test_worker_replies_to_lead(self) -> None:
-        """Воркер может ответить лиду через bus."""
+        """Worker mozhet responseit lidu cherez bus."""
         from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()
@@ -149,7 +147,7 @@ class TestTeamWithMessaging:
         )
         team_id = await orch.start(config, "задача")
 
-        # Воркер отвечает лиду
+        # Worker otvechaet lidu
         reply = TeamMessage(
             from_agent="w1", to_agent="lead", content="готово: 5 вкладов", timestamp=_now()
         )
@@ -161,7 +159,7 @@ class TestTeamWithMessaging:
         assert "5 вкладов" in lead_inbox[0].content
 
     async def test_message_count_in_status(self) -> None:
-        """messages_exchanged в TeamStatus отражает реальное количество."""
+        """messages_exchanged in TeamStatus otrazhaet realnoe kolichestvo."""
         from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()

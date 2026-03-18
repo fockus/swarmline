@@ -1,14 +1,14 @@
-"""Factory для создания search/fetch provider по имени (OCP).
+"""Factory for creating search/fetch providers by name (OCP).
 
-Новый провайдер = новый файл в web_providers/ + ветка в factory.
-Существующие провайдеры не меняются.
+New provider = new file in web_providers/ + a branch in factory.
+Existing providers are not modified.
 """
 
 from __future__ import annotations
 
 from cognitia.tools.web_protocols import WebFetchProvider, WebSearchProvider
 
-# Допустимые имена провайдеров
+# Allowed provider names
 SUPPORTED_SEARCH_PROVIDERS = frozenset({"duckduckgo", "tavily", "searxng", "brave"})
 SUPPORTED_FETCH_PROVIDERS = frozenset({"default", "jina", "crawl4ai"})
 
@@ -22,15 +22,15 @@ def create_search_provider(
     api_key: str = "",
     base_url: str = "",
 ) -> WebSearchProvider | None:
-    """Создать search provider по имени.
+    """Create a search provider by name.
 
     Args:
-        provider_name: Имя провайдера (duckduckgo, tavily, searxng, brave).
-        api_key: API ключ (для tavily, brave).
-        base_url: URL инстанса (для searxng).
+        provider_name: Provider name (duckduckgo, tavily, searxng, brave).
+        api_key: API key (for tavily, brave).
+        base_url: Instance URL (for searxng).
 
     Returns:
-        WebSearchProvider или None если провайдер неизвестен.
+        WebSearchProvider or None if the provider is unknown.
     """
     if provider_name == "duckduckgo":
         from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
@@ -60,15 +60,15 @@ def create_fetch_provider(
     *,
     api_key: str = "",
 ) -> WebFetchProvider | None:
-    """Создать fetch provider по имени.
+    """Create a fetch provider by name.
 
     Args:
-        provider_name: Имя провайдера (default, jina, crawl4ai).
-        api_key: API ключ (для jina).
+        provider_name: Provider name (default, jina, crawl4ai).
+        api_key: API key (for jina).
 
     Returns:
-        WebFetchProvider или None если 'default' или неизвестен.
-        'default' -> None означает использование встроенного httpx+trafilatura.
+        WebFetchProvider or None if 'default' or unknown.
+        'default' -> None means using the built-in httpx+trafilatura path.
     """
     if provider_name == "default":
         return None

@@ -1,4 +1,4 @@
-"""Canonical built-in tool names and aliases — single source of truth.
+"""Canonical built-in tool names and aliases - single source of truth.
 
 Used by both ThinRuntime and DeepAgents runtime for built-in tool
 identification, alias resolution, and portable/native mode filtering.

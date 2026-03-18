@@ -1,10 +1,10 @@
-"""Builtin Tools — встроенные инструменты для агентов.
+"""Builtin Tools - built-in tools for agents.
 
 Sandbox tools (bash, read, write, edit, multi_edit, ls, glob, grep)
-работают через SandboxProvider. Web tools (web_fetch, web_search)
-работают через WebProvider. Каждая группа создаётся отдельной factory.
+run through SandboxProvider. Web tools (web_fetch, web_search)
+run through WebProvider. Each group is created by a separate factory.
 
-KISS: каждый executor ≤30 строк.
+KISS: each executor <=30 lines.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from cognitia.tools.protocols import SandboxProvider
 _log = structlog.get_logger(component="web_tools")
 
 # ---------------------------------------------------------------------------
-# Alias map: SDK-имена → canonical snake_case
+# Alias map: SDK names -> canonical snake_case
 # ---------------------------------------------------------------------------
 
 TOOL_ALIAS_MAP: dict[str, str] = {
@@ -145,7 +145,7 @@ _WEB_SEARCH_SCHEMA: dict[str, Any] = {
 
 
 def _make_json_error(message: str) -> str:
-    """Создать JSON-ответ ошибки."""
+    """Create a JSON error response."""
     return json.dumps({"status": "error", "message": message})
 
 
@@ -210,7 +210,7 @@ def _create_edit_executor(sandbox: SandboxProvider) -> Callable:
             content = await sandbox.read_file(path)
             if old_string not in content:
                 return _make_json_error(f"old_string не найден в {path}")
-            # Заменяем только первое вхождение
+            # Replace only the first occurrence
             updated = content.replace(old_string, new_string, 1)
             await sandbox.write_file(path, updated)
             return json.dumps({"status": "ok", "path": path})
@@ -279,7 +279,7 @@ def _create_grep_executor(sandbox: SandboxProvider) -> Callable:
                 content = await sandbox.read_file(path)
                 matches = re.findall(pattern, content)
                 return json.dumps({"status": "ok", "matches": matches, "path": path})
-            # Без path — поиск по всем файлам workspace (базовая реализация)
+            # Without a path, search across all workspace files (basic implementation)
             return json.dumps({"status": "ok", "matches": [], "note": "path рекомендуется"})
         except Exception as e:
             return _make_json_error(str(e))
@@ -295,7 +295,7 @@ def _create_grep_executor(sandbox: SandboxProvider) -> Callable:
 def create_sandbox_tools(
     sandbox: SandboxProvider,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
-    """Создать sandbox-инструменты.
+    """Create sandbox tools.
 
     Returns:
         Tuple: (specs dict, executors dict).
@@ -339,13 +339,13 @@ def create_sandbox_tools(
 def create_web_tools(
     web_provider: Any | None,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
-    """Создать web-инструменты.
+    """Create web tools.
 
     Args:
-        web_provider: WebProvider или None. Если None — tools не создаются.
+        web_provider: WebProvider or None. If None, tools are not created.
 
     Returns:
-        Tuple: (specs dict, executors dict). Пустые если provider не задан.
+        Tuple: (specs dict, executors dict). Empty if no provider is configured.
     """
     if web_provider is None:
         return {}, {}

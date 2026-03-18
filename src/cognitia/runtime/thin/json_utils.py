@@ -1,27 +1,10 @@
-"""Утилиты для извлечения JSON-объектов из произвольного текста.
-
-find_json_object_boundaries — единственная точка brace-tracking логики.
-Используется StreamParser и ThinRuntime вместо дублированных реализаций.
-"""
+"""Json Utils module."""
 
 from __future__ import annotations
 
 
 def find_json_object_boundaries(text: str, start: int = 0) -> tuple[int, int] | None:
-    """Найти границы первого полного JSON-объекта ({...}) в тексте.
-
-    Отслеживает вложенность фигурных скобок, строковые литералы
-    и escaped-символы. Не выполняет json.loads — только определяет
-    позиции начала и конца сбалансированного объекта.
-
-    Args:
-        text: Текст для поиска.
-        start: Позиция, с которой начинать поиск (по умолчанию 0).
-
-    Returns:
-        Кортеж (start, end) где text[start:end] — полный JSON-объект,
-        или None если сбалансированный объект не найден.
-    """
+    """Find json object boundaries."""
     obj_start = text.find("{", start)
     if obj_start == -1:
         return None

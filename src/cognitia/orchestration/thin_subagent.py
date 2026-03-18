@@ -1,8 +1,4 @@
-"""ThinSubagentOrchestrator — subagent'ы через asyncio.Task.
-
-Каждый subagent = asyncio.Task с собственным runtime.
-Bounded: max_concurrent ограничивает параллельные задачи.
-"""
+"""Thin Subagent module."""
 
 from __future__ import annotations
 
@@ -24,17 +20,17 @@ from cognitia.runtime.types import Message, RuntimeConfig
 
 
 class _SubagentRuntime(Protocol):
-    """Минимальный интерфейс runtime для subagent."""
+    """Mandandmal interface runtime for subagent."""
 
     async def run(self, task: str) -> str: ...
 
 
 class ThinSubagentOrchestrator:
-    """Оркестратор subagent'ов на asyncio.Task.
+    """Ortoestrator subagent'oin on asyncio.Task.
 
-    SRP: управляет lifecycle (spawn/cancel/wait), не LLM-логикой.
-    При наличии llm_call — создаёт per-worker ThinRuntime автоматически.
-    """
+  SRP: manages lifecycle (spawn/cancel/wait), not LLM-logandtoy.
+  Prand onlandandand LLM_call - creates a per-worker ThinRuntime aintomatandchestoand.
+  """
 
     def __init__(
         self,
@@ -59,12 +55,7 @@ class ThinSubagentOrchestrator:
         self._local_tools[name] = executor
 
     def _create_runtime(self, spec: SubagentSpec) -> _SubagentRuntime:
-        """Создать runtime для subagent'а.
-
-        По умолчанию создаёт _ThinWorkerRuntime с ThinRuntime.
-        Если llm_call не передан, ThinRuntime использует свой default (Anthropic SDK).
-        Subclasses (DeepAgents, Claude) переопределяют.
-        """
+        """Create runtime."""
         return _ThinWorkerRuntime(
             spec=spec,
             llm_call=self._llm_call,
@@ -74,7 +65,7 @@ class ThinSubagentOrchestrator:
         )
 
     async def spawn(self, spec: SubagentSpec, task: str) -> str:
-        """Запустить subagent. Возвращает agent_id."""
+        """Run subagent. Returns agent_id."""
         active_count = sum(1 for t in self._tasks.values() if not t.done())
         if active_count >= self._max_concurrent:
             msg = f"Достигнут лимит max_concurrent ({self._max_concurrent})"
@@ -89,7 +80,7 @@ class ThinSubagentOrchestrator:
         return agent_id
 
     async def _run_agent(self, agent_id: str, runtime: _SubagentRuntime, task: str) -> str:
-        """Выполнить subagent — обёрнуть в try/except для graceful failure."""
+        """Run agent."""
         started = datetime.now(tz=UTC)
         try:
             output = await runtime.run(task)
@@ -127,7 +118,7 @@ class ThinSubagentOrchestrator:
             return ""
 
     async def get_status(self, agent_id: str) -> SubagentStatus:
-        """Получить статус subagent'а."""
+        """Get status."""
         if agent_id in self._results:
             return self._results[agent_id].status
 
@@ -135,7 +126,7 @@ class ThinSubagentOrchestrator:
         if task is None:
             return SubagentStatus(state="pending")
         if task.done():
-            # Результат ещё не записан — ждём чуть-чуть
+            # Result is not ready yet - we wait a little
             await asyncio.sleep(0)
             if agent_id in self._results:
                 return self._results[agent_id].status
@@ -143,7 +134,7 @@ class ThinSubagentOrchestrator:
         return SubagentStatus(state="running")
 
     async def cancel(self, agent_id: str) -> None:
-        """Отменить subagent."""
+        """Cancel subagent."""
         task = self._tasks.get(agent_id)
         if task and not task.done():
             task.cancel()
@@ -151,7 +142,7 @@ class ThinSubagentOrchestrator:
                 await task
 
     async def wait(self, agent_id: str) -> SubagentResult:
-        """Дождаться завершения subagent'а."""
+        """Wait for the subagent to complete."""
         task = self._tasks.get(agent_id)
         if task:
             with contextlib.suppress(asyncio.CancelledError, Exception):
@@ -167,12 +158,12 @@ class ThinSubagentOrchestrator:
         )
 
     async def list_active(self) -> list[str]:
-        """Список активных subagent id'ов."""
+        """List active."""
         return [aid for aid, task in self._tasks.items() if not task.done()]
 
 
 class _ThinWorkerRuntime:
-    """Адаптер SubagentSpec → ThinRuntime.run() для per-worker execution."""
+    """Adapter SubagentSpec -> ThinRuntime.run() for per-worker execution."""
 
     def __init__(
         self,
@@ -190,7 +181,7 @@ class _ThinWorkerRuntime:
         self._runtime_config = runtime_config
 
     async def run(self, task: str) -> str:
-        """Выполнить задачу через ThinRuntime и вернуть финальный текст."""
+        """Run."""
         kwargs: dict[str, Any] = {
             "config": self._runtime_config,
             "local_tools": self._local_tools,

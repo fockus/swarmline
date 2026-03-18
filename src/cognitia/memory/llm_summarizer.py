@@ -1,7 +1,7 @@
-"""LLM-based SummaryGenerator — генерация rolling summary через вызов LLM.
+"""LLM-based SummaryGenerator - generate a rolling summary via an LLM call.
 
-Использует AgentRuntime.run() для генерации краткого пересказа диалога.
-Fallback на TemplateSummaryGenerator при ошибке LLM.
+Uses AgentRuntime.run() to generate a short conversation summary.
+Falls back to TemplateSummaryGenerator if the LLM fails.
 """
 
 from __future__ import annotations
@@ -29,10 +29,10 @@ _SUMMARIZE_PROMPT = """\
 
 
 class LlmSummaryGenerator:
-    """LLM-based генератор summary.
+    """LLM-based summary generator.
 
-    Принимает callable для вызова LLM (async str → str).
-    Fallback на TemplateSummaryGenerator при ошибке.
+    Accepts a callable for the LLM call (async str -> str).
+    Falls back to TemplateSummaryGenerator on error.
     """
 
     def __init__(
@@ -40,31 +40,31 @@ class LlmSummaryGenerator:
         llm_call: Callable[..., Any] | None = None,
         fallback_max_messages: int = 10,
     ) -> None:
-        """Инициализировать генератор.
+        """Initialize the generator.
 
         Args:
             llm_call: async callable(prompt: str, messages_text: str) -> str.
-                      Если None — сразу fallback на template.
-            fallback_max_messages: Макс. сообщений для fallback-суммаризатора.
+                      If None, fall back to the template immediately.
+            fallback_max_messages: Max messages for the fallback summarizer.
         """
         self._llm_call = llm_call
         self._fallback = TemplateSummaryGenerator(max_messages=fallback_max_messages)
 
     def summarize(self, messages: list[MemoryMessage]) -> str:
-        """Sync wrapper — для совместимости с Protocol. Делегирует в fallback.
+        """Sync wrapper for Protocol compatibility. Delegates to the fallback.
 
-        Для async-вызова с LLM используйте asummarize().
+        Use asummarize() for the async LLM path.
         """
         return self._fallback.summarize(messages)
 
     async def asummarize(self, messages: list[MemoryMessage]) -> str:
-        """Async суммаризация через LLM с fallback.
+        """Async summarization via LLM with fallback.
 
         Args:
-            messages: Список сообщений диалога (от старых к новым).
+            messages: Conversation messages (oldest to newest).
 
         Returns:
-            Текст summary (~1000-1500 символов) или fallback template.
+            Summary text (~1000-1500 characters) or the fallback template.
         """
         if not messages:
             return ""
@@ -72,7 +72,7 @@ class LlmSummaryGenerator:
         if not self._llm_call:
             return self._fallback.summarize(messages)
 
-        # Формируем текст диалога для LLM
+        # Build the conversation text for the LLM
         dialog_lines: list[str] = []
         for msg in messages:
             label = "Пользователь" if msg.role == "user" else "Ассистент"
@@ -83,7 +83,7 @@ class LlmSummaryGenerator:
             result = await self._llm_call(_SUMMARIZE_PROMPT, dialog_text)
             if result and len(result) > 50:
                 return str(result)
-            # Слишком короткий ответ — fallback
+            # Too short a response - fallback
             logger.warning("LLM summary слишком короткий (%d chars), fallback", len(result or ""))
             return str(self._fallback.summarize(messages))
         except Exception:

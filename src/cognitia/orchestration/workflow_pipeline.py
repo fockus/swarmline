@@ -1,4 +1,4 @@
-"""WorkflowPipeline — generic structured pipeline protocol."""
+"""WorkflowPipeline - generic structured pipeline protocol."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from cognitia.orchestration.verification_types import VerificationResult
 
 
 class WorkflowPipeline(Protocol):
-    """Generic structured pipeline: research → plan → execute → review → verify."""
+    """Generic structured pipeline: research -> plan -> execute -> review -> verify."""
 
     async def research(self, goal: str) -> str: ...
 

@@ -1,7 +1,4 @@
-"""RuntimeFactory — фабрика runtime по конфигурации.
-
-Приоритет выбора: runtime_override > config.runtime_name > env COGNITIA_RUNTIME > default.
-"""
+"""Factory module."""
 
 from __future__ import annotations
 
@@ -25,21 +22,7 @@ if TYPE_CHECKING:
 
 
 class RuntimeFactory:
-    """Фабрика для создания AgentRuntime по конфигурации.
-
-    Поддерживаемые runtime:
-    - claude_sdk: ClaudeCodeRuntime (обёртка claude-agent-sdk)
-    - deepagents: DeepAgentsRuntime (LangChain, optional dep)
-    - thin: ThinRuntime (собственный loop)
-    - Любой кастомный runtime, зарегистрированный в RuntimeRegistry
-
-    Использование:
-        factory = RuntimeFactory()
-        runtime = factory.create(config=RuntimeConfig(runtime_name="thin"))
-
-        # С кастомным registry:
-        factory = RuntimeFactory(registry=my_registry)
-    """
+    """Runtime Factory implementation."""
 
     def __init__(self, registry: RuntimeRegistry | None = None) -> None:
         self._registry = registry
@@ -70,19 +53,16 @@ class RuntimeFactory:
         config: RuntimeConfig | None = None,
         runtime_override: str | None = None,
     ) -> str:
-        """Определить имя runtime по приоритету.
+        """Resolve runtime name."""
 
-        Приоритет: runtime_override > config.runtime_name > env > default.
-        """
-        # 1. Явный override (CLI flag, per-request)
         if runtime_override and self._is_valid_name(runtime_override):
             return runtime_override
 
-        # 2. Из конфигурации
+
         if config and self._is_valid_name(config.runtime_name):
             return config.runtime_name
 
-        # 3. Из переменной окружения
+
         env_runtime = os.environ.get("COGNITIA_RUNTIME", "").strip().lower()
         if self._is_valid_name(env_runtime):
             return env_runtime
@@ -95,7 +75,7 @@ class RuntimeFactory:
         config: RuntimeConfig | None = None,
         runtime_override: str | None = None,
     ) -> RuntimeCapabilities:
-        """Получить capability descriptor без запуска runtime."""
+        """Get capabilities."""
         from cognitia.runtime.registry import resolve_runtime_capabilities
 
         name = self.resolve_runtime_name(config, runtime_override)
@@ -107,7 +87,7 @@ class RuntimeFactory:
         runtime_override: str | None = None,
         required_capabilities: CapabilityRequirements | None = None,
     ) -> RuntimeErrorData | None:
-        """Проверить, удовлетворяет ли выбранный runtime требуемым capability."""
+        """Validate capabilities."""
         caps = self.get_capabilities(config=config, runtime_override=runtime_override)
         requirements = required_capabilities
         if requirements is None and config is not None:
@@ -136,24 +116,12 @@ class RuntimeFactory:
         runtime_override: str | None = None,
         **kwargs: Any,
     ) -> Any:
-        """Создать runtime по конфигурации.
-
-        Args:
-            config: Конфигурация runtime.
-            runtime_override: Явный override имени runtime.
-            **kwargs: Дополнительные параметры для конструктора runtime.
-
-        Returns:
-            Экземпляр AgentRuntime.
-
-        Raises:
-            ValueError: Unknown runtime.
-        """
+        """Create."""
         name = self.resolve_runtime_name(config, runtime_override)
         effective_config = config or RuntimeConfig(runtime_name=name)
 
-        # RuntimeConfig.__post_init__ валидирует capabilities для config.runtime_name.
-        # Но runtime_override может переключить на другой runtime → нужна проверка.
+
+
         if runtime_override and name != getattr(config, "runtime_name", name):
             cap_error = self.validate_capabilities(
                 config=effective_config,
@@ -200,7 +168,7 @@ class RuntimeFactory:
         config: RuntimeConfig,
         **kwargs: Any,
     ) -> Any:
-        """Создать ClaudeCodeRuntime."""
+        """Create ClaudeCodeRuntime."""
         try:
             from cognitia.runtime.claude_code import ClaudeCodeRuntime
 
@@ -219,7 +187,7 @@ class RuntimeFactory:
         config: RuntimeConfig,
         **kwargs: Any,
     ) -> Any:
-        """Создать DeepAgentsRuntime."""
+        """Create DeepAgentsRuntime."""
         try:
             from cognitia.runtime.deepagents import DeepAgentsRuntime
 
@@ -240,7 +208,7 @@ class RuntimeFactory:
         config: RuntimeConfig,
         **kwargs: Any,
     ) -> Any:
-        """Создать ThinRuntime."""
+        """Create ThinRuntime."""
         try:
             from cognitia.runtime.thin import ThinRuntime
 
@@ -262,10 +230,7 @@ class RuntimeFactory:
 
 
 class _ErrorRuntime:
-    """Заглушка runtime — возвращает ошибку при вызове run().
-
-    Используется когда optional dependency не установлен.
-    """
+    """Error Runtime implementation."""
 
     def __init__(self, error: RuntimeErrorData) -> None:
         self._error = error
@@ -274,8 +239,8 @@ class _ErrorRuntime:
         self,
         **kwargs: Any,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Yield ошибку и завершиться."""
+        """Run."""
         yield RuntimeEvent.error(self._error)
 
     async def cleanup(self) -> None:
-        """Нечего очищать."""
+        """Cleanup."""

@@ -1,4 +1,4 @@
-"""Тесты native upstream adapter для DeepAgents."""
+"""Tests native upstream adapter for DeepAgents."""
 
 from __future__ import annotations
 
@@ -16,10 +16,10 @@ from cognitia.runtime.types import ToolSpec
 
 
 class TestBuildDeepAgentsGraph:
-    """Сборка native upstream graph."""
+    """Building native upstream graph."""
 
     def test_build_graph_calls_create_deep_agent(self) -> None:
-        """Native builder собирает upstream graph с resolved LLM и tools."""
+        """Native builder builds upstream graph with resolved LLM and tools."""
         tools = [ToolSpec(name="search", description="Search", parameters={})]
 
         with (
@@ -57,7 +57,7 @@ class TestBuildDeepAgentsGraph:
         )
 
     def test_build_graph_filters_native_builtins_and_keeps_local_executor(self) -> None:
-        """Native builder не дублирует upstream built-ins и сохраняет local executor."""
+        """Native builder does not duplicate upstream built-ins and retains local executor."""
         tools = [
             ToolSpec(name="Bash", description="shell", parameters={}),
             ToolSpec(name="execute", description="shell", parameters={}),
@@ -95,7 +95,7 @@ class TestBuildDeepAgentsGraph:
         )
 
     def test_validate_native_backend_config_requires_backend_for_native_builtins(self) -> None:
-        """Native built-ins без backend должны fail-fast."""
+        """Native built-ins without backend should fail-fast."""
         error = validate_native_backend_config(
             native_tool_names=["execute", "read_file"],
             native_config={},
@@ -107,7 +107,7 @@ class TestBuildDeepAgentsGraph:
         assert error.details == {"native_tools": ["execute", "read_file"]}
 
     def test_validate_native_backend_config_allows_no_backend_without_native_builtins(self) -> None:
-        """Если native built-ins не запрошены, backend не обязателен."""
+        """If native built-ins are not requested, backend is not required."""
         error = validate_native_backend_config(
             native_tool_names=[],
             native_config={},
@@ -117,10 +117,10 @@ class TestBuildDeepAgentsGraph:
 
 
 class TestBuildDeepAgentsGraphUpstreamParams:
-    """Phase 1: Проброс upstream параметров memory/subagents/skills/middleware/name."""
+    """Phase 1: Forwarding upstream parameters memory/subagents/skills/middleware/name."""
 
     def _build_with_mock(self, **extra_kwargs) -> MagicMock:
-        """Helper: вызвать build_deepagents_graph с mock'ами и вернуть mock_create."""
+        """Helper: call build_deepagents_graph with mocks and return mock_create."""
         with (
             patch(
                 "cognitia.runtime.deepagents_native.build_deepagents_chat_model",
@@ -165,7 +165,7 @@ class TestBuildDeepAgentsGraphUpstreamParams:
         assert mock_create.call_args.kwargs["name"] == "my-agent"
 
     def test_no_new_params_does_not_add_keys(self) -> None:
-        """Без новых параметров — kwargs не содержат новых ключей (регрессия)."""
+        """Without new parameters - kwargs do not contain new keys (regression)."""
         mock_create = self._build_with_mock()
         kwargs = mock_create.call_args.kwargs
         for key in ("memory", "subagents", "skills", "middleware", "name"):
@@ -173,11 +173,11 @@ class TestBuildDeepAgentsGraphUpstreamParams:
 
 
 class TestStreamDeepAgentsGraphEvents:
-    """Нормализация upstream graph events в RuntimeEvent."""
+    """Normalization of upstream graph events in RuntimeEvent."""
 
     @pytest.mark.asyncio
     async def test_stream_maps_text_and_tool_events(self) -> None:
-        """Строковые chunks и tool events маппятся в RuntimeEvent."""
+        """String chunks and tool events are mapped in RuntimeEvent."""
         chunk = MagicMock()
         chunk.content = "hello"
 
@@ -248,7 +248,7 @@ class TestStreamDeepAgentsGraphEvents:
 
     @pytest.mark.asyncio
     async def test_stream_uses_end_output_when_no_chunks_emitted(self) -> None:
-        """Если stream chunks не пришли, используем final output текст."""
+        """If stream chunks did not arrive, use the final output text."""
         output = MagicMock()
         output.content = [{"type": "text", "text": "final text"}]
 

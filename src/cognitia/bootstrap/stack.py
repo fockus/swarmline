@@ -1,7 +1,7 @@
-"""CognitiaStack — facade для быстрой инициализации library-компонентов.
+"""CognitiaStack - facade for quick initialization of library components.
 
-Одна точка сборки: приложение передаёт пути к config/prompts/skills
-+ capability configs, получает готовые компоненты для wiring.
+Single assembly point: the application passes config/prompts/skills paths
+and capability configs, then receives ready-to-wire components.
 """
 
 from __future__ import annotations
@@ -28,10 +28,10 @@ from cognitia.skills.loader import YamlSkillLoader
 
 @dataclass
 class CognitiaStack:
-    """Готовый набор library-компонентов для приложения.
+    """A ready-made set of library components for the application.
 
-    Создаётся через CognitiaStack.create() — единая фабрика.
-    Capability tools собираются автоматически и доступны через capability_specs/executors.
+    Created via CognitiaStack.create() - the single factory.
+    Capability tools are assembled automatically and exposed through capability_specs/executors.
     """
 
     skill_registry: SkillRegistry
@@ -45,7 +45,7 @@ class CognitiaStack:
     runtime_factory: RuntimeFactory
     runtime_config: RuntimeConfig
     local_tool_resolver: LocalToolResolver | None
-    # Capability tools — merged из всех enabled capability
+    # Capability tools - merged from all enabled capabilities
     capability_specs: dict[str, ToolSpec] = field(default_factory=dict)
     capability_executors: dict[str, Callable] = field(default_factory=dict)
     memory_bank_provider: Any | None = None
@@ -75,29 +75,29 @@ class CognitiaStack:
         allowed_system_tools: set[str] | None = None,
         tool_budget_config: ToolBudgetConfig | None = None,
     ) -> CognitiaStack:
-        """Создать все library-компоненты из путей к config.
+        """Create all library components from config paths.
 
         Args:
-            prompts_dir: Директория с промптами.
-            skills_dir: Директория со скилами.
-            project_root: Корень проекта.
-            escalate_roles: Роли для эскалации модели.
-            runtime_config: Конфиг runtime.
-            local_tool_resolver: App-level резолвер локальных инструментов.
-            sandbox_provider: SandboxProvider для builtin tools.
-            web_provider: WebProvider для web tools.
-            todo_provider: TodoProvider для todo tools.
-            memory_bank_provider: MemoryBankProvider для memory tools.
-            memory_bank_prompt: Prompt-инструкция для Memory Bank (P_MEMORY слой).
-            plan_manager: PlanManager для planning tools.
-            plan_user_id: user_id для namespace планов.
-            plan_topic_id: topic_id для namespace планов.
-            thinking_enabled: Включить thinking tool.
-            allowed_system_tools: Whitelist для system tools в ToolPolicy.
-            tool_budget_config: Конфиг бюджета инструментов.
+            prompts_dir: Directory with prompts.
+            skills_dir: Directory with skills.
+            project_root: Project root.
+            escalate_roles: Roles for model escalation.
+            runtime_config: Runtime config.
+            local_tool_resolver: App-level resolver for local tools.
+            sandbox_provider: SandboxProvider for builtin tools.
+            web_provider: WebProvider for web tools.
+            todo_provider: TodoProvider for todo tools.
+            memory_bank_provider: MemoryBankProvider for memory tools.
+            memory_bank_prompt: Prompt instruction for Memory Bank (P_MEMORY layer).
+            plan_manager: PlanManager for planning tools.
+            plan_user_id: user_id for the plan namespace.
+            plan_topic_id: topic_id for the plan namespace.
+            thinking_enabled: Enable the thinking tool.
+            allowed_system_tools: Whitelist for system tools in ToolPolicy.
+            tool_budget_config: Tool budget configuration.
 
         Returns:
-            CognitiaStack с готовыми компонентами.
+            CognitiaStack with ready-to-use components.
         """
         # Skills
         skill_loader = YamlSkillLoader(skills_dir, project_root=project_root)
@@ -122,7 +122,7 @@ class CognitiaStack:
             keyword_map=router_config.keywords,
         )
 
-        # Policy — с whitelist system tools
+        # Policy - with system tool whitelist
         tool_id_codec = DefaultToolIdCodec()
         tool_policy = DefaultToolPolicy(
             codec=tool_id_codec,
@@ -138,7 +138,7 @@ class CognitiaStack:
         runtime_factory = RuntimeFactory()
         runtime_cfg = runtime_config or RuntimeConfig()
 
-        # Capability tools — собираем из enabled capabilities
+        # Capability tools - collect from enabled capabilities
         from cognitia.bootstrap.capabilities import collect_capability_tools
 
         cap_specs, cap_executors = collect_capability_tools(

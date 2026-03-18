@@ -1,6 +1,4 @@
-"""Тесты для SummaryGenerator — генерация rolling summary из сообщений.
-
-TDD Red phase: тесты описывают контракт ДО реализации.
+"""Tests for SummaryGenerator - genotratsiya rolling summary from soobshcheniy. TDD Red phase: tests opisyvayut contract DO realizatsii.
 """
 
 from __future__ import annotations
@@ -9,10 +7,10 @@ from cognitia.memory.types import MemoryMessage
 
 
 class TestTemplateSummaryGenerator:
-    """Template-based SummaryGenerator (MVP, без LLM)."""
+    """Template-based SummaryGenerator (MVP, without LLM)."""
 
     def test_empty_messages_returns_empty(self) -> None:
-        """Пустой список сообщений -> пустая строка."""
+        """Empty list soobshcheniy -> empty string."""
         from cognitia.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator()
@@ -20,7 +18,7 @@ class TestTemplateSummaryGenerator:
         assert result == ""
 
     def test_single_user_message(self) -> None:
-        """Одно user-сообщение -> краткий summary."""
+        """Odno user-message -> kratkiy summary."""
         from cognitia.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator()
@@ -30,7 +28,7 @@ class TestTemplateSummaryGenerator:
         assert len(result) > 10
 
     def test_multi_turn_conversation(self) -> None:
-        """Несколько turn -> summary содержит ключевые моменты."""
+        """Notskolko turn -> summary contains klyuchevye momenty."""
         from cognitia.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator()
@@ -45,7 +43,7 @@ class TestTemplateSummaryGenerator:
         assert len(result) > 20
 
     def test_truncates_long_messages(self) -> None:
-        """Длинные сообщения обрезаются в summary."""
+        """Dlinnye messages are truncated in summary."""
         from cognitia.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator(max_message_chars=50)
@@ -53,11 +51,11 @@ class TestTemplateSummaryGenerator:
             MemoryMessage(role="user", content="A" * 200),
         ]
         result = gen.summarize(messages)
-        # Summary не должен содержать полные 200 символов
+        # Summary not should soderzhat full 200 simvolov
         assert len(result) < 200
 
     def test_respects_max_messages(self) -> None:
-        """Учитывает только последние N сообщений."""
+        """Considers tolko poslednie N soobshcheniy."""
         from cognitia.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator(max_messages=2)
@@ -69,5 +67,5 @@ class TestTemplateSummaryGenerator:
         ]
         result = gen.summarize(messages)
         assert "Новое" in result
-        # Старое сообщение не должно попасть в summary
+        # Staroe message not should popast in summary
         assert "Старое" not in result

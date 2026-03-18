@@ -1,4 +1,4 @@
-"""Тесты для hooks SDK bridge — конвертация HookRegistry → SDK HookMatcher."""
+"""Tests for hooks SDK bridge - conversion HookRegistry -> SDK HookMatcher."""
 
 import pytest
 
@@ -11,16 +11,16 @@ from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks  # noqa: E402
 
 
 class TestRegistryToSdkHooks:
-    """Конвертация HookRegistry → dict[HookEvent, list[HookMatcher]]."""
+    """Conversion HookRegistry -> dict[HookEvent, list[HookMatcher]]."""
 
     def test_empty_registry_returns_none(self) -> None:
-        """Пустой registry → None (не передавать hooks в SDK)."""
+        """Empty registry -> None (not peredavat hooks in SDK)."""
         registry = HookRegistry()
         result = registry_to_sdk_hooks(registry)
         assert result is None
 
     def test_pre_tool_use_hook_converted(self) -> None:
-        """PreToolUse хук конвертируется в SDK формат."""
+        """PreToolUse hook convertssya in SDK format."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):
@@ -37,7 +37,7 @@ class TestRegistryToSdkHooks:
         assert len(matchers[0].hooks) == 1
 
     def test_post_tool_use_hook_converted(self) -> None:
-        """PostToolUse хук конвертируется в SDK формат."""
+        """PostToolUse hook convertssya in SDK format."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):
@@ -50,7 +50,7 @@ class TestRegistryToSdkHooks:
         assert "PostToolUse" in result
 
     def test_stop_hook_converted(self) -> None:
-        """Stop хук конвертируется."""
+        """Stop hook convertssya."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):
@@ -64,7 +64,7 @@ class TestRegistryToSdkHooks:
         assert result["Stop"][0].matcher is None
 
     def test_user_prompt_hook_converted(self) -> None:
-        """UserPromptSubmit хук конвертируется."""
+        """UserPromptSubmit hook convertssya."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):
@@ -77,7 +77,7 @@ class TestRegistryToSdkHooks:
         assert "UserPromptSubmit" in result
 
     def test_multiple_hooks_same_event(self) -> None:
-        """Несколько хуков на одно событие → несколько HookMatcher."""
+        """Notskolko hookov on odno event -> notskolko HookMatcher."""
         registry = HookRegistry()
 
         async def hook_bash(**kwargs):
@@ -95,13 +95,13 @@ class TestRegistryToSdkHooks:
         assert len(matchers) == 2
 
     def test_hooks_without_matcher_get_none_matcher(self) -> None:
-        """Хук без matcher → HookMatcher.matcher = None."""
+        """Hook without matcher -> HookMatcher.matcher = None."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):
             pass
 
-        registry.on_pre_tool_use(my_hook)  # без matcher
+        registry.on_pre_tool_use(my_hook)  # without matcher
         result = registry_to_sdk_hooks(registry)
 
         assert result is not None
@@ -109,7 +109,7 @@ class TestRegistryToSdkHooks:
 
     @pytest.mark.asyncio
     async def test_sdk_callback_wraps_cognitia_callback(self) -> None:
-        """SDK callback вызывает cognitia callback с правильными аргументами."""
+        """SDK callback vyzyvaet cognitia callback with pravilnymi argumentami."""
         registry = HookRegistry()
         called_with = {}
 
@@ -120,7 +120,7 @@ class TestRegistryToSdkHooks:
         registry.on_pre_tool_use(my_hook, matcher="Bash")
         result = registry_to_sdk_hooks(registry)
 
-        # Вызываем SDK callback
+        # Vyzyvaem SDK callback
         sdk_callback = result["PreToolUse"][0].hooks[0]
         hook_input = {
             "hook_event_name": "PreToolUse",
@@ -139,7 +139,7 @@ class TestRegistryToSdkHooks:
 
     @pytest.mark.asyncio
     async def test_sdk_callback_returns_default_on_none(self) -> None:
-        """Если cognitia callback возвращает None → default output."""
+        """If cognitia callback returns None -> default output."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):

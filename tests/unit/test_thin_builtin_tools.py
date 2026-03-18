@@ -1,7 +1,5 @@
-"""Тесты ThinRuntime built-in tools integration.
-
-TDD RED: 6 тестов для built-in tools в ThinRuntime.
-Stage 1.1 из cognitia-runtime-parity плана.
+"""Tests ThinRuntime built-in tools integration. TDD RED: 6 testov for built-in tools in ThinRuntime.
+Stage 1.1 from cognitia-runtime-parity plana.
 """
 
 from __future__ import annotations
@@ -13,7 +11,7 @@ from cognitia.runtime.types import ToolSpec
 
 
 class _FakeSandboxProvider:
-    """Минимальный SandboxProvider для тестов."""
+    """Minimal SandboxProvider for testov."""
 
     def __init__(self) -> None:
         self._files: dict[str, str] = {}
@@ -50,10 +48,10 @@ def sandbox() -> _FakeSandboxProvider:
 
 
 class TestThinBuiltinToolsRegistration:
-    """Built-in tools регистрируются при наличии SandboxProvider."""
+    """Built-in tools are registered pri nalichii SandboxProvider."""
 
     def test_thin_builtin_tools_registered_by_default(self, sandbox: _FakeSandboxProvider) -> None:
-        """При наличии sandbox provider 9 built-in tools доступны."""
+        """Pri nalichii sandbox provider 9 built-in tools available."""
         from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
 
         specs, executors = create_thin_builtin_tools(sandbox)
@@ -73,7 +71,7 @@ class TestThinBuiltinToolsRegistration:
         assert set(executors.keys()) == expected_names
 
     def test_thin_builtin_tools_without_sandbox_empty(self) -> None:
-        """Без sandbox provider → 0 built-in tools."""
+        """Without sandbox provider -> 0 built-in tools."""
         from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
 
         specs, executors = create_thin_builtin_tools(None)
@@ -82,12 +80,12 @@ class TestThinBuiltinToolsRegistration:
 
 
 class TestThinBuiltinToolsFeatureMode:
-    """Feature mode фильтрация built-in tools."""
+    """Feature mode filtratsiya built-in tools."""
 
     def test_thin_builtin_tools_portable_mode_excluded(
         self, sandbox: _FakeSandboxProvider
     ) -> None:
-        """feature_mode=portable → 0 built-in tools в отфильтрованном списке."""
+        """feature_mode=portable -> 0 built-in tools in otfiltrovannom spiske."""
         from cognitia.runtime.thin.builtin_tools import (
             create_thin_builtin_tools,
             filter_thin_builtins_by_mode,
@@ -102,7 +100,7 @@ class TestThinBuiltinToolsFeatureMode:
     def test_thin_builtin_tools_hybrid_mode_merged(
         self, sandbox: _FakeSandboxProvider
     ) -> None:
-        """User tools + built-in без дублей в hybrid mode."""
+        """User tools + built-in without dubley in hybrid mode."""
         from cognitia.runtime.thin.builtin_tools import (
             create_thin_builtin_tools,
             merge_tools_with_builtins,
@@ -129,12 +127,12 @@ class TestThinBuiltinToolsFeatureMode:
 
 
 class TestThinBuiltinToolsExecution:
-    """Выполнение built-in tools через executors."""
+    """Execution built-in tools cherez executors."""
 
     async def test_thin_builtin_execute_reads_file(
         self, sandbox: _FakeSandboxProvider
     ) -> None:
-        """execute("read_file", {"path": "test.txt"}) возвращает содержимое."""
+        """execute("read_file", {"path": "test.txt"}) returns content."""
         from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
 
         sandbox._files["test.txt"] = "hello world"
@@ -146,7 +144,7 @@ class TestThinBuiltinToolsExecution:
 
 
 class TestThinBuiltinAliases:
-    """Deepagents-совместимые алиасы."""
+    """Deepagents-sovmestimye aliasy."""
 
     def test_thin_builtin_aliases_resolved(self) -> None:
         """Read → read_file, Bash → execute, Write → write_file."""

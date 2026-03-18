@@ -1,6 +1,6 @@
-"""Базовые типы Cognitia — контракты из секции 17 архитектуры.
+"""Core Cognitia types - contracts from architecture section 17.
 
-Содержит единые типы, используемые во всех модулях:
+Contains the shared types used across modules:
 TurnContext, ContextPack, SkillSet.
 """
 
@@ -15,10 +15,10 @@ __all__ = ["ContextPack", "RuntimeEvent", "SkillSet", "TurnContext"]
 
 @dataclass(frozen=True)
 class TurnContext:
-    """Единый контекст turn'а — передаётся между модулями.
+    """Unified turn context - passed between modules.
 
-    Содержит всё необходимое для принятия решений:
-    выбор модели, политика инструментов, сборка контекста.
+    Contains everything needed for decisions:
+    model selection, tool policy, context assembly.
     """
 
     user_id: str
@@ -30,16 +30,16 @@ class TurnContext:
 
 @dataclass(frozen=True)
 class ContextPack:
-    """Единица контекста с приоритетом и оценкой размера.
+    """A context unit with priority and size estimation.
 
-    Приоритеты (из секции 10.2 архитектуры):
-    0 — Guardrails (никогда не отбрасывается)
-    1 — Role instruction
-    2 — Active goals
-    3 — Phase
-    4 — Tool hints
-    5 — Memory recall
-    6 — User profile
+    Priorities (from architecture section 10.2):
+    0 - Guardrails (never dropped)
+    1 - Role instruction
+    2 - Active goals
+    3 - Phase
+    4 - Tool hints
+    5 - Memory recall
+    6 - User profile
     """
 
     pack_id: str
@@ -50,9 +50,9 @@ class ContextPack:
 
 @dataclass(frozen=True)
 class SkillSet:
-    """Именованный набор скилов (секция 5.1 архитектуры).
+    """Named skill set (architecture section 5.1).
 
-    Роль выбирает SkillSet → SkillSet определяет allowlist инструментов.
+    The role selects a SkillSet -> the SkillSet defines the tool allowlist.
     """
 
     set_id: str

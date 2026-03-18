@@ -1,4 +1,4 @@
-"""Тесты для ClaudeOptionsBuilder и _spec_to_sdk_config — фабрика опций SDK."""
+"""Tests for ClaudeOptionsBuilder and _spec_to_sdk_config - fabrika optsiy SDK."""
 
 import pytest
 
@@ -17,16 +17,16 @@ from cognitia.skills.types import McpServerSpec  # noqa: E402
 
 
 class TestSpecToSdkConfig:
-    """Конвертация McpServerSpec в SDK-совместимый dict."""
+    """Conversion McpServerSpec in SDK-compatible dict."""
 
     def test_url_transport(self) -> None:
-        """URL transport → Streamable HTTP (type=http для SDK)."""
+        """URL transport -> Streamable HTTP (type=http for SDK)."""
         spec = McpServerSpec(name="iss", transport="url", url="https://example.com/mcp")
         result = _spec_to_sdk_config(spec)
         assert result == {"type": "http", "url": "https://example.com/mcp"}
 
     def test_http_transport(self) -> None:
-        """HTTP transport → аналогично url (Streamable HTTP)."""
+        """HTTP transport -> analogichno url (Streamable HTTP)."""
         spec = McpServerSpec(name="iss", transport="http", url="https://example.com/mcp")
         result = _spec_to_sdk_config(spec)
         assert result == {"type": "http", "url": "https://example.com/mcp"}
@@ -46,7 +46,7 @@ class TestSpecToSdkConfig:
         assert "args" not in result
 
     def test_stdio_transport_with_args_and_env(self) -> None:
-        """STDIO transport с args и env."""
+        """STDIO transport with args and env."""
         spec = McpServerSpec(
             name="local",
             transport="stdio",
@@ -60,20 +60,20 @@ class TestSpecToSdkConfig:
         assert result["env"] == {"NODE_ENV": "production"}
 
     def test_unknown_transport_defaults_to_url(self) -> None:
-        """Неизвестный transport → fallback на url-конфиг."""
+        """Notizvestnyy transport -> fallback on url-config."""
         spec = McpServerSpec(name="x", transport="url", url="http://fallback")
         result = _spec_to_sdk_config(spec)
         assert "url" in result
 
     def test_missing_url_returns_empty_string(self) -> None:
-        """Без url → пустая строка."""
+        """Without url -> empty string."""
         spec = McpServerSpec(name="x", transport="url")
         result = _spec_to_sdk_config(spec)
         assert result["url"] == ""
 
 
 class TestBuildUrlConfig:
-    """Отдельные builder-функции."""
+    """Otdelnye builder-funktsii."""
 
     def test_build_url(self) -> None:
         spec = McpServerSpec(name="t", url="http://test")
@@ -91,10 +91,10 @@ class TestBuildUrlConfig:
 
 
 class TestClaudeOptionsBuilder:
-    """ClaudeOptionsBuilder — сборка ClaudeAgentOptions."""
+    """ClaudeOptionsBuilder - assembly ClaudeAgentOptions."""
 
     def test_build_basic(self) -> None:
-        """Базовая сборка с default model policy."""
+        """Basic assembly with default model policy."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -104,7 +104,7 @@ class TestClaudeOptionsBuilder:
         assert opts.system_prompt == "Ты — Freedom"
 
     def test_build_with_mcp_servers(self) -> None:
-        """Сборка с MCP-серверами."""
+        """Sborka with MCP-serverami."""
         builder = ClaudeOptionsBuilder()
         servers = {
             "iss": McpServerSpec(name="iss", url="http://iss.test"),
@@ -119,7 +119,7 @@ class TestClaudeOptionsBuilder:
         assert "fin" in opts.mcp_servers
 
     def test_build_with_custom_model_policy(self) -> None:
-        """Пользовательская model policy."""
+        """Userskaya model policy."""
         from cognitia.runtime.model_policy import ModelPolicy
 
         policy = ModelPolicy(
@@ -135,7 +135,7 @@ class TestClaudeOptionsBuilder:
         assert opts_escalated.model == "custom-opus"
 
     def test_build_with_tool_failure_escalation(self) -> None:
-        """Эскалация модели из-за ошибок tools."""
+        """Eskalatsiya models from-za oshibok tools."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -145,13 +145,13 @@ class TestClaudeOptionsBuilder:
         assert opts.model == "opus"
 
     def test_build_permission_mode_default(self) -> None:
-        """По умолчанию permission_mode = bypassPermissions."""
+        """Po umolchaniyu permission_mode = bypassPermissions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.permission_mode == "bypassPermissions"
 
     def test_build_permission_mode_override(self) -> None:
-        """Можно явно задать permission_mode."""
+        """Mozhno yavno zadat permission_mode."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -161,23 +161,19 @@ class TestClaudeOptionsBuilder:
         assert opts.permission_mode == "plan"
 
     def test_build_with_cwd(self) -> None:
-        """cwd передаётся в опции."""
+        """cwd peredaetsya in optsii."""
         builder = ClaudeOptionsBuilder(cwd="/tmp/test")
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.cwd == "/tmp/test"
 
     def test_default_setting_sources_empty(self) -> None:
-        """По умолчанию setting_sources=[] — не читаем CLAUDE.md и .claude/settings.json.
-
-        CLAUDE.md содержит developer-facing инструкции (архитектура, команды),
-        которые конфликтуют с ролью финансового коуча из system_prompt.
-        """
+        """Po umolchaniyu setting_sources=[] - not chitaem CLAUDE.md and .claude/settings.json. CLAUDE.md contains developer-facing instruktsii (arhitektura, commands), kotorye konfliktuyut with rolyu finansovogo koucha from system_prompt. """
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.setting_sources == []
 
     def test_explicit_setting_sources_override(self) -> None:
-        """Явно переданные setting_sources имеют приоритет."""
+        """YAvno peredannye setting_sources imeyut prioritet."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -187,13 +183,13 @@ class TestClaudeOptionsBuilder:
         assert opts.setting_sources == ["project", "user"]
 
     def test_override_model_has_priority(self) -> None:
-        """override_model имеет приоритет над ModelPolicy."""
+        """override_model imeet prioritet nad ModelPolicy."""
         builder = ClaudeOptionsBuilder(override_model="custom-model-v2")
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.model == "custom-model-v2"
 
     def test_build_with_max_thinking_tokens(self) -> None:
-        """max_thinking_tokens передаётся в ClaudeAgentOptions."""
+        """max_thinking_tokens peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -203,7 +199,7 @@ class TestClaudeOptionsBuilder:
         assert opts.max_thinking_tokens == 16000
 
     def test_build_with_sandbox(self) -> None:
-        """sandbox настройки передаются в ClaudeAgentOptions."""
+        """sandbox nastroyki are passed in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         sandbox = {"enabled": True, "autoAllowBashIfSandboxed": True}
         opts = builder.build(
@@ -214,7 +210,7 @@ class TestClaudeOptionsBuilder:
         assert opts.sandbox == sandbox
 
     def test_build_with_env(self) -> None:
-        """env переменные передаются в ClaudeAgentOptions."""
+        """env peremennye are passed in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -224,13 +220,13 @@ class TestClaudeOptionsBuilder:
         assert opts.env == {"MY_VAR": "value"}
 
     def test_build_default_env_empty(self) -> None:
-        """По умолчанию env — пустой dict."""
+        """Po umolchaniyu env - empty dict."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.env == {}
 
     def test_build_with_agents(self) -> None:
-        """agents определения передаются в ClaudeAgentOptions."""
+        """agents opredeleniya are passed in ClaudeAgentOptions."""
         from claude_agent_sdk import AgentDefinition
 
         builder = ClaudeOptionsBuilder()
@@ -249,7 +245,7 @@ class TestClaudeOptionsBuilder:
         assert "researcher" in opts.agents
 
     def test_build_with_output_format(self) -> None:
-        """output_format (structured output) передаётся в ClaudeAgentOptions."""
+        """output_format (structured output) peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         schema = {
             "type": "json_schema",
@@ -266,13 +262,13 @@ class TestClaudeOptionsBuilder:
         assert opts.output_format == schema
 
     def test_build_default_output_format_none(self) -> None:
-        """По умолчанию output_format = None."""
+        """Po umolchaniyu output_format = None."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.output_format is None
 
     def test_build_with_continue_conversation(self) -> None:
-        """continue_conversation передаётся в ClaudeAgentOptions."""
+        """continue_conversation peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -282,13 +278,13 @@ class TestClaudeOptionsBuilder:
         assert opts.continue_conversation is True
 
     def test_build_default_continue_conversation_false(self) -> None:
-        """По умолчанию continue_conversation = False."""
+        """Po umolchaniyu continue_conversation = False."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.continue_conversation is False
 
     def test_build_with_resume(self) -> None:
-        """resume (session_id) передаётся в ClaudeAgentOptions."""
+        """resume (session_id) peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -298,7 +294,7 @@ class TestClaudeOptionsBuilder:
         assert opts.resume == "session-abc-123"
 
     def test_build_with_fork_session(self) -> None:
-        """fork_session передаётся в ClaudeAgentOptions."""
+        """fork_session peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -308,7 +304,7 @@ class TestClaudeOptionsBuilder:
         assert opts.fork_session is True
 
     def test_build_with_betas(self) -> None:
-        """betas (1M context) передаётся в ClaudeAgentOptions."""
+        """betas (1M context) peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -318,13 +314,13 @@ class TestClaudeOptionsBuilder:
         assert opts.betas == ["context-1m-2025-08-07"]
 
     def test_build_default_betas_empty(self) -> None:
-        """По умолчанию betas = []."""
+        """Po umolchaniyu betas = []."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.betas == []
 
     def test_build_with_plugins(self) -> None:
-        """plugins передаются в ClaudeAgentOptions."""
+        """plugins are passed in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         plugins = [{"type": "local", "path": "/path/to/plugin"}]
         opts = builder.build(
@@ -335,7 +331,7 @@ class TestClaudeOptionsBuilder:
         assert opts.plugins == plugins
 
     def test_build_with_include_partial_messages(self) -> None:
-        """include_partial_messages передаётся в ClaudeAgentOptions."""
+        """include_partial_messages peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -345,7 +341,7 @@ class TestClaudeOptionsBuilder:
         assert opts.include_partial_messages is True
 
     def test_build_with_enable_file_checkpointing(self) -> None:
-        """enable_file_checkpointing передаётся в ClaudeAgentOptions."""
+        """enable_file_checkpointing peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -355,7 +351,7 @@ class TestClaudeOptionsBuilder:
         assert opts.enable_file_checkpointing is True
 
     def test_build_with_max_budget_usd(self) -> None:
-        """max_budget_usd передаётся в ClaudeAgentOptions."""
+        """max_budget_usd peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -365,7 +361,7 @@ class TestClaudeOptionsBuilder:
         assert opts.max_budget_usd == 5.0
 
     def test_build_with_fallback_model(self) -> None:
-        """fallback_model передаётся в ClaudeAgentOptions."""
+        """fallback_model peredaetsya in ClaudeAgentOptions."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -375,7 +371,7 @@ class TestClaudeOptionsBuilder:
         assert opts.fallback_model == "haiku"
 
     def test_build_with_hooks(self) -> None:
-        """hooks передаются в ClaudeAgentOptions."""
+        """hooks are passed in ClaudeAgentOptions."""
         from claude_agent_sdk import HookMatcher
 
         builder = ClaudeOptionsBuilder()

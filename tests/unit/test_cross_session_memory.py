@@ -1,4 +1,4 @@
-"""Тесты для cross-session memory — native + portable paths."""
+"""Tests for cross-session memory - native + portable paths."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ class TestNativeMemoryPassedToUpstream:
     """Native path: memory_sources → native_config["memory"]."""
 
     def test_memory_sources_propagated_to_native_config(self) -> None:
-        """DeepAgentsRuntimePort с memory_sources → _config.native_config['memory']."""
+        """DeepAgentsRuntimePort with memory_sources -> _config.native_config['memory']."""
         port = DeepAgentsRuntimePort(
             system_prompt="test",
             config=RuntimeConfig(
@@ -31,7 +31,7 @@ class TestNativeMemoryPassedToUpstream:
         ]
 
     def test_no_memory_sources_no_native_key(self) -> None:
-        """Без memory_sources — native_config не содержит memory ключ."""
+        """Without memory_sources - native_config not contains memory klyuch."""
         port = DeepAgentsRuntimePort(
             system_prompt="test",
             config=RuntimeConfig(
@@ -93,7 +93,7 @@ class TestAutoBackendForMemory:
             del sys.modules["deepagents.backends.filesystem"]
 
     def test_no_auto_backend_when_backend_already_set(self) -> None:
-        """Если backend уже задан — не перезаписываем."""
+        """If backend uzhe zadan - not perezapisyvaem."""
         existing_backend = MagicMock()
         port = DeepAgentsRuntimePort(
             system_prompt="test",
@@ -108,7 +108,7 @@ class TestAutoBackendForMemory:
         assert port._config.native_config.get("backend") is existing_backend
 
     def test_no_auto_backend_without_memory_sources(self) -> None:
-        """Без memory_sources — backend не создаётся."""
+        """Without memory_sources - backend not sozdaetsya."""
         port = DeepAgentsRuntimePort(
             system_prompt="test",
             config=RuntimeConfig(
@@ -120,7 +120,7 @@ class TestAutoBackendForMemory:
         assert "backend" not in port._config.native_config
 
     def test_no_auto_backend_in_portable_mode(self) -> None:
-        """В portable mode — не создаём backend."""
+        """V portable mode - not create backend."""
         port = DeepAgentsRuntimePort(
             system_prompt="test",
             config=RuntimeConfig(
@@ -133,7 +133,7 @@ class TestAutoBackendForMemory:
 
 
 class TestPortableMemoryInjected:
-    """Portable path: memory через inject_memory_into_prompt (read-only)."""
+    """Portable path: memory cherez inject_memory_into_prompt (read-only)."""
 
     def test_portable_mode_injects_memory(self, tmp_path) -> None:
         agents_md = tmp_path / "AGENTS.md"
@@ -152,7 +152,7 @@ class TestPortableMemoryInjected:
         assert "snake_case" in prompt
 
     def test_thin_runtime_port_injects_memory(self, tmp_path) -> None:
-        """ThinRuntime через BaseRuntimePort также инжектит memory."""
+        """ThinRuntime cherez BaseRuntimePort takzhe inzhektit memory."""
         agents_md = tmp_path / "AGENTS.md"
         agents_md.write_text("Project conventions here")
 

@@ -1,4 +1,4 @@
-"""CommandRegistry — реестр команд для CLI и Telegram."""
+"""CommandRegistry - command registry for CLI and Telegram."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-# Тип обработчика команды
+# Command handler type
 CommandHandler = Callable[..., Awaitable[str]]
 
 _TYPE_MAP: dict[str, type] = {
@@ -19,10 +19,10 @@ _TYPE_MAP: dict[str, type] = {
 
 
 def _validate_params(params_schema: dict[str, Any], kwargs: dict[str, Any]) -> str | None:
-    """Валидировать kwargs по JSON Schema (required + properties.type).
+    """Validate kwargs against JSON Schema (required + properties.type).
 
-    Не использует внешних зависимостей.
-    Возвращает сообщение об ошибке или None если всё ок.
+    Uses no external dependencies.
+    Returns an error message or None if everything is OK.
     """
     for field_name in params_schema.get("required", []):
         if field_name not in kwargs:
@@ -35,7 +35,7 @@ def _validate_params(params_schema: dict[str, Any], kwargs: dict[str, Any]) -> s
         expected_type = _TYPE_MAP.get(expected_type_name)
         if expected_type is None:
             continue
-        # integer is strict: bool is subclass of int but should not match
+        # integer is strict: bool is a subclass of int but should not match
         value = kwargs[prop_name]
         if expected_type_name == "integer" and isinstance(value, bool):
             return (
@@ -53,7 +53,7 @@ def _validate_params(params_schema: dict[str, Any], kwargs: dict[str, Any]) -> s
 
 @dataclass
 class CommandDef:
-    """Определение команды."""
+    """Command definition."""
 
     name: str
     handler: CommandHandler
@@ -63,30 +63,30 @@ class CommandDef:
     parameters: dict[str, Any] | None = None
 
     def __getitem__(self, key: str) -> Any:
-        """Dict-like доступ для backward compatibility (cmd['name'])."""
+        """Dict-like access for backward compatibility (cmd['name'])."""
         return getattr(self, key)
 
 
 @dataclass
 class ToolDefinition:
-    """Tool definition для LLM — поддерживает атрибутный и dict-подобный доступ."""
+    """Tool definition for the LLM - supports attribute and dict-like access."""
 
     name: str
     description: str
     parameters: dict[str, Any]
 
     def __getitem__(self, key: str) -> Any:
-        """Dict-like доступ: tool['name'], tool['parameters']."""
+        """Dict-like access: tool['name'], tool['parameters']."""
         return getattr(self, key)
 
 
 class CommandRegistry:
-    """Реестр команд с поддержкой алиасов.
+    """Command registry with alias support.
 
-    Команды регистрируются программно:
+    Commands are registered programmatically:
         registry.add("topic.new", aliases=["tn"], handler=create_topic)
 
-    Вызов:
+    Invocation:
         result = await registry.execute("topic.new", args=["my_topic"], ctx=ctx)
     """
 
@@ -96,10 +96,10 @@ class CommandRegistry:
 
     @staticmethod
     def _normalize_name(name: str) -> str:
-        """Нормализовать имя команды к canonical-форме.
+        """Normalize a command name to its canonical form.
 
-        Пользовательский формат поддерживает `_` (например `/role_set`),
-        внутренняя canonical-форма хранится через `.` (`role.set`).
+        The user-facing format supports `_` (for example `/role_set`),
+        while the internal canonical form uses `.` (`role.set`).
         """
         return name.replace("_", ".")
 
@@ -112,7 +112,7 @@ class CommandRegistry:
         category: str = "",
         parameters: dict[str, Any] | None = None,
     ) -> None:
-        """Зарегистрировать команду."""
+        """Register a command."""
         canonical_name = self._normalize_name(name)
         cmd = CommandDef(
             name=canonical_name,
@@ -128,13 +128,13 @@ class CommandRegistry:
             self._alias_map[self._normalize_name(alias)] = canonical_name
 
     def resolve(self, name_or_alias: str) -> CommandDef | None:
-        """Найти команду по имени или алиасу."""
+        """Find a command by name or alias."""
         candidates = [name_or_alias, self._normalize_name(name_or_alias)]
         for candidate in candidates:
-            # Сначала точное совпадение
+            # First exact match
             if candidate in self._commands:
                 return self._commands[candidate]
-            # Потом по алиасу
+            # Then by alias
             resolved = self._alias_map.get(candidate)
             if resolved:
                 return self._commands.get(resolved)
@@ -143,7 +143,7 @@ class CommandRegistry:
     async def execute(
         self, name_or_alias: str, args: list[str] | None = None, **kwargs: Any
     ) -> str:
-        """Выполнить команду по имени/алиасу."""
+        """Execute a command by name or alias."""
         cmd = self.resolve(name_or_alias)
         if not cmd:
             return f"Неизвестная команда: {name_or_alias}"
@@ -153,24 +153,24 @@ class CommandRegistry:
             return f"Ошибка выполнения '{cmd.name}': {e}"
 
     def is_command(self, text: str) -> bool:
-        """Проверить, является ли текст командой (начинается с /)."""
+        """Check whether the text is a command (starts with /)."""
         return text.startswith("/")
 
     def parse_command(self, text: str) -> tuple[str, list[str]]:
-        """Разобрать текст команды на имя и аргументы.
+        """Parse a command string into a name and arguments.
 
         '/topic.new my_goal' -> ('topic.new', ['my_goal'])
         """
         parts = text.lstrip("/").split(maxsplit=-1)
         name = self._normalize_name(parts[0]) if parts else ""
-        # Поддержка обоих форматов:
+        # Support both formats:
         # /topic.new -> topic.new
         # /topic_new -> topic.new
         args = parts[1:] if len(parts) > 1 else []
         return name, args
 
     def list_commands(self, category: str | None = None) -> list[CommandDef]:
-        """Все зарегистрированные команды, опционально фильтруя по категории."""
+        """List all registered commands, optionally filtered by category."""
         commands = list(self._commands.values())
         if category is not None:
             commands = [c for c in commands if c.category == category]
@@ -179,11 +179,11 @@ class CommandRegistry:
     async def execute_validated(
         self, name_or_alias: str, params: dict[str, Any] | None = None
     ) -> str:
-        """Выполнить команду с JSON Schema валидацией параметров.
+        """Execute a command with JSON Schema parameter validation.
 
-        Если у команды определена JSON Schema (parameters), params валидируются
-        перед вызовом handler. При ошибке валидации возвращает сообщение об ошибке.
-        Не использует внешних зависимостей — встроенная валидация (required + types).
+        If a command defines JSON Schema (parameters), params are validated
+        before invoking the handler. On validation error, returns an error message.
+        Uses no external dependencies - built-in validation (required + types).
         """
         cmd = self.resolve(name_or_alias)
         if not cmd:
@@ -199,7 +199,7 @@ class CommandRegistry:
             return f"Ошибка выполнения '{cmd.name}': {e}"
 
     def to_tool_definitions(self) -> list[ToolDefinition]:
-        """Конвертировать зарегистрированные команды в tool definitions для LLM."""
+        """Convert registered commands into tool definitions for the LLM."""
         tools: list[ToolDefinition] = []
         for cmd in self._commands.values():
             tools.append(
@@ -212,7 +212,7 @@ class CommandRegistry:
         return tools
 
     def help_text(self) -> str:
-        """Сгенерировать текст справки."""
+        """Generate help text."""
         lines = ["Доступные команды:"]
         for cmd in self._commands.values():
             display_name = cmd.name.replace(".", "_")

@@ -34,7 +34,7 @@ async def run_react(  # noqa: C901
     checkpoint: CheckpointFn | None = None,
     on_retry: Callable[[int, float], None] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
-    """React loop: LLM -> tool_call | final. С поддержкой token streaming."""
+    """Run react."""
     prompt = build_react_prompt(
         append_structured_output_instruction(
             system_prompt,
@@ -56,7 +56,7 @@ async def run_react(  # noqa: C901
     while iterations < config.max_iterations:
         iterations += 1
 
-        # Пробуем streaming LLM вызов, fallback на non-streaming
+
         try:
             checkpoint_event = await _run_checkpoint(checkpoint)
             if checkpoint_event is not None:
@@ -132,7 +132,7 @@ async def run_react(  # noqa: C901
                 return
             continue
 
-        retries = 0  # Сброс при успешном парсинге
+        retries = 0
 
         # --- tool_call ---
         if envelope.type == "tool_call" and envelope.tool:
@@ -161,7 +161,7 @@ async def run_react(  # noqa: C901
                 correlation_id=cid,
             )
 
-            # Выполняем tool
+
             result = await executor.execute(tc.name, tc.args)
 
             checkpoint_event = await _run_checkpoint(checkpoint)
@@ -169,7 +169,7 @@ async def run_react(  # noqa: C901
                 yield checkpoint_event
                 return
 
-            # Проверяем ошибку в результате
+
             tool_ok = True
             try:
                 parsed = json.loads(result)
@@ -187,7 +187,7 @@ async def run_react(  # noqa: C901
 
             tool_calls_count += 1
 
-            # Добавляем tool result в историю LLM
+
             new_messages.append(
                 Message(
                     role="assistant",

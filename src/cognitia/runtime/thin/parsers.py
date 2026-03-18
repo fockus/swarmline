@@ -1,11 +1,4 @@
-"""Парсеры JSON-ответов LLM для ThinRuntime.
-
-parse_envelope   — raw str -> ActionEnvelope | None
-parse_plan       — raw str -> PlanSchema | None
-strip_markdown_fences — убрать ```json ... ``` обёртку
-parse_json_dict  — raw str -> dict | None (с fallback-ами)
-extract_text_fallback — безопасный текст из raw-ответа
-"""
+"""Parsers module."""
 
 from __future__ import annotations
 
@@ -19,7 +12,7 @@ from cognitia.runtime.thin.schemas import ActionEnvelope, PlanSchema
 
 
 def strip_markdown_fences(raw: str) -> str:
-    """Убрать markdown code fences, если ответ завернут в ```json ... ```."""
+    """Strip markdown fences."""
     cleaned = raw.strip()
     if not cleaned.startswith("```"):
         return cleaned
@@ -39,10 +32,7 @@ def strip_markdown_fences(raw: str) -> str:
 
 
 def extract_first_json_object(text: str) -> str | None:
-    """Извлечь первый JSON-объект из произвольного текста.
-
-    Полезно, когда модель добавляет пояснения до/после JSON.
-    """
+    """Extract first json object."""
     bounds = find_json_object_boundaries(text)
     if bounds is None:
         return None
@@ -50,10 +40,10 @@ def extract_first_json_object(text: str) -> str | None:
 
 
 def parse_json_dict(raw: str) -> dict[str, Any] | None:
-    """Попробовать распарсить dict JSON из raw-ответа модели."""
+    """Parse json dict."""
     cleaned = strip_markdown_fences(raw)
 
-    # 1) Пробуем как есть
+
     try:
         data = json.loads(cleaned)
         if isinstance(data, dict):
@@ -61,7 +51,7 @@ def parse_json_dict(raw: str) -> dict[str, Any] | None:
     except json.JSONDecodeError:
         pass
 
-    # 2) Пробуем вырезать JSON из текста
+
     extracted = extract_first_json_object(cleaned)
     if not extracted:
         return None
@@ -75,7 +65,7 @@ def parse_json_dict(raw: str) -> dict[str, Any] | None:
 
 
 def parse_envelope(raw: str) -> ActionEnvelope | None:
-    """Парсить JSON ответ LLM в ActionEnvelope."""
+    """Parse envelope."""
     try:
         data = parse_json_dict(raw)
         if data is None:
@@ -86,7 +76,7 @@ def parse_envelope(raw: str) -> ActionEnvelope | None:
 
 
 def parse_plan(raw: str) -> PlanSchema | None:
-    """Парсить JSON ответ LLM в PlanSchema."""
+    """Parse plan."""
     try:
         data = parse_json_dict(raw)
         if data is None:
@@ -97,11 +87,11 @@ def parse_plan(raw: str) -> PlanSchema | None:
 
 
 def extract_text_fallback(raw: str) -> str:
-    """Сформировать безопасный текстовый fallback из raw-ответа LLM."""
+    """Extract text fallback."""
     text = strip_markdown_fences(raw).strip()
     if not text:
         return ""
-    # Если модель всё же вернула JSON-подобный ответ, это плохо читается пользователю.
+
     if text.startswith("{") and text.endswith("}"):
         return ""
     if len(text) > 2000:

@@ -1,7 +1,7 @@
-"""Типы для Todo capability.
+"""Types for the Todo capability.
 
-TodoItem — элемент чеклиста (id, content, status).
-TodoConfig — конфигурация todo (enabled, backend, лимиты).
+TodoItem - checklist item (id, content, status).
+TodoConfig - todo configuration (enabled, backend, limits).
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ from typing import Any, Literal
 
 @dataclass(frozen=True)
 class TodoItem:
-    """Элемент чеклиста.
+    """Checklist item.
 
-    Статусы: pending, in_progress, completed, cancelled.
+    Statuses: pending, in_progress, completed, cancelled.
     """
 
     id: str
@@ -26,7 +26,7 @@ class TodoItem:
     updated_at: datetime
 
     def to_dict(self) -> dict[str, Any]:
-        """Сериализовать в dict."""
+        """Serialize to a dict."""
         return {
             "id": self.id,
             "content": self.content,
@@ -38,9 +38,9 @@ class TodoItem:
 
 @dataclass(frozen=True)
 class TodoConfig:
-    """Конфигурация todo capability.
+    """Todo capability configuration.
 
-    Включается/выключается независимо от sandbox и memory bank.
+    Can be enabled or disabled independently of sandbox and memory bank.
     """
 
     enabled: bool = False

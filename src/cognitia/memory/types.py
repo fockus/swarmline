@@ -1,4 +1,4 @@
-"""Типы данных для работы с памятью."""
+"""Data types for memory operations."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class MemoryMessage:
-    """Сообщение из истории диалога."""
+    """A message from conversation history."""
 
     role: str  # 'user' | 'assistant' | 'system'
     content: str
@@ -17,7 +17,7 @@ class MemoryMessage:
 
 @dataclass
 class UserProfile:
-    """Профиль пользователя с фактами."""
+    """User profile with facts."""
 
     user_id: str
     facts: dict[str, Any] = field(default_factory=dict)
@@ -26,7 +26,7 @@ class UserProfile:
 
 @dataclass
 class GoalState:
-    """Состояние цели пользователя."""
+    """User goal state."""
 
     goal_id: str
     title: str
@@ -39,7 +39,7 @@ class GoalState:
 
 @dataclass
 class PhaseState:
-    """Состояние текущей фазы пользователя."""
+    """Current user phase state."""
 
     user_id: str
     phase: str = ""
@@ -48,7 +48,7 @@ class PhaseState:
 
 @dataclass(frozen=True)
 class ToolEvent:
-    """Запись о вызове инструмента (§9.1 tool_events)."""
+    """A record of a tool invocation (§9.1 tool_events)."""
 
     topic_id: str
     tool_name: str

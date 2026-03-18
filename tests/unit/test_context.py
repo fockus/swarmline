@@ -1,4 +1,4 @@
-"""Тесты для DefaultContextBuilder и ContextBudget."""
+"""Tests for DefaultContextBuilder and ContextBudget."""
 
 from pathlib import Path
 
@@ -16,7 +16,7 @@ from cognitia.skills.types import LoadedSkill, SkillSpec
 
 @pytest.fixture
 def prompts_dir(tmp_path: Path) -> Path:
-    """Создать временную директорию с промптами."""
+    """Create vremennuyu directory with promptami."""
     (tmp_path / "identity.md").write_text("Ты — Freedom AI, финансовый ментор.")
     (tmp_path / "guardrails.md").write_text("Не давай инвестрекомендаций.")
 
@@ -34,10 +34,10 @@ def builder(prompts_dir: Path) -> DefaultContextBuilder:
 
 
 class TestEstimateTokens:
-    """Тесты оценки токенов."""
+    """Tests otsenki tokenov."""
 
     def test_empty_string(self) -> None:
-        assert estimate_tokens("") == 1  # минимум 1
+        assert estimate_tokens("") == 1  # minimum 1
 
     def test_short_string(self) -> None:
         # "hello" = 5 chars -> ~1-2 tokens
@@ -51,7 +51,7 @@ class TestEstimateTokens:
 
 
 class TestTruncateToBudget:
-    """Тесты обрезки текста по бюджету."""
+    """Tests obrezki teksta by byudzhetu."""
 
     def test_short_text_not_truncated(self) -> None:
         text = "short"
@@ -66,11 +66,11 @@ class TestTruncateToBudget:
 
 
 class TestDefaultContextBuilder:
-    """Тесты сборки контекста."""
+    """Tests sborki contexta."""
 
     @pytest.mark.asyncio
     async def test_basic_prompt(self, builder: DefaultContextBuilder) -> None:
-        """Базовый промпт содержит identity и guardrails."""
+        """Basic prompt contains identity and guardrails."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -84,7 +84,7 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_role_included(self, builder: DefaultContextBuilder) -> None:
-        """Промпт содержит текст роли."""
+        """Prompt contains tekst roli."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -97,7 +97,7 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_goal_included(self, builder: DefaultContextBuilder) -> None:
-        """Промпт содержит активную цель."""
+        """Prompt contains aktivnuyu tsel."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -119,7 +119,7 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_user_profile_included(self, builder: DefaultContextBuilder) -> None:
-        """Промпт содержит факты о пользователе."""
+        """Prompt contains fakty o polzovatele."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -133,7 +133,7 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_skill_instruction_included(self, builder: DefaultContextBuilder) -> None:
-        """Промпт содержит инструкцию активного скилла."""
+        """Prompt contains instruktsiyu aktivnogo skilla."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -154,21 +154,21 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_truncated_packs_reported(self, builder: DefaultContextBuilder) -> None:
-        """При превышении бюджета пакеты обрезаются."""
+        """Pri prevyshenii byudzheta pakety are truncated."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
             role_id="coach",
             user_text="привет",
             active_skill_ids=[],
-            budget=ContextBudget(total_tokens=50),  # Очень маленький бюджет
+            budget=ContextBudget(total_tokens=50),  # Ochen malenkiy byudzhet
         )
         result = await builder.build(inp, summary="x" * 10000)
         assert "summary" in result.truncated_packs
 
     @pytest.mark.asyncio
     async def test_notes_contain_metadata(self, builder: DefaultContextBuilder) -> None:
-        """Notes содержат метаданные."""
+        """Notes soderzhat metadata."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -182,7 +182,7 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_memory_recall_included(self, builder: DefaultContextBuilder) -> None:
-        """P3: Memory recall — кросс-topic факты включаются в prompt (GAP-1, §10.1)."""
+        """P3: Memory recall - kross-topic fakty vklyuchayutsya in prompt (GAP-1, §10.1)."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -198,14 +198,14 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_memory_recall_truncated(self, builder: DefaultContextBuilder) -> None:
-        """P3: Memory recall обрезается при превышении memory_max."""
+        """P3: Memory recall obrezaetsya pri prevyshenii memory_max."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
             role_id="coach",
             user_text="привет",
             active_skill_ids=[],
-            budget=ContextBudget(memory_max=10),  # Очень маленький лимит
+            budget=ContextBudget(memory_max=10),  # Ochen malenkiy limit
         )
         recall = {f"fact_{i}": "x" * 100 for i in range(20)}
         result = await builder.build(inp, recall_facts=recall)
@@ -213,16 +213,16 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_role_deducts_remaining(self, builder: DefaultContextBuilder) -> None:
-        """Роль учитывается в remaining budget (GAP-7)."""
+        """Rol considerssya in remaining budget (GAP-7)."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
             role_id="coach",
             user_text="привет",
             active_skill_ids=[],
-            budget=ContextBudget(total_tokens=100),  # Маленький бюджет
+            budget=ContextBudget(total_tokens=100),  # Malenkiy byudzhet
         )
-        # С ролью tool_budget должен быть меньше чем без
+        # S rolyu tool_budget should byt menshe chem without
         result_with_role = await builder.build(inp)
         inp_no_role = ContextInput(
             user_id="u1",
@@ -237,14 +237,14 @@ class TestDefaultContextBuilder:
 
     @pytest.mark.asyncio
     async def test_budget_overflow_drops_low_priority(self, builder: DefaultContextBuilder) -> None:
-        """При budget overflow низкоприоритетные пакеты дропаются (GAP-5, §10.3)."""
+        """Pri budget overflow nizkoprioritetnye pakety dropayutsya (GAP-5, §10.3)."""
         inp = ContextInput(
             user_id="u1",
             topic_id="t1",
             role_id="coach",
             user_text="привет",
             active_skill_ids=[],
-            # Маленький бюджет — хватит только на guardrails + role
+            # Malenkiy byudzhet - hvatit tolko on guardrails + role
             budget=ContextBudget(total_tokens=50),
         )
         goal_text = "\n".join(
@@ -267,22 +267,22 @@ class TestDefaultContextBuilder:
             summary="long " * 1000,
         )
 
-        # Guardrails и роль всегда есть
+        # Guardrails and rol vsegda est
         assert "Freedom AI" in result.system_prompt
-        # Низкоприоритетные должны быть дропнуты
+        # Nizkoprioritetnye should byt dropnuty
         dropped = result.truncated_packs
-        # Хотя бы summary должен быть дропнут
+        # Hotya by summary should byt dropnut
         assert "summary" in dropped
 
 
 # ---------------------------------------------------------------------------
-# P2.5: Последние сообщения диалога (last_messages)
+# P2.5: Poslednie messages dialoga (last_messages)
 # ---------------------------------------------------------------------------
 from cognitia.memory.types import MemoryMessage  # noqa: E402
 
 
 class TestContextBuilderLastMessages:
-    """Тесты для pack P2.5 — последние сообщения диалога."""
+    """Tests for pack P2.5 - poslednie messages dialoga."""
 
     @staticmethod
     def _make_inp(role_id: str = "coach", budget: ContextBudget | None = None) -> ContextInput:
@@ -300,7 +300,7 @@ class TestContextBuilderLastMessages:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """Если last_messages переданы, они появляются в system_prompt."""
+        """If last_messages peredany, oni poyavlyayutsya in system_prompt."""
         messages = [
             MemoryMessage(role="user", content="Мой доход 120 000 рублей"),
             MemoryMessage(role="assistant", content="Отлично! Давайте разберём бюджет."),
@@ -315,7 +315,7 @@ class TestContextBuilderLastMessages:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """Пустой список last_messages — pack не добавляется."""
+        """Empty list last_messages - pack not is added."""
         result = await builder.build(self._make_inp(), last_messages=[])
         assert "Последние сообщения" not in result.system_prompt
 
@@ -324,7 +324,7 @@ class TestContextBuilderLastMessages:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """last_messages=None — pack не добавляется."""
+        """last_messages=None - pack not is added."""
         result = await builder.build(self._make_inp(), last_messages=None)
         assert "Последние сообщения" not in result.system_prompt
 
@@ -333,7 +333,7 @@ class TestContextBuilderLastMessages:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """Длинные сообщения обрезаются по budget.messages_max."""
+        """Dlinnye messages are truncated by budget.messages_max."""
         inp = self._make_inp(budget=ContextBudget(messages_max=100))
         messages = [
             MemoryMessage(role="user", content="A" * 2000),
@@ -344,23 +344,23 @@ class TestContextBuilderLastMessages:
 
     @pytest.mark.asyncio
     async def test_messages_max_in_context_budget(self) -> None:
-        """ContextBudget имеет поле messages_max."""
+        """ContextBudget imeet pole messages_max."""
         budget = ContextBudget(messages_max=1500)
         assert budget.messages_max == 1500
 
     @pytest.mark.asyncio
     async def test_default_messages_max(self) -> None:
-        """По умолчанию messages_max = 2000."""
+        """Po umolchaniyu messages_max = 2000."""
         budget = ContextBudget()
         assert budget.messages_max == 2000
 
 
 class TestContextBuilderHotReload:
-    """Тесты hot-reload промптов — файлы перечитываются при изменении на диске."""
+    """Tests hot-reload promptov - files perechityvayutsya pri izmenotnii on diske."""
 
     @pytest.mark.asyncio
     async def test_role_file_change_picked_up(self, prompts_dir: Path) -> None:
-        """Изменённый файл роли подхватывается без перезапуска."""
+        """Izmenennyy file roli podhvatyvaetsya without perezapuska."""
         builder = DefaultContextBuilder(prompts_dir)
         inp = ContextInput(
             user_id="u1",
@@ -372,10 +372,10 @@ class TestContextBuilderHotReload:
         result1 = await builder.build(inp)
         assert "коуча" in result1.system_prompt
 
-        # Меняем файл роли на диске
+        # Menyaem file roli on diske
         role_file = prompts_dir / "roles" / "coach.md"
         role_file.write_text("Ты новый суперкоуч!")
-        # Гарантируем отличие mtime (некоторые FS имеют секундную точность)
+        # Garantiruem otlichie mtime (notkotorye FS imeyut sekundnuyu tochnost)
         import os
         import time
 
@@ -387,7 +387,7 @@ class TestContextBuilderHotReload:
 
     @pytest.mark.asyncio
     async def test_identity_file_change_picked_up(self, prompts_dir: Path) -> None:
-        """Изменённый identity.md подхватывается без перезапуска."""
+        """Izmenennyy identity.md podhvatyvaetsya without perezapuska."""
         builder = DefaultContextBuilder(prompts_dir)
         inp = ContextInput(
             user_id="u1",
@@ -399,7 +399,7 @@ class TestContextBuilderHotReload:
         result1 = await builder.build(inp)
         assert "Freedom AI" in result1.system_prompt
 
-        # Меняем identity
+        # Menyaem identity
         identity_file = prompts_dir / "identity.md"
         identity_file.write_text("Ты — Мегабот, финансовый гуру.")
         import os
@@ -413,7 +413,7 @@ class TestContextBuilderHotReload:
 
     @pytest.mark.asyncio
     async def test_new_role_file_picked_up(self, prompts_dir: Path) -> None:
-        """Новый файл роли подхватывается без перезапуска."""
+        """New file roli podhvatyvaetsya without perezapuska."""
         builder = DefaultContextBuilder(prompts_dir)
         inp = ContextInput(
             user_id="u1",
@@ -425,7 +425,7 @@ class TestContextBuilderHotReload:
         result1 = await builder.build(inp)
         assert "волшебник" not in result1.system_prompt
 
-        # Добавляем новую роль
+        # Add novuyu rol
         (prompts_dir / "roles" / "wizard.md").write_text("Ты финансовый волшебник!")
 
         result2 = await builder.build(inp)
@@ -433,7 +433,7 @@ class TestContextBuilderHotReload:
 
     @pytest.mark.asyncio
     async def test_no_reload_when_files_unchanged(self, prompts_dir: Path) -> None:
-        """Если файлы не менялись — повторная загрузка не происходит."""
+        """If files not menyalis - povtornaya loading not proishodit."""
         builder = DefaultContextBuilder(prompts_dir)
         inp = ContextInput(
             user_id="u1",
@@ -444,5 +444,5 @@ class TestContextBuilderHotReload:
         )
         result1 = await builder.build(inp)
         result2 = await builder.build(inp)
-        # Контент одинаковый — prompt_hash совпадает
+        # Kontent odinakovyy - prompt_hash sovfails
         assert result1.prompt_hash == result2.prompt_hash

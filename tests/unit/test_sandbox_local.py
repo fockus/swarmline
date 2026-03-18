@@ -1,6 +1,4 @@
-"""Тесты LocalSandboxProvider — TDD: RED → GREEN → REFACTOR.
-
-Unit-тесты для изоляции файловой системы и выполнения команд.
+"""Tests LocalSandboxProvider - TDD: RED -> GREEN -> REFACTOR. Unit-tests for izolyatsii fileovoy sistemy and vypolnotniya komand.
 """
 
 from __future__ import annotations
@@ -11,12 +9,12 @@ from cognitia.tools.types import SandboxConfig, SandboxViolation
 
 @pytest.fixture()
 def sandbox_config(tmp_path: object) -> SandboxConfig:
-    """Конфигурация sandbox для тестов."""
+    """Konfiguratsiya sandbox for testov."""
     return SandboxConfig(
         root_path=str(tmp_path),
         user_id="user-1",
         topic_id="topic-1",
-        max_file_size_bytes=1024,  # 1KB для тестов
+        max_file_size_bytes=1024,  # 1KB for testov
         timeout_seconds=5,
         denied_commands=frozenset({"rm", "sudo"}),
     )
@@ -24,17 +22,17 @@ def sandbox_config(tmp_path: object) -> SandboxConfig:
 
 @pytest.fixture()
 async def sandbox(sandbox_config: SandboxConfig):
-    """Экземпляр LocalSandboxProvider."""
+    """Ekzemplyar LocalSandboxProvider."""
     from cognitia.tools.sandbox_local import LocalSandboxProvider
 
     return LocalSandboxProvider(sandbox_config)
 
 
 class TestLocalSandboxReadFile:
-    """Тесты чтения файлов."""
+    """Tests chteniya fileov."""
 
     async def test_read_existing_file(self, sandbox, sandbox_config: SandboxConfig) -> None:
-        """Чтение существующего файла."""
+        """Reading sushchestvuyushchego filea."""
         import os
 
         ws = sandbox_config.workspace_path
@@ -46,22 +44,22 @@ class TestLocalSandboxReadFile:
         assert result == "world"
 
     async def test_read_nonexistent_file(self, sandbox) -> None:
-        """Чтение несуществующего файла → FileNotFoundError."""
+        """Reading notsushchestvuyushchego filea -> FileNotFoundError."""
         with pytest.raises(FileNotFoundError):
             await sandbox.read_file("nonexistent.txt")
 
     async def test_read_traversal_blocked(self, sandbox) -> None:
-        """Path traversal при чтении → SandboxViolation."""
+        """Path traversal pri chtenii -> SandboxViolation."""
         with pytest.raises(SandboxViolation):
             await sandbox.read_file("../../etc/passwd")
 
     async def test_read_absolute_path_blocked(self, sandbox) -> None:
-        """Абсолютный путь при чтении → SandboxViolation."""
+        """Absolyutnyy put pri chtenii -> SandboxViolation."""
         with pytest.raises(SandboxViolation):
             await sandbox.read_file("/etc/passwd")
 
     async def test_read_nested_file(self, sandbox, sandbox_config: SandboxConfig) -> None:
-        """Чтение файла из поддиректории."""
+        """Reading filea from poddirektorii."""
         import os
 
         ws = sandbox_config.workspace_path
@@ -75,10 +73,10 @@ class TestLocalSandboxReadFile:
 
 
 class TestLocalSandboxWriteFile:
-    """Тесты записи файлов."""
+    """Tests zapisi fileov."""
 
     async def test_write_creates_file(self, sandbox, sandbox_config: SandboxConfig) -> None:
-        """Запись создаёт файл и промежуточные директории."""
+        """Writing sozdaet file and promezhutochnye direktorii."""
         await sandbox.write_file("new.txt", "content")
 
         import os
@@ -91,7 +89,7 @@ class TestLocalSandboxWriteFile:
     async def test_write_creates_subdirectories(
         self, sandbox, sandbox_config: SandboxConfig
     ) -> None:
-        """Запись создаёт промежуточные директории."""
+        """Writing sozdaet promezhutochnye direktorii."""
         await sandbox.write_file("a/b/c.txt", "deep")
 
         import os
@@ -100,7 +98,7 @@ class TestLocalSandboxWriteFile:
         assert os.path.exists(path)
 
     async def test_write_overwrites_existing(self, sandbox) -> None:
-        """Перезапись существующего файла."""
+        """Perewriting sushchestvuyushchego filea."""
         await sandbox.write_file("f.txt", "old")
         await sandbox.write_file("f.txt", "new")
 
@@ -108,35 +106,35 @@ class TestLocalSandboxWriteFile:
         assert result == "new"
 
     async def test_write_traversal_blocked(self, sandbox) -> None:
-        """Path traversal при записи → SandboxViolation."""
+        """Path traversal pri zapisi -> SandboxViolation."""
         with pytest.raises(SandboxViolation):
             await sandbox.write_file("../../../tmp/hack", "evil")
 
     async def test_write_size_limit(self, sandbox) -> None:
-        """Запись файла больше max_file_size_bytes → SandboxViolation."""
-        big_content = "x" * 2048  # > 1KB лимита
+        """Writing filea bolshe max_file_size_bytes -> SandboxViolation."""
+        big_content = "x" * 2048  # > 1KB limita
         with pytest.raises(SandboxViolation):
             await sandbox.write_file("big.txt", big_content)
 
 
 class TestLocalSandboxExecute:
-    """Тесты выполнения команд."""
+    """Tests vypolnotniya komand."""
 
     async def test_execute_echo(self, sandbox) -> None:
-        """Выполнение простой команды."""
+        """Execution simple commands."""
         result = await sandbox.execute("echo hello")
         assert result.stdout.strip() == "hello"
         assert result.exit_code == 0
         assert result.timed_out is False
 
     async def test_execute_failing_command(self, sandbox) -> None:
-        """Команда с ненулевым exit code."""
+        """Command with notnulevym exit code."""
         result = await sandbox.execute("false")
         assert result.exit_code != 0
         assert result.timed_out is False
 
     async def test_execute_denied_command(self, sandbox) -> None:
-        """Запрещённая команда → SandboxViolation."""
+        """Zapreshchennaya command -> SandboxViolation."""
         with pytest.raises(SandboxViolation):
             await sandbox.execute("rm -rf /")
 
@@ -146,22 +144,22 @@ class TestLocalSandboxExecute:
             await sandbox.execute("sudo ls")
 
     async def test_execute_denied_via_shell_wrapper_sh(self, sandbox) -> None:
-        """Обход denylist через sh -c блокируется."""
+        """Obhod denylist cherez sh -c blokiruetsya."""
         with pytest.raises(SandboxViolation):
             await sandbox.execute("sh -c 'rm -rf /'")
 
     async def test_execute_denied_via_shell_wrapper_bash(self, sandbox) -> None:
-        """Обход denylist через bash -lc блокируется."""
+        """Obhod denylist cherez bash -lc blokiruetsya."""
         with pytest.raises(SandboxViolation):
             await sandbox.execute('bash -lc "rm -rf /"')
 
     async def test_execute_timeout(self, sandbox_config, tmp_path) -> None:
-        """Команда с timeout → timed_out=True."""
+        """Command with timeout -> timed_out=True."""
         config = SandboxConfig(
             root_path=str(tmp_path),
             user_id="u",
             topic_id="t",
-            timeout_seconds=1,  # 1 секунда
+            timeout_seconds=1,  # 1 sekunda
         )
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 
@@ -170,26 +168,26 @@ class TestLocalSandboxExecute:
         assert result.timed_out is True
 
     async def test_execute_cwd_is_workspace(self, sandbox, sandbox_config: SandboxConfig) -> None:
-        """cwd команды = workspace path."""
+        """cwd commands = workspace path."""
         result = await sandbox.execute("pwd")
         assert result.stdout.strip() == sandbox_config.workspace_path
 
     async def test_execute_stderr(self, sandbox) -> None:
-        """Stderr корректно захватывается."""
+        """Stderr correctly zahvatyvaetsya."""
         result = await sandbox.execute("cat missing_file")
         assert "missing_file" in result.stderr
 
 
 class TestLocalSandboxListDir:
-    """Тесты list_dir."""
+    """Tests list_dir."""
 
     async def test_list_empty_workspace(self, sandbox) -> None:
-        """Пустой workspace → пустой список."""
+        """Empty workspace -> empty list."""
         result = await sandbox.list_dir(".")
         assert result == []
 
     async def test_list_with_files(self, sandbox) -> None:
-        """Workspace с файлами."""
+        """Workspace with fileami."""
         await sandbox.write_file("a.txt", "a")
         await sandbox.write_file("b.py", "b")
 
@@ -197,7 +195,7 @@ class TestLocalSandboxListDir:
         assert sorted(result) == ["a.txt", "b.py"]
 
     async def test_list_subdirectory(self, sandbox) -> None:
-        """Список файлов в поддиректории."""
+        """List fileov in poddirektorii."""
         await sandbox.write_file("src/main.py", "x")
         await sandbox.write_file("src/utils.py", "y")
 
@@ -205,16 +203,16 @@ class TestLocalSandboxListDir:
         assert sorted(result) == ["main.py", "utils.py"]
 
     async def test_list_traversal_blocked(self, sandbox) -> None:
-        """Path traversal в list_dir → SandboxViolation."""
+        """Path traversal in list_dir -> SandboxViolation."""
         with pytest.raises(SandboxViolation):
             await sandbox.list_dir("../../")
 
 
 class TestLocalSandboxGlob:
-    """Тесты glob_files."""
+    """Tests glob_files."""
 
     async def test_glob_py_files(self, sandbox) -> None:
-        """Glob *.py находит Python-файлы."""
+        """Glob *.py nahodit Python-files."""
         await sandbox.write_file("main.py", "x")
         await sandbox.write_file("test.py", "y")
         await sandbox.write_file("readme.md", "z")
@@ -223,7 +221,7 @@ class TestLocalSandboxGlob:
         assert sorted(result) == ["main.py", "test.py"]
 
     async def test_glob_recursive(self, sandbox) -> None:
-        """Рекурсивный glob **/*.py."""
+        """Recursive glob **/*.py."""
         await sandbox.write_file("main.py", "x")
         await sandbox.write_file("src/utils.py", "y")
 
@@ -231,21 +229,21 @@ class TestLocalSandboxGlob:
         assert sorted(result) == ["main.py", "src/utils.py"]
 
     async def test_glob_no_matches(self, sandbox) -> None:
-        """Glob без совпадений → пустой список."""
+        """Glob without matches -> empty list."""
         result = await sandbox.glob_files("*.rs")
         assert result == []
 
     async def test_glob_traversal_blocked(self, sandbox) -> None:
-        """Traversal в glob-паттерне блокируется."""
+        """Traversal in glob-patternot blokiruetsya."""
         with pytest.raises(SandboxViolation):
             await sandbox.glob_files("../../*.txt")
 
 
 class TestLocalSandboxIsolation:
-    """Тесты изоляции между пользователями/топиками."""
+    """Tests izolyatsii mezhdu usermi/topikami."""
 
     async def test_cross_user_isolation(self, tmp_path) -> None:
-        """Пользователь A не видит файлы пользователя B."""
+        """User A not vidit files user B."""
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 
         sb_a = LocalSandboxProvider(
@@ -261,7 +259,7 @@ class TestLocalSandboxIsolation:
             await sb_b.read_file("secret.txt")
 
     async def test_cross_topic_isolation(self, tmp_path) -> None:
-        """Topic X не видит файлы topic Y того же пользователя."""
+        """Topic X not vidit files topic Y togo zhe user."""
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 
         sb_x = LocalSandboxProvider(
@@ -277,7 +275,7 @@ class TestLocalSandboxIsolation:
             await sb_y.read_file("data.txt")
 
     async def test_isinstance_sandbox_provider(self, sandbox) -> None:
-        """LocalSandboxProvider проходит isinstance check для SandboxProvider."""
+        """LocalSandboxProvider prohodit isinstance check for SandboxProvider."""
         from cognitia.tools.protocols import SandboxProvider
 
         assert isinstance(sandbox, SandboxProvider)

@@ -1,4 +1,4 @@
-"""Unit: convert_event / StreamEvent для BaseRuntimePort."""
+"""Unit: convert_event / StreamEvent for BaseRuntimePort."""
 
 from __future__ import annotations
 

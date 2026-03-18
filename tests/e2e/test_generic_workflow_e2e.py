@@ -1,7 +1,5 @@
-"""E2E: GenericWorkflowEngine + CodeWorkflowEngine.
-
-Pluggable execute/verify loop с real components.
-Fake executor/verifier через simple async callables и classes (DI).
+"""E2E: GenericWorkflowEngine + CodeWorkflowEngine. Pluggable execute/verify loop with real components.
+Fake executor/verifier cherez simple async callables and classes (DI).
 """
 
 from __future__ import annotations
@@ -36,10 +34,7 @@ class TestGenericWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_full_cycle_pass_on_third(self) -> None:
-        """Executor вызывается 3 раза, verifier пропускает на 3-й попытке.
-
-        Проверяем: status, output, verification_log, loop_count.
-        """
+        """Executor vyzyvaetsya 3 raza, verifier propuskaet on 3-y popytke. Verify: status, output, verification_log, loop_count. """
         attempt = 0
 
         async def executor(task: str, ctx: dict[str, Any]) -> str:
@@ -48,7 +43,7 @@ class TestGenericWorkflowE2E:
             return f"output_v{attempt}"
 
         async def verifier(output: str, ctx: dict[str, Any]) -> tuple[bool, str]:
-            # Пропускаем только третью попытку
+            # Propuskaem tolko tretyu popytku
             if "v3" in output:
                 return True, "All checks passed"
             return False, f"Failed: {output} not good enough"
@@ -71,7 +66,7 @@ class TestGenericWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_max_retries_exceeded(self) -> None:
-        """Все попытки fail -> MAX_RETRIES_EXCEEDED."""
+        """Vse popytki fail -> MAX_RETRIES_EXCEEDED."""
         async def executor(task: str, ctx: dict[str, Any]) -> str:
             return "always_failing_output"
 
@@ -93,7 +88,7 @@ class TestGenericWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_pass_first_try(self) -> None:
-        """Verifier пропускает с первой попытки."""
+        """Verifier propuskaet with pervoy popytki."""
         async def executor(task: str, ctx: dict[str, Any]) -> str:
             return "perfect_output"
 
@@ -114,7 +109,7 @@ class TestGenericWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_with_port_objects(self) -> None:
-        """Executor и Verifier как объекты с execute()/verify() методами."""
+        """Executor and Verifier kak obekty with execute()/verify() metodami."""
 
         class FakeExecutor:
             def __init__(self) -> None:
@@ -147,7 +142,7 @@ class TestGenericWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_context_passed_to_callables(self) -> None:
-        """Context dict передаётся в executor и verifier."""
+        """Context dict peredaetsya in executor and verifier."""
         received_contexts: list[dict[str, Any]] = []
 
         async def executor(task: str, ctx: dict[str, Any]) -> str:
@@ -177,10 +172,7 @@ class TestCodeWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_code_workflow_delegates_to_generic(self) -> None:
-        """CodeWorkflowEngine использует GenericWorkflowEngine внутри.
-
-        Проверяем: result correct, uses planner + DoD verifier.
-        """
+        """CodeWorkflowEngine ispolzuet GenericWorkflowEngine vnutri. Verify: result correct, uses planner + DoD verifier. """
 
         class FakePlanner:
             """Fake CodePlannerPort: create_plan -> execute_plan."""
@@ -198,7 +190,7 @@ class TestCodeWorkflowE2E:
                 return f"Executed: {plan}"
 
         class FakeCodeVerifier:
-            """Fake CodeVerifier: все проверки проходят."""
+            """Fake CodeVerifier: vse proverki prohodyat."""
 
             async def verify_contracts(self) -> VerificationResult:
                 return VerificationResult(
@@ -252,7 +244,7 @@ class TestCodeWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_code_workflow_no_dod_criteria(self) -> None:
-        """Без DoD criteria -> SUCCESS без верификации."""
+        """Without DoD criteria -> SUCCESS without verifikatsii."""
 
         class FakePlanner:
             async def create_plan(self, goal: str) -> str:
@@ -283,7 +275,7 @@ class TestCodeWorkflowE2E:
             planner=FakePlanner(),
         )
 
-        # Без criteria — верификация пропускается
+        # Without criteria - verifikatsiya is skipped
         result = await engine.run(goal="Quick fix", dod_criteria=())
 
         assert result.status == WorkflowStatus.SUCCESS
@@ -291,7 +283,7 @@ class TestCodeWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_code_workflow_dod_not_met(self) -> None:
-        """DoD criteria не проходят -> DOD_NOT_MET."""
+        """DoD criteria not prohodyat -> DOD_NOT_MET."""
 
         class FakePlanner:
             async def create_plan(self, goal: str) -> str:
@@ -301,7 +293,7 @@ class TestCodeWorkflowE2E:
                 return "buggy output"
 
         class FailingVerifier:
-            """Все проверки проваливаются."""
+            """Vse proverki provalivayutsya."""
 
             async def verify_contracts(self) -> VerificationResult:
                 return VerificationResult(

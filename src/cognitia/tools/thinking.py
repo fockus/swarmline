@@ -1,7 +1,7 @@
-"""ThinkingTool — CoT + ReAct рассуждение для агентов.
+"""ThinkingTool - CoT + ReAct reasoning for agents.
 
-Standalone инструмент: агент вызывает thinking(thought="...", next_steps=["..."])
-для структурированного размышления. Результат возвращается в контекст LLM.
+Standalone tool: the agent calls thinking(thought="...", next_steps=["..."])
+for structured reasoning. The result is returned to the LLM context.
 """
 
 from __future__ import annotations
@@ -11,19 +11,19 @@ from collections.abc import Callable
 
 from cognitia.runtime.types import ToolSpec
 
-# JSON Schema для thinking tool
+# JSON Schema for the thinking tool
 _THINKING_SCHEMA: dict = {
     "type": "object",
     "properties": {
         "thought": {
             "type": "string",
-            "description": "Рассуждение агента: анализ ситуации, выводы, гипотезы.",
+        "description": "Agent reasoning: situation analysis, conclusions, hypotheses.",
         },
         "next_steps": {
             "type": "array",
             "items": {"type": "string"},
             "minItems": 1,
-            "description": "Следующие шаги, которые агент планирует предпринять.",
+            "description": "Next steps the agent plans to take.",
         },
     },
     "required": ["thought", "next_steps"],
@@ -31,32 +31,32 @@ _THINKING_SCHEMA: dict = {
 
 
 async def thinking_executor(args: dict) -> str:
-    """CoT/ReAct thinking — записывает рассуждение и следующие шаги.
+    """CoT/ReAct thinking - records reasoning and next steps.
 
-    Агент использует этот инструмент для структурированного мышления.
-    Результат возвращается в контекст как tool_result.
+    The agent uses this tool for structured thinking.
+    The result is returned to the context as a tool_result.
     """
     thought = args.get("thought", "")
     next_steps = args.get("next_steps")
 
     if not thought:
-        return json.dumps({"status": "error", "message": "thought не может быть пустым"})
+        return json.dumps({"status": "error", "message": "thought cannot be empty"})
 
     if not next_steps or not isinstance(next_steps, list) or len(next_steps) == 0:
-        return json.dumps({"status": "error", "message": "next_steps обязателен (минимум 1 шаг)"})
+        return json.dumps({"status": "error", "message": "next_steps is required (at least 1 step)"})
 
     return json.dumps(
         {
             "status": "thought_recorded",
             "thought": thought,
             "next_steps": next_steps,
-            "instruction": "Продолжай выполнение на основе этого размышления.",
+            "instruction": "Continue execution based on this reasoning.",
         }
     )
 
 
 def create_thinking_tool() -> tuple[ToolSpec, Callable]:
-    """Создать ThinkingTool — standalone, без внешних зависимостей.
+    """Create a ThinkingTool - standalone, with no external dependencies.
 
     Returns:
         Tuple: (ToolSpec, executor callable).

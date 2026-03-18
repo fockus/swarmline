@@ -1,4 +1,4 @@
-"""Тесты для InMemorySessionManager — управление сессиями агента."""
+"""Tests for InMemorySessionManager - upravlenie sessionmi agent."""
 
 import time
 from collections.abc import AsyncIterator
@@ -14,7 +14,7 @@ from conftest import FakeStreamEvent
 
 
 def _make_adapter(connected: bool = True, events: list[Any] | None = None) -> MagicMock:
-    """Создать мок RuntimePort."""
+    """Create mock RuntimePort."""
     adapter = MagicMock()
     type(adapter).is_connected = PropertyMock(return_value=connected)
     adapter.connect = AsyncMock()
@@ -41,7 +41,7 @@ def _make_state(
 
 
 class _FakeRuntime:
-    """Минимальная реализация AgentRuntime для тестов SessionManager.run_turn()."""
+    """Minimal implementation AgentRuntime for testov SessionManager.run_turn()."""
 
     def __init__(self, events: list[RuntimeEvent]) -> None:
         self._events = events
@@ -55,7 +55,7 @@ class _FakeRuntime:
 
 
 class TestRegisterAndGet:
-    """Регистрация и получение сессий."""
+    """Registratsiya and receiving sessiy."""
 
     def test_get_nonexistent_returns_none(self) -> None:
         mgr = InMemorySessionManager()
@@ -78,7 +78,7 @@ class TestRegisterAndGet:
 
 
 class TestListSessions:
-    """list_sessions — активные сессии."""
+    """list_sessions - active sessions."""
 
     def test_empty(self) -> None:
         mgr = InMemorySessionManager()
@@ -93,7 +93,7 @@ class TestListSessions:
 
 
 class TestUpdateRole:
-    """update_role — обновление роли сессии."""
+    """update_role - update roli sessions."""
 
     def test_update_existing(self) -> None:
         mgr = InMemorySessionManager()
@@ -124,7 +124,7 @@ class TestUpdateRole:
 
 
 class TestClose:
-    """close / close_all — закрытие сессий."""
+    """close / close_all - zakrytie sessiy."""
 
     @pytest.mark.asyncio
     async def test_close_disconnects_adapter(self) -> None:
@@ -174,11 +174,11 @@ class TestClose:
 
 
 class TestStreamReply:
-    """stream_reply — стриминг ответа через адаптер."""
+    """stream_reply - striming responsea cherez adapter."""
 
     @pytest.mark.asyncio
     async def test_stream_no_session_yields_error(self) -> None:
-        """Отсутствующая сессия → ошибка."""
+        """Otsutstvuyushchaya session -> error."""
         mgr = InMemorySessionManager()
         events = []
         async for event in mgr.stream_reply(SessionKey("u1", "t1"), "привет"):
@@ -189,7 +189,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_disconnected_yields_error(self) -> None:
-        """Отключённый адаптер → ошибка."""
+        """Otklyuchennyy adapter -> error."""
         mgr = InMemorySessionManager()
         mgr.register(_make_state(connected=False))
         events = []
@@ -200,7 +200,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_forwards_events(self) -> None:
-        """Подключённый адаптер → события прокидываются."""
+        """Connectednyy adapter -> events prokidyvayutsya."""
         test_events = [
             FakeStreamEvent("text_delta", text="Привет!"),
             FakeStreamEvent("done", text="Привет!", is_final=True),
@@ -216,7 +216,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_runtime_path_preserves_history(self) -> None:
-        """Legacy runtime path передаёт накопленную историю между turn'ами."""
+        """Legacy runtime path passes nakoplennuyu istoriyu mezhdu turn'ami."""
         mgr = InMemorySessionManager()
         fake_runtime = _FakeRuntime([RuntimeEvent.final("ok")])
         state = SessionState(
@@ -248,7 +248,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_runtime_path_preserves_final_metadata(self) -> None:
-        """final metadata не теряется в StreamEvent(done)."""
+        """final metadata not teryaetsya in StreamEvent(done)."""
         mgr = InMemorySessionManager()
         fake_runtime = _FakeRuntime(
             [
@@ -286,7 +286,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_runtime_path_preserves_final_new_messages_in_history(self) -> None:
-        """canonical final.new_messages должны сохраняться в session history."""
+        """canonical final.new_messages should savesya in session history."""
         mgr = InMemorySessionManager()
         fake_runtime = _FakeRuntime(
             [
@@ -325,7 +325,7 @@ class TestStreamReply:
 
     @pytest.mark.asyncio
     async def test_stream_runtime_path_without_terminal_event_yields_error(self) -> None:
-        """silent EOF в runtime path не должен считаться успешным done."""
+        """silent EOF in runtime path not should schitatsya uspeshnym done."""
         mgr = InMemorySessionManager()
         fake_runtime = _FakeRuntime([RuntimeEvent.assistant_delta("partial")])
         state = SessionState(
@@ -418,7 +418,7 @@ class TestStreamReply:
 
 
 class TestRunTurn:
-    """run_turn — новый контракт AgentRuntime v1."""
+    """run_turn - new contract AgentRuntime v1."""
 
     @pytest.mark.asyncio
     async def test_run_turn_no_session_yields_error(self) -> None:
@@ -558,27 +558,27 @@ class TestRunTurn:
 
 
 class TestSessionTTL:
-    """TTL eviction — сессия протухает после N секунд неактивности."""
+    """TTL eviction - session expires posle N sekund notaktivnosti."""
 
     def test_session_state_has_last_activity_at(self) -> None:
-        """Поле last_activity_at существует и заполняется при создании."""
+        """Pole last_activity_at sushchestvuet and zapolnyaetsya pri createdii."""
         state = _make_state()
         assert hasattr(state, "last_activity_at")
         assert isinstance(state.last_activity_at, float)
         assert state.last_activity_at > 0
 
     def test_get_returns_none_for_expired_session(self) -> None:
-        """get() возвращает None для протухшей сессии (TTL истёк)."""
+        """get() returns None for expired sessions (TTL istek)."""
         mgr = InMemorySessionManager(ttl_seconds=1.0)
         state = _make_state()
         mgr.register(state)
-        # Сдвигаем last_activity_at в прошлое
+        # Sdvigaem last_activity_at in proshloe
         state.last_activity_at = time.monotonic() - 10.0
         result = mgr.get(SessionKey("u1", "t1"))
         assert result is None
 
     def test_get_returns_session_within_ttl(self) -> None:
-        """get() возвращает сессию до истечения TTL."""
+        """get() returns sessiyu do istecheniya TTL."""
         mgr = InMemorySessionManager(ttl_seconds=600.0)
         state = _make_state()
         mgr.register(state)
@@ -587,7 +587,7 @@ class TestSessionTTL:
 
     @pytest.mark.asyncio
     async def test_run_turn_updates_last_activity(self) -> None:
-        """run_turn() обновляет last_activity_at при каждом turn'е."""
+        """run_turn() updates last_activity_at pri kazhdom turn'e."""
         mgr = InMemorySessionManager(ttl_seconds=600.0)
         fake_runtime = _FakeRuntime([RuntimeEvent.final("ok")])
         state = SessionState(
@@ -598,7 +598,7 @@ class TestSessionTTL:
         mgr.register(state)
         old_ts = state.last_activity_at
 
-        # Небольшая задержка чтобы monotonic сдвинулся
+        # Notbolshaya zaderzhka chtoby monotonic sdvinulsya
         import asyncio
 
         await asyncio.sleep(0.01)
@@ -614,11 +614,11 @@ class TestSessionTTL:
         assert state.last_activity_at > old_ts
 
     def test_ttl_zero_disables_eviction(self) -> None:
-        """TTL=0 отключает проверку: сессия живёт вечно."""
+        """TTL=0 otklyuchaet proverku: session zhivet vechno."""
         mgr = InMemorySessionManager(ttl_seconds=0)
         state = _make_state()
         mgr.register(state)
-        # Сдвигаем last_activity_at далеко в прошлое
+        # Sdvigaem last_activity_at daleko in proshloe
         state.last_activity_at = time.monotonic() - 999999.0
         result = mgr.get(SessionKey("u1", "t1"))
         assert result is state

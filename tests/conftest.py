@@ -1,4 +1,4 @@
-"""Shared test fixtures для cognitia tests."""
+"""Shared test fixtures for cognitive tests."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from typing import Any
 
 
 class FakeStreamEvent:
-    """Minimal StreamEvent-like mock для unit/integration/e2e тестов Agent Facade."""
+    """Minimal StreamEvent-like mock for unit/integration/e2e tests of Agent Facade."""
 
     def __init__(self, type: str = "done", text: str = "", **kwargs: Any) -> None:
         self.type = type

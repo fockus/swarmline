@@ -1,8 +1,4 @@
-"""ThinRuntime -- собственный тонкий агентный loop.
-
-3 режима: conversational | react | planner-lite.
-Bounded loops, typed errors, streaming RuntimeEvent.
-"""
+"""Runtime module."""
 
 from __future__ import annotations
 
@@ -35,19 +31,7 @@ from cognitia.runtime.types import (
 
 
 class ThinRuntime:
-    """Собственный тонкий агентный loop.
-
-    Режимы:
-    - conversational: single LLM call -> final
-    - react: loop (LLM -> tool_call | final)
-    - planner: plan JSON -> step execution -> final assembly
-
-    Args:
-        config: Конфигурация runtime (budgets, model).
-        llm_call: Callable для вызова LLM (для тестирования).
-                  Сигнатура: async (messages, system_prompt) -> str
-        local_tools: Маппинг tool_name -> callable.
-    """
+    """Thin Runtime implementation."""
 
     def __init__(
         self,
@@ -106,7 +90,7 @@ class ThinRuntime:
         self._config.input_filters.insert(0, rag_filter)
 
     def _make_default_llm_call(self) -> Callable[..., Any]:
-        """Создать default LLM call, привязанный к self._config."""
+        """Make default llm call."""
         config = self._config
 
         async def _call(
@@ -119,7 +103,7 @@ class ThinRuntime:
         return _call
 
     def _wrap_with_event_bus(self, llm_call: Callable[..., Any]) -> Callable[..., Any]:
-        """Wrap LLM call with EventBus emit for llm_call_start/llm_call_end."""
+        """Wrap LLM call with EventBus emit for LLM_call_start/LLM_call_end."""
         bus = self._config.event_bus
         if bus is None:
             raise ValueError("event_bus must not be None")
@@ -150,7 +134,7 @@ class ThinRuntime:
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
-        """Exit async context manager — calls cleanup()."""
+        """Exit async context manager - calls cleanup()."""
         await self.cleanup()
 
     async def run(
@@ -162,12 +146,7 @@ class ThinRuntime:
         config: RuntimeConfig | None = None,
         mode_hint: str | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Выполнить один turn.
-
-        1. Определить mode (conversational/react/planner)
-        2. Запустить соответствующий loop
-        3. Emit RuntimeEvent (стрим)
-        """
+        """Run."""
         effective_config = config or self._config
         start_time = time.monotonic()
         tracker = self._cost_tracker
@@ -182,7 +161,7 @@ class ThinRuntime:
             yield self._budget_exceeded_event(tracker, prefix="Cost budget exceeded before call")
             return
 
-        # Определяем mode
+
         user_text = self._extract_last_user_text(messages)
 
         # --- Input guardrails ---
@@ -356,7 +335,7 @@ class ThinRuntime:
 
     @staticmethod
     def _extract_last_user_text(messages: list[Message]) -> str:
-        """Извлечь текст последнего user message."""
+        """Extract last user text."""
         for msg in reversed(messages):
             if msg.role == "user" and msg.content:
                 return msg.content
@@ -453,4 +432,4 @@ class ThinRuntime:
         )
 
     async def cleanup(self) -> None:
-        """Нечего очищать -- stateless."""
+        """Cleanup."""

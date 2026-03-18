@@ -1,7 +1,7 @@
-"""GenericWorkflowEngine — pluggable execute/verify loop.
+"""GenericWorkflowEngine - pluggable execute/verify loop.
 
-Обобщение CodeWorkflowEngine для произвольных verifiers и executors.
-CodeWorkflowEngine остаётся как частный случай с CodeVerifier.
+Generalized CodeWorkflowEngine for professional verifiers and executors.
+CodeWorkflowEngine remains as a special case with CodeVerifier.
 """
 
 from __future__ import annotations
@@ -35,18 +35,7 @@ class GenericWorkflowResult:
 
 
 class GenericWorkflowEngine:
-    """Generic execute → verify → retry loop.
-
-    Принимает pluggable executor и verifier через конструктор.
-
-    Executor — один из:
-      - async callable(task, context) → str
-      - object with async execute(goal) → str
-
-    Verifier — один из:
-      - async callable(output, context) → (bool, str)
-      - object with async verify(output) → (bool, str)
-    """
+    """Generic Workflow Engine implementation."""
 
     def __init__(
         self,
@@ -59,13 +48,13 @@ class GenericWorkflowEngine:
         self._max_retries = max_retries
 
     async def _call_executor(self, task: str, ctx: dict[str, Any]) -> str:
-        """Call executor — supports both callable and object-with-execute styles."""
+        """Call executor - supports both callable and object-with-execute styles."""
         if hasattr(self._executor, "execute"):
             return await self._executor.execute(task)
         return await self._executor(task, ctx)
 
     async def _call_verifier(self, output: str, ctx: dict[str, Any]) -> tuple[bool, str]:
-        """Call verifier — supports both callable and object-with-verify styles."""
+        """Call verifier - supports both callable and object-with-verify styles."""
         if hasattr(self._verifier, "verify"):
             return await self._verifier.verify(output)
         return await self._verifier(output, ctx)

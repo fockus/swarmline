@@ -1,4 +1,4 @@
-"""Тесты для ThinRuntime planner mode — plan → step execution → final."""
+"""Tests for ThinRuntime planner mode - plan -> step execution -> final."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from cognitia.runtime.types import Message, RuntimeEvent, ToolSpec
 
 
 class MockLLM:
-    """Mock LLM: возвращает ответы из очереди."""
+    """Mock LLM: returns answers from queues."""
 
     def __init__(self, responses: list[str]) -> None:
         self._responses = list(responses)
@@ -52,7 +52,7 @@ class TestThinRuntimePlanner:
 
     @pytest.mark.asyncio
     async def test_two_step_plan(self) -> None:
-        """План с 2 шагами: react + conversational → final."""
+        """Plan with 2 steps: react + conversational -> final."""
         plan = json.dumps(
             {
                 "type": "plan",
@@ -90,7 +90,7 @@ class TestThinRuntimePlanner:
 
     @pytest.mark.asyncio
     async def test_plan_with_react_step(self) -> None:
-        """План с react-шагом (tool_call внутри шага)."""
+        """Plan with react-step (tool_call inside step)."""
         plan = json.dumps(
             {
                 "type": "plan",
@@ -102,7 +102,7 @@ class TestThinRuntimePlanner:
             }
         )
 
-        # react шаг: tool_call → final
+        # react step: tool_call -> final
         tool_call = json.dumps(
             {
                 "type": "tool_call",
@@ -131,7 +131,7 @@ class TestThinRuntimePlanner:
 
     @pytest.mark.asyncio
     async def test_bad_plan_json(self) -> None:
-        """Некорректный JSON плана → error после retry."""
+        """Notcorrect JSON plan -> error after retry."""
         llm = MockLLM(["not a plan", "still not a plan"])
         runtime = ThinRuntime(llm_call=llm)
 
@@ -142,7 +142,7 @@ class TestThinRuntimePlanner:
 
     @pytest.mark.asyncio
     async def test_plan_step_error_stops_plan(self) -> None:
-        """Ошибка в шаге → план прекращается с error."""
+        """Error in step -> plan ends with error."""
         plan = json.dumps(
             {
                 "type": "plan",
@@ -154,7 +154,7 @@ class TestThinRuntimePlanner:
             }
         )
 
-        # React шаг: 1 iteration → loop_limit (max_iterations=1 и нет final)
+        # React step: 1 iteration -> loop_limit (max_iterations=1 and not final)
         llm = MockLLM(
             [
                 plan,

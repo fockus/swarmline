@@ -1,7 +1,7 @@
-"""LocalSandboxProvider — sandbox-изоляция через path restriction для dev-среды.
+"""LocalSandboxProvider - sandbox isolation via path restriction for a dev environment.
 
-Агент работает только внутри {root}/{user_id}/{topic_id}/workspace/.
-Path traversal запрещён. Команды выполняются с cwd=workspace.
+The agent operates only inside {root}/{user_id}/{topic_id}/workspace/.
+Path traversal is forbidden. Commands run with cwd=workspace.
 """
 
 from __future__ import annotations
@@ -17,14 +17,14 @@ _DENYLIST_WRAPPERS = frozenset({"sh", "bash", "zsh", "ksh", "dash", "fish", "env
 
 
 class LocalSandboxProvider:
-    """Sandbox-изоляция через filesystem path restriction.
+    """Sandbox isolation via filesystem path restriction.
 
-    Обеспечивает:
-    - Изоляция по user_id + topic_id (каждый workspace отдельный)
-    - Блокировка path traversal (../)
-    - Timeout для команд
-    - Лимит на размер файлов
-    - Блокировка запрещённых команд
+    Provides:
+    - Isolation by user_id + topic_id (each workspace is separate)
+    - Path traversal blocking (../)
+    - Command timeouts
+    - File size limits
+    - Denied command blocking
     """
 
     def __init__(self, config: SandboxConfig) -> None:
@@ -32,35 +32,35 @@ class LocalSandboxProvider:
         self._workspace = Path(config.workspace_path)
 
     def _resolve_safe_path(self, path: str) -> Path:
-        """Разрешить путь внутри workspace, блокируя traversal.
+        """Resolve a path inside the workspace while blocking traversal.
 
         Args:
-            path: Относительный путь от workspace.
+            path: Relative path from the workspace.
 
         Returns:
-            Абсолютный Path внутри workspace.
+            Absolute Path inside the workspace.
 
         Raises:
-            SandboxViolation: Path traversal или абсолютный путь.
+            SandboxViolation: Path traversal or absolute path.
         """
         if os.path.isabs(path):
             raise SandboxViolation(f"Абсолютный путь запрещён: {path}", path=path)
 
-        # Нормализуем и проверяем что не выходим за workspace
+        # Normalize and verify that we do not leave the workspace
         resolved = (self._workspace / path).resolve()
         workspace_resolved = self._workspace.resolve()
 
-        # is_relative_to безопасен от prefix-bypass (/tmp/ws2 vs /tmp/ws)
+        # is_relative_to is safe against prefix bypass (/tmp/ws2 vs /tmp/ws)
         if not resolved.is_relative_to(workspace_resolved):
             raise SandboxViolation(f"Path traversal запрещён: {path}", path=path)
 
         return resolved
 
     def _parse_command(self, command: str) -> list[str]:
-        """Распарсить command string в argv без shell semantics.
+        """Parse a command string into argv without shell semantics.
 
         Raises:
-            SandboxViolation: Пустая или невалидная команда.
+            SandboxViolation: Empty or invalid command.
         """
         try:
             argv = shlex.split(command, posix=True)
@@ -73,66 +73,66 @@ class LocalSandboxProvider:
         return argv
 
     def _check_denied_command(self, argv: list[str], raw_command: str) -> None:
-        """Проверить что команда не в denied_commands.
+        """Check that the command is not in denied_commands.
 
         Raises:
-            SandboxViolation: Команда запрещена.
+            SandboxViolation: Command is denied.
         """
         cmd_name = os.path.basename(argv[0])
         if cmd_name in _DENYLIST_WRAPPERS:
-            raise SandboxViolation(f"Shell wrapper '{cmd_name}' запрещён", path=raw_command)
+            raise SandboxViolation(f"Shell wrapper '{cmd_name}' is denied", path=raw_command)
 
         denied = self._config.denied_commands or frozenset()
         for word in argv:
             cmd_name = os.path.basename(word)
             if cmd_name in denied:
-                raise SandboxViolation(f"Команда '{cmd_name}' запрещена", path=raw_command)
+                raise SandboxViolation(f"Command '{cmd_name}' is denied", path=raw_command)
 
     @staticmethod
     def _validate_glob_pattern(pattern: str) -> None:
         if os.path.isabs(pattern):
-            raise SandboxViolation(f"Абсолютный путь запрещён: {pattern}", path=pattern)
+            raise SandboxViolation(f"Absolute path forbidden: {pattern}", path=pattern)
         parts = [part for part in pattern.split("/") if part]
         if any(part == ".." for part in parts):
-            raise SandboxViolation(f"Path traversal запрещён: {pattern}", path=pattern)
+            raise SandboxViolation(f"Path traversal forbidden: {pattern}", path=pattern)
 
     async def read_file(self, path: str) -> str:
-        """Прочитать файл из workspace."""
+        """Read a file from the workspace."""
         safe_path = self._resolve_safe_path(path)
         if not safe_path.exists():
-            raise FileNotFoundError(f"Файл не найден: {path}")
+            raise FileNotFoundError(f"File not found: {path}")
         return safe_path.read_text(encoding="utf-8")
 
     async def write_file(self, path: str, content: str) -> None:
-        """Записать файл в workspace. Атомарная запись через tmp + rename."""
-        # Проверяем лимит размера
+        """Write a file to the workspace. Atomic write via tmp + rename."""
+        # Check file size limit
         if len(content.encode("utf-8")) > self._config.max_file_size_bytes:
             raise SandboxViolation(
-                f"Файл превышает лимит {self._config.max_file_size_bytes} байт",
+                f"File exceeds the limit of {self._config.max_file_size_bytes} bytes",
                 path=path,
             )
 
         safe_path = self._resolve_safe_path(path)
 
-        # Создаём промежуточные директории
+        # Create intermediate directories
         safe_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Атомарная запись: tmp → rename
+        # Atomic write: tmp -> rename
         tmp_path = safe_path.with_suffix(safe_path.suffix + ".tmp")
         try:
             tmp_path.write_text(content, encoding="utf-8")
             os.replace(str(tmp_path), str(safe_path))
         except Exception:
-            # Удаляем tmp если rename упал
+            # Remove tmp if rename failed
             tmp_path.unlink(missing_ok=True)
             raise
 
     async def execute(self, command: str) -> ExecutionResult:
-        """Выполнить shell-команду в workspace."""
+        """Execute a shell command in the workspace."""
         argv = self._parse_command(command)
         self._check_denied_command(argv, command)
 
-        # Создаём workspace если не существует
+        # Create the workspace if it does not exist
         self._workspace.mkdir(parents=True, exist_ok=True)
 
         proc: asyncio.subprocess.Process | None = None
@@ -154,7 +154,7 @@ class LocalSandboxProvider:
                 timed_out=False,
             )
         except TimeoutError:
-            # Убиваем процесс при timeout
+            # Kill the process on timeout
             if proc is not None:
                 proc.kill()
                 await proc.wait()
@@ -166,7 +166,7 @@ class LocalSandboxProvider:
             )
 
     async def list_dir(self, path: str = ".") -> list[str]:
-        """Список файлов и директорий в workspace."""
+        """List files and directories in the workspace."""
         safe_path = self._resolve_safe_path(path)
 
         if not safe_path.exists():
@@ -175,7 +175,7 @@ class LocalSandboxProvider:
         return sorted(entry.name for entry in safe_path.iterdir())
 
     async def glob_files(self, pattern: str) -> list[str]:
-        """Поиск файлов по glob-паттерну внутри workspace."""
+        """Search for files by glob pattern within the workspace."""
         self._workspace.mkdir(parents=True, exist_ok=True)
         self._validate_glob_pattern(pattern)
 
@@ -186,10 +186,10 @@ class LocalSandboxProvider:
             if match.is_file():
                 if not match.resolve().is_relative_to(workspace_resolved):
                     raise SandboxViolation(
-                        f"Path traversal запрещён: {pattern}",
+                        f"Path traversal forbidden: {pattern}",
                         path=pattern,
                     )
-                # Возвращаем относительный путь от workspace
+                # Return the path relative to the workspace
                 rel = match.relative_to(workspace_resolved)
                 results.append(str(rel))
 

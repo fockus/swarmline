@@ -1,9 +1,4 @@
-"""Strategy re-exports для ThinRuntime.
-
-Facade module: импортирует и реэкспортирует все strategy functions
-и helpers из модулей-реализаций. Обеспечивает backward compatibility
-для runtime.py и внешних потребителей.
-"""
+"""Strategies module."""
 
 from cognitia.runtime.thin.conversational import run_conversational
 from cognitia.runtime.thin.helpers import _build_metrics, _messages_to_lm

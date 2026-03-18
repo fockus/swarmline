@@ -1,4 +1,4 @@
-"""InMemorySessionManager — управление сессиями агента в памяти."""
+"""InMemorySessionManager - in-memory agent session management."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def _message_from_payload(payload: Any) -> Message:
-    """Нормализовать payload runtime history в Message."""
+    """Normalize a runtime history payload into a Message."""
     if isinstance(payload, Message):
         return payload
     if isinstance(payload, dict):
@@ -27,18 +27,18 @@ def _message_from_payload(payload: Any) -> Message:
 
 
 def _messages_from_payloads(payloads: Any) -> list[Message]:
-    """Нормализовать список runtime history payloads."""
+    """Normalize a list of runtime history payloads."""
     if not payloads:
         return []
     return [_message_from_payload(payload) for payload in payloads]
 
 
 class InMemorySessionManager:
-    """Менеджер сессий (in-memory, для MVP).
+    """Session manager (in-memory, for the MVP).
 
-    - Хранит активные сессии в dict
-    - asyncio.Lock per SessionKey для последовательной обработки
-    - TTL eviction: сессия считается протухшей после ttl_seconds неактивности
+    - Stores active sessions in a dict
+    - Uses one asyncio.Lock per SessionKey for sequential processing
+    - TTL eviction: a session expires after ttl_seconds of inactivity
     """
 
     def __init__(
@@ -55,7 +55,7 @@ class InMemorySessionManager:
         return str(key)
 
     def _get_lock(self, key: SessionKey) -> asyncio.Lock:
-        """Получить или создать lock для сессии."""
+        """Get or create a lock for the session."""
         ks = self._key_str(key)
         if ks not in self._locks:
             self._locks[ks] = asyncio.Lock()
@@ -140,7 +140,7 @@ class InMemorySessionManager:
         )
 
     def _load_snapshot_sync(self, key: SessionKey) -> SessionState | None:
-        """Load a session snapshot from backend and cache it in memory."""
+        """Load a session snapshot from the backend and cache it in memory."""
         if self._backend is None:
             return None
 
@@ -176,7 +176,7 @@ class InMemorySessionManager:
         await self._backend.delete(self._key_str(key))
 
     def get(self, key: SessionKey) -> SessionState | None:
-        """Получить существующую сессию. Возвращает None если TTL истёк."""
+        """Get an existing session. Returns None if TTL has expired."""
         ks = self._key_str(key)
         state = self._sessions.get(ks)
         if state is None:
@@ -194,13 +194,13 @@ class InMemorySessionManager:
         return state
 
     def register(self, state: SessionState) -> None:
-        """Зарегистрировать новую сессию."""
+        """Register a new session."""
         state.last_activity_at = time.monotonic()
         self._sessions[self._key_str(state.key)] = state
         self._persist_state_sync(state)
 
     async def close(self, key: SessionKey) -> None:
-        """Закрыть сессию и отключить SDK."""
+        """Close the session and disconnect the SDK."""
         ks = self._key_str(key)
         state = self._sessions.pop(ks, None)
         if state:
@@ -212,7 +212,7 @@ class InMemorySessionManager:
         self._locks.pop(ks, None)
 
     async def close_all(self) -> None:
-        """Закрыть все сессии."""
+        """Close all sessions."""
         keys = list(self._sessions.keys())
         for ks in keys:
             state = self._sessions.pop(ks, None)
@@ -232,7 +232,7 @@ class InMemorySessionManager:
         active_tools: list[ToolSpec],
         mode_hint: str | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
-        """Выполнить turn через AgentRuntime v1 (новый контракт)."""
+        """Execute a turn through AgentRuntime v1 (new contract)."""
         ks = self._key_str(key)
         lock = self._get_lock(key)
         logger.info("run_turn[%s]: waiting for lock (locked=%s)", ks, lock.locked())
@@ -294,7 +294,7 @@ class InMemorySessionManager:
         logger.info("run_turn[%s]: lock released", ks)
 
     async def stream_reply(self, key: SessionKey, user_text: str) -> AsyncIterator[Any]:
-        """Legacy API: отправить сообщение и стримить ответ (RuntimePort/adapter path)."""
+        """Legacy API: send a message and stream the response (RuntimePort/adapter path)."""
         lock = self._get_lock(key)
         async with lock:
             state = self.get(key)
@@ -304,7 +304,7 @@ class InMemorySessionManager:
             state.last_activity_at = time.monotonic()
             await self._persist_state(state)
 
-            # Новый runtime путь (fallback для мест, где ещё вызывают stream_reply).
+            # New runtime path (fallback for places that still call stream_reply).
             if state.runtime is not None and state.adapter is None:
                 state.runtime_messages.append(Message(role="user", content=user_text))
                 await self._persist_state(state)
@@ -396,11 +396,11 @@ class InMemorySessionManager:
                 yield event
 
     def list_sessions(self) -> list[SessionKey]:
-        """Список активных сессий."""
+        """List active sessions."""
         return [s.key for s in self._sessions.values()]
 
     def update_role(self, key: SessionKey, role_id: str, skill_ids: list[str]) -> bool:
-        """Обновить роль и скилы сессии. Возвращает True если сессия найдена."""
+        """Update the session role and skills. Returns True if the session is found."""
         state = self.get(key)
         if not state:
             return False

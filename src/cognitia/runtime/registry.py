@@ -1,6 +1,6 @@
-"""RuntimeRegistry — extensible adapter registry for runtime factories.
+"""RuntimeRegistry - extensible adapter registry for runtime factories.
 
-Built-in runtimes (`claude_sdk`, `deepagents`, `thin`, `cli`) are registered automatically.
+Built-in runtimes (`Claude_SDK`, `DeepAgents`, `Thin`, `cli`) are registered automatically.
 Third-party runtimes can be registered via register() or entry points
 (group="cognitia.runtimes").
 """
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 class RuntimeRegistry:
     """Thread-safe extensible registry for runtime factories.
 
-    Each entry maps a runtime name to:
-    - factory_fn: Callable[[RuntimeConfig, ...], AgentRuntime]
-    - capabilities: RuntimeCapabilities | None
-    """
+  Each entry maps a runtime name to:
+  - factory_fn: Callable[[RuntimeConfig, ...], AgentRuntime]
+  - capabilities: RuntimeCapabilities | None
+  """
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -122,7 +122,7 @@ def _create_cli(config: RuntimeConfig, **kwargs: Any) -> Any:
 
 
 def _register_builtins(registry: RuntimeRegistry) -> None:
-    """Register built-in runtimes: claude_sdk, deepagents, thin, cli."""
+    """Register built-in runtimes: Claude_SDK, DeepAgents, Thin, cli."""
     registry.register(
         "claude_sdk",
         _create_claude_sdk,
@@ -153,9 +153,9 @@ def _register_builtins(registry: RuntimeRegistry) -> None:
 def _discover_entry_points(registry: RuntimeRegistry) -> None:
     """Discover and register runtimes from entry points (group='cognitia.runtimes').
 
-    Each entry point should return a tuple of (factory_fn, capabilities).
-    Bad plugins are silently skipped with a warning.
-    """
+  Each entry point should return a tuple of (factory_fn, capabilities).
+  Bad plugins are silently skipped with a warning.
+  """
     try:
         eps = entry_points(group="cognitia.runtimes")
     except Exception:
@@ -220,8 +220,8 @@ _BUILTIN_NAMES = frozenset({"claude_sdk", "deepagents", "thin", "cli"})
 def get_valid_runtime_names() -> frozenset[str]:
     """Get valid runtime names from registry + hardcoded builtins.
 
-    Returns frozenset combining builtins and any registered custom runtimes.
-    """
+  Returns frozenset combining builtins and any registered custom runtimes.
+  """
     try:
         registry = get_default_registry()
         return frozenset(registry.list_available()) | _BUILTIN_NAMES
@@ -235,9 +235,9 @@ def resolve_runtime_capabilities(
 ) -> RuntimeCapabilities:
     """Resolve capabilities for built-in or registry-registered runtime.
 
-    Built-ins fall back to the static capability table. Custom runtimes must
-    register capabilities explicitly to participate in capability negotiation.
-    """
+  Built-ins fall back to the static capability table. Custom runtimes must
+  register capabilities explicitly to participate in capability negotiation.
+  """
     effective_registry = registry
     if effective_registry is None:
         try:

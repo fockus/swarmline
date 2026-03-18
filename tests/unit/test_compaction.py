@@ -1,4 +1,4 @@
-"""Тесты для compaction strategy — noop native, token-aware portable/thin."""
+"""Tests for compaction strategy - noop native, token-aware portable/thin."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from cognitia.runtime.types import RuntimeConfig
 
 
 class TestNativeDeepAgentsSkipsCompaction:
-    """Native DeepAgents path НЕ вызывает нашу compaction (upstream handles it)."""
+    """Native DeepAgents path NE vyzyvaet nashu compaction (upstream handles it)."""
 
     @pytest.mark.asyncio
     async def test_native_mode_skips_summarizer(self) -> None:
-        """В native_first mode _maybe_summarize() = noop."""
+        """V native_first mode _maybe_summarize() = noop."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -37,7 +37,7 @@ class TestNativeDeepAgentsSkipsCompaction:
 
     @pytest.mark.asyncio
     async def test_hybrid_mode_skips_summarizer(self) -> None:
-        """В hybrid mode _maybe_summarize() = noop."""
+        """V hybrid mode _maybe_summarize() = noop."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -58,11 +58,11 @@ class TestNativeDeepAgentsSkipsCompaction:
 
 
 class TestPortableDeepAgentsUsesCompaction:
-    """Portable DeepAgents path использует нашу compaction."""
+    """Portable DeepAgents path ispolzuet nashu compaction."""
 
     @pytest.mark.asyncio
     async def test_portable_mode_calls_summarizer(self) -> None:
-        """В portable mode _maybe_summarize() вызывает summarizer."""
+        """V portable mode _maybe_summarize() vyzyvaet summarizer."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -82,7 +82,7 @@ class TestPortableDeepAgentsUsesCompaction:
 
 
 class TestBaseRuntimePortCompaction:
-    """BaseRuntimePort compaction всё ещё работает (регрессия)."""
+    """BaseRuntimePort compaction vse eshche works (regressiya)."""
 
     @pytest.mark.asyncio
     async def test_base_port_summarizer_called_on_overflow(self) -> None:
@@ -108,11 +108,11 @@ class TestBaseRuntimePortCompaction:
 
 
 class TestTokenAwareCompaction:
-    """Token-aware compaction trigger в BaseRuntimePort."""
+    """Token-aware compaction trigger in BaseRuntimePort."""
 
     @pytest.mark.asyncio
     async def test_token_trigger_fires_on_threshold(self) -> None:
-        """compaction_trigger=('tokens', N) срабатывает при достижении лимита."""
+        """compaction_trigger=('tokens', N) srabatyvaet pri dostizhenii limita."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -130,7 +130,7 @@ class TestTokenAwareCompaction:
 
     @pytest.mark.asyncio
     async def test_token_trigger_does_not_fire_below_threshold(self) -> None:
-        """compaction_trigger=('tokens', N) не срабатывает до лимита."""
+        """compaction_trigger=('tokens', N) not srabatyvaet do limita."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -147,7 +147,7 @@ class TestTokenAwareCompaction:
 
     @pytest.mark.asyncio
     async def test_message_trigger_backward_compat(self) -> None:
-        """compaction_trigger=('messages', N) работает как раньше."""
+        """compaction_trigger=('messages', N) works kak ranshe."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -164,7 +164,7 @@ class TestTokenAwareCompaction:
 
     @pytest.mark.asyncio
     async def test_default_trigger_is_message_based(self) -> None:
-        """Без compaction_trigger — message-based (как раньше)."""
+        """Without compaction_trigger - message-based (kak ranshe)."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -180,7 +180,7 @@ class TestTokenAwareCompaction:
 
 
 class TestUnknownCompactionTrigger:
-    """Неизвестный trigger type → ValueError."""
+    """Notizvestnyy trigger type -> ValueError."""
 
     def test_unknown_trigger_type_raises(self) -> None:
         port = BaseRuntimePort(
@@ -192,10 +192,10 @@ class TestUnknownCompactionTrigger:
 
 
 class TestArgumentTruncation:
-    """Argument truncation: длинные tool_calls.args обрезаются перед summarization."""
+    """Argument truncation: dlinnye tool_calls.args are truncated pered summarization."""
 
     def test_truncate_long_args_in_history(self) -> None:
-        """Messages с content > 2000 chars truncated перед передачей в summarizer."""
+        """Messages with content > 2000 chars truncated pered peredachey in summarizer."""
         from cognitia.runtime.ports.base import truncate_long_args
 
         messages = [
@@ -229,7 +229,7 @@ class TestArgumentTruncation:
         assert "[truncated]" in result[0]["content"]
 
     def test_truncate_skips_user_messages(self) -> None:
-        """User messages НЕ обрезаются, даже если длинные."""
+        """User messages NE are truncated, dazhe if dlinnye."""
         from cognitia.runtime.ports.base import truncate_long_args
 
         messages = [{"role": "user", "content": "x" * 5000}]
@@ -237,7 +237,7 @@ class TestArgumentTruncation:
         assert len(result[0]["content"]) == 5000
 
     def test_truncate_skips_assistant_messages(self) -> None:
-        """Assistant messages НЕ обрезаются."""
+        """Assistant messages NE are truncated."""
         from cognitia.runtime.ports.base import truncate_long_args
 
         messages = [{"role": "assistant", "content": "x" * 5000}]
@@ -246,7 +246,7 @@ class TestArgumentTruncation:
 
     @pytest.mark.asyncio
     async def test_summarizer_receives_truncated_messages(self) -> None:
-        """_maybe_summarize() передаёт truncated messages в summarizer."""
+        """_maybe_summarize() passes truncated messages in summarizer."""
         mock_summarizer = MagicMock()
         mock_summarizer.asummarize = AsyncMock(return_value="summary")
 
@@ -268,7 +268,7 @@ class TestArgumentTruncation:
 
 
 class TestMemoryInjectionInBuildSystemPrompt:
-    """BaseRuntimePort._build_system_prompt() инжектит memory."""
+    """BaseRuntimePort._build_system_prompt() inzhektit memory."""
 
     def test_memory_injected_when_sources_provided(self, tmp_path) -> None:
         agents_md = tmp_path / "AGENTS.md"

@@ -7,7 +7,7 @@ from cognitia.agent.tool import ToolDefinition, tool
 
 
 class TestToolDecoratorBasic:
-    """@tool с name + description."""
+    """@tool with name + description."""
 
     def test_creates_tool_definition(self) -> None:
         @tool(name="greet", description="Greet user")
@@ -21,7 +21,7 @@ class TestToolDecoratorBasic:
 
     @pytest.mark.asyncio
     async def test_decorated_function_still_callable(self) -> None:
-        """Декорированная функция вызывается as-is."""
+        """Dekorirovannaya funktsiya vyzyvaetsya as-is."""
 
         @tool(name="add", description="Add two numbers")
         async def add(a: int, b: int) -> int:
@@ -31,7 +31,7 @@ class TestToolDecoratorBasic:
         assert result == 5
 
     def test_tool_definition_handler_reference(self) -> None:
-        """handler в ToolDefinition — ссылка на оригинальную функцию."""
+        """handler in ToolDefinition - ssylka on originalnuyu funktsiyu."""
 
         @tool(name="echo", description="Echo")
         async def echo(text: str) -> str:
@@ -42,7 +42,7 @@ class TestToolDecoratorBasic:
 
 
 class TestToolAutoSchema:
-    """Auto-infer JSON Schema из type hints."""
+    """Auto-infer JSON Schema from type hints."""
 
     def test_str_param(self) -> None:
         @tool(name="t", description="d")
@@ -91,7 +91,7 @@ class TestToolAutoSchema:
         assert set(td.parameters["required"]) == {"name", "age", "active"}
 
     def test_optional_param_not_required(self) -> None:
-        """Optional параметры не попадают в required."""
+        """Optional parameters not popadayut in required."""
 
         @tool(name="t", description="d")
         async def fn(name: str, nickname: str | None = None) -> str:
@@ -102,7 +102,7 @@ class TestToolAutoSchema:
         assert "nickname" not in td.parameters.get("required", [])
 
     def test_no_params(self) -> None:
-        """Функция без параметров → пустой schema."""
+        """Funktsiya without parameterov -> empty schema."""
 
         @tool(name="t", description="d")
         async def fn() -> str:
@@ -114,7 +114,7 @@ class TestToolAutoSchema:
 
 
 class TestToolExplicitSchema:
-    """Явная schema вместо auto-infer."""
+    """YAvnaya schema vmesto auto-infer."""
 
     def test_explicit_schema_overrides(self) -> None:
         custom_schema = {
@@ -133,10 +133,10 @@ class TestToolExplicitSchema:
 
 
 class TestToolDefinitionConversion:
-    """Конвертация ToolDefinition → SDK/ToolSpec форматы."""
+    """Conversion ToolDefinition -> SDK/ToolSpec formaty."""
 
     def test_to_tool_spec(self) -> None:
-        """Конвертация в cognitia ToolSpec (для thin/deepagents)."""
+        """Conversion in cognitia ToolSpec (for thin/deepagents)."""
         from cognitia.runtime.types import ToolSpec
 
         @tool(name="calc", description="Calculator")
@@ -179,7 +179,7 @@ class TestToolDefinitionDataclass:
 
 
 class TestAdaptHandler:
-    """_adapt_handler — обёртка user handler → SDK MCP handler contract."""
+    """_adapt_handler - obertka user handler -> SDK MCP handler contract."""
 
     @pytest.mark.asyncio
     async def test_adapts_kwargs_and_wraps_result(self) -> None:
@@ -213,7 +213,7 @@ class TestAdaptHandler:
 
     @pytest.mark.asyncio
     async def test_handler_returning_dict_passthrough(self) -> None:
-        """Если handler уже возвращает MCP-формат {content: [...]}, не оборачиваем."""
+        """If handler uzhe returns MCP-format {content: [...]}, not oborachivaem."""
         from cognitia.agent.agent import _adapt_handler
 
         @tool(name="raw", description="Raw")
@@ -227,7 +227,7 @@ class TestAdaptHandler:
 
     @pytest.mark.asyncio
     async def test_handler_error_returns_is_error(self) -> None:
-        """Если handler бросает exception → is_error=True."""
+        """If handler brosaet exception -> is_error=True."""
         from cognitia.agent.agent import _adapt_handler
 
         @tool(name="fail", description="Fail")

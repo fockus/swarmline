@@ -1,11 +1,4 @@
-"""Incremental JSON parsers для token-level streaming.
-
-IncrementalEnvelopeParser — low-level parser, возвращает raw dict.
-StreamParser — high-level parser, возвращает ActionEnvelope.
-
-Собирает JSON объект из потока text chunks. Возвращает parsed result
-как только обнаружен полный верхнеуровневый JSON объект.
-"""
+"""Stream Parser module."""
 
 from __future__ import annotations
 
@@ -17,11 +10,7 @@ from cognitia.runtime.thin.schemas import ActionEnvelope
 
 
 class IncrementalEnvelopeParser:
-    """Incremental JSON envelope parser.
-
-    feed(chunk) собирает буфер, отслеживает depth фигурных скобок.
-    Как только depth вернулся к 0 после открывающей { — парсит JSON.
-    """
+    """Incremental Envelope Parser implementation."""
 
     def __init__(self) -> None:
         self._buffer: list[str] = []
@@ -31,7 +20,7 @@ class IncrementalEnvelopeParser:
         self._escape: bool = False
 
     def feed(self, chunk: str) -> dict[str, Any] | None:
-        """Добавить chunk текста. Вернуть parsed dict если JSON полный, иначе None."""
+        """Feed."""
         for ch in chunk:
             if self._in_string:
                 self._buffer.append(ch)
@@ -73,17 +62,17 @@ class IncrementalEnvelopeParser:
         return None
 
     def finalize(self) -> dict[str, Any] | None:
-        """Попытка распарсить буфер как есть (финализация stream)."""
+        """Finalize."""
         if not self._started:
             return None
         return self._try_parse()
 
     def get_buffered_text(self) -> str:
-        """Вернуть накопленный текст (для fallback)."""
+        """Get buffered text."""
         return "".join(self._buffer)
 
     def _try_parse(self) -> dict[str, Any] | None:
-        """Попытка распарсить буфер."""
+        """Try parse."""
         text = "".join(self._buffer)
         try:
             data = json.loads(text)
@@ -95,13 +84,7 @@ class IncrementalEnvelopeParser:
 
 
 class StreamParser:
-    """High-level incremental parser — собирает JSON из stream токенов.
-
-    Буферизует входящие token chunks и пытается извлечь
-    ActionEnvelope как только JSON-объект будет полным.
-    В отличие от IncrementalEnvelopeParser, возвращает типизированный
-    ActionEnvelope и отслеживает ошибки валидации.
-    """
+    """Stream Parser implementation."""
 
     def __init__(self) -> None:
         self._buffer = ""
@@ -110,22 +93,22 @@ class StreamParser:
 
     @property
     def has_result(self) -> bool:
-        """True если парсинг завершён (успех или ошибка)."""
+        """Has result."""
         return self._parsed is not None or self._error is not None
 
     @property
     def result(self) -> ActionEnvelope | None:
-        """Распарсенный ActionEnvelope или None."""
+        """Result."""
         return self._parsed
 
     @property
     def error(self) -> str | None:
-        """Сообщение об ошибке или None."""
+        """Error."""
         return self._error
 
     @property
     def buffer(self) -> str:
-        """Накопленный текст буфера."""
+        """Buffer."""
         return self._buffer
 
     def feed(self, chunk: str) -> bool:

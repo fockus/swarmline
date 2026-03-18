@@ -1,4 +1,4 @@
-"""@tool decorator + ToolDefinition — standalone tool registration."""
+"""@tool decorator + ToolDefinition - standalone tool registration."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from typing import Any, get_args, get_origin
 
 from cognitia.runtime.types import ToolSpec
 
-# Маппинг Python types -> JSON Schema types
+# Mapping Python types -> JSON Schema types
 _TYPE_MAP: dict[type, str] = {
     str: "string",
     int: "integer",
@@ -24,7 +24,7 @@ _TYPE_MAP: dict[type, str] = {
 
 @dataclass(frozen=True)
 class ToolDefinition:
-    """Описание инструмента, созданного через @tool."""
+    """Tool description created via @tool."""
 
     name: str
     description: str
@@ -32,7 +32,7 @@ class ToolDefinition:
     handler: Callable[..., Awaitable[Any]]
 
     def to_tool_spec(self) -> ToolSpec:
-        """Конвертировать в cognitia ToolSpec (для thin/deepagents runtime)."""
+        """Convert to cognitia ToolSpec (for thin/deepagents runtime)."""
         return ToolSpec(
             name=self.name,
             description=self.description,
@@ -47,15 +47,15 @@ def tool(
     *,
     schema: dict[str, Any] | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    """Standalone decorator для определения tools.
+    """Standalone decorator for defining tools.
 
     Args:
-        name: уникальное имя инструмента.
-        description: описание для LLM. Если None — берётся из docstring.
-        schema: явная JSON Schema (если None — auto-infer из type hints).
+        name: unique tool name.
+        description: description for the LLM. If None, it is taken from the docstring.
+        schema: explicit JSON Schema (if None, auto-inferred from type hints).
 
     Returns:
-        Decorator, который добавляет __tool_definition__ к функции.
+        Decorator that adds __tool_definition__ to the function.
     """
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
@@ -76,7 +76,7 @@ def tool(
 
 
 def _ensure_async(fn: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
-    """Wrap sync function into async if needed."""
+    """Wrap a sync function into async if needed."""
     if asyncio.iscoroutinefunction(fn):
         return fn
 
@@ -88,7 +88,7 @@ def _ensure_async(fn: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
 
 
 def _extract_description(fn: Callable[..., Any]) -> str:
-    """Extract description from function docstring (first non-empty line)."""
+    """Extract the description from a function docstring (first non-empty line)."""
     doc = inspect.getdoc(fn)
     if not doc:
         return ""
@@ -97,7 +97,7 @@ def _extract_description(fn: Callable[..., Any]) -> str:
 
 
 def _parse_google_docstring_args(fn: Callable[..., Any]) -> dict[str, str]:
-    """Parse Google-style Args section from docstring.
+    """Parse the Google-style Args section from a docstring.
 
     Returns:
         Dict mapping param name to its description.
@@ -106,14 +106,14 @@ def _parse_google_docstring_args(fn: Callable[..., Any]) -> dict[str, str]:
     if not doc:
         return {}
 
-    # Find "Args:" section
+    # Find the "Args:" section
     args_match = re.search(r"^Args:\s*$", doc, re.MULTILINE)
     if not args_match:
         return {}
 
     args_text = doc[args_match.end() :]
 
-    # Parse until next section (line starting without indent) or end
+    # Parse until the next section (line starting without indent) or end
     result: dict[str, str] = {}
     current_param: str | None = None
     current_desc_lines: list[str] = []
@@ -124,7 +124,7 @@ def _parse_google_docstring_args(fn: Callable[..., Any]) -> dict[str, str]:
         if not stripped:
             continue
 
-        # Check if line starts a new section (non-indented, ends with ":")
+        # Check if the line starts a new section (non-indented, ends with ":")
         if line and not line[0].isspace() and stripped.endswith(":"):
             break
 
@@ -141,7 +141,7 @@ def _parse_google_docstring_args(fn: Callable[..., Any]) -> dict[str, str]:
             current_param = param_match.group(1)
             current_desc_lines = [param_match.group(2).strip()] if param_match.group(2).strip() else []
         elif current_param is not None and stripped:
-            # Continuation line for current param
+            # Continuation line for the current param
             current_desc_lines.append(stripped)
 
     # Save last param
@@ -152,11 +152,11 @@ def _parse_google_docstring_args(fn: Callable[..., Any]) -> dict[str, str]:
 
 
 def _infer_schema(fn: Callable[..., Any]) -> dict[str, Any]:
-    """Auto-infer JSON Schema из type hints функции.
+    """Auto-infer JSON Schema from function type hints.
 
-    Поддерживает: str, int, float, bool, list[T], dict, Optional[T], T | None,
+    Supports: str, int, float, bool, list[T], dict, Optional[T], T | None,
     Enum subclasses, Pydantic BaseModel subclasses.
-    Парсит Google-style docstring для описаний параметров.
+    Parses Google-style docstrings for parameter descriptions.
     """
     sig = inspect.signature(fn)
     hints = _get_resolved_hints(fn)
@@ -203,7 +203,7 @@ def _infer_schema(fn: Callable[..., Any]) -> dict[str, Any]:
 
 
 def _get_resolved_hints(fn: Callable[..., Any]) -> dict[str, Any]:
-    """Получить resolved type hints (строки -> реальные типы)."""
+    """Get resolved type hints (strings -> real types)."""
     try:
         import typing
 
@@ -213,7 +213,7 @@ def _get_resolved_hints(fn: Callable[..., Any]) -> dict[str, Any]:
 
 
 def _resolve_type_to_schema(annotation: Any) -> dict[str, Any]:
-    """Resolve Python type annotation to a JSON Schema dict."""
+    """Resolve a Python type annotation to a JSON Schema dict."""
     # Direct scalar mapping
     if annotation in _TYPE_MAP:
         return {"type": _TYPE_MAP[annotation]}
@@ -260,7 +260,7 @@ def _resolve_type_to_schema(annotation: Any) -> dict[str, Any]:
 
 
 def _resolve_type(annotation: Any) -> str | None:
-    """Разрешить Python type -> JSON Schema type string.
+    """Resolve a Python type to a JSON Schema type string.
 
     Backward-compatible wrapper. Returns simple type string.
     """
@@ -269,10 +269,10 @@ def _resolve_type(annotation: Any) -> str | None:
 
 
 def _is_optional(annotation: Any) -> bool:
-    """Проверить, является ли тип Optional (Union[T, None] или T | None)."""
+    """Check whether the type is Optional (Union[T, None] or T | None)."""
     origin = get_origin(annotation)
 
-    # typing.Union или types.UnionType (Python 3.10+ X | Y)
+    # typing.Union or types.UnionType (Python 3.10+ X | Y)
     if origin is not None:
         import types
 

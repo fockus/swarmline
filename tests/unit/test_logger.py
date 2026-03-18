@@ -1,27 +1,27 @@
-"""Тесты для AgentLogger и configure_logging — покрытие observability."""
+"""Tests for AgentLogger and configure_logging - pokrytie observability."""
 
 import pytest
 from cognitia.observability.logger import AgentLogger, _level_to_int, configure_logging
 
 
 class TestConfigureLogging:
-    """configure_logging настраивает structlog."""
+    """configure_logging nastraivaet structlog."""
 
     def test_json_format(self) -> None:
-        """JSON формат — не падает."""
+        """JSON format - not fails."""
         configure_logging(level="info", fmt="json")
 
     def test_console_format(self) -> None:
-        """Console формат — не падает."""
+        """Console format - not fails."""
         configure_logging(level="debug", fmt="console")
 
     def test_default_params(self) -> None:
-        """Без параметров — не падает."""
+        """Without parameterov - not fails."""
         configure_logging()
 
 
 class TestLevelToInt:
-    """_level_to_int конвертирует строку → число."""
+    """_level_to_int converts stroku -> chislo."""
 
     def test_debug(self) -> None:
         assert _level_to_int("debug") == 10
@@ -46,7 +46,7 @@ class TestLevelToInt:
 
 
 class TestAgentLogger:
-    """AgentLogger — все методы вызывают structlog без ошибок."""
+    """AgentLogger - vse metody vyzyvayut structlog without oshibok."""
 
     @pytest.fixture
     def logger(self) -> AgentLogger:
@@ -54,11 +54,11 @@ class TestAgentLogger:
         return AgentLogger(component="test")
 
     def test_session_created(self, logger: AgentLogger) -> None:
-        """session_created не падает."""
+        """session_created not fails."""
         logger.session_created(user_id="u1", topic_id="t1", role_id="coach", is_rehydrated=True)
 
     def test_turn_start(self, logger: AgentLogger) -> None:
-        """turn_start не падает, обрезает preview до 50 символов."""
+        """turn_start not fails, obrezaet preview do 50 simvolov."""
         logger.turn_start(
             user_id="u1",
             topic_id="t1",
@@ -66,7 +66,7 @@ class TestAgentLogger:
         )
 
     def test_tool_call(self, logger: AgentLogger) -> None:
-        """tool_call логирует вызов инструмента."""
+        """tool_call logiruet call toola."""
         logger.tool_call(
             tool_name="mcp__iss__get_bonds",
             latency_ms=150,
@@ -75,11 +75,11 @@ class TestAgentLogger:
         )
 
     def test_tool_call_long_input(self, logger: AgentLogger) -> None:
-        """tool_call обрезает input_preview до 100 символов."""
+        """tool_call obrezaet input_preview do 100 simvolov."""
         logger.tool_call(tool_name="test", input_preview="X" * 500)
 
     def test_turn_complete(self, logger: AgentLogger) -> None:
-        """turn_complete с полными параметрами."""
+        """turn_complete with polnymi parameterami."""
         logger.turn_complete(
             user_id="u1",
             topic_id="t1",
@@ -93,11 +93,11 @@ class TestAgentLogger:
         )
 
     def test_turn_complete_defaults(self, logger: AgentLogger) -> None:
-        """turn_complete с дефолтными параметрами."""
+        """turn_complete with defoltnymi parameterami."""
         logger.turn_complete(user_id="u1", topic_id="t1", role_id="coach")
 
     def test_turn_error(self, logger: AgentLogger) -> None:
-        """turn_error логирует ошибку."""
+        """turn_error logiruet oshibku."""
         logger.turn_error(
             user_id="u1",
             topic_id="t1",
@@ -107,7 +107,7 @@ class TestAgentLogger:
         )
 
     def test_memory_persist(self, logger: AgentLogger) -> None:
-        """memory_persist логирует сохранение."""
+        """memory_persist logiruet sohranotnie."""
         logger.memory_persist(
             user_id="u1",
             topic_id="t1",
@@ -116,11 +116,11 @@ class TestAgentLogger:
         )
 
     def test_memory_persist_defaults(self, logger: AgentLogger) -> None:
-        """memory_persist с дефолтными параметрами."""
+        """memory_persist with defoltnymi parameterami."""
         logger.memory_persist(user_id="u1", topic_id="t1")
 
     def test_turn_complete_with_prompt_hash(self, logger: AgentLogger) -> None:
-        """turn_complete включает prompt_hash (§12.1)."""
+        """turn_complete includes prompt_hash (§12.1)."""
         logger.turn_complete(
             user_id="u1",
             topic_id="t1",
@@ -129,7 +129,7 @@ class TestAgentLogger:
         )
 
     def test_tool_policy_event_allowed(self, logger: AgentLogger) -> None:
-        """tool_policy_event для разрешённого инструмента."""
+        """tool_policy_event for razreshennogo toola."""
         logger.tool_policy_event(
             tool_name="mcp__iss__get_bonds",
             allowed=True,
@@ -138,7 +138,7 @@ class TestAgentLogger:
         )
 
     def test_tool_policy_event_denied(self, logger: AgentLogger) -> None:
-        """tool_policy_event для запрещённого инструмента."""
+        """tool_policy_event for zapreshchennogo toola."""
         logger.tool_policy_event(
             tool_name="Bash",
             allowed=False,
@@ -146,7 +146,7 @@ class TestAgentLogger:
         )
 
     def test_tool_policy_event_with_context(self, logger: AgentLogger) -> None:
-        """tool_policy_event с user_id, topic_id, role_id (GAP-4)."""
+        """tool_policy_event with user_id, topic_id, role_id (GAP-4)."""
         logger.tool_policy_event(
             tool_name="mcp__iss__search_bonds",
             allowed=True,
@@ -158,7 +158,7 @@ class TestAgentLogger:
         )
 
     def test_context_budget_applied(self, logger: AgentLogger) -> None:
-        """context_budget_applied событие (§10.3)."""
+        """context_budget_applied event (§10.3)."""
         logger.context_budget_applied(
             user_id="u1",
             topic_id="t1",
@@ -168,7 +168,7 @@ class TestAgentLogger:
         )
 
     def test_settings_loaded(self, logger: AgentLogger) -> None:
-        """settings_loaded событие (§2.2)."""
+        """settings_loaded event (§2.2)."""
         logger.settings_loaded(
             sources=["project", "user"],
             mcp_servers_count=4,

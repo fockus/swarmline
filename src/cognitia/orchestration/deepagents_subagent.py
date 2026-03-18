@@ -1,4 +1,4 @@
-"""DeepAgentsSubagentOrchestrator — subagent execution через DeepAgents runtime."""
+"""DeepAgentsSubagentOrchestrator - subagent execution via DeepAgents runtime."""
 
 from __future__ import annotations
 
@@ -12,11 +12,7 @@ from cognitia.runtime.types import Message, RuntimeConfig
 
 
 class DeepAgentsSubagentOrchestrator(ThinSubagentOrchestrator):
-    """SubagentOrchestrator с реальным DeepAgents execution path.
-
-    Lifecycle (spawn/cancel/wait/status) унаследован от ThinSubagentOrchestrator,
-    но выполнение задачи идёт через DeepAgentsRuntime, а не через thin-wrapper.
-    """
+    """Deep Agents Subagent Orchestrator implementation."""
 
     def __init__(
         self,
@@ -46,7 +42,7 @@ class DeepAgentsSubagentOrchestrator(ThinSubagentOrchestrator):
 
 
 class _DeepAgentsWorkerRuntime:
-    """Адаптер subagent spec -> DeepAgentsRuntime.run()."""
+    """Adapter subagent spec -> DeepAgentsRuntime.run()."""
 
     def __init__(
         self,
@@ -60,7 +56,7 @@ class _DeepAgentsWorkerRuntime:
         self._tool_executors = tool_executors
 
     async def run(self, task: str) -> str:
-        """Выполнить задачу через DeepAgentsRuntime и вернуть финальный текст."""
+        """Run."""
         missing_local_tools = [
             tool.name
             for tool in self._spec.tools

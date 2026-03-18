@@ -1,7 +1,5 @@
-"""Тесты типов и протоколов sandbox — TDD: RED phase.
-
-Контрактные тесты для SandboxProvider Protocol, SandboxConfig, ExecutionResult,
-SandboxViolation. Написаны ДО реализации.
+"""Tests tipov and protocolov sandbox - TDD: RED phase. Contractnye tests for SandboxProvider Protocol, SandboxConfig, ExecutionResult,
+SandboxViolation. Napisany DO realizatsii.
 """
 
 from __future__ import annotations
@@ -10,10 +8,10 @@ import pytest
 
 
 class TestSandboxConfig:
-    """Валидация SandboxConfig dataclass."""
+    """Validation SandboxConfig dataclass."""
 
     def test_default_values(self) -> None:
-        """SandboxConfig имеет разумные дефолты."""
+        """SandboxConfig imeet razumnye defolty."""
         from cognitia.tools.types import SandboxConfig
 
         config = SandboxConfig(root_path="/tmp/sandbox", user_id="u1", topic_id="t1")
@@ -27,7 +25,7 @@ class TestSandboxConfig:
         assert config.denied_commands is None
 
     def test_custom_values(self) -> None:
-        """SandboxConfig принимает кастомные значения."""
+        """SandboxConfig prinimaet kastomnye values."""
         from cognitia.tools.types import SandboxConfig
 
         config = SandboxConfig(
@@ -46,7 +44,7 @@ class TestSandboxConfig:
         assert config.denied_commands == {"rm", "sudo"}
 
     def test_frozen(self) -> None:
-        """SandboxConfig не изменяем после создания."""
+        """SandboxConfig not izmenyaem posle creatediya."""
         from cognitia.tools.types import SandboxConfig
 
         config = SandboxConfig(root_path="/tmp", user_id="u", topic_id="t")
@@ -54,7 +52,7 @@ class TestSandboxConfig:
             config.root_path = "/other"  # type: ignore[misc]
 
     def test_workspace_path(self) -> None:
-        """workspace_path собирается из root/user_id/topic_id/workspace."""
+        """workspace_path collects from root/user_id/topic_id/workspace."""
         from cognitia.tools.types import SandboxConfig
 
         config = SandboxConfig(root_path="/data", user_id="u1", topic_id="t1")
@@ -62,10 +60,10 @@ class TestSandboxConfig:
 
 
 class TestExecutionResult:
-    """Валидация ExecutionResult dataclass."""
+    """Validation ExecutionResult dataclass."""
 
     def test_successful_execution(self) -> None:
-        """ExecutionResult для успешной команды."""
+        """ExecutionResult for uspeshnoy commands."""
         from cognitia.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="hello\n", stderr="", exit_code=0, timed_out=False)
@@ -76,7 +74,7 @@ class TestExecutionResult:
         assert result.timed_out is False
 
     def test_failed_execution(self) -> None:
-        """ExecutionResult для упавшей команды."""
+        """ExecutionResult for upavshey commands."""
         from cognitia.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="", stderr="not found", exit_code=1, timed_out=False)
@@ -85,7 +83,7 @@ class TestExecutionResult:
         assert result.stderr == "not found"
 
     def test_timed_out_execution(self) -> None:
-        """ExecutionResult для команды с timeout."""
+        """ExecutionResult for commands with timeout."""
         from cognitia.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="partial", stderr="", exit_code=-1, timed_out=True)
@@ -93,7 +91,7 @@ class TestExecutionResult:
         assert result.timed_out is True
 
     def test_frozen(self) -> None:
-        """ExecutionResult не изменяем."""
+        """ExecutionResult not izmenyaem."""
         from cognitia.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="", stderr="", exit_code=0, timed_out=False)
@@ -102,10 +100,10 @@ class TestExecutionResult:
 
 
 class TestSandboxViolation:
-    """SandboxViolation — кастомное исключение для нарушений изоляции."""
+    """SandboxViolation - kastomnoe isklyuchenie for narusheniy izolyatsii."""
 
     def test_is_exception(self) -> None:
-        """SandboxViolation наследует Exception."""
+        """SandboxViolation nashould Exception."""
         from cognitia.tools.types import SandboxViolation
 
         exc = SandboxViolation("path traversal detected")
@@ -113,7 +111,7 @@ class TestSandboxViolation:
         assert str(exc) == "path traversal detected"
 
     def test_with_path(self) -> None:
-        """SandboxViolation хранит path нарушения."""
+        """SandboxViolation hranit path narusheniya."""
         from cognitia.tools.types import SandboxViolation
 
         exc = SandboxViolation("traversal", path="../../etc/passwd")
@@ -121,10 +119,10 @@ class TestSandboxViolation:
 
 
 class TestSandboxProviderProtocol:
-    """Контрактные тесты для SandboxProvider Protocol."""
+    """Contractnye tests for SandboxProvider Protocol."""
 
     def test_runtime_checkable(self) -> None:
-        """SandboxProvider помечен @runtime_checkable — isinstance работает."""
+        """SandboxProvider pomechen @runtime_checkable - isinstance works."""
         from cognitia.tools.protocols import SandboxProvider
 
         class FakeSandbox:
@@ -146,7 +144,7 @@ class TestSandboxProviderProtocol:
         assert isinstance(FakeSandbox(), SandboxProvider)
 
     def test_incomplete_implementation_not_instance(self) -> None:
-        """Объект без всех методов НЕ проходит isinstance check."""
+        """Obekt without vseh metodov NE prohodit isinstance check."""
         from cognitia.tools.protocols import SandboxProvider
 
         class IncompleteSandbox:
@@ -156,10 +154,10 @@ class TestSandboxProviderProtocol:
         assert not isinstance(IncompleteSandbox(), SandboxProvider)
 
     def test_protocol_has_five_methods(self) -> None:
-        """ISP: SandboxProvider имеет ≤5 методов."""
+        """ISP: SandboxProvider imeet ≤5 metodov."""
         from cognitia.tools.protocols import SandboxProvider
 
-        # Считаем публичные async-методы (не dunder, не private)
+        # Schitaem publichnye async-metody (not dunder, not private)
         methods = [
             name
             for name in dir(SandboxProvider)
@@ -168,7 +166,7 @@ class TestSandboxProviderProtocol:
         assert len(methods) <= 5, f"ISP violation: {len(methods)} methods > 5: {methods}"
 
     def test_no_freedom_agent_imports(self) -> None:
-        """Чистый domain: нет импортов из freedom_agent."""
+        """CHistyy domain: nott importov from freedom_agent."""
         import cognitia.tools.protocols as mod
         import cognitia.tools.types as types_mod
 
@@ -180,7 +178,7 @@ class TestSandboxProviderProtocol:
 
 
 def _get_source(module: object) -> str:
-    """Получить исходный код модуля."""
+    """Get ishodnyy kod modulya."""
     import inspect
 
     return inspect.getsource(module)

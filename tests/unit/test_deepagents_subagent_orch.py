@@ -1,4 +1,4 @@
-"""Тесты DeepAgentsSubagentOrchestrator и ClaudeSubagentOrchestrator — TDD."""
+"""Tests DeepAgentsSubagentOrchestrator and ClaudeSubagentOrchestrator - TDD."""
 
 from __future__ import annotations
 

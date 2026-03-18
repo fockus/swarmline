@@ -1,4 +1,4 @@
-"""Тесты для ThinRuntime — порядок событий, парность tool events."""
+"""Tests for ThinRuntime - order of events, pairing of tool events."""
 
 from __future__ import annotations
 
@@ -35,21 +35,21 @@ async def collect(runtime: ThinRuntime, mode_hint: str = "react") -> list[Runtim
 
 
 class TestEventOrdering:
-    """Порядок событий."""
+    """Order of events."""
 
     @pytest.mark.asyncio
     async def test_status_before_final(self) -> None:
-        """status (режим) всегда первый, final — последний."""
+        """status (mode) is always the first, final is the last."""
         llm = MockLLM([json.dumps({"type": "final", "final_message": "ok"})])
         runtime = ThinRuntime(llm_call=llm)
 
         events = await collect(runtime)
-        assert events[0].type == "status"  # Режим: react
+        assert events[0].type == "status"  # Mode: react
         assert events[-1].type == "final"
 
     @pytest.mark.asyncio
     async def test_final_always_last(self) -> None:
-        """final event — всегда последний (не error)."""
+        """final event - always the last one (not error)."""
         llm = MockLLM(
             [
                 json.dumps({"type": "tool_call", "tool": {"name": "calc", "args": {}}}),
@@ -63,8 +63,8 @@ class TestEventOrdering:
 
     @pytest.mark.asyncio
     async def test_error_is_terminal(self) -> None:
-        """error → нет событий после (JSON-подобный ответ, fallback не срабатывает)."""
-        # JSON-подобный ответ: fallback отсекает его, поэтому будет error
+        """error -> not events after (JSON-like response, fallback not triggered)."""
+        # JSON-like response: fallback cuts it off, so it will be an error
         llm = MockLLM(["{broken}"] * 5)
         runtime = ThinRuntime(llm_call=llm)
 
@@ -79,13 +79,13 @@ class TestEventOrdering:
         ):
             events.append(ev)
 
-        # После error не должно быть final
+        # After error should not be final
         error_idx = next(i for i, e in enumerate(events) if e.type == "error")
         assert error_idx == len(events) - 1
 
     @pytest.mark.asyncio
     async def test_text_fallback_is_terminal(self) -> None:
-        """Текстовый fallback (не JSON) → final, не error."""
+        """Text fallback (not JSON) -> final, not error."""
         llm = MockLLM(["plain text answer"] * 5)
         runtime = ThinRuntime(llm_call=llm)
 
@@ -100,7 +100,7 @@ class TestEventOrdering:
         ):
             events.append(ev)
 
-        # Fallback: текст, не error
+        # Fallback: text, not error
         errors = [e for e in events if e.type == "error"]
         finals = [e for e in events if e.type == "final"]
         assert len(errors) == 0
@@ -108,11 +108,11 @@ class TestEventOrdering:
 
 
 class TestToolEventPairing:
-    """tool_call_started всегда парный tool_call_finished."""
+    """tool_call_started is always paired with tool_call_finished."""
 
     @pytest.mark.asyncio
     async def test_paired_tool_events(self) -> None:
-        """Каждому tool_call_started соответствует tool_call_finished."""
+        """Each tool_call_started corresponds to a tool_call_finished."""
         llm = MockLLM(
             [
                 json.dumps(
@@ -140,7 +140,7 @@ class TestToolEventPairing:
 
     @pytest.mark.asyncio
     async def test_tool_error_still_paired(self) -> None:
-        """Tool error → tool_call_finished с ok=False (парность сохраняется)."""
+        """Tool error -> tool_call_finished with ok=False (pairing is preserved)."""
 
         def bad(args):
             raise RuntimeError("fail")
@@ -162,7 +162,7 @@ class TestToolEventPairing:
 
 
 class TestFinalContainsNewMessages:
-    """final event содержит new_messages."""
+    """final event contains new_messages."""
 
     @pytest.mark.asyncio
     async def test_final_has_new_messages(self) -> None:

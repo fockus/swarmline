@@ -1,7 +1,7 @@
-"""Протоколы для sandbox-изоляции агентов.
+"""Protocols for agent sandbox isolation.
 
-SandboxProvider — ISP-совместимый интерфейс (≤5 методов) для изоляции
-файловой системы и выполнения команд.
+SandboxProvider is an ISP-compliant interface (≤5 methods) for isolating
+the filesystem and executing commands.
 """
 
 from __future__ import annotations
@@ -13,65 +13,65 @@ from cognitia.tools.types import ExecutionResult
 
 @runtime_checkable
 class SandboxProvider(Protocol):
-    """Провайдер sandbox-изоляции для агентов.
+    """Sandbox isolation provider for agents.
 
-    Обеспечивает безопасный доступ к файловой системе и выполнению команд.
-    Изоляция по user_id + topic_id: каждый агент работает в своём namespace.
+    Provides safe filesystem access and command execution.
+    Isolation is based on user_id + topic_id: each agent runs in its own namespace.
 
-    ISP: ≤5 методов. Все операции — async.
+    ISP: <=5 methods. All operations are async.
     """
 
     async def read_file(self, path: str) -> str:
-        """Прочитать файл из workspace.
+        """Read a file from the workspace.
 
         Args:
-            path: Относительный путь от workspace root.
+            path: Relative path from the workspace root.
 
         Returns:
-            Содержимое файла.
+            File contents.
 
         Raises:
-            FileNotFoundError: Файл не существует.
-            SandboxViolation: Path traversal или выход за workspace.
+            FileNotFoundError: File does not exist.
+            SandboxViolation: Path traversal or leaving the workspace.
         """
         ...
 
     async def write_file(self, path: str, content: str) -> None:
-        """Записать файл в workspace.
+        """Write a file to the workspace.
 
-        Создаёт промежуточные директории. Атомарная запись (tmp + rename).
+        Creates intermediate directories. Atomic write (tmp + rename).
 
         Args:
-            path: Относительный путь от workspace root.
-            content: Содержимое файла.
+            path: Relative path from the workspace root.
+            content: File contents.
 
         Raises:
-            SandboxViolation: Path traversal, выход за workspace или превышение лимита.
+            SandboxViolation: Path traversal, leaving the workspace, or limit exceeded.
         """
         ...
 
     async def execute(self, command: str) -> ExecutionResult:
-        """Выполнить shell-команду в workspace.
+        """Execute a shell command in the workspace.
 
         Args:
-            command: Команда для выполнения.
+            command: Command to execute.
 
         Returns:
-            ExecutionResult с stdout, stderr, exit_code, timed_out.
+            ExecutionResult with stdout, stderr, exit_code, timed_out.
 
         Raises:
-            SandboxViolation: Запрещённая команда (из denied_commands).
+            SandboxViolation: Denied command (from denied_commands).
         """
         ...
 
     async def list_dir(self, path: str = ".") -> list[str]:
-        """Список файлов и директорий в workspace.
+        """List files and directories in the workspace.
 
         Args:
-            path: Относительный путь от workspace root.
+            path: Relative path from the workspace root.
 
         Returns:
-            Список имён файлов/директорий.
+            List of file/directory names.
 
         Raises:
             SandboxViolation: Path traversal.
@@ -79,12 +79,12 @@ class SandboxProvider(Protocol):
         ...
 
     async def glob_files(self, pattern: str) -> list[str]:
-        """Поиск файлов по glob-паттерну внутри workspace.
+        """Search for files by glob pattern within the workspace.
 
         Args:
-            pattern: Glob-паттерн (e.g. "**/*.py").
+            pattern: Glob pattern (e.g. "**/*.py").
 
         Returns:
-            Список относительных путей от workspace root.
+            List of relative paths from the workspace root.
         """
         ...

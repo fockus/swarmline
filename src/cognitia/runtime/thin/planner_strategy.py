@@ -38,7 +38,7 @@ async def run_planner(
     checkpoint: CheckpointFn | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Planner-lite: plan -> step execution -> final assembly."""
-    # Шаг 1: получить план от LLM
+    # Step 1: get plan from LLM
     prompt = build_planner_prompt(system_prompt, tools)
     lm_messages = _messages_to_lm(messages)
 
@@ -91,7 +91,7 @@ async def run_planner(
     if steps_preview:
         yield RuntimeEvent.status(f"Следующие шаги: {steps_preview}")
 
-    # Шаг 2: выполнить каждый шаг
+
     step_results: list[str] = []
     new_messages: list[Message] = []
     total_tool_calls = 0
@@ -103,7 +103,7 @@ async def run_planner(
 
         step_context = "\n".join(step_results) if step_results else "Нет предыдущих шагов."
 
-        # Формируем sub-config с бюджетами шага
+
         step_config = RuntimeConfig(
             runtime_name="thin",
             max_iterations=step.max_iterations,
@@ -130,7 +130,7 @@ async def run_planner(
                 start_time=start_time,
                 checkpoint=checkpoint,
             ):
-                # Пробрасываем tool + streaming events
+
                 if event.type in (
                     "tool_call_started",
                     "tool_call_finished",
@@ -171,7 +171,7 @@ async def run_planner(
 
         step_results.append(step_text)
 
-    # Шаг 3: финальная сборка
+
     assembly_prompt = build_final_assembly_prompt(
         append_structured_output_instruction(
             system_prompt,

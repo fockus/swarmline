@@ -1,6 +1,6 @@
-"""E2BSandboxProvider — cloud sandbox через E2B API.
+"""E2BSandboxProvider - cloud sandbox via the E2B API.
 
-Каждая сессия = Firecracker VM. Optional dependency: e2b.
+Each session is a Firecracker VM. Optional dependency: e2b.
 """
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ from cognitia.tools.types import ExecutionResult, SandboxConfig, SandboxViolatio
 
 
 class E2BSandboxProvider:
-    """SandboxProvider через E2B cloud sandbox.
+    """SandboxProvider via the E2B cloud sandbox.
 
-    LSP: полностью заменяет LocalSandboxProvider.
+    LSP: fully replaces LocalSandboxProvider.
     """
 
     def __init__(
@@ -31,7 +31,7 @@ class E2BSandboxProvider:
         self._workspace = "/home/user/workspace"
 
     def _resolve_path(self, path: str) -> str:
-        """Безопасно нормализовать путь относительно workspace."""
+        """Safely normalize a path relative to the workspace."""
         if os.path.isabs(path):
             raise SandboxViolation(f"Абсолютный путь запрещён: {path}", path=path)
         parts = [p for p in path.split("/") if p]
@@ -40,7 +40,7 @@ class E2BSandboxProvider:
         return "/".join(parts)
 
     async def _ensure_sandbox(self) -> Any:
-        """Ленивая инициализация E2B sandbox."""
+        """Lazy initialization of the E2B sandbox."""
         if self._sandbox is not None:
             return self._sandbox
 
@@ -55,14 +55,14 @@ class E2BSandboxProvider:
             from e2b_code_interpreter import Sandbox  # type: ignore[import-not-found]
         except ImportError as exc:
             raise RuntimeError(
-                "E2B SDK не установлен. Установите optional dependency e2b_code_interpreter.",
+                "E2B SDK is not installed. Install the optional e2b_code_interpreter dependency.",
             ) from exc
 
         self._sandbox = Sandbox()
         return self._sandbox
 
     async def _with_timeout(self, awaitable: Any) -> Any:
-        """Ограничить операцию timeout из SandboxConfig."""
+        """Limit the operation timeout from SandboxConfig."""
         return await asyncio.wait_for(awaitable, timeout=self._config.timeout_seconds)
 
     def _check_denied_command(self, command: str) -> None:
@@ -70,10 +70,10 @@ class E2BSandboxProvider:
         words = command.split()
         for word in words:
             if os.path.basename(word) in denied:
-                raise SandboxViolation(f"Команда '{word}' запрещена", path=command)
+                raise SandboxViolation(f"Command '{word}' is denied", path=command)
 
     async def read_file(self, path: str) -> str:
-        """Прочитать файл через E2B filesystem API."""
+        """Read a file via the E2B filesystem API."""
         safe_path = self._resolve_path(path)
         full_path = f"{self._workspace}/{safe_path}"
         sandbox = await self._ensure_sandbox()
@@ -81,7 +81,7 @@ class E2BSandboxProvider:
         return result
 
     async def write_file(self, path: str, content: str) -> None:
-        """Записать файл через E2B filesystem API."""
+        """Write a file via the E2B filesystem API."""
         if len(content.encode("utf-8")) > self._config.max_file_size_bytes:
             raise SandboxViolation(
                 f"Файл превышает лимит {self._config.max_file_size_bytes} байт",
@@ -94,7 +94,7 @@ class E2BSandboxProvider:
         await self._with_timeout(sandbox.filesystem.write(full_path, content))
 
     async def execute(self, command: str) -> ExecutionResult:
-        """Выполнить команду через E2B process API."""
+        """Execute a command via the E2B process API."""
         self._check_denied_command(command)
         sandbox = await self._ensure_sandbox()
         try:
@@ -116,7 +116,7 @@ class E2BSandboxProvider:
             )
 
     async def list_dir(self, path: str = ".") -> list[str]:
-        """Список файлов через E2B filesystem API."""
+        """List files via the E2B filesystem API."""
         safe_path = self._resolve_path(path)
         full_path = f"{self._workspace}/{safe_path}" if safe_path else self._workspace
         sandbox = await self._ensure_sandbox()
@@ -124,7 +124,7 @@ class E2BSandboxProvider:
         return [e.name for e in entries]
 
     async def glob_files(self, pattern: str) -> list[str]:
-        """Glob через find команду в E2B."""
+        """Glob via a find command in E2B."""
         sandbox = await self._ensure_sandbox()
         proc = await self._with_timeout(
             sandbox.process.start(
@@ -143,7 +143,7 @@ class E2BSandboxProvider:
         return sorted(results)
 
     async def close(self) -> None:
-        """Корректно закрыть sandbox-сессию."""
+        """Close the sandbox session cleanly."""
         if self._sandbox is None:
             return
         for method_name in ("kill", "close"):

@@ -1,4 +1,4 @@
-"""AgentConfig — frozen конфигурация для Agent facade."""
+"""AgentConfig - frozen configuration for the Agent facade."""
 
 from __future__ import annotations
 
@@ -18,15 +18,15 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class AgentConfig:
-    """Immutable конфигурация Agent facade.
+    """Immutable configuration for the Agent facade.
 
-    Минимальный required параметр — system_prompt.
-    Все остальные имеют разумные defaults.
+    The only required parameter is system_prompt.
+    All others have sensible defaults.
     """
 
     system_prompt: str
 
-    # Модель (alias или полное имя)
+    # Model (alias or full name)
     model: str = "sonnet"
 
     # Runtime: claude_sdk | thin | deepagents
@@ -57,7 +57,7 @@ class AgentConfig:
     # Environment variables
     env: dict[str, str] = field(default_factory=dict)
 
-    # SDK-specific (только для claude_sdk runtime)
+    # SDK-specific (claude_sdk runtime only)
     betas: tuple[str, ...] = ()
     sandbox: dict[str, Any] | None = None
     max_thinking_tokens: int | None = None
@@ -98,7 +98,7 @@ class AgentConfig:
 
     @property
     def resolved_model(self) -> str:
-        """Разрешить alias модели в полное имя."""
+        """Resolve the model alias to its full name."""
         from cognitia.runtime.types import resolve_model_name
 
         return resolve_model_name(self.model)

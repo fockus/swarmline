@@ -1,4 +1,4 @@
-"""DatabaseTodoProvider — persistent todos через SQLAlchemy (Postgres + SQLite).
+"""DatabaseTodoProvider - persistent todos via SQLAlchemy (Postgres + SQLite).
 
 Dialect-agnostic SQL. Multi-tenant: user_id + topic_id.
 """
@@ -15,9 +15,9 @@ from cognitia.todo.types import TodoItem
 
 
 class DatabaseTodoProvider:
-    """TodoProvider через SQLAlchemy async (Postgres/SQLite).
+    """TodoProvider via SQLAlchemy async (Postgres/SQLite).
 
-    SQL изолирован внутри класса. LSP: заменяет InMemory и FS.
+    SQL is isolated within the class. LSP: replaces InMemory and FS.
     """
 
     def __init__(
@@ -33,7 +33,7 @@ class DatabaseTodoProvider:
         return session
 
     async def read_todos(self) -> list[TodoItem]:
-        """Прочитать все todos пользователя/топика."""
+        """Read all todos for the user/topic."""
         async with await self._get_session() as session:
             result = await session.execute(
                 text(
@@ -54,18 +54,18 @@ class DatabaseTodoProvider:
             ]
 
     async def write_todos(self, todos: list[TodoItem]) -> None:
-        """Записать todos (bulk replace): удаляет все + вставляет новые."""
+        """Write todos (bulk replace): deletes all and inserts new ones."""
         if len(todos) > self._max_todos:
             msg = f"Превышен лимит max_todos ({self._max_todos})"
             raise ValueError(msg)
 
         async with await self._get_session() as session:
-            # Удаляем все текущие todos
+            # Delete all current todos
             await session.execute(
                 text("DELETE FROM todos WHERE user_id = :u AND topic_id = :t"),
                 {"u": self._user_id, "t": self._topic_id},
             )
-            # Вставляем новые
+            # Insert new ones
             for item in todos:
                 await session.execute(
                     text(

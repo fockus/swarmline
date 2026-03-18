@@ -1,18 +1,18 @@
-"""Провайдер памяти — ISP-совместимые протоколы.
+"""Memory provider - ISP-compliant protocols.
 
-ISP из RULES.MD: каждый Protocol ≤5 методов.
-Мелкие протоколы определены в cognitia.protocols.
+ISP from RULES.MD: each Protocol has <=5 methods.
+The small protocols are defined in cognitia.protocols.
 
-Этот модуль реэкспортирует их для удобства импорта
-и предоставляет тип-подсказку MemoryProvider для composition root.
+This module re-exports them for convenient imports
+and provides a MemoryProvider type hint for the composition root.
 """
 
 from __future__ import annotations
 
-# ISP: все протоколы хранилища ≤5 методов.
-# Каждый потребитель зависит только от нужного подмножества (ISP/DIP).
-# Конкретные классы (PostgresMemoryProvider, InMemoryMemoryProvider)
-# реализуют все протоколы, но это деталь реализации, не контракт.
+# ISP: all storage protocols have <=5 methods.
+# Each consumer depends only on the required subset (ISP/DIP).
+# Concrete classes (PostgresMemoryProvider, InMemoryMemoryProvider)
+# implement all protocols, but that is an implementation detail, not a contract.
 from cognitia.protocols import (
     FactStore,
     GoalStore,

@@ -1,7 +1,5 @@
-"""TDD: MessageBus wiring + send_message tool для workers.
-
-CRP-2.3: Workers обмениваются сообщениями через MessageBus.
-Тестируем существующий message_tools.py API.
+"""TDD: MessageBus wiring + send_message tool for workers. CRP-2.3: Workers obmenivayutsya messagesmi cherez MessageBus.
+Testiruem sushchestvuyushchiy message_tools.py API.
 """
 
 from __future__ import annotations
@@ -50,7 +48,7 @@ class TestMessageBusBroadcast:
 
 
 class TestMessageToolSendsViaBus:
-    """Tool call → message в bus с корректным ToolSpec."""
+    """Tool call -> message in bus with korrektnym ToolSpec."""
 
     async def test_message_tool_sends_via_bus(self) -> None:
         from cognitia.orchestration.message_tools import (
@@ -58,13 +56,13 @@ class TestMessageToolSendsViaBus:
             create_send_message_tool,
         )
 
-        # ToolSpec валиден
+        # ToolSpec validen
         spec = SEND_MESSAGE_TOOL_SPEC
         assert spec.name == "send_message"
         assert "to_agent" in str(spec.parameters)
         assert "content" in str(spec.parameters)
 
-        # Tool работает
+        # Tool works
         bus = MessageBus()
         tool_fn = create_send_message_tool(bus, "worker-0")
         await tool_fn({"to_agent": "worker-1", "content": "Need help with task 3"})

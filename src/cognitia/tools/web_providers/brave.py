@@ -1,7 +1,7 @@
-"""Brave Search provider — 2000 req/month бесплатно.
+"""Brave Search provider - 2000 req/month free.
 
-Требует API ключ (BRAVE_SEARCH_API_KEY).
-Зависимость: httpx (уже в cognitia[web]).
+Requires an API key (BRAVE_SEARCH_API_KEY).
+Dependency: httpx (already included in cognitia[web]).
 API docs: https://api.search.brave.com/app/documentation/web-search
 """
 
@@ -18,9 +18,9 @@ _log = structlog.get_logger(component="web_search.brave")
 
 
 class BraveSearchProvider:
-    """Поиск через Brave Search API (free tier: 2000 req/month).
+    """Search via the Brave Search API (free tier: 2000 req/month).
 
-    Требует API key. Использует httpx для HTTP запросов.
+    Requires an API key. Uses httpx for HTTP requests.
     """
 
     def __init__(self, api_key: str, timeout: int = 15) -> None:
@@ -30,14 +30,14 @@ class BraveSearchProvider:
         self._timeout = timeout
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск через Brave Search API.
+        """Search via the Brave Search API.
 
         Args:
-            query: Поисковый запрос. Пустой/whitespace -> пустой список.
-            max_results: Максимальное количество результатов.
+            query: Search query. Empty/whitespace -> empty list.
+            max_results: Maximum number of results.
 
         Returns:
-            Список SearchResult. Пустой при ошибке.
+            List of SearchResult. Empty on error.
         """
         if not query or not query.strip():
             return []

@@ -1,7 +1,5 @@
-"""TDD RED: Тесты ThinSubagentOrchestrator с реальным ThinRuntime.
-
-CRP-2.1: Полная реализация _create_runtime() — создаёт per-worker ThinRuntime.
-Каждый тест = бизнес-факт, не технический check.
+"""TDD RED: Tests ThinSubagentOrchestrator with realnym ThinRuntime. CRP-2.1: Full implementation _create_runtime() - sozdaet per-worker ThinRuntime.
+Kazhdyy test = biznots-fakt, not tehnicheskiy check.
 """
 
 from __future__ import annotations
@@ -16,7 +14,7 @@ from cognitia.runtime.types import ToolSpec
 
 
 def _make_llm_call(response_text: str):
-    """Фабрика mock LLM call — возвращает фиксированный JSON envelope."""
+    """Factory mock LLM call - returns fiksirovannyy JSON envelope."""
 
     async def _llm_call(messages: list[dict], system_prompt: str, **kwargs) -> str:
         envelope = {"type": "final", "final_message": response_text}
@@ -26,7 +24,7 @@ def _make_llm_call(response_text: str):
 
 
 def _make_slow_llm_call(delay: float, response_text: str = "done"):
-    """LLM call с задержкой — для тестов cancel и concurrency."""
+    """LLM call with zaderzhkoy - for testov cancel and concurrency."""
 
     async def _llm_call(messages: list[dict], system_prompt: str, **kwargs) -> str:
         await asyncio.sleep(delay)
@@ -37,7 +35,7 @@ def _make_slow_llm_call(delay: float, response_text: str = "done"):
 
 
 def _make_error_llm_call(error_message: str):
-    """LLM call который возвращает ошибку."""
+    """LLM call kotoryy returns oshibku."""
 
     async def _llm_call(messages: list[dict], system_prompt: str, **kwargs) -> str:
         raise RuntimeError(error_message)
@@ -49,7 +47,7 @@ class TestThinSubagentSpawnAndComplete:
     """spawn worker → run ThinRuntime → get result."""
 
     async def test_thin_subagent_spawn_and_complete(self) -> None:
-        """Worker запускается через ThinRuntime и возвращает результат."""
+        """Worker runssya cherez ThinRuntime and returns result."""
         orch = ThinSubagentOrchestrator(
             max_concurrent=2,
             llm_call=_make_llm_call("task completed successfully"),
@@ -66,7 +64,7 @@ class TestThinSubagentCancelRunning:
     """cancel mid-execution → status=cancelled."""
 
     async def test_thin_subagent_cancel_running(self) -> None:
-        """Worker отменяется во время выполнения."""
+        """Worker is cancelled vo vremya vypolnotniya."""
         orch = ThinSubagentOrchestrator(
             max_concurrent=2,
             llm_call=_make_slow_llm_call(delay=10.0),
@@ -82,10 +80,10 @@ class TestThinSubagentCancelRunning:
 
 
 class TestThinSubagentMaxConcurrent:
-    """max_concurrent=2 → 3rd worker ждёт (ValueError)."""
+    """max_concurrent=2 -> 3rd worker zhdet (ValueError)."""
 
     async def test_thin_subagent_max_concurrent_respected(self) -> None:
-        """Превышение max_concurrent бросает ValueError."""
+        """Exceeding max_concurrent brosaet ValueError."""
         orch = ThinSubagentOrchestrator(
             max_concurrent=2,
             llm_call=_make_slow_llm_call(delay=10.0),
@@ -100,10 +98,10 @@ class TestThinSubagentMaxConcurrent:
 
 
 class TestThinSubagentErrorPropagated:
-    """LLM error → status=failed, error message сохранён."""
+    """LLM error -> status=failed, error message saved."""
 
     async def test_thin_subagent_error_propagated(self) -> None:
-        """Ошибка LLM пробрасывается в статус failed."""
+        """Error LLM probrasyvaetsya in status failed."""
         orch = ThinSubagentOrchestrator(
             max_concurrent=2,
             llm_call=_make_error_llm_call("API rate limit exceeded"),
@@ -121,7 +119,7 @@ class TestThinSubagentToolsInherited:
     """Worker inherits tools from SubagentSpec."""
 
     async def test_thin_subagent_tools_inherited(self) -> None:
-        """Tools из SubagentSpec передаются в ThinRuntime worker."""
+        """Tools from SubagentSpec are passed in ThinRuntime worker."""
         tool_was_called = False
         tool_name = "search_docs"
 
@@ -136,7 +134,7 @@ class TestThinSubagentToolsInherited:
             parameters={"type": "object", "properties": {"query": {"type": "string"}}},
         )
 
-        # LLM вызывает tool (ActionEnvelope format), потом финализирует
+        # LLM vyzyvaet tool (ActionEnvelope format), potom finaliziruet
         call_count = 0
 
         async def tool_calling_llm(messages: list[dict], system_prompt: str, **kwargs) -> str:

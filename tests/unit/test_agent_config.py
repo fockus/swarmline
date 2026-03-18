@@ -1,4 +1,4 @@
-"""Unit: AgentConfig — frozen конфигурация Agent facade."""
+"""Unit: AgentConfig - frozen configuration Agent facade."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from cognitia.runtime.capabilities import CapabilityRequirements, RuntimeCapabil
 
 
 class TestAgentConfigDefaults:
-    """Конструктор с минимумом параметров."""
+    """Konstruktor with minimumom parameterov."""
 
     def test_minimal_config(self) -> None:
-        """system_prompt — единственный required, остальное defaults."""
+        """system_prompt - edinstvennyy required, ostalnoe defaults."""
         cfg = AgentConfig(system_prompt="Ты — помощник")
         assert cfg.system_prompt == "Ты — помощник"
         assert cfg.model == "sonnet"
@@ -40,10 +40,10 @@ class TestAgentConfigDefaults:
 
 
 class TestAgentConfigFull:
-    """Все поля заданы."""
+    """Vse polya zadany."""
 
     def test_all_fields_set(self) -> None:
-        """Конструктор с полным набором параметров."""
+        """Konstruktor with polnym setom parameterov."""
         cfg = AgentConfig(
             system_prompt="test",
             model="opus",
@@ -87,7 +87,7 @@ class TestAgentConfigFull:
 
 
 class TestAgentConfigImmutable:
-    """Frozen dataclass — нельзя мутировать."""
+    """Frozen dataclass - notlzya mutirovat."""
 
     def test_frozen(self) -> None:
         cfg = AgentConfig(system_prompt="test")
@@ -95,37 +95,37 @@ class TestAgentConfigImmutable:
             cfg.model = "opus"  # type: ignore[misc]
 
     def test_frozen_env(self) -> None:
-        """env dict нельзя переназначить (но сам dict mutable — это ОК для frozen)."""
+        """env dict notlzya perenaznachit (no sam dict mutable - eto OK for frozen)."""
         cfg = AgentConfig(system_prompt="test")
         with pytest.raises(dataclasses.FrozenInstanceError):
             cfg.env = {"NEW": "val"}  # type: ignore[misc]
 
 
 class TestAgentConfigValidation:
-    """Валидация при создании."""
+    """Validation pri createdii."""
 
     def test_empty_system_prompt_raises(self) -> None:
-        """Пустой system_prompt → ValueError."""
+        """Empty system_prompt -> ValueError."""
         with pytest.raises(ValueError, match="system_prompt"):
             AgentConfig(system_prompt="")
 
     def test_whitespace_system_prompt_raises(self) -> None:
-        """Только пробелы → ValueError."""
+        """Tolko probely -> ValueError."""
         with pytest.raises(ValueError, match="system_prompt"):
             AgentConfig(system_prompt="   ")
 
     def test_invalid_runtime_raises(self) -> None:
-        """Неизвестный runtime → ValueError."""
+        """Notizvestnyy runtime -> ValueError."""
         with pytest.raises(ValueError, match="runtime"):
             AgentConfig(system_prompt="test", runtime="unknown_runtime")
 
     def test_invalid_feature_mode_raises(self) -> None:
-        """Неизвестный feature_mode → ValueError."""
+        """Notizvestnyy feature_mode -> ValueError."""
         with pytest.raises(ValueError, match="feature_mode"):
             AgentConfig(system_prompt="test", feature_mode="invalid_mode")
 
     def test_runtime_requirements_fail_fast(self) -> None:
-        """Требование full tier для thin → ValueError на конфиге."""
+        """Trebovanie full tier for thin -> ValueError on konfige."""
         with pytest.raises(ValueError, match="thin"):
             AgentConfig(
                 system_prompt="test",
@@ -134,7 +134,7 @@ class TestAgentConfigValidation:
             )
 
     def test_custom_runtime_from_registry_is_accepted(self) -> None:
-        """Registry-registered runtime проходит валидацию AgentConfig."""
+        """Registry-registered runtime prohodit validatsiyu AgentConfig."""
         from cognitia.runtime.registry import get_default_registry
 
         registry = get_default_registry()
@@ -152,7 +152,7 @@ class TestAgentConfigValidation:
 
 
 class TestAgentConfigModelResolution:
-    """Alias модели → полное имя (через resolve_model_name)."""
+    """Alias models -> full imya (cherez resolve_model_name)."""
 
     def test_alias_sonnet(self) -> None:
         cfg = AgentConfig(system_prompt="test", model="sonnet")

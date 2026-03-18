@@ -1,4 +1,4 @@
-"""LLM client functions для ThinRuntime."""
+"""LLM client functions for ThinRuntime."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class BufferedLlmAttempt:
-    """Результат полностью завершённой LLM-попытки."""
+    """Buffered Llm Attempt implementation."""
 
     raw: str
     chunks: list[str]
@@ -30,22 +30,15 @@ async def try_stream_llm_call(
     lm_messages: list[dict[str, str]],
     prompt: str,
 ) -> tuple[list[str], str] | None:
-    """Попробовать streaming LLM вызов.
-
-    Returns:
-        (chunks, full_text) если streaming поддерживается.
-        Если LLM вернула str вместо AsyncIterator -- возвращает ([full_text], full_text)
-        чтобы не терять уже сделанный вызов.
-        None только если LLM не поддерживает stream kwarg (TypeError).
-    """
+    """Try stream llm call."""
     try:
         result = await llm_call(lm_messages, prompt, stream=True)
     except TypeError:
-        # LLM не поддерживает stream kwarg
+        # LLM not supports stream kwarg
         return None
 
     if isinstance(result, str):
-        # LLM принимает stream kwarg но возвращает str -- используем как есть
+
         return [result], result
 
     if not hasattr(result, "__aiter__"):
@@ -66,7 +59,7 @@ async def run_buffered_llm_call(
     cancellation_token: Any | None = None,
     on_retry: Callable[[int, float], None] | None = None,
 ) -> BufferedLlmAttempt:
-    """Выполнить LLM attempt целиком, включая consumption AsyncIterator."""
+    """Run buffered llm call."""
     attempt = 0
     while True:
         try:
@@ -132,17 +125,7 @@ async def default_llm_call(
     system_prompt: str,
     **kwargs: Any,
 ) -> str | AsyncIterator[str]:
-    """Multi-provider LLM call через ProviderResolver + LlmAdapter.
-
-    Модель берётся из config.model. ProviderResolver определяет провайдера,
-    SDK type и base_url. create_llm_adapter() создаёт подходящий адаптер.
-
-    При stream=True возвращает AsyncIterator[str] (через adapter.stream()).
-    Иначе — str (через adapter.call()).
-
-    Поддерживает: Anthropic, OpenAI, Google, OpenRouter, Ollama, Groq,
-    Together, Fireworks, DeepSeek, vLLM, любой OpenAI-compatible.
-    """
+    """Default llm call."""
     use_stream = kwargs.pop("stream", False)
 
     resolved = resolve_provider(config.model, base_url=config.base_url)

@@ -1,4 +1,4 @@
-"""Тесты для RuntimeFactory — выбор runtime по config/env/override."""
+"""Tests for RuntimeFactory - select runtime by config/env/override."""
 
 import os
 from unittest.mock import MagicMock, PropertyMock, patch
@@ -20,30 +20,30 @@ def factory() -> RuntimeFactory:
 
 
 class TestResolveRuntimeName:
-    """RuntimeFactory.resolve_runtime_name — приоритет выбора."""
+    """RuntimeFactory.resolve_runtime_name - selection priority."""
 
     def test_default_is_claude_sdk(self, factory: RuntimeFactory) -> None:
-        """Без параметров — claude_sdk."""
+        """Without parameters - cloud_sdk."""
         assert factory.resolve_runtime_name() == "claude_sdk"
 
     def test_config_overrides_default(self, factory: RuntimeFactory) -> None:
-        """config.runtime_name переопределяет default."""
+        """config.runtime_name overrides default."""
         cfg = RuntimeConfig(runtime_name="thin")
         assert factory.resolve_runtime_name(config=cfg) == "thin"
 
     def test_env_overrides_default(self, factory: RuntimeFactory) -> None:
-        """Переменная окружения COGNITIA_RUNTIME переопределяет default."""
+        """The COGNITIA_RUNTIME environment variable overrides default."""
         with patch.dict(os.environ, {"COGNITIA_RUNTIME": "deepagents"}):
             assert factory.resolve_runtime_name() == "deepagents"
 
     def test_config_overrides_env(self, factory: RuntimeFactory) -> None:
-        """config имеет приоритет над env."""
+        """config takes precedence over env."""
         cfg = RuntimeConfig(runtime_name="thin")
         with patch.dict(os.environ, {"COGNITIA_RUNTIME": "deepagents"}):
             assert factory.resolve_runtime_name(config=cfg) == "thin"
 
     def test_override_overrides_all(self, factory: RuntimeFactory) -> None:
-        """runtime_override имеет максимальный приоритет."""
+        """runtime_override has maximum priority."""
         cfg = RuntimeConfig(runtime_name="thin")
         with patch.dict(os.environ, {"COGNITIA_RUNTIME": "deepagents"}):
             result = factory.resolve_runtime_name(
@@ -53,12 +53,12 @@ class TestResolveRuntimeName:
             assert result == "claude_sdk"
 
     def test_invalid_env_ignored(self, factory: RuntimeFactory) -> None:
-        """Невалидный env — игнорируется, используется default."""
+        """Invalid env - is ignored, uses default."""
         with patch.dict(os.environ, {"COGNITIA_RUNTIME": "invalid_runtime"}):
             assert factory.resolve_runtime_name() == "claude_sdk"
 
     def test_invalid_override_ignored(self, factory: RuntimeFactory) -> None:
-        """Невалидный override — игнорируется, используется config."""
+        """Invalid override - is ignored, uses config."""
         cfg = RuntimeConfig(runtime_name="thin")
         result = factory.resolve_runtime_name(
             config=cfg,
@@ -67,7 +67,7 @@ class TestResolveRuntimeName:
         assert result == "thin"
 
     def test_env_case_insensitive(self, factory: RuntimeFactory) -> None:
-        """Env с разным регистром — приводится к lower."""
+        """Env with different case - converted to lower."""
         with patch.dict(os.environ, {"COGNITIA_RUNTIME": "THIN"}):
             assert factory.resolve_runtime_name() == "thin"
 
@@ -78,32 +78,32 @@ class TestResolveRuntimeName:
 
 
 class TestCreate:
-    """RuntimeFactory.create — создание runtime."""
+    """RuntimeFactory.create - creation of runtime."""
 
     def test_create_thin_missing_dep(self, factory: RuntimeFactory) -> None:
-        """Если anthropic не установлен — возвращает _ErrorRuntime."""
+        """If anthropic is not installed - returns _ErrorRuntime."""
         with patch.dict("sys.modules", {"anthropic": None}):
             cfg = RuntimeConfig(runtime_name="thin")
             runtime = factory.create(config=cfg)
-            # _ErrorRuntime — допустимый объект (не падает при создании)
+            # _ErrorRuntime - valid object (not crashed on creation)
             assert runtime is not None
 
     def test_create_deepagents_missing_dep(self, factory: RuntimeFactory) -> None:
-        """Если langchain-core не установлен — возвращает _ErrorRuntime."""
+        """If langchain-core is not installed - returns _ErrorRuntime."""
         cfg = RuntimeConfig(runtime_name="deepagents")
         runtime = factory.create(config=cfg)
-        # Может быть _ErrorRuntime или DeepAgentsRuntime (зависит от deps)
+        # Can be _ErrorRuntime or DeepAgentsRuntime (depends on deps)
         assert runtime is not None
 
     def test_create_with_override(self, factory: RuntimeFactory) -> None:
-        """runtime_override передаётся в resolve."""
+        """runtime_override is passed in resolve."""
         cfg = RuntimeConfig(runtime_name="claude_sdk")
-        # Не можем реально создать thin (нужен anthropic), но проверяем что override работает
+        # We can't really create thin (we need anthropic), but verify that override works
         runtime = factory.create(config=cfg, runtime_override="thin")
         assert runtime is not None
 
     def test_invalid_name_in_create(self, factory: RuntimeFactory) -> None:
-        """Невалидное имя в config → ValueError в RuntimeConfig.__post_init__."""
+        """Invalid name in config -> ValueError in RuntimeConfig.__post_init__."""
         with pytest.raises(ValueError, match="Unknown runtime"):
             RuntimeConfig(runtime_name="bad_name")
 
@@ -111,7 +111,7 @@ class TestCreate:
         self,
         factory: RuntimeFactory,
     ) -> None:
-        """override runtime, не удовлетворяющий capability requirements → _ErrorRuntime."""
+        """override runtime, not satisfying capability requirements -> _ErrorRuntime."""
         cfg = RuntimeConfig(
             runtime_name="claude_sdk",
             required_capabilities=CapabilityRequirements(tier="full"),
@@ -123,7 +123,7 @@ class TestCreate:
         self,
         factory: RuntimeFactory,
     ) -> None:
-        """tool_executors facade-слоя прокидываются в ThinRuntime как local_tools."""
+        """tool_executors of the facade layer are thrown in ThinRuntime as local_tools."""
         cfg = RuntimeConfig(runtime_name="thin")
         fake_runtime = object()
         fake_cls = MagicMock(return_value=fake_runtime)
@@ -166,7 +166,7 @@ class TestCreate:
         self,
         factory: RuntimeFactory,
     ) -> None:
-        """Если registry недоступен, cli всё равно создаётся через legacy fallback."""
+        """If registry is not available, the cli is still created via legacy fallback."""
         cfg = RuntimeConfig(runtime_name="cli")
         fake_runtime = object()
         fake_cls = MagicMock(return_value=fake_runtime)
@@ -240,11 +240,11 @@ class TestCapabilities:
 
 
 class TestErrorRuntime:
-    """_ErrorRuntime — заглушка при отсутствии dependency."""
+    """_ErrorRuntime - stub if there is no dependency."""
 
     @pytest.mark.asyncio
     async def test_run_yields_error(self) -> None:
-        """run() возвращает error event."""
+        """run() returns error event."""
         from cognitia.runtime.types import RuntimeErrorData
 
         err = RuntimeErrorData(
@@ -264,9 +264,9 @@ class TestErrorRuntime:
 
     @pytest.mark.asyncio
     async def test_cleanup_noop(self) -> None:
-        """cleanup() не падает."""
+        """cleanup() doesn't crash."""
         from cognitia.runtime.types import RuntimeErrorData
 
         err = RuntimeErrorData(kind="dependency_missing", message="x")
         runtime = _ErrorRuntime(err)
-        await runtime.cleanup()  # не должно бросить
+        await runtime.cleanup()  # shouldn't quit

@@ -1,6 +1,6 @@
-"""Тесты TodoProvider — Protocol, InMemory, tools.
+"""Tests TodoProvider - Protocol, InMemory, tools.
 
-TDD: RED → GREEN → REFACTOR.
+TDD: RED -> GREEN -> REFACTOR.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import pytest
 
 
 class TestTodoItem:
-    """Валидация TodoItem dataclass."""
+    """Validation TodoItem dataclass."""
 
     def test_create_item(self) -> None:
         from cognitia.todo.types import TodoItem
@@ -57,7 +57,7 @@ class TestTodoItem:
 
 
 class TestTodoConfig:
-    """Валидация TodoConfig."""
+    """Validation TodoConfig."""
 
     def test_defaults(self) -> None:
         from cognitia.todo.types import TodoConfig
@@ -76,7 +76,7 @@ class TestTodoConfig:
 
 
 class TestTodoProviderProtocol:
-    """Контрактные тесты для TodoProvider Protocol."""
+    """Contract tests for TodoProvider Protocol."""
 
     def test_runtime_checkable(self) -> None:
         from cognitia.todo.protocols import TodoProvider
@@ -100,7 +100,7 @@ class TestTodoProviderProtocol:
         assert not isinstance(Incomplete(), TodoProvider)
 
     def test_protocol_has_two_methods(self) -> None:
-        """ISP: TodoProvider имеет ≤5 методов."""
+        """ISP: TodoProvider has ≤5 methods."""
         from cognitia.todo.protocols import TodoProvider
 
         methods = [
@@ -112,7 +112,7 @@ class TestTodoProviderProtocol:
 
 
 class TestInMemoryTodoProvider:
-    """Тесты InMemoryTodoProvider."""
+    """Tests InMemoryTodoProvider."""
 
     async def test_empty_read(self) -> None:
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider
@@ -148,7 +148,7 @@ class TestInMemoryTodoProvider:
         assert result[0].id == "1"
 
     async def test_bulk_replace(self) -> None:
-        """write_todos заменяет все todos целиком."""
+        """write_todos replaces the entire todos."""
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider
         from cognitia.todo.types import TodoItem
 
@@ -171,7 +171,7 @@ class TestInMemoryTodoProvider:
         assert result[0].id == "2"
 
     async def test_max_todos_limit(self) -> None:
-        """Превышение max_todos → ValueError."""
+        """Exceeding max_todos -> ValueError."""
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider
         from cognitia.todo.types import TodoItem
 
@@ -186,7 +186,7 @@ class TestInMemoryTodoProvider:
             await provider.write_todos(items)
 
     async def test_multi_tenant_isolation(self) -> None:
-        """Разные user_id/topic_id — изолированные данные."""
+        """Different user_id/topic_id - isolated data."""
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider
         from cognitia.todo.types import TodoItem
 
@@ -214,7 +214,7 @@ class TestInMemoryTodoProvider:
 
 
 class TestTodoTools:
-    """Тесты todo_read / todo_write tools."""
+    """Tests todo_read / todo_write tools."""
 
     async def test_todo_read_empty(self) -> None:
         from cognitia.todo.inmemory_provider import InMemoryTodoProvider

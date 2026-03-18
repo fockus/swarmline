@@ -1,7 +1,7 @@
-"""SDK Bridge — конвертация cognitia HookRegistry → SDK HookMatcher формат.
+"""SDK Bridge - convert cognitia HookRegistry into SDK HookMatcher format.
 
-Позволяет использовать cognitia HookRegistry для регистрации хуков,
-а затем преобразовать их в формат, который понимает Claude Agent SDK.
+Allows using cognitia HookRegistry to register hooks,
+then converting them into a format understood by Claude Agent SDK.
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ from cognitia.hooks.registry import HookEntry, HookRegistry
 def registry_to_sdk_hooks(
     registry: HookRegistry,
 ) -> dict[str, list[HookMatcher]] | None:
-    """Конвертировать cognitia HookRegistry → SDK hooks dict.
+    """Convert cognitia HookRegistry into an SDK hooks dict.
 
     Returns:
-        dict[HookEvent, list[HookMatcher]] для передачи в ClaudeAgentOptions.hooks,
-        или None если registry пуст.
+        dict[HookEvent, list[HookMatcher]] for passing to ClaudeAgentOptions.hooks,
+        or None if the registry is empty.
     """
     events = registry.list_events()
     if not events:
@@ -37,7 +37,7 @@ def registry_to_sdk_hooks(
 
 
 def _entry_to_matcher(entry: HookEntry) -> HookMatcher:
-    """Конвертировать HookEntry → SDK HookMatcher."""
+    """Convert HookEntry into an SDK HookMatcher."""
     sdk_callback = _wrap_callback(entry.callback)
     return HookMatcher(
         matcher=entry.matcher or None,
@@ -46,7 +46,7 @@ def _entry_to_matcher(entry: HookEntry) -> HookMatcher:
 
 
 def _wrap_callback(cognitia_callback: Any) -> Any:
-    """Обернуть cognitia callback в SDK-совместимый HookCallback.
+    """Wrap a cognitia callback into an SDK-compatible HookCallback.
 
     SDK HookCallback signature: (input: HookInput, tool_use_id: str | None, context: HookContext) -> HookJSONOutput
     Cognitia callback signature: (**kwargs) -> dict | None
@@ -57,7 +57,7 @@ def _wrap_callback(cognitia_callback: Any) -> Any:
         tool_use_id: str | None,
         context: dict[str, Any],
     ) -> dict[str, Any]:
-        # Передаём все поля hook_input как kwargs в cognitia callback
+        # Pass all hook_input fields as kwargs to the cognitia callback
         result = await cognitia_callback(**hook_input)
         if result is None:
             return {"continue_": True}

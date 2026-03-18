@@ -1,4 +1,4 @@
-"""HITL/interrupt helpers для DeepAgents native path."""
+"""HITL/interrupt helpers for DeepAgents native path."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from cognitia.runtime.types import RuntimeErrorData, RuntimeEvent
 def validate_hitl_config(
     native_config: dict[str, Any],
 ) -> RuntimeErrorData | None:
-    """Проверить, что interrupt/hitl config совместим с native graph state."""
+    """Validate hitl config."""
     if native_config.get("interrupt_on") and native_config.get("checkpointer") is None:
         return RuntimeErrorData(
             kind="capability_unsupported",
@@ -24,7 +24,7 @@ def validate_hitl_config(
 
 
 def build_interrupt_events(chunk: dict[str, Any]) -> list[RuntimeEvent]:
-    """Преобразовать LangGraph __interrupt__ chunk в portable RuntimeEvent list."""
+    """Build interrupt events."""
     interrupts = chunk.get("__interrupt__") or ()
     events: list[RuntimeEvent] = []
 

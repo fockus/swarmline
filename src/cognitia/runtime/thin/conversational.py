@@ -1,4 +1,4 @@
-"""Conversational strategy — single LLM call -> final."""
+"""Conversational strategy - single LLM call -> final."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ async def run_conversational(
     checkpoint: CheckpointFn | None = None,
     on_retry: Callable[[int, float], None] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
-    """Single LLM call -> final. С поддержкой token streaming."""
+    """Run conversational."""
     prompt = build_conversational_prompt(
         append_structured_output_instruction(
             system_prompt,
@@ -116,7 +116,7 @@ async def run_conversational(
             yield event
         return
 
-    # Пробуем streaming
+
     try:
         checkpoint_event = await _run_checkpoint(checkpoint)
         if checkpoint_event is not None:
@@ -139,7 +139,7 @@ async def run_conversational(
         for chunk in chunks:
             yield RuntimeEvent.assistant_delta(chunk)
 
-        # Парсим envelope из собранного текста
+
         envelope = parse_envelope(raw)
         if envelope is not None and envelope.type == "final" and envelope.final_message:
             text = envelope.final_message
@@ -155,7 +155,7 @@ async def run_conversational(
                 yield event
             return
 
-        # Streaming завершился, но envelope некорректный -- fallback
+
         try:
             checkpoint_event = await _run_checkpoint(checkpoint)
             if checkpoint_event is not None:

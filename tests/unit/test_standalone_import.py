@@ -1,6 +1,4 @@
-"""Smoke test: cognitia importable standalone (без freedom_agent в sys.path).
-
-Iteration 4: E2E-уровень — проверяем что библиотека не имеет обратных зависимостей.
+"""Smoke test: cognitia importable standalone (without freedom_agent in sys.path). Iteration 4: E2E-uroven - verify chto library not imeet obratnyh zavisimostey.
 """
 
 from __future__ import annotations
@@ -10,11 +8,11 @@ import sys
 
 
 class TestStandaloneImport:
-    """cognitia можно импортировать без freedom_agent."""
+    """cognitia mozhno importirovat without freedom_agent."""
 
     def test_import_cognitia_without_freedom_agent(self) -> None:
-        """import cognitia работает без freedom_agent в sys.path."""
-        # Запускаем subprocess где freedom_agent НЕ добавлен в PYTHONPATH
+        """import cognitia works without freedom_agent in sys.path."""
+        # Run subprocess gde freedom_agent NE dobavlen in PYTHONPATH
         result = subprocess.run(
             [
                 sys.executable,
@@ -43,7 +41,7 @@ class TestStandaloneImport:
         assert "OK" in result.stdout
 
     def test_no_reverse_dependency_in_source(self) -> None:
-        """Исходный код cognitia не содержит imports из freedom_agent."""
+        """Ishodnyy kod cognitia not contains imports from freedom_agent."""
         import pathlib
 
         cognitia_src = pathlib.Path(__file__).parent.parent.parent / "src" / "cognitia"
@@ -53,7 +51,7 @@ class TestStandaloneImport:
             content = py_file.read_text(encoding="utf-8")
             for i, line in enumerate(content.splitlines(), 1):
                 stripped = line.strip()
-                # Пропускаем комментарии
+                # Propuskaem kommentarii
                 if stripped.startswith("#"):
                     continue
                 if "freedom_agent" in stripped:
@@ -64,7 +62,7 @@ class TestStandaloneImport:
         ), "Найдены обратные зависимости cognitia → freedom_agent:\n" + "\n".join(violations)
 
     def test_no_domain_leaks(self) -> None:
-        """cognitia не содержит domain-specific строк (PF5, finance, Freedom)."""
+        """cognitia not contains domain-specific strok (PF5, finance, Freedom)."""
         import pathlib
 
         cognitia_src = pathlib.Path(__file__).parent.parent.parent / "src" / "cognitia"

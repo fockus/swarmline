@@ -1,4 +1,4 @@
-"""Тесты для sdk_tools — in-process MCP tools wrapper."""
+"""Tests for sdk_tools - in-process MCP tools wrapper."""
 
 import pytest
 
@@ -7,10 +7,10 @@ from cognitia.runtime.sdk_tools import create_mcp_server, mcp_tool
 
 
 class TestMcpTool:
-    """@mcp_tool декоратор — обёртка над SDK @tool."""
+    """@mcp_tool dekorator - obertka nad SDK @tool."""
 
     def test_decorator_returns_sdk_mcp_tool(self) -> None:
-        """@mcp_tool возвращает SdkMcpTool."""
+        """@mcp_tool returns SdkMcpTool."""
 
         @mcp_tool("greet", "Greet user", {"name": str})
         async def greet(args):
@@ -20,7 +20,7 @@ class TestMcpTool:
         assert greet.description == "Greet user"
 
     def test_decorator_preserves_handler(self) -> None:
-        """Handler сохраняется в SdkMcpTool."""
+        """Handler is preserved in SdkMcpTool."""
 
         @mcp_tool("add", "Add two numbers", {"a": float, "b": float})
         async def add(args):
@@ -30,7 +30,7 @@ class TestMcpTool:
 
     @pytest.mark.asyncio
     async def test_handler_callable(self) -> None:
-        """Handler вызывается корректно."""
+        """Handler vyzyvaetsya correctly."""
 
         @mcp_tool("echo", "Echo input", {"text": str})
         async def echo(args):
@@ -41,10 +41,10 @@ class TestMcpTool:
 
 
 class TestCreateMcpServer:
-    """create_mcp_server — обёртка над SDK create_sdk_mcp_server."""
+    """create_mcp_server - obertka nad SDK create_sdk_mcp_server."""
 
     def test_creates_sdk_config(self) -> None:
-        """create_mcp_server возвращает McpSdkServerConfig."""
+        """create_mcp_server returns McpSdkServerConfig."""
 
         @mcp_tool("test_tool", "Test", {"x": str})
         async def test_tool(args):
@@ -57,17 +57,17 @@ class TestCreateMcpServer:
         assert "instance" in config
 
     def test_empty_tools_creates_server(self) -> None:
-        """Сервер без инструментов — валидный."""
+        """Server without toolov - valid."""
         config = create_mcp_server("empty_server")
         assert config["type"] == "sdk"
 
     def test_custom_version(self) -> None:
-        """Кастомная версия сервера."""
+        """Kastomnaya versiya servera."""
         config = create_mcp_server("versioned", version="2.0.0")
         assert config["type"] == "sdk"
 
     def test_multiple_tools(self) -> None:
-        """Сервер с несколькими инструментами."""
+        """Server with notskolkimi toolami."""
 
         @mcp_tool("tool_a", "Tool A", {"x": str})
         async def tool_a(args):

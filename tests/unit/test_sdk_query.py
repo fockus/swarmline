@@ -1,4 +1,4 @@
-"""Тесты для sdk_query — one-shot query wrapper."""
+"""Tests for sdk_query - one-shot query wrapper."""
 
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -125,11 +125,11 @@ def _make_sdk_tool_result_block(content: Any = "4") -> MagicMock:
 
 
 class TestOneShotQuery:
-    """one_shot_query — обёртка над SDK query() с cognitia типами."""
+    """one_shot_query - obertka nad SDK query() with cognitia tipami."""
 
     @pytest.mark.asyncio
     async def test_basic_query_returns_text(self) -> None:
-        """Базовый запрос возвращает текстовый ответ."""
+        """Basic query returns tekstovyy response."""
 
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("42")])
@@ -142,7 +142,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_returns_session_id(self) -> None:
-        """Результат содержит session_id."""
+        """Result contains session_id."""
 
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
@@ -155,7 +155,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_returns_cost(self) -> None:
-        """Результат содержит total_cost_usd."""
+        """Result contains total_cost_usd."""
 
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
@@ -168,7 +168,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_returns_structured_output(self) -> None:
-        """Результат содержит structured_output."""
+        """Result contains structured_output."""
         struct = {"answer": "42"}
 
         async def fake_query(**kwargs):
@@ -182,7 +182,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_with_system_prompt(self) -> None:
-        """system_prompt передаётся в SDK."""
+        """system_prompt peredaetsya in SDK."""
         captured_options = {}
 
         async def fake_query(**kwargs):
@@ -197,7 +197,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_with_model(self) -> None:
-        """model передаётся в SDK."""
+        """model peredaetsya in SDK."""
         captured_options = {}
 
         async def fake_query(**kwargs):
@@ -212,7 +212,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_with_hooks(self) -> None:
-        """hooks передаются в SDK options."""
+        """hooks are passed in SDK options."""
         captured_options = {}
         hooks = {"PreToolUse": []}
 
@@ -228,7 +228,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_query_with_extended_sdk_options(self) -> None:
-        """budget/fallback/betas/env/setting_sources передаются в SDK."""
+        """budget/fallback/betas/env/setting_sources are passed in SDK."""
         captured_options = {}
 
         async def fake_query(**kwargs):
@@ -255,7 +255,7 @@ class TestOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_no_result_message_raises_runtime_error(self) -> None:
-        """Если нет ResultMessage — one_shot_query не считает это success."""
+        """If nott ResultMessage - one_shot_query not schitaet eto success."""
 
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("partial")])
@@ -401,7 +401,7 @@ class TestStreamOneShotQuery:
 
     @pytest.mark.asyncio
     async def test_stream_without_result_message_emits_error(self) -> None:
-        """Без ResultMessage stream_one_shot_query возвращает error, а не done."""
+        """Without ResultMessage stream_one_shot_query returns error, a not done."""
 
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("partial")])

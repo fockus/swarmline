@@ -1,7 +1,5 @@
-"""Integration: live smoke тесты для web search/fetch провайдеров.
-
-Выполняют реальные сетевые запросы. Пропускаются если зависимость не установлена.
-Маркеры: @pytest.mark.integration, @pytest.mark.live.
+"""Integration: live smoke tests for web search/fetch provayderov. Vypolnyayut real setevye queries. Propuskayutsya if zavisimost not ustanovlena.
+Markery: @pytest.mark.integration, @pytest.mark.live.
 """
 
 from __future__ import annotations
@@ -13,7 +11,7 @@ pytestmark = pytest.mark.live
 from cognitia.tools.web_httpx import HttpxWebProvider, _extract_text  # noqa: E402
 from cognitia.tools.web_protocols import SearchResult  # noqa: E402
 
-# Проверяем доступность ddgs
+# Verify dostupnost ddgs
 try:
     from ddgs import DDGS as _DDGS
 
@@ -24,11 +22,11 @@ except ImportError:
 
 @pytest.mark.integration
 class TestDdgsLiveSearch:
-    """Live поиск через ddgs (реальный сетевой запрос)."""
+    """Live poisk cherez ddgs (real setevoy query)."""
 
     @pytest.mark.skipif(not _HAS_DDGS, reason="ddgs не установлен")
     async def test_ddgs_returns_real_results(self) -> None:
-        """ddgs возвращает >0 реальных результатов на простой запрос."""
+        """ddgs returns >0 realnyh resultov on simple query."""
         from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
         provider = DuckDuckGoSearchProvider(timeout=15)
@@ -41,7 +39,7 @@ class TestDdgsLiveSearch:
 
     @pytest.mark.skipif(not _HAS_DDGS, reason="ddgs не установлен")
     async def test_ddgs_russian_query(self) -> None:
-        """ddgs корректно обрабатывает русскоязычные запросы."""
+        """ddgs correctly obrabatyvaet russkoyazychnye queries."""
         from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
         provider = DuckDuckGoSearchProvider(timeout=15)
@@ -52,32 +50,32 @@ class TestDdgsLiveSearch:
 
 @pytest.mark.integration
 class TestDefaultFetchLive:
-    """Live fetch через httpx (реальный сетевой запрос)."""
+    """Live fetch cherez httpx (real setevoy query)."""
 
     async def test_fetch_returns_content(self) -> None:
-        """httpx fetch возвращает непустой контент."""
+        """httpx fetch returns notempty kontent."""
         web = HttpxWebProvider()
         content = await web.fetch("https://httpbin.org/html")
 
         assert len(content) > 100, "Контент слишком короткий"
 
     async def test_fetch_no_html_tags(self) -> None:
-        """Результат fetch не содержит HTML тегов."""
+        """Result fetch not contains HTML tegov."""
         web = HttpxWebProvider()
         content = await web.fetch("https://httpbin.org/html")
 
         assert "<script" not in content.lower()
         assert "<style" not in content.lower()
-        # Некоторые <a> могут остаться от trafilatura include_links, но <div>/<p> — нет
+        # Notkotorye <a> mogut ostatsya ot trafilatura include_links, no <div>/<p> - nott
         assert "<div" not in content.lower()
 
 
 @pytest.mark.integration
 class TestExtractTextQuality:
-    """Качество извлечения текста из HTML."""
+    """Kachestvo izvlecheniya teksta from HTML."""
 
     def test_real_html_script_removed(self) -> None:
-        """JavaScript код удаляется из реального HTML."""
+        """JavaScript kod udalyaetsya from realnogo HTML."""
         html = """
         <html>
         <head><script>

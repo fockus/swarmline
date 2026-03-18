@@ -1,10 +1,4 @@
-"""Workflow executors — runtime adapters для WorkflowGraph.
-
-ThinWorkflowExecutor: запускает ThinRuntime per-node.
-ThinRuntimeExecutor: выполняет workflow nodes напрямую (без LLM).
-MixedRuntimeExecutor: routing nodes по runtime_map.
-compile_to_langgraph_spec: структурная компиляция в LangGraph-совместимый spec.
-"""
+"""Workflow Executor module."""
 
 from __future__ import annotations
 
@@ -24,7 +18,7 @@ async def _parallel_entry_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 class ThinWorkflowExecutor:
-    """Запускает ThinRuntime per-node для workflow execution."""
+    """Thin Workflow Executor implementation."""
 
     def __init__(
         self,
@@ -45,7 +39,7 @@ class ThinWorkflowExecutor:
         task: str,
         state: dict[str, Any],
     ) -> str:
-        """Выполнить один node через ThinRuntime. Возвращает финальный текст."""
+        """Run node."""
         runtime = ThinRuntime(
             config=self._runtime_config,
             llm_call=self._llm_call,
@@ -63,34 +57,21 @@ class ThinWorkflowExecutor:
 
 
 class ThinRuntimeExecutor:
-    """Выполняет WorkflowGraph nodes напрямую через node functions.
-
-    Thin runtime: node functions вызываются как есть, без LLM overhead.
-    Используется когда nodes — Python functions, а не LLM prompts.
-    """
+    """Thin Runtime Executor implementation."""
 
     async def run(self, wf: WorkflowGraph, initial_state: State) -> State:
-        """Выполнить граф, вызывая node functions напрямую."""
+        """Run."""
         return await wf.execute(initial_state)
 
 
 class MixedRuntimeExecutor:
-    """Выполняет WorkflowGraph с observability metadata по runtime_map.
-
-    Executor не маршрутизирует выполнение между runtime'ами: он исполняет nodes
-    обычным механизмом WorkflowGraph и только записывает, какой runtime был
-    ассоциирован с node_id для observability.
-    """
+    """Mixed Runtime Executor implementation."""
 
     def __init__(self, runtime_map: dict[str, str]) -> None:
         self._runtime_map = runtime_map
 
     async def run(self, wf: WorkflowGraph, initial_state: State) -> State:
-        """Выполнить граф с observability metadata per node.
-
-        Uses WorkflowGraph.execute(node_interceptor=...) to wrap each node
-        execution and record runtime metadata without changing dispatch.
-        """
+        """Run."""
 
         async def _observability_interceptor(node_id: str, state: State) -> State:
             runtime_name = self._runtime_map.get(node_id, "thin")
@@ -133,11 +114,7 @@ def _build_active_tools(local_tools: dict[str, Callable[..., Any]]) -> list[Tool
 
 
 def compile_to_langgraph_spec(wf: WorkflowGraph) -> dict[str, Any]:
-    """Компилировать WorkflowGraph в LangGraph-совместимый spec.
-
-    Возвращает dict с nodes, edges, entry — достаточно для
-    конструирования LangGraph StateGraph (zero overhead pass-through).
-    """
+    """Compile to langgraph spec."""
     nodes: dict[str, Any] = {}
     for node_id, node_fn in wf._nodes.items():
         nodes[node_id] = node_fn

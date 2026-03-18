@@ -1,7 +1,7 @@
-"""SearXNG search provider — self-hosted метапоисковик.
+"""SearXNG search provider - self-hosted metasearch engine.
 
-Требует URL инстанса SearXNG (SEARXNG_URL).
-Зависимость: httpx (уже в cognitia[web]).
+Requires a SearXNG instance URL (SEARXNG_URL).
+Dependency: httpx (already included in cognitia[web]).
 """
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ _log = structlog.get_logger(component="web_search.searxng")
 
 
 class SearXNGSearchProvider:
-    """Поиск через SearXNG (self-hosted, без ограничений).
+    """Search via SearXNG (self-hosted, no limits).
 
-    Подключается к пользовательскому инстансу SearXNG по URL.
+    Connects to a user-provided SearXNG instance by URL.
     """
 
     def __init__(self, base_url: str, timeout: int = 15) -> None:
@@ -27,14 +27,14 @@ class SearXNGSearchProvider:
         self._timeout = timeout
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
-        """Поиск через SearXNG JSON API.
+        """Search via the SearXNG JSON API.
 
         Args:
-            query: Поисковый запрос. Пустой/whitespace -> пустой список.
-            max_results: Максимальное количество результатов.
+            query: Search query. Empty/whitespace -> empty list.
+            max_results: Maximum number of results.
 
         Returns:
-            Список SearchResult. Пустой при ошибке подключения.
+            List of SearchResult. Empty on connection error.
         """
         if not query or not query.strip():
             return []

@@ -22,7 +22,7 @@ class TestMiddlewareProtocol:
 
     @pytest.mark.asyncio
     async def test_default_before_query_passthrough(self) -> None:
-        """Базовый класс пропускает prompt без изменений."""
+        """The Basic class skips the prompt without changing."""
 
         class NoopMiddleware(Middleware):
             pass
@@ -34,7 +34,7 @@ class TestMiddlewareProtocol:
 
     @pytest.mark.asyncio
     async def test_default_after_result_passthrough(self) -> None:
-        """Базовый класс пропускает Result без изменений."""
+        """The Basic class passes Result without modification."""
 
         class NoopMiddleware(Middleware):
             pass
@@ -53,11 +53,11 @@ class TestMiddlewareProtocol:
 
 
 class TestMiddlewareChainOrder:
-    """Middleware вызываются в порядке регистрации."""
+    """Middleware are called in order of registration."""
 
     @pytest.mark.asyncio
     async def test_before_query_chain_order(self) -> None:
-        """Middleware применяются последовательно к prompt."""
+        """Middleware is applied sequentially to prompt."""
         log: list[str] = []
 
         class MW1(Middleware):
@@ -82,7 +82,7 @@ class TestMiddlewareChainOrder:
 
     @pytest.mark.asyncio
     async def test_after_result_chain_order(self) -> None:
-        """after_result middleware применяются последовательно."""
+        """after_result middleware is applied sequentially."""
 
         class AddTag(Middleware):
             def __init__(self, tag: str) -> None:
@@ -107,7 +107,7 @@ class TestMiddlewareChainOrder:
 
 
 class TestCostTracker:
-    """CostTracker — бюджетный контроль."""
+    """CostTracker - budget control."""
 
     @pytest.mark.asyncio
     async def test_accumulates_cost(self) -> None:
@@ -150,7 +150,7 @@ class TestCostTracker:
 
     @pytest.mark.asyncio
     async def test_none_cost_ignored(self) -> None:
-        """Result без cost (None) — не ломает трекер."""
+        """Result without cost (None) - does not break the tracker."""
         tracker = CostTracker(budget_usd=10.0)
         r = Result(text="no cost")
         result = await tracker.after_result(r)
@@ -164,10 +164,10 @@ class TestCostTracker:
 
 
 class TestSecurityGuard:
-    """SecurityGuard — блокировка опасных паттернов."""
+    """SecurityGuard - blocking dangerous patterns."""
 
     def test_hooks_registered(self) -> None:
-        """get_hooks() возвращает HookRegistry с PreToolUse."""
+        """get_hooks() returns HookRegistry with PreToolUse."""
         guard = SecurityGuard(block_patterns=["rm -rf"])
         hooks = guard.get_hooks()
         assert hooks is not None
@@ -176,7 +176,7 @@ class TestSecurityGuard:
 
     @pytest.mark.asyncio
     async def test_blocks_dangerous_pattern(self) -> None:
-        """Hook блокирует rm -rf в tool input."""
+        """Hook blocks rm -rf in tool input."""
         guard = SecurityGuard(block_patterns=["rm -rf"])
         hooks = guard.get_hooks()
         assert hooks is not None
@@ -194,7 +194,7 @@ class TestSecurityGuard:
 
     @pytest.mark.asyncio
     async def test_allows_safe_command(self) -> None:
-        """Безопасные команды проходят."""
+        """Without dangerous commands pass."""
         guard = SecurityGuard(block_patterns=["rm -rf"])
         hooks = guard.get_hooks()
         assert hooks is not None
@@ -210,7 +210,7 @@ class TestSecurityGuard:
 
     @pytest.mark.asyncio
     async def test_multiple_patterns(self) -> None:
-        """Несколько паттернов — любой матчит → block."""
+        """Not how many patterns - any match -> block."""
         guard = SecurityGuard(block_patterns=["rm -rf", "DROP TABLE", "chmod 777"])
         hooks = guard.get_hooks()
         assert hooks is not None

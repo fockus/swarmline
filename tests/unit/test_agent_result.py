@@ -1,4 +1,4 @@
-"""Unit: Result — unified результат запроса Agent facade."""
+"""Unit: Result - unified result query Agent facade."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from cognitia.agent.result import Result
 
 
 class TestResultDefaults:
-    """Пустой Result."""
+    """Empty Result."""
 
     def test_empty_result(self) -> None:
         r = Result()
@@ -28,7 +28,7 @@ class TestResultDefaults:
 
 
 class TestResultWithMetrics:
-    """Result с метриками."""
+    """Result with metrics."""
 
     def test_full_metrics(self) -> None:
         r = Result(
@@ -54,7 +54,7 @@ class TestResultStructuredOutput:
         assert r.structured_output == {"score": 85, "confidence": 0.92}
 
     def test_structured_output_with_text(self) -> None:
-        """structured_output и text могут сосуществовать."""
+        """structured_output and text can coexist."""
         r = Result(
             text="Score: 85",
             structured_output={"score": 85},
@@ -84,7 +84,7 @@ class TestResultError:
         assert r.text == ""
 
     def test_error_with_partial_text(self) -> None:
-        """Ошибка может содержать частичный текст."""
+        """Error may contain partial text."""
         r = Result(text="partial...", error="connection lost")
         assert r.ok is False
         assert r.text == "partial..."

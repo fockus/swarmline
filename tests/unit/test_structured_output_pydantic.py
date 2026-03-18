@@ -1,4 +1,4 @@
-"""Unit-тесты: Pydantic-based structured output — validate, extract schema, retry."""
+"""Unit-tests: Pydantic-based structured output - validate, extract schema, retry."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ class ModelWithOptional(BaseModel):
 
 
 class TestValidateStructuredOutput:
-    """validate_structured_output парсит JSON и валидирует через Pydantic."""
+    """validate_structured_output parsit JSON and validiruet cherez Pydantic."""
 
     def test_validate_valid_json_returns_model(self) -> None:
         result = validate_structured_output('{"name": "Alice", "age": 30}', SimpleModel)
@@ -94,7 +94,7 @@ class TestValidateStructuredOutput:
 
 
 class TestExtractPydanticSchema:
-    """extract_pydantic_schema возвращает JSON Schema из Pydantic модели."""
+    """extract_pydantic_schema returns JSON Schema from Pydantic models."""
 
     def test_extract_pydantic_schema_basic(self) -> None:
         schema = extract_pydantic_schema(SimpleModel)
@@ -125,7 +125,7 @@ class TestExtractPydanticSchema:
 
 
 class TestRuntimeConfigOutputType:
-    """RuntimeConfig(output_type=Model) автоматически заполняет output_format."""
+    """RuntimeConfig(output_type=Model) avtomaticheski zapolnyaet output_format."""
 
     def test_runtime_config_output_type_generates_schema(self) -> None:
         cfg = RuntimeConfig(
@@ -137,7 +137,7 @@ class TestRuntimeConfigOutputType:
         assert "name" in cfg.output_format["properties"]
 
     def test_runtime_config_output_format_backward_compat(self) -> None:
-        """output_format без output_type работает как раньше."""
+        """output_format without output_type works kak ranshe."""
         manual_schema: dict[str, Any] = {
             "type": "object",
             "properties": {"x": {"type": "integer"}},
@@ -150,7 +150,7 @@ class TestRuntimeConfigOutputType:
         assert cfg.output_type is None
 
     def test_runtime_config_output_format_not_overridden_by_output_type(self) -> None:
-        """Если output_format уже задан, output_type НЕ перезаписывает его."""
+        """If output_format uzhe zadan, output_type NE overwrites ego."""
         manual_schema: dict[str, Any] = {"type": "object", "properties": {}}
         cfg = RuntimeConfig(
             runtime_name="thin",
@@ -166,10 +166,10 @@ class TestRuntimeConfigOutputType:
 
 
 class TestTryResolveStructuredOutput:
-    """try_resolve_structured_output: (result, error) tuple для retry logic."""
+    """try_resolve_structured_output: (result, error) tuple for retry logic."""
 
     def test_retry_on_invalid_then_success(self) -> None:
-        """Невалидный текст -> (None, error), валидный -> (model, None)."""
+        """Invalid tekst -> (None, error), valid -> (model, None)."""
         # First attempt: invalid
         result, error = try_resolve_structured_output(
             "not json", {"type": "object"}, SimpleModel
@@ -188,7 +188,7 @@ class TestTryResolveStructuredOutput:
         assert result.name == "Alice"
 
     def test_retry_max_exceeded_returns_error(self) -> None:
-        """Все попытки невалидные -> каждая возвращает (None, error)."""
+        """Vse popytki invalid -> kazhdaya returns (None, error)."""
         attempts = 3
         for _ in range(attempts):
             result, error = try_resolve_structured_output(
@@ -198,7 +198,7 @@ class TestTryResolveStructuredOutput:
             assert error is not None
 
     def test_resolve_without_output_type_no_error(self) -> None:
-        """Без output_type — fallback на extract, ошибок не бывает."""
+        """Without output_type - fallback on extract, oshibok not byvaet."""
         result, error = try_resolve_structured_output(
             '{"x": 42}', {"type": "object"}, None
         )
@@ -206,7 +206,7 @@ class TestTryResolveStructuredOutput:
         assert result == {"x": 42}
 
     def test_resolve_validation_error_returns_error_message(self) -> None:
-        """JSON валидный, но не матчит schema -> error message."""
+        """JSON valid, no not matchit schema -> error message."""
         result, error = try_resolve_structured_output(
             '{"wrong": "field"}', {"type": "object"}, SimpleModel
         )

@@ -1,4 +1,4 @@
-"""Типы для code verification pipeline."""
+"""Types for code verification pipeline."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ class VerificationStatus(str, Enum):
 
 @dataclass(frozen=True, slots=True)
 class CheckDetail:
-    """Результат одной проверки в verification pipeline."""
+    """Result of a single check in the verification pipeline."""
 
     name: str
     status: VerificationStatus
@@ -23,7 +23,7 @@ class CheckDetail:
 
 @dataclass(frozen=True, slots=True)
 class VerificationResult:
-    """Агрегированный результат verification pipeline."""
+    """Aggregated result of the verification pipeline."""
 
     status: VerificationStatus
     checks: tuple[CheckDetail, ...] = ()

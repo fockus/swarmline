@@ -1,4 +1,4 @@
-"""Integration: portable matrix для full runtimes."""
+"""Integration: portable matrix for full runtimes."""
 
 from __future__ import annotations
 

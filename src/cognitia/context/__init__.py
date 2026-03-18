@@ -1,4 +1,4 @@
-"""Модуль контекста — сборка system_prompt с бюджетированием."""
+"""Context module - system_prompt assembly with budgeting."""
 
 from cognitia.context.budget import ContextBudget, estimate_tokens, truncate_to_budget
 from cognitia.context.builder import (

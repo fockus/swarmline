@@ -1,7 +1,5 @@
-"""Integration: ThinTeamOrchestrator + MessageBus + ThinSubagentOrchestrator.
-
-2 workers spawn, выполняются через fake LLM, завершаются.
-send_message через MessageBus: один worker -> bus -> inbox другого.
+"""Integration: ThinTeamOrchestrator + MessageBus + ThinSubagentOrchestrator. 2 workers spawn, run cherez fake LLM, zavershayutsya.
+send_message cherez MessageBus: odin worker -> bus -> inbox drugogo.
 """
 
 from __future__ import annotations
@@ -28,7 +26,7 @@ class TestThinSubagentTeamMessageBus:
         async def fast_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            """Fake LLM: мгновенный final ответ."""
+            """Fake LLM: mgnovennyy final response."""
             await asyncio.sleep(0.05)
             return json.dumps({"type": "final", "final_message": "worker done"})
 
@@ -49,7 +47,7 @@ class TestThinSubagentTeamMessageBus:
 
         team_id = await orch.start(config, task="Analyze market trends")
 
-        # Ждем завершения workers (с timeout)
+        # ZHdem zaversheniya workers (with timeout)
         for _ in range(50):
             status = await orch.get_team_status(team_id)
             if status.state == "completed":
@@ -58,14 +56,14 @@ class TestThinSubagentTeamMessageBus:
 
         status = await orch.get_team_status(team_id)
 
-        # Workers populated и завершены
+        # Workers populated and zaversheny
         assert status.state == "completed"
         assert "researcher" in status.workers
         assert "writer" in status.workers
         assert status.workers["researcher"].state == "completed"
         assert status.workers["writer"].state == "completed"
 
-        # MessageBus: отправляем сообщение и проверяем inbox
+        # MessageBus: otpravlyaem message and verify inbox
         bus = orch.get_message_bus(team_id)
         assert bus is not None
 

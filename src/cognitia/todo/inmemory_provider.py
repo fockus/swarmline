@@ -1,7 +1,7 @@
-"""InMemoryTodoProvider — session-scoped todo storage.
+"""InMemoryTodoProvider - session-scoped todo storage.
 
-Данные живут в памяти процесса. Multi-tenant: каждый экземпляр
-создаётся для конкретного user_id + topic_id.
+Data lives in process memory. Multi-tenant: each instance
+is created for a specific user_id + topic_id.
 """
 
 from __future__ import annotations
@@ -10,9 +10,9 @@ from cognitia.todo.types import TodoItem
 
 
 class InMemoryTodoProvider:
-    """Todo storage в памяти (session-scoped).
+    """In-memory todo storage (session-scoped).
 
-    Каждый экземпляр — отдельный namespace (user_id + topic_id).
+    Each instance is a separate namespace (user_id + topic_id).
     """
 
     def __init__(
@@ -27,11 +27,11 @@ class InMemoryTodoProvider:
         self._todos: list[TodoItem] = []
 
     async def read_todos(self) -> list[TodoItem]:
-        """Прочитать все todos."""
+        """Read all todos."""
         return list(self._todos)
 
     async def write_todos(self, todos: list[TodoItem]) -> None:
-        """Записать todos (bulk replace)."""
+        """Write todos (bulk replace)."""
         if len(todos) > self._max_todos:
             msg = f"Превышен лимит max_todos ({self._max_todos}), передано {len(todos)}"
             raise ValueError(msg)
