@@ -307,3 +307,24 @@
   - `ruff check tests/integration/test_docs_examples_consistency.py` → green
   - `mkdocs build --strict` → green
   - `git diff --check` → green
+
+## 2026-03-19 02:25 MSK — Docs site visual pass pushed into steel/minimal direction
+
+- Reworked the docs landing around a more product-like visual language:
+  - new `docs/index.md` with a strong hero, runtime matrix, capability grid, use-case grid, guided quick-start path, and clearer CTA structure
+  - thin mono SVG iconography throughout feature/runtime/docs cards
+  - new scroll-reveal behavior in `docs/assets/site.js`
+- Strengthened the site chrome in `docs/assets/extra.css`:
+  - frosted steel header/tabs/search
+  - higher-contrast card hierarchy and hover motion
+  - more editorial spacing and grid rhythm
+  - responsive fixes for the homepage hero
+- Fixed a confirmed mobile bug where the hero title overflowed horizontally by forcing hero grid children to shrink correctly and reducing mobile hero typography.
+- Visual smoke checked in browser against the rebuilt site:
+  - desktop dark homepage
+  - desktop light homepage
+  - mobile homepage
+- Verification:
+  - `mkdocs build --strict` → green
+  - `pytest -q tests/integration/test_docs_examples_consistency.py` → `8 passed`
+  - `git diff --check` → green

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Cognitia** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 0.5.0, Python 3.10+.
+**Cognitia** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.0.0, Python 3.10+.
 
 ## Commands
 

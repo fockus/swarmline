@@ -1,7 +1,7 @@
-"""DeepAgentsPlannerMode - PlannerMode via LangGraph Plan-and-Execute pattern.
+"""DeepAgentsPlannerMode — PlannerMode via LangGraph Plan-and-Execute pattern.
 
-Uses the same LLM-interface as and ThinPlannerMode, but
-Prand onland and langchain can and can use on-demand graph nodes.
+Uses the same LLM interface as ThinPlannerMode, but
+if there is a langchain, it can use native graph nodes.
 
 Optional dependency: langchain-core.
 """
@@ -21,10 +21,10 @@ from cognitia.orchestration.types import ApprovalSource, Plan, PlanStep
 class DeepAgentsPlannerMode:
     """PlannerMode for DeepAgents runtime.
 
-  Structurally combined with ThinPlannerMode (LSP).
-  Prand onlandand langchain and uses LangGraph nodes;
-  prand absentinandand - fallback on direct LLM calls.
-  """
+    Structurally compatible with ThinPlannerMode (LSP).
+    If available, langchain uses LangGraph nodes;
+    in the absence — fallback on direct LLM calls.
+    """
 
     def __init__(
         self,
@@ -59,13 +59,13 @@ class DeepAgentsPlannerMode:
         return plan
 
     async def approve(self, plan: Plan, by: ApprovalSource) -> Plan:
-        """Approve plan."""
+        """Approve the plan."""
         approved = plan.approve(by=by)
         await self._store.save(approved)
         return approved
 
     async def execute_step(self, plan: Plan, step_id: str) -> PlanStep:
-        """Execute step."""
+        """Perform one step."""
         step = next((s for s in plan.steps if s.id == step_id), None)
         if step is None:
             msg = f"Шаг '{step_id}' не найден"
@@ -89,7 +89,7 @@ class DeepAgentsPlannerMode:
         return updated
 
     async def execute_all(self, plan: Plan) -> AsyncIterator[PlanStep]:
-        """Execute all."""
+        """Complete all steps."""
         plan = plan.start_execution() if plan.status == "approved" else plan
         await self._store.save(plan)
         execution_failed = False
@@ -108,6 +108,6 @@ class DeepAgentsPlannerMode:
             await self._store.save(plan)
 
     async def replan(self, plan: Plan, feedback: str) -> Plan:
-        """Regenerate plan."""
+        """Regenerate the plan."""
         context = f"Предыдущий: {plan.goal}, feedback: {feedback}"
         return await self.generate_plan(plan.goal, context)
