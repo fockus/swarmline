@@ -1,9 +1,4 @@
-"""NDJSON parsers for CLI Agent Runtime.
-
-NdjsonParser Protocol (1 method, ISP-compliant) + two implementations:
-- ClaudeNdjsonParser: maps Claude Code stream-json NDJSON to RuntimeEvent
-- GenericNdjsonParser: wraps raw JSON as RuntimeEvent (fallback)
-"""
+"""NDJSON parsers for CLI Agent Runtime."""
 
 from __future__ import annotations
 
