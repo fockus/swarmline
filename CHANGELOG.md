@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-core] - 2026-03-18
+
+### Added
+- **Session Backends** (`cognitia.session.backends`)
+  - `SessionBackend` Protocol for pluggable session persistence
+  - `InMemorySessionBackend` for development and testing
+  - `SqliteSessionBackend` with `asyncio.to_thread()` for non-blocking I/O
+- **Memory Scopes** (`cognitia.memory.scopes`)
+  - `MemoryScope` enum (`GLOBAL`/`AGENT`/`SHARED`) with `scoped_key()` namespace isolation
+- **Event Bus** (`cognitia.observability.event_bus`)
+  - `EventBus` Protocol with fire-and-forget pub-sub
+  - `InMemoryEventBus` implementation with topic-based subscription
+- **Tracing** (`cognitia.observability.tracing`)
+  - `Tracer` Protocol, `NoopTracer`, `ConsoleTracer` (structlog-based)
+  - `TracingSubscriber` bridge connecting EventBus to Tracer
+  - ThinRuntime emits `llm_call_start/end`, `tool_call_start/end` events via EventBus
+- **UI Projection** (`cognitia.ui.projection`)
+  - `EventProjection` Protocol, `ChatProjection` implementation
+  - `project_stream` async generator for real-time UI updates
+  - UI blocks: `TextBlock`, `ToolCallBlock`, `ToolResultBlock`, `ErrorBlock`
+  - `UIState.to_dict()`/`from_dict()` serialization for frontend transport
+- **RAG** (`cognitia.rag`)
+  - `Retriever` Protocol, `Document` frozen dataclass
+  - `SimpleRetriever` (word-overlap scoring for development and testing)
+  - `RagInputFilter` implementing `InputFilter` — auto-wraps via `RuntimeConfig.retriever`
+
+## [0.7.0] - 2026-03-18
+
+### Added
+- **Cost Budget Tracking** (`cognitia.runtime.cost`)
+  - `CostBudget` and `CostTracker` for per-session budget enforcement
+  - Bundled `pricing.json` with pricing data for major models
+  - Budget enforcement in ThinRuntime with `action_on_exceed` ("error"/"warn")
+- **Guardrails** (`cognitia.guardrails`)
+  - `Guardrail` Protocol, `InputGuardrail`/`OutputGuardrail` marker protocols
+  - Built-in guardrails: `ContentLengthGuardrail`, `RegexGuardrail`, `CallerAllowlistGuardrail`
+  - Parallel guardrail execution via `asyncio.gather`
+- **Input Filters** (`cognitia.filters`)
+  - `InputFilter` Protocol for pre-processing user input
+  - `MaxTokensFilter` for token budget enforcement
+  - `SystemPromptInjector` for dynamic system prompt augmentation
+- **Retry and Fallback** (`cognitia.resilience`)
+  - `RetryPolicy` Protocol, `ExponentialBackoff` with jitter
+  - `ModelFallbackChain` and `ProviderFallback` data objects for multi-model resilience
+
+## [0.6.0] - 2026-03-18
+
+### Added
+- **Structured Output** (`cognitia.runtime`)
+  - `output_type` in `RuntimeConfig` — auto-extracts JSON Schema from Pydantic models
+  - `validate_structured_output`, `try_resolve_structured_output`, `extract_structured_output` helpers
+  - Retry on validation failure with configurable `max_model_retries`
+- **Tool Decorator Enhancements** (`cognitia.agent.tool`)
+  - `@tool` decorator: auto JSON Schema inference from type hints
+  - Docstring parsing for parameter descriptions
+  - `ToolDefinition.to_tool_spec()` bridge for runtime compatibility
+- **Runtime Registry** (`cognitia.runtime.registry`)
+  - `RuntimeRegistry`: thread-safe extensible registry with plugin discovery via entry points
+- **Cancellation** (`cognitia.runtime`)
+  - `CancellationToken`: cooperative cancellation with callbacks
+- **Runtime Events** (`cognitia.runtime.types`)
+  - Typed `RuntimeEvent` accessors: `.text`, `.tool_name`, `.structured_output`, `.is_final`, `.is_error`
+  - Static factory methods: `RuntimeEvent.assistant_delta()`, `.final()`, `.error()`, etc.
+- **Runtime Context Manager** — `AgentRuntime` context manager (`async with runtime as r:`)
+- **Protocols ISP Split** — `protocols.py` split into `protocols/memory.py`, `session.py`, `routing.py`, `tools.py`, `runtime.py`
+
+### Deprecated
+- `RuntimePort` protocol — use `AgentRuntime` from `cognitia.runtime.base`
+
 ## [0.5.0] - 2026-03-16
 
 ### Added
@@ -157,6 +226,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
+[1.0.0-core]: https://github.com/fockus/cognitia/compare/v0.7.0...v1.0.0-core
+[0.7.0]: https://github.com/fockus/cognitia/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/fockus/cognitia/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/fockus/cognitia/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/fockus/cognitia/compare/v0.3.0b1...v0.4.0
 [0.3.0b1]: https://github.com/fockus/cognitia/compare/v0.2.0...v0.3.0b1
