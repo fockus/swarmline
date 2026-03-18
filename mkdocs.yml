@@ -15,21 +15,21 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep purple
+      primary: teal
       accent: amber
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep purple
+      primary: teal
       accent: amber
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   font:
-    text: Inter
-    code: JetBrains Mono
+    text: Space Grotesk
+    code: IBM Plex Mono
   icon:
     repo: fontawesome/brands/github
     logo: material/robot-outline
@@ -53,15 +53,15 @@ theme:
 
 nav:
   - Home: index.md
-  - Getting Started:
-    - Installation & Quick Start: getting-started.md
+  - Start:
+    - Start Here: getting-started.md
+    - Use Cases: use-cases.md
     - Credentials & Providers: credentials.md
     - Why Cognitia?: why-cognitia.md
-  - Core Concepts:
+  - Build:
     - Agent Facade API: agent-facade.md
     - Runtimes: runtimes.md
     - Architecture: architecture.md
-  - Features:
     - Tools & Skills: tools-and-skills.md
     - Structured Output: structured-output.md
     - Web Tools: web-tools.md
@@ -77,16 +77,16 @@ nav:
     - Observability: observability.md
     - UI Projection: ui-projection.md
     - RAG: rag.md
-  - Guides:
-    - Design Patterns: design-patterns.md
+  - Recipes:
     - Cookbook: cookbook.md
+    - Design Patterns: design-patterns.md
+    - Examples: examples.md
     - Migration v0.5 to v1.0: migration-guide.md
   - Reference:
     - API Reference: api-reference.md
     - Runtime Registry: runtime-registry.md
     - Configuration: configuration.md
     - Advanced Features: advanced.md
-    - Examples: examples.md
 
 plugins:
   - search:
@@ -144,9 +144,9 @@ extra:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/cognitia/
   generator: false
-  analytics:
-    provider: google
-    property: G-PLACEHOLDER
 
 extra_css:
   - assets/extra.css
+
+extra_javascript:
+  - assets/site.js

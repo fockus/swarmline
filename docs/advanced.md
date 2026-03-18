@@ -265,7 +265,7 @@ result = policy.can_use_tool("mcp__finuslugi__get_deposits", {}, state)
 # -> PermissionAllow(updated_input={...})
 
 result = policy.can_use_tool("Bash", {}, state)
-# -> PermissionDeny(message="Инструмент 'Bash' запрещён политикой безопасности")
+# -> PermissionDeny(message="Tool 'Bash' is denied by security policy")
 ```
 
 **Decision logic (in order):**
@@ -438,8 +438,8 @@ from cognitia.routing import KeywordRoleRouter
 router = KeywordRoleRouter(
     default_role="coach",
     keyword_map={
-        "deposit_advisor": ["deposit", "savings account", "вклад"],
-        "credit_advisor": ["credit", "loan", "mortgage", "кредит"],
+        "deposit_advisor": ["deposit", "savings account", "interest rate"],
+        "credit_advisor": ["credit", "loan", "mortgage", "refinance"],
     },
 )
 
@@ -461,9 +461,9 @@ router.resolve("...", explicit_role="coach")          # "coach" (explicit wins)
 default_role: coach
 roles:
   deposit_advisor:
-    keywords: [deposit, savings, вклад]
+    keywords: [deposit, savings, interest rate]
   credit_advisor:
-    keywords: [credit, loan, кредит]
+    keywords: [credit, loan, refinance]
 ```
 
 ```python

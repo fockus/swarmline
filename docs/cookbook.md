@@ -118,6 +118,11 @@ asyncio.run(main())
 
 **Notes:** Event types include `text_delta`, `tool_use_start`, `tool_use_result`, `done`, and `error`. The `done` event carries `session_id`, `usage`, and `total_cost_usd` in its attributes.
 
+> **Note:** Event types differ by layer. `Agent.stream()` emits adapter events
+> (`text_delta`, `tool_use_start`, `tool_use_result`), while raw `RuntimeEvent`
+> uses `assistant_delta`, `tool_call_started`, `tool_call_finished`.
+> See [Migration Guide](migration-guide.md) for details.
+
 ---
 
 ## 4. Structured Output
