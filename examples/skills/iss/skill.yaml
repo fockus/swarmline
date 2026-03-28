@@ -1,0 +1,14 @@
+id: iss
+title: "MOEX ISS"
+description: "Search bonds and stocks on Moscow Exchange via ISS API"
+mcp:
+  servers:
+    - id: iss
+      transport: url
+      url: "https://calculado.ru/iss/mcp"
+tools:
+  include:
+    - mcp__iss__search_bonds
+    - mcp__iss__get_emitter
+when:
+  intents: [bonds, stocks, moex]

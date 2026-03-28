@@ -188,15 +188,61 @@ class TestClaudeOptionsBuilder:
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.model == "custom-model-v2"
 
-    def test_build_with_max_thinking_tokens(self) -> None:
-        """max_thinking_tokens peredaetsya in ClaudeAgentOptions."""
+    def test_build_with_thinking_config(self) -> None:
+        """thinking config peredaetsya in ClaudeAgentOptions."""
+        builder = ClaudeOptionsBuilder()
+        opts = builder.build(
+            role_id="coach",
+            system_prompt="test",
+            thinking={"type": "enabled", "budget_tokens": 16000},
+        )
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "enabled"
+        assert opts.thinking["budget_tokens"] == 16000
+
+    def test_build_with_thinking_adaptive(self) -> None:
+        """thinking adaptive config works."""
+        builder = ClaudeOptionsBuilder()
+        opts = builder.build(
+            role_id="coach",
+            system_prompt="test",
+            thinking={"type": "adaptive"},
+        )
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "adaptive"
+
+    def test_build_with_deprecated_max_thinking_tokens(self) -> None:
+        """Deprecated max_thinking_tokens converts to thinking config."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
             system_prompt="test",
             max_thinking_tokens=16000,
         )
-        assert opts.max_thinking_tokens == 16000
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "enabled"
+        assert opts.thinking["budget_tokens"] == 16000
+
+    def test_thinking_takes_priority_over_max_thinking_tokens(self) -> None:
+        """thinking dict takes priority over deprecated max_thinking_tokens."""
+        builder = ClaudeOptionsBuilder()
+        opts = builder.build(
+            role_id="coach",
+            system_prompt="test",
+            thinking={"type": "adaptive"},
+            max_thinking_tokens=16000,
+        )
+        assert opts.thinking["type"] == "adaptive"
+
+    def test_thinking_invalid_type_raises(self) -> None:
+        """Invalid thinking type raises ValueError (fail-fast)."""
+        builder = ClaudeOptionsBuilder()
+        with pytest.raises(ValueError, match="Unknown thinking type"):
+            builder.build(
+                role_id="coach",
+                system_prompt="test",
+                thinking={"type": "turbo"},
+            )
 
     def test_build_with_sandbox(self) -> None:
         """sandbox nastroyki are passed in ClaudeAgentOptions."""

@@ -491,7 +491,7 @@ class TestE2EBudgetAndBeta:
     """Scenario: 1M context beta + budget limit."""
 
     def test_1m_context_with_budget(self) -> None:
-        """Options with 1M context beta and byudzhetom."""
+        """Options with 1M context beta and budget."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(
             role_id="coach",
@@ -503,7 +503,10 @@ class TestE2EBudgetAndBeta:
 
         assert opts.betas == ["context-1m-2025-08-07"]
         assert opts.max_budget_usd == 25.0
-        assert opts.max_thinking_tokens == 64000
+        # max_thinking_tokens is deprecated; value goes to thinking config
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "enabled"
+        assert opts.thinking["budget_tokens"] == 64000
 
     @pytest.mark.asyncio
     async def test_cost_tracking_through_full_pipeline(self) -> None:

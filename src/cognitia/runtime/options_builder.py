@@ -18,6 +18,9 @@ from claude_agent_sdk import (
     SdkBeta,
     SdkPluginConfig,
     SettingSource,
+    ThinkingConfigAdaptive,
+    ThinkingConfigDisabled,
+    ThinkingConfigEnabled,
     ToolPermissionContext,
 )
 
@@ -65,7 +68,8 @@ class ClaudeOptionsBuilder:
         permission_mode: PermissionMode = "bypassPermissions",
         tool_failure_count: int = 0,
         setting_sources: list[SettingSource] | None = None,
-        max_thinking_tokens: int | None = None,
+        thinking: dict[str, Any] | None = None,
+        max_thinking_tokens: int | None = None,  # Deprecated: use thinking
         sandbox: SandboxSettings | None = None,
         agents: dict[str, AgentDefinition] | None = None,
         env: dict[str, str] | None = None,
@@ -89,7 +93,6 @@ class ClaudeOptionsBuilder:
             else self._model_policy.select(role_id, tool_failure_count)
         )
 
-
         all_mcp: dict[str, Any] = {}
 
         if mcp_servers:
@@ -99,8 +102,11 @@ class ClaudeOptionsBuilder:
         if sdk_mcp_servers:
             all_mcp.update(sdk_mcp_servers)
 
-
         sources: list[SettingSource] = setting_sources if setting_sources is not None else []
+
+        # Resolve thinking config: new `thinking` dict takes precedence,
+        # fall back to deprecated `max_thinking_tokens` for backward compat.
+        thinking_config = _resolve_thinking(thinking, max_thinking_tokens)
 
         opts = ClaudeAgentOptions(
             model=model,
@@ -113,7 +119,7 @@ class ClaudeOptionsBuilder:
             permission_mode=permission_mode,
             cwd=str(self._cwd) if self._cwd else None,
             setting_sources=sources,
-            max_thinking_tokens=max_thinking_tokens,
+            thinking=thinking_config,
             sandbox=sandbox,
             agents=agents,
             env=env or {},
@@ -133,7 +139,46 @@ class ClaudeOptionsBuilder:
 
 
 # ---------------------------------------------------------------------------
+# Thinking config resolution
+# ---------------------------------------------------------------------------
 
+ThinkingConfig = ThinkingConfigAdaptive | ThinkingConfigEnabled | ThinkingConfigDisabled
+
+
+def _resolve_thinking(
+    thinking: dict[str, Any] | None,
+    max_thinking_tokens: int | None,
+) -> ThinkingConfig | None:
+    """Resolve thinking configuration.
+
+    Priority: ``thinking`` dict > deprecated ``max_thinking_tokens``.
+    """
+    if thinking is not None:
+        kind = thinking.get("type", "enabled")
+        if kind == "enabled":
+            return ThinkingConfigEnabled(
+                type="enabled",
+                budget_tokens=thinking.get("budget_tokens", 10000),
+            )
+        if kind == "adaptive":
+            return ThinkingConfigAdaptive(type="adaptive")
+        if kind == "disabled":
+            return ThinkingConfigDisabled(type="disabled")
+        raise ValueError(
+            f"Unknown thinking type: {kind!r}. Expected: 'enabled', 'adaptive', 'disabled'"
+        )
+
+    if max_thinking_tokens is not None:
+        return ThinkingConfigEnabled(
+            type="enabled",
+            budget_tokens=max_thinking_tokens,
+        )
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# MCP transport builders
 # ---------------------------------------------------------------------------
 
 

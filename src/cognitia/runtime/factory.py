@@ -157,6 +157,10 @@ class RuntimeFactory:
             from cognitia.runtime.registry import _create_cli
 
             return _create_cli(effective_config, **kwargs)
+        elif name == "openai_agents":
+            from cognitia.runtime.registry import _create_openai_agents
+
+            return _create_openai_agents(effective_config, **kwargs)
         else:
             raise ValueError(
                 f"Unknown runtime: '{name}'. "

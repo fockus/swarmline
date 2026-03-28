@@ -1,8 +1,8 @@
 """RuntimeRegistry - extensible adapter registry for runtime factories.
 
-Built-in runtimes (`Claude_SDK`, `DeepAgents`, `Thin`, `cli`) are registered automatically.
-Third-party runtimes can be registered via register() or entry points
-(group="cognitia.runtimes").
+Built-in runtimes (`claude_sdk`, `deepagents`, `thin`, `cli`, `openai_agents`)
+are registered automatically. Third-party runtimes can be registered via
+register() or entry points (group="cognitia.runtimes").
 """
 
 from __future__ import annotations
@@ -121,8 +121,26 @@ def _create_cli(config: RuntimeConfig, **kwargs: Any) -> Any:
     return CliAgentRuntime(config=config, **kwargs)
 
 
+def _create_openai_agents(config: RuntimeConfig, **kwargs: Any) -> Any:
+    """Lazy factory for OpenAIAgentsRuntime."""
+    from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+    # These kwargs come from the generic factory interface but are not
+    # supported by OpenAIAgentsRuntime yet — log a warning if non-empty.
+    for key in ("tool_executors", "local_tools", "mcp_servers"):
+        val = kwargs.pop(key, None)
+        if val:
+            logger.warning(
+                "openai_agents factory: kwarg %r ignored (not yet supported), "
+                "got %d item(s)",
+                key,
+                len(val) if hasattr(val, "__len__") else 1,
+            )
+    return OpenAIAgentsRuntime(config=config, **kwargs)
+
+
 def _register_builtins(registry: RuntimeRegistry) -> None:
-    """Register built-in runtimes: Claude_SDK, DeepAgents, Thin, cli."""
+    """Register built-in runtimes: claude_sdk, deepagents, thin, cli, openai_agents."""
     registry.register(
         "claude_sdk",
         _create_claude_sdk,
@@ -142,6 +160,11 @@ def _register_builtins(registry: RuntimeRegistry) -> None:
         "cli",
         _create_cli,
         capabilities=get_runtime_capabilities("cli"),
+    )
+    registry.register(
+        "openai_agents",
+        _create_openai_agents,
+        capabilities=get_runtime_capabilities("openai_agents"),
     )
 
 
@@ -214,7 +237,7 @@ def reset_default_registry() -> None:
 # Dynamic valid runtime names
 # ---------------------------------------------------------------------------
 
-_BUILTIN_NAMES = frozenset({"claude_sdk", "deepagents", "thin", "cli"})
+_BUILTIN_NAMES = frozenset({"claude_sdk", "deepagents", "thin", "cli", "openai_agents"})
 
 
 def get_valid_runtime_names() -> frozenset[str]:

@@ -46,31 +46,81 @@ The `@tool` decorator handles the conversion between your natural Python functio
 
 Cognitia's `_adapt_handler` bridges this gap transparently. If your handler raises an exception, it's caught and returned as an error in MCP format.
 
-## MCP Skills (Declarative)
+## MCP Skills
 
-Skills are YAML-configured MCP server connections with tool allowlists:
+Skills are declarative MCP server connections with tool allowlists and agent instructions. Cognitia supports **two formats**:
+
+### Format 1: Cognitia Native (skill.yaml + INSTRUCTION.md)
 
 ```yaml
 # skills/finuslugi/skill.yaml
-skill_id: finuslugi
+id: finuslugi
 title: "Banking Products API"
-mcp_servers:
-  - name: finuslugi-server
-    transport: url
-    url: "https://api.example.com/mcp"
-tool_include:
-  - get_bank_deposits
-  - get_bank_credits
-intents: [deposits, credits]
+description: "Search bank deposits and credits"
+mcp:
+  servers:
+    - id: finuslugi-server
+      transport: url
+      url: "https://api.example.com/mcp"
+tools:
+  include:
+    - mcp__finuslugi__get_bank_deposits
+    - mcp__finuslugi__get_bank_credits
+when:
+  intents: [deposits, credits]
 ```
-
-Each skill can have an instruction file for the agent:
 
 ```markdown
 # skills/finuslugi/INSTRUCTION.md
 Use `get_bank_deposits` to search for deposit products.
 Always specify amount and term in months.
 ```
+
+**YAML fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | no | Skill ID (defaults to directory name) |
+| `title` | no | Display name (defaults to id) |
+| `description` | no | Short description for discovery |
+| `mcp.servers` | no | MCP server connections |
+| `tools.include` | no | Tool allowlist |
+| `local_tools` | no | Local tool IDs |
+| `when.intents` | no | Keywords for role-based activation |
+| `instruction` | no | Custom path to instruction file |
+
+### Format 2: Claude Code Compatible (SKILL.md)
+
+Single file with YAML frontmatter — compatible with Claude Code skills:
+
+```markdown
+# skills/my-skill/SKILL.md
+---
+name: my-skill
+description: "Short description for matching"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+---
+
+# My Skill Instructions
+
+Use these tools to accomplish the task...
+```
+
+**Frontmatter fields:**
+
+| Field | Maps to | Description |
+|-------|---------|-------------|
+| `name` | `skill_id` | Skill identifier (defaults to dir name) |
+| `description` | `description` | Short description |
+| `allowed-tools` | `tool_include` | Tool allowlist |
+| `mcp-servers` | `mcp_servers` | MCP servers (Cognitia extension) |
+| `intents` | `intents` | Activation keywords (Cognitia extension) |
+| `local-tools` | `local_tools` | Local tool IDs (Cognitia extension) |
+
+**Priority:** When both `skill.yaml` and `SKILL.md` exist in the same directory, `skill.yaml` takes precedence.
 
 ### Loading skills
 
@@ -79,7 +129,7 @@ from cognitia.skills import SkillRegistry
 from cognitia.skills.loader import YamlSkillLoader
 
 loader = YamlSkillLoader("./skills")
-skills = loader.load_all()
+skills = loader.load_all()  # Loads both skill.yaml and SKILL.md formats
 registry = SkillRegistry(skills)
 
 # Get MCP servers for active skills
@@ -147,11 +197,11 @@ Map roles to their allowed skills and local tools:
 ```yaml
 # role_skills.yaml
 coach:
-  mcp_skills: []
+  skills: []
   local_tools: [calculate_goal_plan]
 
 deposit_advisor:
-  mcp_skills: [finuslugi, funds]
+  skills: [finuslugi, funds]
   local_tools: [calculate_goal_plan]
 ```
 

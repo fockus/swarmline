@@ -22,11 +22,12 @@ class McpServerSpec:
 
 @dataclass(frozen=True)
 class SkillSpec:
-    """Skill specification (from YAML)."""
+    """Skill specification (from YAML or SKILL.md)."""
 
     skill_id: str
     title: str
-    instruction_file: str
+    description: str = ""
+    instruction_file: str = ""
     mcp_servers: list[McpServerSpec] = field(default_factory=list)
     tool_include: list[str] = field(default_factory=list)
     local_tools: list[str] = field(default_factory=list)

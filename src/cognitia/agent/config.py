@@ -29,7 +29,7 @@ class AgentConfig:
     # Model (alias or full name)
     model: str = "sonnet"
 
-    # Runtime: claude_sdk | thin | deepagents
+    # Runtime: claude_sdk | thin | deepagents | openai_agents | cli
     runtime: str = "claude_sdk"
 
     # Tools (standalone @tool decorated functions)
@@ -60,7 +60,8 @@ class AgentConfig:
     # SDK-specific (claude_sdk runtime only)
     betas: tuple[str, ...] = ()
     sandbox: dict[str, Any] | None = None
-    max_thinking_tokens: int | None = None
+    thinking: dict[str, Any] | None = None  # {"type": "enabled", "budget_tokens": N} | {"type": "adaptive"} | {"type": "disabled"}
+    max_thinking_tokens: int | None = None  # Deprecated: use thinking instead
     fallback_model: str | None = None
     permission_mode: str = "bypassPermissions"
     setting_sources: tuple[str, ...] = ()

@@ -240,6 +240,7 @@ class Conversation:
             ),
             betas=cast(Any, list(config.betas) if config.betas else None),
             max_budget_usd=config.max_budget_usd,
+            thinking=config.thinking,
             max_thinking_tokens=config.max_thinking_tokens,
             fallback_model=config.fallback_model,
             sandbox=cast(Any, config.sandbox),

@@ -97,6 +97,54 @@ class TestYamlSkillLoader:
         iss = next(s for s in skills if s.spec.skill_id == "iss")
         assert "bonds" in iss.spec.intents
 
+    def test_description_parsed_from_yaml(self, skills_dir: Path) -> None:
+        """Description from skill.yaml is parsed into SkillSpec."""
+        # Add description to iss skill.yaml
+        iss_yaml = skills_dir / "iss" / "skill.yaml"
+        iss_yaml.write_text(
+            """
+id: iss
+title: "MOEX ISS"
+description: "Search bonds and stocks on Moscow Exchange"
+mcp:
+  servers:
+    - id: iss
+      transport: url
+      url: "https://calculado.ru/iss/mcp"
+tools:
+  include:
+    - "mcp__iss__search_bonds"
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(skills_dir)
+        skills = loader.load_all()
+        iss = next(s for s in skills if s.spec.skill_id == "iss")
+        assert iss.spec.description == "Search bonds and stocks on Moscow Exchange"
+
+    def test_description_defaults_to_empty(self, skills_dir: Path) -> None:
+        """Description defaults to empty string when not specified."""
+        loader = YamlSkillLoader(skills_dir)
+        skills = loader.load_all()
+        funds = next(s for s in skills if s.spec.skill_id == "funds")
+        assert funds.spec.description == ""
+
+    def test_path_traversal_blocked(self, tmp_path: Path) -> None:
+        """instruction path outside project_root is rejected (security)."""
+        skill_dir = tmp_path / "evil"
+        skill_dir.mkdir()
+        (skill_dir / "skill.yaml").write_text(
+            'id: evil\ntitle: Evil\ninstruction: "/etc/passwd"',
+            encoding="utf-8",
+        )
+        (skill_dir / "INSTRUCTION.md").write_text("Safe fallback", encoding="utf-8")
+
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert len(skills) == 1
+        # Should fall back to INSTRUCTION.md, not /etc/passwd
+        assert "Safe fallback" in skills[0].instruction_md
+
     def test_empty_dir(self, tmp_path: Path) -> None:
         """Empty directory returns empty list."""
         loader = YamlSkillLoader(tmp_path)
@@ -209,3 +257,181 @@ class TestSkillRegistry:
         servers = registry.get_mcp_servers_for_skills([])
 
         assert "standalone" in servers
+
+
+class TestSkillMdFormat:
+    """Tests for SKILL.md (Claude Code compatible) format."""
+
+    def test_load_skill_md_format(self, tmp_path: Path) -> None:
+        """SKILL.md with frontmatter is loaded as a skill."""
+        skill_dir = tmp_path / "demo"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            """---
+name: demo
+description: "Demo skill for testing"
+---
+
+# Demo Skill
+
+Use this tool for demo purposes.
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert len(skills) == 1
+        demo = skills[0]
+        assert demo.spec.skill_id == "demo"
+        assert demo.spec.description == "Demo skill for testing"
+        assert "# Demo Skill" in demo.instruction_md
+        assert "Use this tool for demo purposes." in demo.instruction_md
+
+    def test_skill_md_allowed_tools_mapped(self, tmp_path: Path) -> None:
+        """allowed-tools from SKILL.md frontmatter maps to tool_include."""
+        skill_dir = tmp_path / "writer"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            """---
+name: writer
+description: "File writer skill"
+allowed-tools:
+  - Bash
+  - Write
+  - Read
+---
+
+Write files as needed.
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        writer = skills[0]
+        assert "Bash" in writer.spec.tool_include
+        assert "Write" in writer.spec.tool_include
+        assert "Read" in writer.spec.tool_include
+
+    def test_skill_yaml_priority_over_skill_md(self, tmp_path: Path) -> None:
+        """skill.yaml takes priority when both skill.yaml and SKILL.md exist."""
+        skill_dir = tmp_path / "dual"
+        skill_dir.mkdir()
+        (skill_dir / "skill.yaml").write_text(
+            """
+id: dual
+title: "From YAML"
+""",
+            encoding="utf-8",
+        )
+        (skill_dir / "INSTRUCTION.md").write_text("YAML instruction", encoding="utf-8")
+        (skill_dir / "SKILL.md").write_text(
+            """---
+name: dual
+description: "From SKILL.md"
+---
+
+SKILL.md instruction
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert len(skills) == 1
+        assert skills[0].spec.title == "From YAML"
+        assert "YAML instruction" in skills[0].instruction_md
+
+    def test_skill_md_name_defaults_to_dirname(self, tmp_path: Path) -> None:
+        """When name is missing in SKILL.md frontmatter, use directory name."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            """---
+description: "A skill without name field"
+---
+
+Instructions here.
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert skills[0].spec.skill_id == "my-skill"
+
+    def test_skill_md_with_mcp_servers(self, tmp_path: Path) -> None:
+        """SKILL.md can declare MCP servers (Cognitia extension)."""
+        skill_dir = tmp_path / "mcp-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            """---
+name: mcp-skill
+description: "Skill with MCP"
+mcp-servers:
+  - name: my-server
+    transport: url
+    url: "https://example.com/mcp"
+---
+
+Use my-server tools.
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert len(skills[0].spec.mcp_servers) == 1
+        assert skills[0].spec.mcp_servers[0].name == "my-server"
+
+    def test_skill_md_with_intents(self, tmp_path: Path) -> None:
+        """SKILL.md can declare intents (Cognitia extension)."""
+        skill_dir = tmp_path / "intent-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            """---
+name: intent-skill
+description: "Skill with intents"
+intents: [search, browse]
+---
+
+Search and browse.
+""",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert "search" in skills[0].spec.intents
+        assert "browse" in skills[0].spec.intents
+
+    def test_skill_md_no_frontmatter_skipped(self, tmp_path: Path) -> None:
+        """SKILL.md without valid frontmatter is skipped."""
+        skill_dir = tmp_path / "bad"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "# No frontmatter\nJust markdown.",
+            encoding="utf-8",
+        )
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        assert len(skills) == 0
+
+    def test_mixed_formats_loaded(self, tmp_path: Path) -> None:
+        """Both skill.yaml and SKILL.md skills load together."""
+        # YAML skill
+        yaml_dir = tmp_path / "yaml-skill"
+        yaml_dir.mkdir()
+        (yaml_dir / "skill.yaml").write_text(
+            'id: yaml-skill\ntitle: "YAML Skill"',
+            encoding="utf-8",
+        )
+        (yaml_dir / "INSTRUCTION.md").write_text("YAML instructions", encoding="utf-8")
+
+        # SKILL.md skill
+        md_dir = tmp_path / "md-skill"
+        md_dir.mkdir()
+        (md_dir / "SKILL.md").write_text(
+            '---\nname: md-skill\ndescription: "MD Skill"\n---\n\nMD instructions',
+            encoding="utf-8",
+        )
+
+        loader = YamlSkillLoader(tmp_path)
+        skills = loader.load_all()
+        ids = {s.spec.skill_id for s in skills}
+        assert ids == {"yaml-skill", "md-skill"}

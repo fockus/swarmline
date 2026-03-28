@@ -1,0 +1,17 @@
+id: codex
+title: "OpenAI Codex"
+description: "Code generation and editing via OpenAI Codex MCP server"
+mcp:
+  servers:
+    - id: codex
+      transport: stdio
+      command: npx
+      args: ["-y", "codex", "mcp-server"]
+      env:
+        OPENAI_API_KEY: "${OPENAI_API_KEY}"
+tools:
+  include:
+    - mcp__codex__codex
+    - mcp__codex__codex-reply
+when:
+  intents: [codex, openai-code, code-generation]

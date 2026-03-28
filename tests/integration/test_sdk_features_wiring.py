@@ -264,7 +264,9 @@ class TestFullOptionsAssembly:
         assert opts.output_format is not None
         assert opts.betas == ["context-1m-2025-08-07"]
         assert opts.max_budget_usd == 5.0
-        assert opts.max_thinking_tokens == 32000
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "enabled"
+        assert opts.thinking["budget_tokens"] == 32000
         assert opts.include_partial_messages is True
         assert opts.enable_file_checkpointing is True
         assert opts.sandbox is not None
