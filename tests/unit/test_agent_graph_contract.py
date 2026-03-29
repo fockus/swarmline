@@ -21,10 +21,19 @@ def inmemory_store():
     return InMemoryAgentGraph()
 
 
-@pytest.fixture(params=["inmemory"])
-def store(request, inmemory_store):
+@pytest.fixture
+def sqlite_store(tmp_path):
+    from cognitia.multi_agent.graph_store_sqlite import SqliteAgentGraph
+
+    return SqliteAgentGraph(str(tmp_path / "graph.db"))
+
+
+@pytest.fixture(params=["inmemory", "sqlite"])
+def store(request, inmemory_store, sqlite_store):
     if request.param == "inmemory":
         return inmemory_store
+    if request.param == "sqlite":
+        return sqlite_store
     raise ValueError(f"Unknown backend: {request.param}")
 
 
