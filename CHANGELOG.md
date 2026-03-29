@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-29
+
+### Added
+
+- **Code Agent Integration** (`cognitia.mcp`, `cognitia.cli`) — Phase 16
+  - MCP Server (`cognitia-mcp`): 20 typed tools via FastMCP STDIO — memory (6), plans (5), team (5), agent (3), code (1)
+  - Headless Runtime: 0 LLM mode for external code agents (Claude Code, Codex CLI, OpenCode)
+  - Stateful Session: auto-detect mode from env vars, holds all InMemory providers
+  - CLI Client (`cognitia`): Click-based CLI with 6 command groups — memory, plan, team, agent, run, mcp-serve
+  - Claude Code Skill: `SKILL.md` + 10 reference patterns for seamless integration
+  - Integration configs: claude-code, codex, opencode ready-made configurations
+  - 7 E2E use case tests: research swarm, persistent memory, review pipeline, resumable plans, meta-agent, cross-tool, learning agent
+- **OpenTelemetry Exporter** (`cognitia.observability.otel`) — Phase 11.1
+  - `OTelExporter`: bridges Cognitia EventBus to OpenTelemetry spans
+  - Auto-creates spans for LLM calls, tool executions, agent queries
+  - Configurable via `OTelConfig(service_name, endpoint, headers, insecure)`
+  - Lazy import — only requires `opentelemetry-api` + `opentelemetry-sdk` when used
+  - New optional: `cognitia[otel]`
+- **Structured Output at Agent Level** (`cognitia.agent`) — Phase 11.2
+  - `Agent.query_structured(prompt, output_type: type[T]) -> T` — type-safe Pydantic output
+  - Auto-generates JSON Schema from Pydantic model, runs through runtime retry loop
+  - `StructuredOutputError` raised when parsing fails after all retries
+  - Zero changes to ThinRuntime (already supported `output_type`)
+- **A2A Protocol Support** (`cognitia.a2a`) — Phase 11.3
+  - Full Agent-to-Agent protocol: JSON-RPC 2.0 over HTTP + SSE streaming
+  - `CognitiaA2AAdapter`: pure adapter pattern, wraps any Agent as A2A service (0 core changes)
+  - `A2AServer`: Starlette ASGI server with `/.well-known/agent.json` discovery
+  - `A2AClient`: httpx-based client with `discover()`, `send_task()`, `stream_task()`
+  - Domain types: `Task`, `AgentCard`, `AgentSkill`, `TaskStatus`, `Message`, `Artifact`
+  - New optional: `cognitia[a2a]` (starlette + httpx)
+- **`cognitia init` CLI Scaffolding** — Phase 12.1
+  - `cognitia init my-agent` scaffolds a production-ready agent project in seconds
+  - Flags: `--runtime` (thin/claude/deepagents), `--memory` (inmemory/sqlite), `--full`, `--output`, `--force`
+  - Generates: `agent.py`, `config.yaml`, `tests/`, `.env.example`, `pyproject.toml`, `README.md`
+  - Full mode adds: `Dockerfile`, `docker-compose.yml`, `skills/`
+  - Pure stdlib templates (string.Template), no Jinja2 dependency
+
+### Changed
+
+- `docs/getting-started.md` updated with `cognitia init` quick start as primary onboarding path
+- `docs/examples.md` expanded with examples 29 (structured output) and 30 (A2A agent)
+- `pyproject.toml` extras: added `otel`, `a2a`, `mcp`, `cli`, `code-agent` bundles
+
 ## [1.0.0-core] - 2026-03-18
 
 ### Added
@@ -253,7 +296,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/cognitia/compare/v1.0.0-core...HEAD
+[Unreleased]: https://github.com/fockus/cognitia/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/fockus/cognitia/compare/v1.0.0...v1.1.0
 [1.0.0-core]: https://github.com/fockus/cognitia/compare/v0.5.0...v1.0.0-core
 [0.5.0]: https://github.com/fockus/cognitia/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/fockus/cognitia/compare/v0.3.0b1...v0.4.0
