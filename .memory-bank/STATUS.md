@@ -2,16 +2,15 @@
 
 ## Текущий фокус
 
-**Graph Agents + Knowledge Bank + Task Enhancements** — завершены 3 крупных блока работ:
-1. Graph Agent Config (5 фаз): AgentExecutionContext, skills/MCP inheritance, dual-dispatch runner, builder API, governance (capabilities + limits)
-2. Knowledge Bank (4 фазы): domain types, ISP protocols, multi-backend storage (FS/SQLite/Postgres), tools + consolidation
-3. Task Progress + Workflow (4 фазы): TaskStatus.BLOCKED, progress auto-calc, extensible stages (WorkflowConfig), block/unblock в 3 backend'ах
+**v1.2.0 Release** (2026-03-30) — все фичи реализованы, тесты green, release ready.
 
-3770 тестов pass, ruff clean. Pending: version bump 0.5.0 → 1.0.0, PyPI release.
+Включает: Graph Agents (6 фаз + Config A1-A5 + governance), Knowledge Bank (B1-B4), Pipeline Engine, Daemon, Evaluation Framework (13.1-13.2), Memory Enhancements (14.1-14.3), HTTP API (15.1), HITL (15.2), Plugin Registry (15.3), Benchmarks (15.4), Paperclip components, 30+ security fixes.
+
+3909 тестов pass, ruff clean.
 
 ## Версии
 
-- cognitia: 0.5.0 → 1.0.0-core (все фичи реализованы, pending version bump)
+- cognitia: 1.2.0 (released 2026-03-30)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
 
 ## Roadmap
@@ -46,11 +45,23 @@
 *Ecosystem:*
 - ⬜ Phase 11: OpenAI Agents SDK (4-й runtime + bridges, gated on SDK ≥ v1.0)
 
+**Завершено (v1.1.0 → v1.2.0):**
+- ✅ Phase 12.3: API Docs + community infra
+- ✅ Phase 13.1-13.2: Evaluation Framework (eval + compare/history)
+- ✅ Phase 14.1-14.3: Memory (Episodic + Procedural + Consolidation Pipeline)
+- ✅ Phase 15.1-15.4: HTTP API, HITL, Plugin Registry, Benchmarks
+- ✅ Graph Agents Phases 1-6: full hierarchical multi-agent system
+- ✅ Graph Agent Config A1-A5: ExecutionContext, skills/MCP, governance
+- ✅ Knowledge Bank B1-B4: protocols, multi-backend, tools, consolidation
+- ✅ Pipeline Engine + Daemon
+- ✅ Paperclip-inspired Components (6 modules)
+- ✅ 30+ security fixes, 19 mypy fixes, Clean Architecture extraction
+
 **Детали**: `plans/2026-03-18_masterplan_v3.md` (v3.2)
 
 ## Тесты
 
-- 3770 passed, 5 deselected, 0 failed
+- 3909 passed, 5 deselected, 0 failed
 - Source files: ~220 .py files
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests

@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-30
+
+### Added
+
+- **Agent Graph System** — hierarchical multi-agent with org charts, governance, delegation
+  - AgentNode with capabilities, skills, MCP servers, runtime config
+  - AgentExecutionContext — structured runner context replacing 4 positional strings
+  - GraphBuilder DSL with YAML/dict support
+  - Governance: AgentCapabilities (can_hire, can_delegate, max_children) + GraphGovernanceConfig
+  - Graph tools: hire_agent, delegate_task, escalate
+  - InMemory + SQLite + PostgreSQL backends
+  - GraphCommunication: inter-agent messaging (InMemory/SQLite/Postgres/Redis/NATS)
+  - GraphTaskBoard: hierarchical tasks with DAG dependencies, atomic checkout
+  - Task progress auto-calculation from subtasks
+  - TaskStatus.BLOCKED with mandatory reason
+  - Extensible workflow stages (WorkflowConfig, WorkflowStage)
+- **Knowledge Bank** — universal domain-agnostic structured knowledge storage
+  - 5 ISP protocols: KnowledgeStore, KnowledgeSearcher, ProgressLog, ChecklistManager, VerificationStrategy
+  - DocumentMeta YAML frontmatter with kind, tags, importance
+  - Multi-backend: filesystem, SQLite, PostgreSQL, custom providers
+  - Knowledge tools: search, save_note, get_context
+  - Episode-to-Knowledge consolidation
+- **Pipeline Engine** — multi-phase execution with budget gates
+- **Daemon** — universal long-running process manager
+- **Evaluation Framework** — agent eval with compare/history (Phases 13.1-13.2)
+- **Memory Enhancements**
+  - Episodic Memory with InMemory + SQLite (Phase 14.1)
+  - Procedural Memory — learned tool sequences (Phase 14.2)
+  - Consolidation Pipeline — episodes to knowledge (Phase 14.3)
+- **HTTP API** (`cognitia serve`) — Phase 15.1
+- **Human-in-the-Loop** approval patterns — Phase 15.2
+- **Plugin Registry** + Benchmarks — Phases 15.3-15.4
+- **Paperclip-inspired Components**
+  - TaskSessionStore: session-per-task persistence
+  - ActivityLog + ActivityLogSubscriber: structured audit trail
+  - PersistentBudgetStore: durable cost tracking
+  - RoutineBridge: scheduler to task board integration
+  - ExecutionWorkspace: temp_dir/git_worktree/copy isolation
+  - PluginRunner: subprocess JSON-RPC plugin host
+- **API Docs** — auto-generated + community infra (Phase 12.3)
+
+### Changed
+
+- GraphTaskBoard: `_propagate_completion()` renamed to `_propagate_parent()` (always recurses for progress)
+- Redis/NATS EventBus: URL now required parameter (no localhost default)
+- A2A adapter: URL now required parameter
+- Provider resolver: ollama/local marked as dev-only defaults
+- Clean Architecture: domain types extracted to `domain_types.py`
+
+### Fixed
+
+- 30+ security fixes across all modules (exec_code blocklist, SSRF protection, path traversal, FTS5 sanitization, timing-safe auth)
+- 19 mypy type errors resolved (orchestrator, tools, postgres backends, SDK adapters)
+- delegate_task governance enforcement (check_delegate_allowed)
+- Root task execution tracking in orchestrator
+- localhost defaults removed from production constructors
+
 ## [1.1.0] - 2026-03-29
 
 ### Added
@@ -296,7 +353,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/cognitia/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/fockus/cognitia/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/fockus/cognitia/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/fockus/cognitia/compare/v1.0.0...v1.1.0
 [1.0.0-core]: https://github.com/fockus/cognitia/compare/v0.5.0...v1.0.0-core
 [0.5.0]: https://github.com/fockus/cognitia/compare/v0.4.0...v0.5.0
