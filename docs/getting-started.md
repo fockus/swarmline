@@ -55,9 +55,48 @@ pip install cognitia[docker]        # Docker sandbox
 pip install cognitia[all,dev]
 ```
 
+## Quick Start: `cognitia init` (recommended)
+
+The fastest way to start a new project — scaffold a full agent in 10 seconds:
+
+```bash
+pip install cognitia[cli]
+cognitia init my-agent
+cd my-agent
+cp .env.example .env   # add your ANTHROPIC_API_KEY
+pip install -e .
+python agent.py "Hello!"
+```
+
+Options:
+
+```bash
+cognitia init my-agent                    # minimal (thin runtime, in-memory)
+cognitia init my-agent --runtime claude   # Claude Agent SDK
+cognitia init my-agent --memory sqlite    # persistent SQLite memory
+cognitia init my-agent --full             # all features + Docker setup
+cognitia init my-agent --output ./projects  # custom output directory
+```
+
+Generated structure:
+
+```
+my-agent/
+├── agent.py          ← main entry point (runnable immediately)
+├── config.yaml       ← agent configuration (runtime, memory, tools)
+├── tests/
+│   └── test_agent.py ← starter test
+├── .env.example      ← API key template
+├── pyproject.toml    ← project metadata
+└── README.md         ← usage instructions
+# (--full adds: Dockerfile, docker-compose.yml, skills/)
+```
+
+---
+
 ## Quick Start: Agent Facade (simplest)
 
-The fastest way to get started — 3 lines of code:
+The fastest way to get started without scaffolding — 3 lines of code:
 
 ```python
 from cognitia import Agent, AgentConfig

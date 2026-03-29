@@ -62,6 +62,7 @@ from cognitia.cli._commands_team import team  # noqa: E402
 from cognitia.cli._commands_agent import agent  # noqa: E402
 from cognitia.cli._commands_run import run  # noqa: E402
 from cognitia.cli._commands_mcp import mcp_serve  # noqa: E402
+from cognitia.cli.init_cmd import init_command  # noqa: E402
 
 cli.add_command(memory)
 cli.add_command(plan)
@@ -69,6 +70,7 @@ cli.add_command(team)
 cli.add_command(agent)
 cli.add_command(run)
 cli.add_command(mcp_serve)
+cli.add_command(init_command, name="init")
 
 
 if __name__ == "__main__":
