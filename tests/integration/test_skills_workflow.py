@@ -1,5 +1,7 @@
-"""Integration: YamlSkillLoader + SkillRegistry + ToolPolicy - loading and primenotnie skillov. Scenario: load real skilly from skills/, zaregister,
-collect MCP-servery and allowlist, check cherez ToolPolicy.
+"""Integration: YamlSkillLoader + SkillRegistry + ToolPolicy — loading and applying skills.
+
+Scenario: load real skills from skills/, register, collect MCP servers and allowlist,
+check via ToolPolicy.
 """
 
 from pathlib import Path
@@ -20,93 +22,79 @@ SKILLS_DIR = Path(__file__).parent.parent.parent / "skills"
 
 @pytest.fixture
 def registry() -> SkillRegistry:
-    """Load real skilly from proekta."""
+    """Load real skills from project."""
     if not SKILLS_DIR.exists():
-        pytest.skip("Директория skills/ не найдена")
+        pytest.skip("Directory skills/ not found")
     loader = YamlSkillLoader(SKILLS_DIR)
     skills = loader.load_all()
     return SkillRegistry(skills)
 
 
 class TestRealSkillsLoading:
-    """Loading realnyh skillov from proekta."""
+    """Loading real skills from the project."""
 
     def test_skills_loaded(self, registry: SkillRegistry) -> None:
-        """Hotya by odin skill zagruzhen."""
+        """At least one skill is loaded."""
         assert len(registry.list_all()) > 0
 
-    def test_iss_skill_present(self, registry: SkillRegistry) -> None:
-        """Skill iss zagruzhen."""
-        skill = registry.get("iss")
+    def test_cognitia_agents_skill_present(self, registry: SkillRegistry) -> None:
+        """Skill cognitia-agents is loaded."""
+        skill = registry.get("cognitia-agents")
         assert skill is not None
         assert skill.spec.title
 
-    def test_finuslugi_skill_present(self, registry: SkillRegistry) -> None:
-        """Skill finuslugi zagruzhen."""
-        skill = registry.get("finuslugi")
+    def test_cognitia_agents_has_mcp_servers(self, registry: SkillRegistry) -> None:
+        """cognitia-agents skill has MCP servers."""
+        skill = registry.get("cognitia-agents")
         assert skill is not None
-
-    def test_iss_has_mcp_servers(self, registry: SkillRegistry) -> None:
-        """ISS skill imeet MCP servery."""
-        skill = registry.get("iss")
         assert len(skill.spec.mcp_servers) > 0
-        assert skill.spec.mcp_servers[0].name == "iss"
+        assert skill.spec.mcp_servers[0].name == "cognitia"
 
     def test_skills_have_instructions(self, registry: SkillRegistry) -> None:
-        """Vse skilly imeyut instruktsii."""
+        """All skills have instruction content."""
         for skill in registry.list_all():
-            assert skill.instruction_md, f"Скилл {skill.spec.skill_id} без инструкций"
+            assert skill.instruction_md, f"Skill {skill.spec.skill_id} has no instructions"
 
 
 class TestRegistryAggregation:
-    """SkillRegistry sobiraet MCP-servery and allowlist."""
+    """SkillRegistry collects MCP servers and allowlists."""
 
     def test_get_mcp_servers_for_single_skill(self, registry: SkillRegistry) -> None:
-        """MCP-servery for odnogo skilla."""
-        servers = registry.get_mcp_servers_for_skills(["iss"])
-        assert "iss" in servers
-        assert servers["iss"].url
-
-    def test_get_mcp_servers_for_multiple_skills(self, registry: SkillRegistry) -> None:
-        """MCP-servery for notskolkih skillov - unikalnye by imeni."""
-        servers = registry.get_mcp_servers_for_skills(["iss", "finuslugi"])
-        assert "iss" in servers
-        assert "finuslugi" in servers
+        """MCP servers for a single skill."""
+        servers = registry.get_mcp_servers_for_skills(["cognitia-agents"])
+        assert "cognitia" in servers
 
     def test_nonexistent_skill_ignored(self, registry: SkillRegistry) -> None:
-        """Notsushchestvuyushchiy skill - is ignored."""
-        servers = registry.get_mcp_servers_for_skills(["iss", "nonexistent"])
-        assert "iss" in servers
-
-    def test_tool_allowlist(self, registry: SkillRegistry) -> None:
-        """Allowlist contains tool include from skillov."""
-        allowlist = registry.get_tool_allowlist(["iss"])
-        assert len(allowlist) > 0
+        """Non-existent skill is ignored without error."""
+        servers = registry.get_mcp_servers_for_skills(["cognitia-agents", "nonexistent"])
+        assert "cognitia" in servers
 
 
 class TestPolicyWithRealSkills:
-    """ToolPolicy + real skilly."""
+    """ToolPolicy + real skills."""
 
     def test_allow_tool_from_active_skill(self, registry: SkillRegistry) -> None:
-        """Tool ot aktivnogo skilla -> allow."""
+        """Tool from active MCP server -> allow."""
         policy = DefaultToolPolicy(codec=DefaultToolIdCodec())
+        # Policy checks server_name against active_skill_ids,
+        # so we pass the MCP server name ("cognitia"), not the skill ID
         state = ToolPolicyInput(
             tool_name="",
             input_data={},
-            active_skill_ids=["iss"],
+            active_skill_ids=["cognitia"],
             allowed_local_tools=set(),
         )
-        result = policy.can_use_tool("mcp__iss__get_bonds", {}, state)
+        result = policy.can_use_tool("mcp__cognitia__memory_upsert_fact", {}, state)
         assert isinstance(result, PermissionAllow)
 
     def test_deny_tool_from_inactive_skill(self, registry: SkillRegistry) -> None:
-        """Tool ot notaktivnogo skilla -> deny."""
+        """Tool from inactive MCP server -> deny."""
         policy = DefaultToolPolicy(codec=DefaultToolIdCodec())
         state = ToolPolicyInput(
             tool_name="",
             input_data={},
-            active_skill_ids=["finuslugi"],
+            active_skill_ids=[],
             allowed_local_tools=set(),
         )
-        result = policy.can_use_tool("mcp__iss__get_bonds", {}, state)
+        result = policy.can_use_tool("mcp__cognitia__memory_upsert_fact", {}, state)
         assert isinstance(result, PermissionDeny)

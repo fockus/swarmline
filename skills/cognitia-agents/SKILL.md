@@ -1,7 +1,7 @@
 ---
 name: cognitia-agents
 description: Cognitia agent infrastructure — persistent memory, structured plans, team coordination, and code execution for AI coding agents
-mcp_servers:
+mcp-servers:
   - name: cognitia
     transport: stdio
     command: cognitia-mcp
