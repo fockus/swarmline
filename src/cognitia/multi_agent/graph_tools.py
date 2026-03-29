@@ -27,6 +27,7 @@ def create_graph_tools(
     *,
     approval_gate: Any | None = None,
     communication: Any | None = None,
+    governance: Any | None = None,
 ) -> list[ToolDefinition]:
     """Create the standard set of graph management tools.
 
@@ -36,6 +37,7 @@ def create_graph_tools(
         orchestrator: GraphOrchestrator for delegation.
         approval_gate: Optional ApprovalGate for hire governance.
         communication: Optional GraphCommunication for escalation messaging.
+        governance: Optional GraphGovernanceConfig for global limits.
 
     Returns:
         List of ToolDefinition objects ready for runtime consumption.
@@ -69,6 +71,14 @@ def create_graph_tools(
         parent = await graph.get_node(parent_id)
         if parent is None:
             return f"Error: parent agent '{parent_id}' not found in graph."
+
+        # Governance check
+        if governance is not None:
+            from cognitia.multi_agent.graph_governance import check_hire_allowed
+
+            error = await check_hire_allowed(governance, parent, graph)
+            if error:
+                return f"Governance denied: {error}"
 
         # Approval gate
         if approval_gate is not None:

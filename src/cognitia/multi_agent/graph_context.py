@@ -146,6 +146,18 @@ class GraphContextBuilder:
         if snapshot.mcp_servers:
             sections.append(f"## MCP Servers\n{', '.join(snapshot.mcp_servers)}")
 
+        # Permissions
+        caps = getattr(node, "capabilities", None)
+        if caps is not None:
+            perm_lines = [
+                f"- Can hire subordinates: {'Yes' if caps.can_hire else 'No'}",
+                f"- Can delegate tasks: {'Yes' if caps.can_delegate else 'No'}",
+                f"- Can use subagents: {'Yes' if caps.can_use_subagents else 'No'}",
+            ]
+            if caps.can_use_team_mode:
+                perm_lines.append("- Can use team mode: Yes")
+            sections.append("## Your Permissions\n" + "\n".join(perm_lines))
+
         # Instructions
         if node.system_prompt:
             sections.append(f"## Your Instructions\n{node.system_prompt}")

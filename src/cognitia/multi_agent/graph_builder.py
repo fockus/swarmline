@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from cognitia.multi_agent.graph_types import AgentNode, GraphSnapshot
+from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode, GraphSnapshot
 
 
 class GraphBuilder:
@@ -37,6 +37,7 @@ class GraphBuilder:
         allowed_tools: tuple[str, ...] = (),
         skills: tuple[str, ...] = (),
         mcp_servers: tuple[str, ...] = (),
+        capabilities: AgentCapabilities | None = None,
         runtime_config: dict[str, Any] | None = None,
         budget_limit_usd: float | None = None,
         metadata: dict[str, Any] | None = None,
@@ -50,6 +51,7 @@ class GraphBuilder:
             allowed_tools=allowed_tools,
             skills=skills,
             mcp_servers=mcp_servers,
+            capabilities=capabilities or AgentCapabilities(),
             runtime_config=runtime_config,
             budget_limit_usd=budget_limit_usd,
             metadata=metadata or {},
@@ -67,6 +69,7 @@ class GraphBuilder:
         allowed_tools: tuple[str, ...] = (),
         skills: tuple[str, ...] = (),
         mcp_servers: tuple[str, ...] = (),
+        capabilities: AgentCapabilities | None = None,
         runtime_config: dict[str, Any] | None = None,
         budget_limit_usd: float | None = None,
         metadata: dict[str, Any] | None = None,
@@ -80,6 +83,7 @@ class GraphBuilder:
             allowed_tools=allowed_tools,
             skills=skills,
             mcp_servers=mcp_servers,
+            capabilities=capabilities or AgentCapabilities(),
             runtime_config=runtime_config,
             budget_limit_usd=budget_limit_usd,
             metadata=metadata or {},
@@ -112,11 +116,23 @@ class GraphBuilder:
 
     @classmethod
     def _add_from_dict(cls, builder: GraphBuilder, node: dict, parent_id: str | None) -> None:
+        caps_data = node.get("capabilities", {})
+        capabilities: AgentCapabilities | None = None
+        if caps_data:
+            capabilities = AgentCapabilities(
+                can_hire=caps_data.get("can_hire", False),
+                can_delegate=caps_data.get("can_delegate", True),
+                max_children=caps_data.get("max_children"),
+                can_use_subagents=caps_data.get("can_use_subagents", False),
+                allowed_subagent_ids=tuple(caps_data.get("allowed_subagent_ids", ())),
+                can_use_team_mode=caps_data.get("can_use_team_mode", False),
+            )
         kwargs: dict[str, Any] = {
             "system_prompt": node.get("system_prompt", ""),
             "allowed_tools": tuple(node.get("allowed_tools", ())),
             "skills": tuple(node.get("skills", ())),
             "mcp_servers": tuple(node.get("mcp_servers", ())),
+            "capabilities": capabilities,
             "runtime_config": node.get("runtime_config"),
             "budget_limit_usd": node.get("budget_limit_usd"),
             "metadata": node.get("metadata", {}),

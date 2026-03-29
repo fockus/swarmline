@@ -17,6 +17,21 @@ class EdgeType(str, Enum):
 
 
 @dataclass(frozen=True)
+class AgentCapabilities:
+    """Per-agent permission flags. Configurable when creating nodes."""
+
+    # Graph governance -- can this agent modify the graph?
+    can_hire: bool = False
+    can_delegate: bool = True
+    max_children: int | None = None  # None = unlimited
+
+    # Runtime capabilities (outside graph)
+    can_use_subagents: bool = False
+    allowed_subagent_ids: tuple[str, ...] = ()  # () = all available
+    can_use_team_mode: bool = False
+
+
+@dataclass(frozen=True)
 class AgentNode:
     """A node in the agent graph — an agent with identity, capabilities, and position."""
 
@@ -28,6 +43,7 @@ class AgentNode:
     allowed_tools: tuple[str, ...] = ()
     skills: tuple[str, ...] = ()
     mcp_servers: tuple[str, ...] = ()
+    capabilities: AgentCapabilities = field(default_factory=AgentCapabilities)
     runtime_config: dict[str, Any] | None = None  # None = inherit from parent
     budget_limit_usd: float | None = None
     status: AgentStatus = AgentStatus.IDLE
