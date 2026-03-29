@@ -87,12 +87,38 @@ nav:
     - Runtime Registry: runtime-registry.md
     - Configuration: configuration.md
     - Advanced Features: advanced.md
+  - API:
+    - Overview: api/index.md
+    - Agent: api/agent.md
+    - Protocols: api/protocols.md
+    - Runtime: api/runtime.md
+    - Memory: api/memory.md
+    - Tools: api/tools.md
+    - Orchestration: api/orchestration.md
+    - Multi-Agent: api/multi-agent.md
+    - Observability: api/observability.md
+    - A2A Protocol: api/a2a.md
+    - CLI: api/cli.md
 
 plugins:
   - search:
       separator: '[\s\-\.]+'
   - minify:
       minify_html: true
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 2
+            members_order: source
+            show_signature_annotations: true
+            separate_signature: true
+            docstring_style: numpy
 
 markdown_extensions:
   # Python Markdown
