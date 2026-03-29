@@ -135,6 +135,11 @@ docker = [
 openshell = [
     "openshell>=0.0.16",
 ]
+# OpenTelemetry (tracing export)
+otel = [
+    "opentelemetry-api>=1.29",
+    "opentelemetry-sdk>=1.29",
+]
 # MCP server (FastMCP STDIO)
 mcp = ["fastmcp>=2.0"]
 # CLI (click-based)
@@ -143,7 +148,7 @@ cli = ["click>=8.1"]
 code-agent = ["cognitia[mcp,cli]"]
 # All runtimes + all storage + web (for development)
 all = [
-    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,mcp,cli]",
+    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli]",
 ]
 dev = [
     "pytest>=8.0",
