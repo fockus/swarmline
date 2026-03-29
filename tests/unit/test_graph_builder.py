@@ -64,6 +64,36 @@ class TestFluentAPI:
         assert cto is not None
         assert cto.allowed_tools == ("web_search",)
 
+    async def test_add_root_with_mcp_servers(self) -> None:
+        store = InMemoryAgentGraph()
+        builder = GraphBuilder(store)
+        builder.add_root(
+            "ceo", "CEO", "executive",
+            mcp_servers=("filesystem", "github"),
+        )
+        snap = await builder.build()
+        assert snap.nodes[0].mcp_servers == ("filesystem", "github")
+
+    async def test_add_child_with_mcp_servers(self) -> None:
+        store = InMemoryAgentGraph()
+        builder = GraphBuilder(store)
+        builder.add_root("ceo", "CEO", "executive")
+        builder.add_child(
+            "cto", "ceo", "CTO", "tech",
+            mcp_servers=("database",),
+        )
+        await builder.build()
+        cto = await store.get_node("cto")
+        assert cto is not None
+        assert cto.mcp_servers == ("database",)
+
+    async def test_mcp_servers_default_empty(self) -> None:
+        store = InMemoryAgentGraph()
+        builder = GraphBuilder(store)
+        builder.add_root("ceo", "CEO", "executive")
+        snap = await builder.build()
+        assert snap.nodes[0].mcp_servers == ()
+
 
 # ---------------------------------------------------------------------------
 # from_dict
@@ -126,6 +156,29 @@ class TestFromDict:
         assert node.system_prompt == "You lead the company"
         assert node.allowed_tools == ("web_search",)
         assert node.budget_limit_usd == 100.0
+
+    async def test_from_dict_with_mcp_servers(self) -> None:
+        store = InMemoryAgentGraph()
+        config = {
+            "id": "ceo",
+            "name": "CEO",
+            "role": "exec",
+            "mcp_servers": ["filesystem", "github"],
+            "children": [
+                {
+                    "id": "cto",
+                    "name": "CTO",
+                    "role": "tech",
+                    "mcp_servers": ["database"],
+                },
+            ],
+        }
+        snap = await GraphBuilder.from_dict(config, store)
+        ceo = snap.nodes[0]
+        assert ceo.mcp_servers == ("filesystem", "github")
+        cto = await store.get_node("cto")
+        assert cto is not None
+        assert cto.mcp_servers == ("database",)
 
 
 # ---------------------------------------------------------------------------

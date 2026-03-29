@@ -154,3 +154,128 @@ def create_memory_bank_tools(
     }
 
     return specs, executors
+
+
+def create_knowledge_tools(
+    store: Any,  # KnowledgeStore (InMemory or Default)
+    searcher: Any,  # KnowledgeSearcher (InMemory or Default)
+) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
+    """Create knowledge bank tools for agent use.
+
+    Returns:
+        Tuple: (specs dict, executors dict) with 3 tools:
+        knowledge_search, knowledge_save_note, knowledge_get_context.
+    """
+
+    specs: dict[str, ToolSpec] = {}
+    executors: dict[str, Callable] = {}
+
+    # --- knowledge_search ---
+
+    specs["knowledge_search"] = ToolSpec(
+        name="knowledge_search",
+        description="Search the knowledge bank for relevant entries by text query.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search query text"},
+                "top_k": {"type": "integer", "description": "Max results", "default": 5},
+            },
+            "required": ["query"],
+        },
+        is_local=True,
+    )
+
+    async def _search(args: dict) -> str:
+        query = args.get("query", "")
+        top_k = int(args.get("top_k", 5))
+        results = await searcher.search(query, top_k=top_k)
+        return json.dumps(
+            [
+                {"path": r.path, "kind": r.kind, "tags": list(r.tags), "summary": r.summary}
+                for r in results
+            ],
+            ensure_ascii=False,
+        )
+
+    executors["knowledge_search"] = _search
+
+    # --- knowledge_save_note ---
+
+    specs["knowledge_save_note"] = ToolSpec(
+        name="knowledge_save_note",
+        description="Save a knowledge note with tags and metadata.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "description": "Note topic (used in filename)"},
+                "content": {"type": "string", "description": "Note content (markdown)"},
+                "tags": {"type": "string", "description": "Comma-separated tags"},
+                "importance": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"],
+                    "default": "medium",
+                },
+            },
+            "required": ["topic", "content"],
+        },
+        is_local=True,
+    )
+
+    async def _save_note(args: dict) -> str:
+        import time
+
+        from cognitia.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
+
+        topic = args.get("topic", "untitled")
+        content = args.get("content", "")
+        tags_str = args.get("tags", "")
+        importance = args.get("importance", "medium")
+
+        tags = tuple(t.strip() for t in tags_str.split(",") if t.strip()) if tags_str else ()
+        now = time.strftime("%Y-%m-%d")
+        safe_topic = topic.lower().replace(" ", "-")
+        safe_topic = "".join(c for c in safe_topic if c.isalnum() or c == "-")
+        path = f"notes/{now}_{safe_topic}.md"
+
+        entry = KnowledgeEntry(
+            path=path,
+            meta=DocumentMeta(kind="note", tags=tags, importance=importance, created=now, updated=now),
+            content=content,
+            size_bytes=len(content.encode("utf-8")),
+        )
+        await store.save(entry)
+        return f"Saved note: {path}"
+
+    executors["knowledge_save_note"] = _save_note
+
+    # --- knowledge_get_context ---
+
+    specs["knowledge_get_context"] = ToolSpec(
+        name="knowledge_get_context",
+        description="Get a summary of the knowledge bank state (recent entries, stats).",
+        parameters={
+            "type": "object",
+            "properties": {},
+        },
+        is_local=True,
+    )
+
+    async def _get_context(args: dict) -> str:
+        entries = await store.list_entries()
+        by_kind: dict[str, int] = {}
+        for e in entries:
+            by_kind[e.kind] = by_kind.get(e.kind, 0) + 1
+        recent = sorted(entries, key=lambda e: e.updated, reverse=True)[:5]
+        return json.dumps(
+            {
+                "total_entries": len(entries),
+                "by_kind": by_kind,
+                "recent": [{"path": e.path, "kind": e.kind, "summary": e.summary} for e in recent],
+            },
+            ensure_ascii=False,
+        )
+
+    executors["knowledge_get_context"] = _get_context
+
+    return specs, executors
