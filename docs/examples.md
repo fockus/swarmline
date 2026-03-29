@@ -93,6 +93,7 @@ Default behavior:
 |---|------|----------------------|
 | 28 | `28_opentelemetry_tracing.py` | OpenTelemetry span export from EventBus events |
 | 29 | `29_structured_output_pydantic.py` | Type-safe structured output with `Agent.query_structured()` |
+| 30 | `30_a2a_agent.py` | A2A protocol: expose agent as service, send tasks, streaming |
 
 ## Picking a Starting Point
 

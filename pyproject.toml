@@ -146,9 +146,14 @@ mcp = ["fastmcp>=2.0"]
 cli = ["click>=8.1"]
 # Code agent meta-extra (MCP + CLI)
 code-agent = ["cognitia[mcp,cli]"]
+# A2A protocol (Agent-to-Agent)
+a2a = [
+    "starlette>=0.40",
+    "httpx>=0.28",
+]
 # All runtimes + all storage + web (for development)
 all = [
-    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli]",
+    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a]",
 ]
 dev = [
     "pytest>=8.0",
