@@ -156,9 +156,15 @@ serve = [
     "starlette>=0.40",
     "uvicorn>=0.30",
 ]
+# Daemon (long-running process manager) — stdlib only, no extra deps
+daemon = []
+# NATS event bus backend
+nats = ["nats-py>=2.0"]
+# Redis event bus backend
+redis = ["redis>=5.0"]
 # All runtimes + all storage + web (for development)
 all = [
-    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a,serve]",
+    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a,serve,daemon]",
 ]
 dev = [
     "pytest>=8.0",
@@ -175,6 +181,7 @@ docs = [
 [project.scripts]
 cognitia = "cognitia.cli:main"
 cognitia-mcp = "cognitia.mcp:main"
+cognitia-daemon = "cognitia.daemon.cli_entry:main"
 
 [tool.hatch.build.targets.sdist]
 include = [
