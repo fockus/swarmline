@@ -151,9 +151,14 @@ a2a = [
     "starlette>=0.40",
     "httpx>=0.28",
 ]
+# HTTP serve (cognitia serve)
+serve = [
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+]
 # All runtimes + all storage + web (for development)
 all = [
-    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a]",
+    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a,serve]",
 ]
 dev = [
     "pytest>=8.0",
