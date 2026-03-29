@@ -8,7 +8,7 @@ import logging
 import sys
 import time
 import uuid
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any, Protocol, runtime_checkable
 
 from cognitia.plugins.runner_types import PluginHandle, PluginManifest, PluginState
@@ -49,6 +49,7 @@ class _PluginProcess:
     handle: PluginHandle
     process: asyncio.subprocess.Process | None = None
     restart_count: int = 0
+    rpc_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 # ---------------------------------------------------------------------------
@@ -132,10 +133,11 @@ class SubprocessPluginRunner:
                 {"jsonrpc": "2.0", "method": "__shutdown__", "id": "shutdown"}
             ) + "\n"
             try:
-                assert process.stdin is not None
-                process.stdin.write(shutdown_req.encode())
-                await process.stdin.drain()
-                await asyncio.wait_for(process.wait(), timeout=5.0)
+                async with pp.rpc_lock:
+                    assert process.stdin is not None
+                    process.stdin.write(shutdown_req.encode())
+                    await process.stdin.drain()
+                    await asyncio.wait_for(process.wait(), timeout=5.0)
             except (asyncio.TimeoutError, OSError, BrokenPipeError):
                 # Graceful failed -- escalate
                 process.terminate()
@@ -197,15 +199,16 @@ class SubprocessPluginRunner:
         assert process.stdin is not None
         assert process.stdout is not None
 
-        line = json.dumps(request) + "\n"
-        process.stdin.write(line.encode())
-        await process.stdin.drain()
-
         effective_timeout = timeout or pp.manifest.timeout_seconds
-        raw = await asyncio.wait_for(
-            process.stdout.readline(),
-            timeout=effective_timeout,
-        )
+        async with pp.rpc_lock:
+            line = json.dumps(request) + "\n"
+            process.stdin.write(line.encode())
+            await process.stdin.drain()
+
+            raw = await asyncio.wait_for(
+                process.stdout.readline(),
+                timeout=effective_timeout,
+            )
         if not raw:
             raise RuntimeError("Plugin process closed stdout unexpectedly")
 

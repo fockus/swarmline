@@ -69,7 +69,7 @@ class LocalWorkspace:
         """Create an isolated workspace according to *spec*."""
         _validate_slug(agent_id, "agent_id")
         _validate_slug(task_id, "task_id")
-        path = await self._create_path(spec, agent_id, task_id)
+        path, branch_name = await self._create_path(spec, agent_id, task_id)
         workspace_id = uuid.uuid4().hex[:12]
         handle = WorkspaceHandle(
             workspace_id=workspace_id,
@@ -77,6 +77,7 @@ class LocalWorkspace:
             task_id=task_id,
             path=path,
             strategy=spec.strategy,
+            branch_name=branch_name,
         )
         async with self._lock:
             self._active[workspace_id] = handle
@@ -109,13 +110,13 @@ class LocalWorkspace:
 
     async def _create_path(
         self, spec: WorkspaceSpec, agent_id: str, task_id: str
-    ) -> str:
+    ) -> tuple[str, str | None]:
         if spec.strategy == WorkspaceStrategy.TEMP_DIR:
-            return await self._create_temp_dir(agent_id, task_id)
+            return await self._create_temp_dir(agent_id, task_id), None
         if spec.strategy == WorkspaceStrategy.GIT_WORKTREE:
             return await self._create_git_worktree(spec, agent_id, task_id)
         if spec.strategy == WorkspaceStrategy.COPY:
-            return await self._create_copy(spec, agent_id, task_id)
+            return await self._create_copy(spec, agent_id, task_id), None
         msg = f"Unknown strategy: {spec.strategy}"
         raise ValueError(msg)
 
@@ -126,7 +127,7 @@ class LocalWorkspace:
 
     async def _create_git_worktree(
         self, spec: WorkspaceSpec, agent_id: str, task_id: str
-    ) -> str:
+    ) -> tuple[str, str]:
         branch_name = spec.branch_template.format(
             agent_name=agent_id, task_id=task_id
         )
@@ -149,7 +150,7 @@ class LocalWorkspace:
         if proc.returncode != 0:
             msg = f"git worktree add failed: {stderr.decode()}"
             raise RuntimeError(msg)
-        return target_path
+        return target_path, branch_name
 
     async def _create_copy(
         self, spec: WorkspaceSpec, agent_id: str, task_id: str
@@ -185,18 +186,15 @@ class LocalWorkspace:
         )
         await proc.communicate()
 
-        # Best-effort branch deletion -- extract branch from path convention
-        parts = os.path.basename(handle.path).split("_", 1)
-        if len(parts) == 2:
-            agent_id, task_id = parts
-            branch_name = f"{agent_id}/{task_id}"
+        # Best-effort branch deletion -- use the exact branch created for the worktree
+        if handle.branch_name is not None:
             proc = await asyncio.create_subprocess_exec(
                 "git",
                 "-C",
                 repo_path,
                 "branch",
                 "-D",
-                branch_name,
+                handle.branch_name,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

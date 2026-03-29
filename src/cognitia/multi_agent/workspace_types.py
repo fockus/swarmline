@@ -34,4 +34,5 @@ class WorkspaceHandle:
     task_id: str
     path: str
     strategy: WorkspaceStrategy
+    branch_name: str | None = None
     created_at: float = field(default_factory=time.time)

@@ -20,11 +20,17 @@ from cognitia.plugins.runner_types import PluginManifest, PluginState
 ECHO_PLUGIN_SOURCE = textwrap.dedent("""\
     \"\"\"Tiny test plugin for subprocess integration tests.\"\"\"
 
+    import time
+
     def echo(message: str = "") -> dict:
         return {"echoed": message}
 
     def add(a: int = 0, b: int = 0) -> dict:
         return {"sum": a + b}
+
+    def slow(label: str = "slow", delay: float = 0.1) -> dict:
+        time.sleep(delay)
+        return {"name": label}
 
     def fail() -> None:
         raise ValueError("intentional test error")
@@ -153,3 +159,18 @@ class TestSubprocessCall:
                 await runner.call(handle, "echo", {"message": "slow"})
         finally:
             await runner.stop(handle)
+
+    async def test_call_concurrent_requests_on_same_handle(
+        self, runner: SubprocessPluginRunner, manifest: PluginManifest
+    ) -> None:
+        handle = await runner.start(manifest)
+        try:
+            slow_result, fast_result = await asyncio.gather(
+                runner.call(handle, "slow", {"label": "slow", "delay": 0.1}),
+                runner.call(handle, "echo", {"message": "fast"}),
+            )
+        finally:
+            await runner.stop(handle)
+
+        assert slow_result == {"name": "slow"}
+        assert fast_result == {"echoed": "fast"}

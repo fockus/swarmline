@@ -28,6 +28,11 @@ async def _run(*args: str) -> None:
         raise RuntimeError(stderr.decode())
 
 
+async def _configure_git_identity(repo: str) -> None:
+    await _run("git", "-C", repo, "config", "user.email", "test@example.com")
+    await _run("git", "-C", repo, "config", "user.name", "Test User")
+
+
 @pytest.fixture
 def workspace() -> LocalWorkspace:
     return LocalWorkspace()
@@ -161,6 +166,7 @@ async def test_create_git_worktree(tmp_path: object) -> None:
     repo = pathlib.Path(str(tmp_path)) / "repo"
     repo.mkdir()
     await _run("git", "init", str(repo))
+    await _configure_git_identity(str(repo))
     (repo / "README.md").write_text("hello")
     await _run("git", "-C", str(repo), "add", ".")
     await _run("git", "-C", str(repo), "commit", "-m", "init")
@@ -192,3 +198,47 @@ async def test_create_git_worktree_failure_raises(tmp_path: object) -> None:
     )
     with pytest.raises(RuntimeError):
         await ws.create(spec, "agent1", "task1")
+
+
+@pytest.mark.skipif(not shutil.which("git"), reason="git not available")
+async def test_cleanup_git_worktree_deletes_custom_branch(tmp_path: object) -> None:
+    import pathlib
+
+    repo = pathlib.Path(str(tmp_path)) / "repo"
+    repo.mkdir()
+    await _run("git", "init", str(repo))
+    await _configure_git_identity(str(repo))
+    (repo / "README.md").write_text("hello")
+    await _run("git", "-C", str(repo), "add", ".")
+    await _run("git", "-C", str(repo), "commit", "-m", "init")
+
+    ws = LocalWorkspace()
+    spec = WorkspaceSpec(
+        strategy=WorkspaceStrategy.GIT_WORKTREE,
+        base_path=str(repo),
+        branch_template="feature/{agent_name}-{task_id}",
+    )
+    handle = await ws.create(spec, "agent1", "task1")
+    assert handle.branch_name == "feature/agent1-task1"
+
+    try:
+        assert os.path.isdir(handle.path)
+    finally:
+        result = await ws.cleanup(handle)
+
+    assert result is True
+    assert not os.path.isdir(handle.path)
+
+    proc = await asyncio.create_subprocess_exec(
+        "git",
+        "-C",
+        str(repo),
+        "branch",
+        "--list",
+        "feature/agent1-task1",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    assert proc.returncode == 0, stderr.decode()
+    assert stdout.decode().strip() == ""

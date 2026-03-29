@@ -72,6 +72,16 @@ class TestSaveAndLoad:
         assert reloaded is not None
         assert reloaded["nested"]["key"] == "original"
 
+    async def test_save_and_load_distinguishes_ids_with_colons(self, store) -> None:
+        await store.save("agent:1", "task", {"value": 1})
+        await store.save("agent", "1:task", {"value": 2})
+
+        first = await store.load("agent:1", "task")
+        second = await store.load("agent", "1:task")
+
+        assert first == {"value": 1}
+        assert second == {"value": 2}
+
 
 # ---------------------------------------------------------------------------
 # Delete
@@ -122,6 +132,16 @@ class TestListByAgent:
         results = await store.list_by_agent("agent-1")
         assert len(results) == 1
         assert results[0].task_id == "t1"
+
+    async def test_list_by_agent_returns_defensive_copy(self, store) -> None:
+        await store.save("agent-1", "task-a", {"nested": {"value": "original"}})
+
+        results = await store.list_by_agent("agent-1")
+        assert len(results) == 1
+        results[0].params["nested"]["value"] = "mutated"
+
+        loaded = await store.load("agent-1", "task-a")
+        assert loaded == {"nested": {"value": "original"}}
 
 
 # ---------------------------------------------------------------------------

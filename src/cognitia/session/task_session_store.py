@@ -39,13 +39,13 @@ class InMemoryTaskSessionStore:
     """In-memory task session store. Suitable for tests and single-process use."""
 
     def __init__(self, event_bus: Any | None = None) -> None:
-        self._store: dict[str, TaskSessionParams] = {}
+        self._store: dict[tuple[str, str], TaskSessionParams] = {}
         self._lock = asyncio.Lock()
         self._event_bus = event_bus
 
     @staticmethod
-    def _key(agent_id: str, task_id: str) -> str:
-        return f"{agent_id}:{task_id}"
+    def _key(agent_id: str, task_id: str) -> tuple[str, str]:
+        return agent_id, task_id
 
     async def save(self, agent_id: str, task_id: str, params: dict[str, Any]) -> None:
         now = time.time()
@@ -91,7 +91,13 @@ class InMemoryTaskSessionStore:
     async def list_by_agent(self, agent_id: str) -> list[TaskSessionParams]:
         async with self._lock:
             return [
-                entry
+                TaskSessionParams(
+                    agent_id=entry.agent_id,
+                    task_id=entry.task_id,
+                    params=copy.deepcopy(entry.params),
+                    created_at=entry.created_at,
+                    updated_at=entry.updated_at,
+                )
                 for entry in self._store.values()
                 if entry.agent_id == agent_id
             ]
