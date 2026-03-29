@@ -74,6 +74,8 @@ class NatsGraphCommunication:
             "id": msg.id, "from": msg.from_agent_id,
             "to": msg.to_agent_id, "channel": msg.channel.value,
             "content": msg.content, "task_id": msg.task_id,
+            "created_at": msg.created_at,
+            "metadata": msg.metadata,
         }).encode()
 
     @staticmethod
@@ -83,6 +85,8 @@ class NatsGraphCommunication:
             id=d["id"], from_agent_id=d["from"],
             to_agent_id=d["to"], channel=ChannelType(d["channel"]),
             content=d["content"], task_id=d.get("task_id"),
+            created_at=float(d.get("created_at", 0)),
+            metadata=d.get("metadata", {}),
         )
 
     async def _publish(self, subject: str, msg: GraphMessage) -> None:
@@ -130,12 +134,49 @@ class NatsGraphCommunication:
             await self._publish(subject, msg)
             await self._emit("graph.message.escalation", msg)
 
+    async def _fetch_from_jetstream(self, subject_filter: str) -> list[GraphMessage]:
+        """Fetch messages from JetStream via ordered consumer with subject filter."""
+        if self._js is None:
+            return []
+        try:
+            # Create ephemeral ordered consumer with subject filter
+            sub = await self._js.subscribe(
+                subject_filter,
+                ordered_consumer=True,
+            )
+            messages: list[GraphMessage] = []
+            try:
+                while True:
+                    try:
+                        raw = await sub.next_msg(timeout=0.5)
+                        messages.append(self._payload_to_msg(raw.data))
+                    except Exception:  # noqa: BLE001
+                        break  # no more messages
+            finally:
+                await sub.unsubscribe()
+            return messages
+        except Exception:  # noqa: BLE001
+            # Fallback to local cache on any JetStream error
+            return []
+
     async def get_inbox(self, agent_id: str) -> list[GraphMessage]:
-        """Get inbox from local cache (JetStream replay requires consumer setup)."""
+        """Get inbox from JetStream, fallback to local cache."""
+        if self._js is not None:
+            js_msgs = await self._fetch_from_jetstream(
+                f"{self._prefix}.inbox.{agent_id}"
+            )
+            if js_msgs:
+                return js_msgs
         return [m for m in self._messages if m.to_agent_id == agent_id]
 
     async def get_thread(self, task_id: str) -> list[GraphMessage]:
-        """Get thread from local cache."""
+        """Get thread from JetStream, fallback to local cache."""
+        if self._js is not None:
+            # Thread messages are in inbox subjects, filter by task_id
+            all_msgs = await self._fetch_from_jetstream(f"{self._prefix}.>")
+            thread = [m for m in all_msgs if m.task_id == task_id]
+            if thread:
+                return thread
         return [m for m in self._messages if m.task_id == task_id]
 
     async def _emit(self, topic: str, msg: GraphMessage) -> None:

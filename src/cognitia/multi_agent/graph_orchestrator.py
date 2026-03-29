@@ -179,6 +179,24 @@ class DefaultGraphOrchestrator:
         self._bg_tasks[request.task_id] = task
 
     # ------------------------------------------------------------------
+    # Protocol: wait_for_task (GraphTaskWaiter)
+    # ------------------------------------------------------------------
+
+    async def wait_for_task(self, task_id: str, timeout: float | None = None) -> str | None:
+        """Wait for a background task to complete. Returns result or None."""
+        bg = self._bg_tasks.get(task_id)
+        if bg is None:
+            return self._results.get(task_id)
+        try:
+            if timeout is not None:
+                await asyncio.wait_for(asyncio.shield(bg), timeout=timeout)
+            else:
+                await bg
+        except (TimeoutError, asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+        return self._results.get(task_id)
+
+    # ------------------------------------------------------------------
     # Protocol: collect_result
     # ------------------------------------------------------------------
 

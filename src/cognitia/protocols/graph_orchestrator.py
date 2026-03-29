@@ -1,4 +1,4 @@
-"""Graph orchestrator protocol — hierarchical agent execution engine."""
+"""Graph orchestrator protocols — hierarchical agent execution engine."""
 
 from __future__ import annotations
 
@@ -37,4 +37,17 @@ class GraphOrchestrator(Protocol):
 
     async def stop(self, run_id: str) -> None:
         """Stop an orchestration run gracefully."""
+        ...
+
+
+@runtime_checkable
+class GraphTaskWaiter(Protocol):
+    """Wait for task completion. ISP: 1 method.
+
+    Separated from GraphOrchestrator to keep ISP <=5.
+    Implementations should implement both protocols.
+    """
+
+    async def wait_for_task(self, task_id: str, timeout: float | None = None) -> str | None:
+        """Wait for a task to complete. Returns result or None on timeout."""
         ...

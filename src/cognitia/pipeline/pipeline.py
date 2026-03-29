@@ -136,14 +136,10 @@ class Pipeline:
         run_id = await self._orch.start(phase_goal)
         self._current_run_id = run_id
 
-        # Wait for root agent to complete (start() now launches root automatically)
+        # Wait for root agent to complete via protocol method (no private attr access)
         root_task_id = f"root-{run_id}"
-        bg = getattr(self._orch, "_bg_tasks", {}).get(root_task_id)
-        if bg is not None:
-            try:
-                await bg
-            except Exception:  # noqa: BLE001
-                pass
+        if hasattr(self._orch, "wait_for_task"):
+            await self._orch.wait_for_task(root_task_id)
         return run_id
 
     async def _run_single_phase(

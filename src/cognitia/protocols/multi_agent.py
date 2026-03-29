@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from cognitia.multi_agent.task_types import TaskFilter, TaskItem
 
 if TYPE_CHECKING:
+    from cognitia.domain_types import ToolSpec
     from cognitia.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
-    from cognitia.runtime.types import ToolSpec
 
 
 @runtime_checkable

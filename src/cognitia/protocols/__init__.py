@@ -34,11 +34,8 @@ from cognitia.protocols.session import (
 )
 from cognitia.protocols.tools import LocalToolResolver, ToolIdCodec
 
-# Re-export AgentRuntime if available
-import contextlib
-
-with contextlib.suppress(ImportError):
-    from cognitia.runtime.base import AgentRuntime  # noqa: F401
+# AgentRuntime is now defined in protocols.runtime (domain layer)
+from cognitia.protocols.runtime import AgentRuntime  # noqa: F401
 
 __all__ = [
     "AgentRegistry",
