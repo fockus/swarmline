@@ -428,3 +428,93 @@ class TestApprovalGate:
         assert result is None
         calls = [c[0][0] for c in event_bus.emit.call_args_list]
         assert "graph.orchestrator.denied" in calls
+
+
+# ---------------------------------------------------------------------------
+# Context-aware runner (dual dispatch)
+# ---------------------------------------------------------------------------
+
+
+class TestContextAwareRunner:
+
+    async def test_context_aware_runner_receives_execution_context(
+        self, make_orchestrator,
+    ) -> None:
+        """Orchestrator with 1-arg runner passes AgentExecutionContext."""
+        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+
+        received: list[AgentExecutionContext] = []
+
+        async def ctx_runner(ctx: AgentExecutionContext) -> str:
+            received.append(ctx)
+            return f"Done by {ctx.agent_id}"
+
+        orch = make_orchestrator(agent_runner=ctx_runner)
+        await orch.start("Build a web app")
+        await asyncio.sleep(0.15)
+
+        assert len(received) >= 1
+        ctx = received[0]
+        assert isinstance(ctx, AgentExecutionContext)
+        assert ctx.goal == "Build a web app"
+        assert ctx.agent_id is not None
+        assert ctx.system_prompt is not None
+
+    async def test_legacy_runner_still_works(self, make_orchestrator) -> None:
+        """Orchestrator with 4-arg runner continues to work (backward compat)."""
+        calls: list[tuple[str, str, str, str]] = []
+
+        async def legacy_runner(agent_id: str, task_id: str, goal: str, system_prompt: str) -> str:
+            calls.append((agent_id, task_id, goal, system_prompt))
+            return f"Legacy result from {agent_id}"
+
+        orch = make_orchestrator(agent_runner=legacy_runner)
+        await orch.start("Build")
+        await asyncio.sleep(0.15)
+
+        assert len(calls) >= 1
+        agent_id, task_id, goal, system_prompt = calls[0]
+        assert isinstance(agent_id, str)
+        assert isinstance(system_prompt, str)
+        assert goal == "Build"
+
+    async def test_context_has_tools_and_skills(self, org, task_board, event_bus) -> None:
+        """AgentExecutionContext includes tools and skills from AgentNode."""
+        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+        from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+        from cognitia.multi_agent.graph_types import AgentNode
+
+        # Create a graph with tools and skills on the root node
+        from cognitia.multi_agent.graph_store import InMemoryAgentGraph
+
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="root",
+            name="Root",
+            role="root",
+            system_prompt="You are root.",
+            allowed_tools=("search", "code_exec"),
+            skills=("python", "sql"),
+        ))
+
+        received: list[AgentExecutionContext] = []
+
+        async def ctx_runner(ctx: AgentExecutionContext) -> str:
+            received.append(ctx)
+            return "ok"
+
+        orch = DefaultGraphOrchestrator(
+            graph=store,
+            task_board=task_board,
+            agent_runner=ctx_runner,
+            event_bus=event_bus,
+        )
+        await orch.start("Do something")
+        await asyncio.sleep(0.15)
+
+        assert len(received) >= 1
+        ctx = received[0]
+        assert "search" in ctx.tools
+        assert "code_exec" in ctx.tools
+        assert "python" in ctx.skills
+        assert "sql" in ctx.skills

@@ -10,6 +10,7 @@ Failure: retry per-agent → escalate to parent after exhausting retries.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
 import uuid
 from dataclasses import replace
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from cognitia.protocols.graph_task import GraphTaskBoard
 
 from cognitia.multi_agent.graph_context import GraphContextBuilder
+from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
 from cognitia.multi_agent.graph_orchestrator_types import (
     AgentExecution,
     AgentRunState,
@@ -34,6 +36,9 @@ from cognitia.multi_agent.graph_task_types import GraphTaskItem
 # Signature: (agent_id, task_id, goal, system_prompt) -> result_text
 AgentRunner = Callable[[str, str, str, str], Awaitable[str]]
 
+# New context-aware runner: receives a single AgentExecutionContext.
+ContextAwareRunner = Callable[[AgentExecutionContext], Awaitable[str]]
+
 
 class DefaultGraphOrchestrator:
     """Concrete orchestrator that ties graph components together.
@@ -41,7 +46,8 @@ class DefaultGraphOrchestrator:
     Requires:
         - graph: AgentGraphStore + AgentGraphQuery (InMemory/SQLite)
         - task_board: GraphTaskBoard
-        - agent_runner: async callable (agent_id, task_id, goal, system_prompt) -> str
+        - agent_runner: async callable — either legacy (agent_id, task_id, goal, system_prompt) -> str
+          or context-aware (AgentExecutionContext) -> str (auto-detected)
         - event_bus: optional EventBus for lifecycle events
         - approval_gate: optional gate with async check(action, context) -> bool
     """
@@ -50,7 +56,7 @@ class DefaultGraphOrchestrator:
         self,
         graph: AgentGraphStore | AgentGraphQuery | Any,
         task_board: GraphTaskBoard | Any,
-        agent_runner: AgentRunner,
+        agent_runner: AgentRunner | ContextAwareRunner,
         *,
         event_bus: Any | None = None,
         communication: Any | None = None,
@@ -61,6 +67,20 @@ class DefaultGraphOrchestrator:
         self._graph = graph
         self._task_board = task_board
         self._runner = agent_runner
+        # Detect if runner accepts 1 arg (ContextAwareRunner) or 4 args (legacy)
+        try:
+            sig = inspect.signature(agent_runner)
+            params = [
+                p for p in sig.parameters.values()
+                if p.default is inspect.Parameter.empty
+                and p.kind in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                )
+            ]
+            self._context_aware = len(params) == 1
+        except (ValueError, TypeError):
+            self._context_aware = False
         self._bus = event_bus
         self._comm = communication
         self._max_concurrent = max_concurrent
@@ -280,15 +300,26 @@ class DefaultGraphOrchestrator:
                                     started_at=time.time(),
                                 )
 
-                        # Build context-aware system prompt
+                        # Build structured execution context
                         try:
-                            ctx = await self._context_builder.build_context(agent_id, task_id=task_id)
-                            system_prompt = self._context_builder.render_system_prompt(ctx)
+                            exec_ctx = await self._context_builder.build_execution_context(
+                                agent_id, task_id, goal,
+                            )
                         except ValueError:
-                            system_prompt = ""
+                            exec_ctx = AgentExecutionContext(
+                                agent_id=agent_id,
+                                task_id=task_id,
+                                goal=goal,
+                                system_prompt="",
+                            )
 
-                        # Run the agent
-                        result = await self._runner(agent_id, task_id, goal, system_prompt)
+                        # Dual dispatch: new runner gets full context, legacy gets 4 strings
+                        if self._context_aware:
+                            result = await self._runner(exec_ctx)
+                        else:
+                            result = await self._runner(
+                                agent_id, task_id, goal, exec_ctx.system_prompt,
+                            )
 
                         # Success
                         self._results[task_id] = result
