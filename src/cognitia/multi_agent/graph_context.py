@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from cognitia.multi_agent.graph_task_types import GoalAncestry
 from cognitia.multi_agent.graph_types import AgentNode
+
+if TYPE_CHECKING:
+    from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
 
 
 @dataclass(frozen=True)
@@ -19,6 +22,8 @@ class GraphContextSnapshot:
     sibling_agents: tuple[str, ...] = ()
     child_agents: tuple[str, ...] = ()
     available_tools: tuple[str, ...] = ()
+    skills: tuple[str, ...] = ()
+    mcp_servers: tuple[str, ...] = ()
     shared_knowledge: str = ""
 
 
@@ -71,6 +76,20 @@ class GraphContextBuilder:
                 if tool not in tools:
                     tools.append(tool)
 
+        # Skills: own + inherited from ancestors
+        skills = list(node.skills)
+        for ancestor in chain[1:]:
+            for skill in ancestor.skills:
+                if skill not in skills:
+                    skills.append(skill)
+
+        # MCP servers: own + inherited from ancestors (dedup by name)
+        mcp_servers = list(node.mcp_servers)
+        for ancestor in chain[1:]:
+            for server in ancestor.mcp_servers:
+                if server not in mcp_servers:
+                    mcp_servers.append(server)
+
         # Goal ancestry
         goal_ancestry: GoalAncestry | None = None
         if task_id and self._task_board:
@@ -83,6 +102,8 @@ class GraphContextBuilder:
             sibling_agents=siblings,
             child_agents=child_names,
             available_tools=tuple(tools),
+            skills=tuple(skills),
+            mcp_servers=tuple(mcp_servers),
             shared_knowledge=shared_knowledge,
         )
 
@@ -117,6 +138,14 @@ class GraphContextBuilder:
         if snapshot.available_tools:
             sections.append(f"## Available Tools\n{', '.join(snapshot.available_tools)}")
 
+        # Skills
+        if snapshot.skills:
+            sections.append(f"## Skills\n{', '.join(snapshot.skills)}")
+
+        # MCP Servers
+        if snapshot.mcp_servers:
+            sections.append(f"## MCP Servers\n{', '.join(snapshot.mcp_servers)}")
+
         # Instructions
         if node.system_prompt:
             sections.append(f"## Your Instructions\n{node.system_prompt}")
@@ -131,3 +160,33 @@ class GraphContextBuilder:
             sections.append(f"## Shared Knowledge\n{knowledge}")
 
         return "\n\n".join(sections)
+
+    async def build_execution_context(
+        self,
+        agent_id: str,
+        task_id: str,
+        goal: str,
+        *,
+        shared_knowledge: str = "",
+    ) -> "AgentExecutionContext":
+        """Build a full execution context for the runner."""
+        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+
+        snapshot = await self.build_context(
+            agent_id, task_id=task_id, shared_knowledge=shared_knowledge,
+        )
+        system_prompt = self.render_system_prompt(snapshot)
+        node = snapshot.agent_node
+
+        return AgentExecutionContext(
+            agent_id=agent_id,
+            task_id=task_id,
+            goal=goal,
+            system_prompt=system_prompt,
+            tools=snapshot.available_tools,
+            skills=snapshot.skills,
+            mcp_servers=snapshot.mcp_servers,
+            runtime_config=node.runtime_config,
+            budget_limit_usd=node.budget_limit_usd,
+            metadata=node.metadata,
+        )

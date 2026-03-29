@@ -146,6 +146,165 @@ class TestRenderPrompt:
 
 
 # ---------------------------------------------------------------------------
+# Skills & MCP servers in context
+# ---------------------------------------------------------------------------
+
+
+class TestSkillsAndMcpContext:
+
+    async def test_skills_in_snapshot(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="a1", name="Agent", role="worker",
+            skills=("summarize", "translate"),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("a1")
+        assert ctx.skills == ("summarize", "translate")
+
+    async def test_skills_inherited_from_ancestors(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="boss", name="Boss", role="manager",
+            skills=("plan", "delegate"),
+        ))
+        await store.add_node(AgentNode(
+            id="worker", name="Worker", role="worker",
+            parent_id="boss",
+            skills=("code",),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("worker")
+        # Own first, then inherited, deduped
+        assert ctx.skills == ("code", "plan", "delegate")
+
+    async def test_skills_dedup_across_ancestors(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="root", name="Root", role="exec", skills=("shared",),
+        ))
+        await store.add_node(AgentNode(
+            id="mid", name="Mid", role="mgr", parent_id="root",
+            skills=("shared", "mid_only"),
+        ))
+        await store.add_node(AgentNode(
+            id="leaf", name="Leaf", role="dev", parent_id="mid",
+            skills=("shared",),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("leaf")
+        assert ctx.skills.count("shared") == 1
+        assert "mid_only" in ctx.skills
+
+    async def test_mcp_servers_in_snapshot(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="a1", name="Agent", role="worker",
+            mcp_servers=("github", "slack"),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("a1")
+        assert ctx.mcp_servers == ("github", "slack")
+
+    async def test_mcp_servers_inherited_from_ancestors(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="boss", name="Boss", role="manager",
+            mcp_servers=("github",),
+        ))
+        await store.add_node(AgentNode(
+            id="worker", name="Worker", role="worker",
+            parent_id="boss",
+            mcp_servers=("slack",),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("worker")
+        assert ctx.mcp_servers == ("slack", "github")
+
+    async def test_skills_in_system_prompt(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="a1", name="Agent", role="worker",
+            skills=("summarize", "translate"),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("a1")
+        prompt = builder.render_system_prompt(ctx)
+        assert "## Skills" in prompt
+        assert "summarize" in prompt
+        assert "translate" in prompt
+
+    async def test_mcp_in_system_prompt(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="a1", name="Agent", role="worker",
+            mcp_servers=("github", "slack"),
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("a1")
+        prompt = builder.render_system_prompt(ctx)
+        assert "## MCP Servers" in prompt
+        assert "github" in prompt
+        assert "slack" in prompt
+
+    async def test_no_skills_section_when_empty(self) -> None:
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(id="a1", name="Agent", role="worker"))
+        builder = GraphContextBuilder(graph_query=store)
+        ctx = await builder.build_context("a1")
+        prompt = builder.render_system_prompt(ctx)
+        assert "## Skills" not in prompt
+        assert "## MCP Servers" not in prompt
+
+
+# ---------------------------------------------------------------------------
+# build_execution_context
+# ---------------------------------------------------------------------------
+
+
+class TestBuildExecutionContext:
+
+    async def test_build_execution_context_returns_all_fields(self) -> None:
+        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+
+        store = InMemoryAgentGraph()
+        await store.add_node(AgentNode(
+            id="boss", name="Boss", role="manager",
+            allowed_tools=("web_search",),
+            skills=("plan",),
+            mcp_servers=("github",),
+        ))
+        await store.add_node(AgentNode(
+            id="dev", name="Dev", role="developer",
+            parent_id="boss",
+            allowed_tools=("sandbox",),
+            skills=("code",),
+            mcp_servers=("slack",),
+            runtime_config={"model": "sonnet"},
+            budget_limit_usd=5.0,
+            metadata={"team": "core"},
+        ))
+        builder = GraphContextBuilder(graph_query=store)
+        exc = await builder.build_execution_context(
+            agent_id="dev", task_id="t1", goal="Fix the bug",
+        )
+        assert isinstance(exc, AgentExecutionContext)
+        assert exc.agent_id == "dev"
+        assert exc.task_id == "t1"
+        assert exc.goal == "Fix the bug"
+        assert "Dev" in exc.system_prompt
+        assert "sandbox" in exc.tools
+        assert "web_search" in exc.tools
+        assert "code" in exc.skills
+        assert "plan" in exc.skills
+        assert "slack" in exc.mcp_servers
+        assert "github" in exc.mcp_servers
+        assert exc.runtime_config == {"model": "sonnet"}
+        assert exc.budget_limit_usd == 5.0
+        assert exc.metadata == {"team": "core"}
+
+
+# ---------------------------------------------------------------------------
 # GraphRuntimeResolver
 # ---------------------------------------------------------------------------
 
