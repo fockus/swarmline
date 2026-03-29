@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-30
+
+### Changed
+
+- **Branding**: Cognitia renamed to Swarmline across README and documentation
+
+### Fixed
+
+- **P1 — False-green completion**: Pipeline now detects failed/timed-out root agent (wait_for_task None → phase FAILED)
+- **P1 — Task state consistency**: Orchestrator calls checkout_task() on start/delegate, cancel_task() on failure/cancel
+- **P1 — ThinRuntime per-call config**: Per-call RuntimeConfig now applies to actual LLM path via partial binding (not just guardrails/cost)
+- **P2 — Concurrency**: WorkflowGraph.resume() per-execution interrupt isolation; SessionManager async backend methods; Scheduler honors max_concurrent_tasks via Semaphore
+- **P2 — SQLite thread safety**: EpisodicMemory uses threading.Lock + check_same_thread=False; TaskQueue.get() uses SQL-level filtering instead of O(N) Python scan
+- **P2 — Security hardening**: SSRF DNS resolution + localhost block + no-redirect; workspace slug validation; A2A server auth_token + request size limit; Docker cap_drop=ALL + network=none + mem_limit; MCP exec_code trusted=True required; daemon auth wired through config
+- **P3 — Observability bounds**: ActivityLog max_entries eviction; ConsoleTracer ended span pruning
+- **Critical**: FTS5 BEFORE DELETE/UPDATE triggers (prevents stale search duplicates)
+- **Critical**: Exponential retry backoff in orchestrator (prevents retry storm / livelock)
+- **Critical**: Task board read methods under async lock (prevents dict iteration crash)
+- **Critical**: run_turn/stream_reply use async aget() (prevents event loop blocking)
+- Workspace lock safety + plugin/session publish→emit method rename
+- 30+ additional security, correctness, and concurrency fixes across all modules
+
 ## [1.2.0] - 2026-03-30
 
 ### Added
@@ -353,7 +375,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/cognitia/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/fockus/cognitia/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/fockus/cognitia/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/fockus/cognitia/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/fockus/cognitia/compare/v1.0.0...v1.1.0
 [1.0.0-core]: https://github.com/fockus/cognitia/compare/v0.5.0...v1.0.0-core
