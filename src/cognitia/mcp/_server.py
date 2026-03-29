@@ -211,7 +211,7 @@ def create_server(*, mode: str = "auto") -> Any:
         code: str, timeout_seconds: int = 30
     ) -> dict[str, Any]:
         """Execute Python code in a subprocess with timeout."""
-        return await exec_code(code, timeout_seconds)
+        return await exec_code(code, timeout_seconds, trusted=True)
 
     # --- Agent tools (full mode only) ---
 

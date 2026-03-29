@@ -64,6 +64,7 @@ class InMemorySessionManager:
     @staticmethod
     def _run_awaitable_sync(awaitable: Awaitable[Any]) -> Any:
         """Synchronously execute backend coroutine from sync manager APIs."""
+
         async def _await_value() -> Any:
             return await awaitable
 
@@ -101,11 +102,14 @@ class InMemorySessionManager:
             "active_tools": [tool.to_dict() for tool in state.active_tools],
             "role_id": state.role_id,
             "active_skill_ids": list(state.active_skill_ids),
-            "runtime_messages": [message.to_dict() for message in state.runtime_messages],
+            "runtime_messages": [
+                message.to_dict() for message in state.runtime_messages
+            ],
             "is_rehydrated": state.is_rehydrated,
             "tool_failure_count": state.tool_failure_count,
             # Serialize as wall-clock so it survives process restarts
-            "last_activity_at": time.time() - (time.monotonic() - state.last_activity_at),
+            "last_activity_at": time.time()
+            - (time.monotonic() - state.last_activity_at),
             "delegated_from": state.delegated_from,
             "delegation_summary": state.delegation_summary,
             "delegation_turn_count": state.delegation_turn_count,
@@ -123,7 +127,8 @@ class InMemorySessionManager:
             ),
             system_prompt=str(payload.get("system_prompt", "")),
             active_tools=[
-                ToolSpec(**tool_payload) for tool_payload in payload.get("active_tools", [])
+                ToolSpec(**tool_payload)
+                for tool_payload in payload.get("active_tools", [])
             ],
             role_id=str(payload.get("role_id", "default")),
             active_skill_ids=list(payload.get("active_skill_ids", [])),
@@ -134,7 +139,8 @@ class InMemorySessionManager:
             is_rehydrated=bool(payload.get("is_rehydrated", False)),
             tool_failure_count=int(payload.get("tool_failure_count", 0)),
             # Convert wall-clock back to monotonic for TTL checks
-            last_activity_at=time.monotonic() - (time.time() - float(payload.get("last_activity_at", time.time()))),
+            last_activity_at=time.monotonic()
+            - (time.time() - float(payload.get("last_activity_at", time.time()))),
             delegated_from=payload.get("delegated_from"),
             delegation_summary=payload.get("delegation_summary"),
             delegation_turn_count=int(payload.get("delegation_turn_count", 0)),
@@ -147,6 +153,20 @@ class InMemorySessionManager:
             return None
 
         payload = self._run_awaitable_sync(self._backend.load(self._key_str(key)))
+        if payload is None:
+            return None
+
+        state = self._deserialize_state(payload)
+        state.is_rehydrated = True
+        self._sessions[self._key_str(state.key)] = state
+        return state
+
+    async def _load_snapshot_async(self, key: SessionKey) -> SessionState | None:
+        """Async version: load a session snapshot from the backend."""
+        if self._backend is None:
+            return None
+
+        payload = await self._backend.load(self._key_str(key))
         if payload is None:
             return None
 
@@ -178,7 +198,11 @@ class InMemorySessionManager:
         await self._backend.delete(self._key_str(key))
 
     def get(self, key: SessionKey) -> SessionState | None:
-        """Get an existing session. Returns None if TTL has expired."""
+        """Get an existing session. Returns None if TTL has expired.
+
+        Note: if a backend is configured, this uses a sync bridge that may
+        block the event loop. Prefer :meth:`aget` in async contexts.
+        """
         ks = self._key_str(key)
         state = self._sessions.get(ks)
         if state is None:
@@ -189,17 +213,49 @@ class InMemorySessionManager:
             self._ttl_seconds > 0
             and (time.monotonic() - state.last_activity_at) > self._ttl_seconds
         ):
-            logger.info("get[%s]: session expired (TTL=%.0fs), evicting", ks, self._ttl_seconds)
+            logger.info(
+                "get[%s]: session expired (TTL=%.0fs), evicting", ks, self._ttl_seconds
+            )
             self._sessions.pop(ks, None)
             self._delete_snapshot_sync(key)
             return None
         return state
 
+    async def aget(self, key: SessionKey) -> SessionState | None:
+        """Async version of :meth:`get`. Awaits backend directly, never blocks."""
+        ks = self._key_str(key)
+        state = self._sessions.get(ks)
+        if state is None:
+            state = await self._load_snapshot_async(key)
+            if state is None:
+                return None
+        if (
+            self._ttl_seconds > 0
+            and (time.monotonic() - state.last_activity_at) > self._ttl_seconds
+        ):
+            logger.info(
+                "aget[%s]: session expired (TTL=%.0fs), evicting", ks, self._ttl_seconds
+            )
+            self._sessions.pop(ks, None)
+            await self._delete_snapshot(key)
+            return None
+        return state
+
     def register(self, state: SessionState) -> None:
-        """Register a new session."""
+        """Register a new session.
+
+        Note: if a backend is configured, this uses a sync bridge that may
+        block the event loop. Prefer :meth:`aregister` in async contexts.
+        """
         state.last_activity_at = time.monotonic()
         self._sessions[self._key_str(state.key)] = state
         self._persist_state_sync(state)
+
+    async def aregister(self, state: SessionState) -> None:
+        """Async version of :meth:`register`. Awaits backend directly, never blocks."""
+        state.last_activity_at = time.monotonic()
+        self._sessions[self._key_str(state.key)] = state
+        await self._persist_state(state)
 
     async def close(self, key: SessionKey) -> None:
         """Close the session and disconnect the SDK."""
@@ -336,13 +392,17 @@ class InMemorySessionManager:
                             yield StreamEvent(
                                 type="tool_use_result",
                                 tool_name=str(runtime_event.data.get("name", "")),
-                                tool_result=str(runtime_event.data.get("result_summary", "")),
+                                tool_result=str(
+                                    runtime_event.data.get("result_summary", "")
+                                ),
                             )
                         elif runtime_event.type == "error":
                             saw_terminal_event = True
                             yield StreamEvent(
                                 type="error",
-                                text=str(runtime_event.data.get("message", "Runtime error")),
+                                text=str(
+                                    runtime_event.data.get("message", "Runtime error")
+                                ),
                             )
                             return
                         elif runtime_event.type == "final":
@@ -364,17 +424,27 @@ class InMemorySessionManager:
                                     Message(role="assistant", content=full_text)
                                 )
                                 await self._persist_state(state)
-                            done_event = StreamEvent(type="done", text=full_text, is_final=True)
+                            done_event = StreamEvent(
+                                type="done", text=full_text, is_final=True
+                            )
                             done_event.session_id = final_data.get("session_id")
                             done_event.total_cost_usd = final_data.get("total_cost_usd")
                             done_event.usage = final_data.get("usage")
-                            done_event.structured_output = final_data.get("structured_output")
-                            done_event.native_metadata = final_data.get("native_metadata")
+                            done_event.structured_output = final_data.get(
+                                "structured_output"
+                            )
+                            done_event.native_metadata = final_data.get(
+                                "native_metadata"
+                            )
                             yield done_event
                             return
                 except Exception as exc:
-                    logger.exception("stream_reply[%s]: runtime.run() failed", self._key_str(key))
-                    yield StreamEvent(type="error", text=f"Runtime execution failed: {exc}")
+                    logger.exception(
+                        "stream_reply[%s]: runtime.run() failed", self._key_str(key)
+                    )
+                    yield StreamEvent(
+                        type="error", text=f"Runtime execution failed: {exc}"
+                    )
                     return
 
                 if not saw_terminal_event:
@@ -385,7 +455,9 @@ class InMemorySessionManager:
                     return
 
                 if assistant_emitted and full_text:
-                    state.runtime_messages.append(Message(role="assistant", content=full_text))
+                    state.runtime_messages.append(
+                        Message(role="assistant", content=full_text)
+                    )
                     await self._persist_state(state)
                 yield StreamEvent(type="done", text=full_text, is_final=True)
                 return
@@ -402,11 +474,27 @@ class InMemorySessionManager:
         return [s.key for s in self._sessions.values()]
 
     def update_role(self, key: SessionKey, role_id: str, skill_ids: list[str]) -> bool:
-        """Update the session role and skills. Returns True if the session is found."""
+        """Update the session role and skills. Returns True if the session is found.
+
+        Note: if a backend is configured, this uses a sync bridge that may
+        block the event loop. Prefer :meth:`aupdate_role` in async contexts.
+        """
         state = self.get(key)
         if not state:
             return False
         state.role_id = role_id
         state.active_skill_ids = skill_ids
         self._persist_state_sync(state)
+        return True
+
+    async def aupdate_role(
+        self, key: SessionKey, role_id: str, skill_ids: list[str]
+    ) -> bool:
+        """Async version of :meth:`update_role`. Awaits backend directly, never blocks."""
+        state = await self.aget(key)
+        if not state:
+            return False
+        state.role_id = role_id
+        state.active_skill_ids = skill_ids
+        await self._persist_state(state)
         return True

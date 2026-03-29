@@ -139,7 +139,11 @@ class Pipeline:
         # Wait for root agent to complete via protocol method (no private attr access)
         root_task_id = f"root-{run_id}"
         if hasattr(self._orch, "wait_for_task"):
-            await self._orch.wait_for_task(root_task_id)
+            result = await self._orch.wait_for_task(root_task_id)
+            if result is None:
+                raise RuntimeError(
+                    f"Phase root task failed or produced no result: {root_task_id}"
+                )
         return run_id
 
     async def _run_single_phase(

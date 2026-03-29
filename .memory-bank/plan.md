@@ -6,8 +6,8 @@ Master Plan v3.2 → `plans/2026-03-18_masterplan_v3.md`
 
 ## Активный план
 
-**v1.0.0-core Release Pipeline** → `plans/2026-03-18_feature_v1-release-pipeline.md`
-10 этапов: ruff/mypy cleanup → Wave 2/3 remediation → docs → PyPI release
+**P1/P2 Audit Gaps** → `plans/2026-03-30_bugfix_p1-p2-audit-gaps.md`
+6 этапов: P1 correctness (task state + per-call config) → P2 concurrency → P2 security → P3 bounds
 
 ## Следующий шаг
 

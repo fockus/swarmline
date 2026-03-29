@@ -236,6 +236,38 @@ class SqliteGraphTaskBoard:
                 self._conn.rollback()
                 raise
 
+    def _cancel_sync(self, task_id: str) -> bool:
+        with self._lock:
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                cur = self._conn.execute(
+                    "SELECT data FROM graph_tasks WHERE id = ?", (task_id,)
+                )
+                row = cur.fetchone()
+                if not row:
+                    self._conn.commit()
+                    return False
+                task = self._deser(row[0])
+                if task.status not in (TaskStatus.TODO, TaskStatus.IN_PROGRESS):
+                    self._conn.commit()
+                    return False
+                updated = replace(
+                    task,
+                    status=TaskStatus.CANCELLED,
+                    checkout_agent_id=None,
+                    completed_at=time.time(),
+                    updated_at=time.time(),
+                )
+                self._conn.execute(
+                    "UPDATE graph_tasks SET data = ? WHERE id = ?",
+                    (self._ser(updated), task_id),
+                )
+                self._conn.commit()
+                return True
+            except Exception:
+                self._conn.rollback()
+                raise
+
     def _propagate_parent_sync(self, parent_id: str) -> None:
         """Recalculate parent progress from children and auto-complete if all DONE.
 
@@ -435,6 +467,9 @@ class SqliteGraphTaskBoard:
 
     async def get_blocked_by(self, task_id: str) -> list[GraphTaskItem]:
         return await asyncio.to_thread(self._get_blocked_by_sync, task_id)
+
+    async def cancel_task(self, task_id: str) -> bool:
+        return await asyncio.to_thread(self._cancel_sync, task_id)
 
     async def block_task(self, task_id: str, reason: str) -> bool:
         return await asyncio.to_thread(self._block_sync, task_id, reason)

@@ -63,6 +63,7 @@ class DaemonRunner:
             status_provider=self.get_status,
             on_pause=self._scheduler.pause,
             on_resume=self._scheduler.resume,
+            auth_token=config.auth_token,
         )
 
     @property

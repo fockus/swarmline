@@ -232,3 +232,71 @@ class TestDetails:
 
         results = await log.query(ActivityFilter())
         assert results[0].details == details
+
+
+# ---------------------------------------------------------------------------
+# Eviction (bounded growth)
+# ---------------------------------------------------------------------------
+
+
+class TestEviction:
+
+    async def test_activity_log_evicts_when_over_max_inmemory(self) -> None:
+        """InMemoryActivityLog with max_entries=5: append 7, verify only 5 remain."""
+        from cognitia.observability.activity_log import InMemoryActivityLog
+
+        log = InMemoryActivityLog(max_entries=5)
+        for i in range(7):
+            await log.log(_entry(id=f"e{i}", timestamp=float(i + 1)))
+
+        count = await log.count(ActivityFilter())
+        assert count == 5
+        # Oldest entries (e0, e1) should be evicted; newest 5 remain
+        results = await log.query(ActivityFilter())
+        ids = {r.id for r in results}
+        assert ids == {"e2", "e3", "e4", "e5", "e6"}
+
+    async def test_activity_log_evicts_when_over_max_sqlite(self, tmp_path) -> None:
+        """SqliteActivityLog with max_entries=5: append 7, verify only 5 remain."""
+        from cognitia.observability.activity_log import SqliteActivityLog
+
+        log = SqliteActivityLog(str(tmp_path / "evict.db"), max_entries=5)
+        for i in range(7):
+            await log.log(_entry(id=f"e{i}", timestamp=float(i + 1)))
+
+        count = await log.count(ActivityFilter())
+        assert count == 5
+        # Oldest entries (e0, e1) should be evicted; newest 5 remain
+        results = await log.query(ActivityFilter())
+        ids = {r.id for r in results}
+        assert ids == {"e2", "e3", "e4", "e5", "e6"}
+        log.close()
+
+    async def test_activity_log_no_eviction_when_under_max(self) -> None:
+        """When entries < max_entries, nothing is evicted."""
+        from cognitia.observability.activity_log import InMemoryActivityLog
+
+        log = InMemoryActivityLog(max_entries=10)
+        for i in range(5):
+            await log.log(_entry(id=f"e{i}", timestamp=float(i + 1)))
+
+        count = await log.count(ActivityFilter())
+        assert count == 5
+
+    async def test_sqlite_count_uses_sql_count(self, tmp_path) -> None:
+        """SqliteActivityLog.count() returns correct result (should use SQL COUNT)."""
+        from cognitia.observability.activity_log import SqliteActivityLog
+
+        log = SqliteActivityLog(str(tmp_path / "count.db"))
+        for i in range(20):
+            await log.log(_entry(
+                id=f"e{i}",
+                actor_type=ActorType.AGENT if i % 2 == 0 else ActorType.USER,
+                timestamp=float(i),
+            ))
+
+        total = await log.count(ActivityFilter())
+        assert total == 20
+        agent_count = await log.count(ActivityFilter(actor_type=ActorType.AGENT))
+        assert agent_count == 10
+        log.close()

@@ -15,5 +15,5 @@ def run(ctx: click.Context, code: str, timeout: int) -> None:
     """Execute Python code in an isolated subprocess."""
     from cognitia.mcp._tools_code import exec_code
 
-    result = _run_async(exec_code(code, timeout))
+    result = _run_async(exec_code(code, timeout, trusted=True))
     _print_result(ctx, result)

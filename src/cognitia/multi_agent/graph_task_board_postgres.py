@@ -199,6 +199,33 @@ class PostgresGraphTaskBoard:
             )).fetchall()
             return [self._deserialize_task(r[0]) for r in rows]
 
+    # --- Cancel (not part of core GraphTaskBoard protocol — ISP) ---
+
+    async def cancel_task(self, task_id: str) -> bool:
+        """Cancel a task. Sets status to CANCELLED and releases checkout."""
+        async with self._session(commit=True) as session:
+            row = (await session.execute(
+                text("SELECT data FROM graph_tasks WHERE id = :id FOR UPDATE"),
+                {"id": task_id},
+            )).fetchone()
+            if not row:
+                return False
+            task = self._deserialize_task(row[0])
+            if task.status not in (TaskStatus.TODO, TaskStatus.IN_PROGRESS):
+                return False
+            updated = replace(
+                task,
+                status=TaskStatus.CANCELLED,
+                checkout_agent_id=None,
+                completed_at=time.time(),
+                updated_at=time.time(),
+            )
+            await session.execute(
+                text("UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"),
+                {"id": task_id, "data": json.dumps(self._serialize_task(updated))},
+            )
+            return True
+
     # --- GraphTaskBlocker ---
 
     async def block_task(self, task_id: str, reason: str) -> bool:

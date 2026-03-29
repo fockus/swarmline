@@ -6,6 +6,7 @@ import asyncio
 import re
 import time
 from collections.abc import AsyncIterator, Callable
+from functools import partial
 from typing import Any
 
 from cognitia.guardrails import GuardrailContext, GuardrailResult
@@ -46,7 +47,10 @@ class ThinRuntime:
         self._config = config or RuntimeConfig(runtime_name="thin")
         self._auto_wrap_retriever()
         self._retry_events: list[RuntimeEvent] = []
-        raw_llm_call = llm_call or self._make_default_llm_call()
+        if llm_call is not None:
+            raw_llm_call = self._wrap_user_llm_call(llm_call)
+        else:
+            raw_llm_call = self._make_default_llm_call()
         if self._config.event_bus is not None:
             raw_llm_call = self._wrap_with_event_bus(raw_llm_call)
         self._llm_call = raw_llm_call
@@ -89,37 +93,83 @@ class ThinRuntime:
         rag_filter = RagInputFilter(retriever=self._config.retriever)
         self._config.input_filters.insert(0, rag_filter)
 
+    @staticmethod
+    def _wrap_user_llm_call(user_fn: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrap a user-provided llm_call to accept (and forward) the ``config`` kwarg.
+
+        User callables that already accept ``config`` get it as-is.
+        Legacy callables that don't accept ``config`` have it silently stripped
+        so existing code keeps working without modification.
+        """
+        import inspect
+
+        sig = inspect.signature(user_fn)
+        params = sig.parameters
+        accepts_config = (
+            "config" in params
+            or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+        )
+        if accepts_config:
+            return user_fn
+
+        async def _adapted(
+            messages: list[dict[str, str]],
+            system_prompt: str,
+            *,
+            config: RuntimeConfig | None = None,  # noqa: ARG001
+            **kwargs: Any,
+        ) -> Any:
+            return await user_fn(messages, system_prompt, **kwargs)
+
+        return _adapted
+
     def _make_default_llm_call(self) -> Callable[..., Any]:
-        """Make default llm call."""
-        config = self._config
+        """Make default llm call.
+
+        Returns a callable that accepts an optional ``config`` keyword.
+        When provided, the per-call config is forwarded to ``default_llm_call``
+        instead of the constructor config, enabling per-call model/provider overrides.
+        """
+        fallback_config = self._config
 
         async def _call(
             messages: list[dict[str, str]],
             system_prompt: str,
+            *,
+            config: RuntimeConfig | None = None,
             **kwargs: Any,
         ) -> str | AsyncIterator[str]:
-            return await default_llm_call(config, messages, system_prompt, **kwargs)
+            effective = config or fallback_config
+            return await default_llm_call(effective, messages, system_prompt, **kwargs)
 
         return _call
 
     def _wrap_with_event_bus(self, llm_call: Callable[..., Any]) -> Callable[..., Any]:
-        """Wrap LLM call with EventBus emit for LLM_call_start/LLM_call_end."""
+        """Wrap LLM call with EventBus emit for LLM_call_start/LLM_call_end.
+
+        Forwards the ``config`` keyword so that per-call overrides reach the
+        underlying ``llm_call`` and event metadata reflects the actual model.
+        """
         bus = self._config.event_bus
         if bus is None:
             raise ValueError("event_bus must not be None")
+        fallback_config = self._config
 
         async def _instrumented_call(
             messages: list[dict[str, str]],
             system_prompt: str,
+            *,
+            config: RuntimeConfig | None = None,
             **kwargs: Any,
         ) -> str | AsyncIterator[str]:
-            await bus.emit("llm_call_start", {"model": self._config.model})
+            effective = config or fallback_config
+            await bus.emit("llm_call_start", {"model": effective.model})
             try:
-                result = await llm_call(messages, system_prompt, **kwargs)
-                await bus.emit("llm_call_end", {"model": self._config.model})
+                result = await llm_call(messages, system_prompt, config=config, **kwargs)
+                await bus.emit("llm_call_end", {"model": effective.model})
                 return result
             except Exception:
-                await bus.emit("llm_call_end", {"model": self._config.model, "error": True})
+                await bus.emit("llm_call_end", {"model": effective.model, "error": True})
                 raise
 
         return _instrumented_call
@@ -197,12 +247,16 @@ class ThinRuntime:
         async def checkpoint() -> RuntimeEvent | None:
             return self._cancelled_event(effective_config.cancellation_token)
 
+        # Bind effective config into llm_call so strategies use the correct
+        # model/provider without needing signature changes.
+        llm_call: Callable[..., Any] = partial(self._llm_call, config=effective_config)
+
         # Collect events; intercept final for output guardrails
         try:
             strategy: AsyncIterator[RuntimeEvent]
             if mode == "conversational":
                 strategy = run_conversational(
-                    self._llm_call,
+                    llm_call,
                     messages,
                     system_prompt,
                     effective_config,
@@ -212,7 +266,7 @@ class ThinRuntime:
                 )
             elif mode == "react":
                 strategy = run_react(
-                    self._llm_call,
+                    llm_call,
                     self._executor,
                     messages,
                     system_prompt,
@@ -224,7 +278,7 @@ class ThinRuntime:
                 )
             else:
                 strategy = run_planner(
-                    self._llm_call,
+                    llm_call,
                     self._executor,
                     messages,
                     system_prompt,

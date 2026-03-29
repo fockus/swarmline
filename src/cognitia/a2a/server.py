@@ -50,10 +50,14 @@ class A2AServer:
         *,
         host: str = "127.0.0.1",
         port: int = 8000,
+        auth_token: str | None = None,
+        max_request_size: int = 1_048_576,
     ) -> None:
         self._adapter = adapter
         self._host = host
         self._port = port
+        self._auth_token = auth_token
+        self._max_request_size = max_request_size
         self._app: Any = None
 
     @property
@@ -68,9 +72,11 @@ class A2AServer:
         Starlette, Request, JSONResponse, Response, Route = _try_import_starlette()
 
         adapter = self._adapter
+        auth_token = self._auth_token
+        max_request_size = self._max_request_size
 
         async def agent_card_endpoint(request: Any) -> Any:
-            """GET /.well-known/agent.json — discovery."""
+            """GET /.well-known/agent.json — discovery (no auth required)."""
             card = adapter.agent_card
             return JSONResponse(card.model_dump(by_alias=True, exclude_none=True))
 
@@ -83,8 +89,25 @@ class A2AServer:
             - tasks/get: retrieve task by ID
             - tasks/cancel: cancel a task
             """
+            # Auth check — if auth_token is configured, require Bearer token
+            if auth_token:
+                import hmac
+
+                auth_header = request.headers.get("authorization", "")
+                if not hmac.compare_digest(auth_header, f"Bearer {auth_token}"):
+                    return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+            # Request size check — read raw body and validate length
             try:
-                body = await request.json()
+                body_bytes = await request.body()
+            except Exception:
+                return _json_rpc_error(None, -32700, "Parse error")
+
+            if len(body_bytes) > max_request_size:
+                return _json_rpc_error(None, -32600, "Request too large")
+
+            try:
+                body = json.loads(body_bytes)
             except Exception:
                 return _json_rpc_error(None, -32700, "Parse error")
 

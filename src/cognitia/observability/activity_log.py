@@ -35,15 +35,23 @@ class ActivityLog(Protocol):
 
 
 class InMemoryActivityLog:
-    """Default in-memory activity log. Thread-safe via asyncio.Lock."""
+    """Default in-memory activity log. Thread-safe via asyncio.Lock.
 
-    def __init__(self) -> None:
+    Args:
+        max_entries: Maximum number of entries to retain. Oldest entries
+            are evicted when this limit is exceeded. 0 means unlimited.
+    """
+
+    def __init__(self, max_entries: int = 10_000) -> None:
         self._entries: list[ActivityEntry] = []
+        self._max_entries = max_entries
         self._lock = asyncio.Lock()
 
     async def log(self, entry: ActivityEntry) -> None:
         async with self._lock:
             self._entries.append(entry)
+            if self._max_entries > 0 and len(self._entries) > self._max_entries:
+                self._entries = self._entries[-self._max_entries :]
 
     async def query(self, filter: ActivityFilter) -> list[ActivityEntry]:
         async with self._lock:
@@ -66,8 +74,9 @@ class SqliteActivityLog:
     PRAGMA journal_mode=WAL for concurrent read safety.
     """
 
-    def __init__(self, db_path: str = "cognitia_activity.db") -> None:
+    def __init__(self, db_path: str = "cognitia_activity.db", *, max_entries: int = 10_000) -> None:
         self._db_path = db_path
+        self._max_entries = max_entries
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._lock = threading.Lock()
         self._init_schema()
@@ -122,6 +131,25 @@ class SqliteActivityLog:
                     entry.timestamp,
                 ),
             )
+            # Evict oldest entries if over max_entries
+            if self._max_entries > 0:
+                row = self._conn.execute("SELECT COUNT(*) FROM activity_log").fetchone()
+                total = row[0] if row else 0
+                if total > self._max_entries:
+                    overflow = total - self._max_entries
+                    oldest_ids = [
+                        r[0]
+                        for r in self._conn.execute(
+                            "SELECT id FROM activity_log ORDER BY timestamp ASC LIMIT ?",
+                            (overflow,),
+                        ).fetchall()
+                    ]
+                    if oldest_ids:
+                        placeholders = ",".join("?" for _ in oldest_ids)
+                        self._conn.execute(
+                            f"DELETE FROM activity_log WHERE id IN ({placeholders})",
+                            oldest_ids,
+                        )
             self._conn.commit()
 
     def _query_sync(self, filter: ActivityFilter) -> list[ActivityEntry]:
@@ -175,7 +203,39 @@ class SqliteActivityLog:
         ]
 
     def _count_sync(self, filter: ActivityFilter) -> int:
-        return len(self._query_sync(filter))
+        from cognitia.observability.activity_types import ActorType
+
+        clauses: list[str] = []
+        params: list[object] = []
+
+        if filter.actor_type is not None:
+            clauses.append("actor_type = ?")
+            params.append(filter.actor_type.value if isinstance(filter.actor_type, ActorType) else filter.actor_type)
+        if filter.actor_id is not None:
+            clauses.append("actor_id = ?")
+            params.append(filter.actor_id)
+        if filter.action is not None:
+            clauses.append("action = ?")
+            params.append(filter.action)
+        if filter.entity_type is not None:
+            clauses.append("entity_type = ?")
+            params.append(filter.entity_type)
+        if filter.entity_id is not None:
+            clauses.append("entity_id = ?")
+            params.append(filter.entity_id)
+        if filter.since is not None:
+            clauses.append("timestamp >= ?")
+            params.append(filter.since)
+        if filter.until is not None:
+            clauses.append("timestamp <= ?")
+            params.append(filter.until)
+
+        where = " AND ".join(clauses) if clauses else "1=1"
+        sql = f"SELECT COUNT(*) FROM activity_log WHERE {where}"
+
+        with self._lock:
+            row = self._conn.execute(sql, params).fetchone()
+        return row[0] if row else 0
 
     # -- async API ----------------------------------------------------------
 

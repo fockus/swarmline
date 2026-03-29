@@ -23,6 +23,7 @@ from cognitia.multi_agent.task_types import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _task(
     tid: str,
     priority: TaskPriority = TaskPriority.MEDIUM,
@@ -40,6 +41,7 @@ def _task(
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(params=["inmemory", "sqlite"])
 def queue(request: pytest.FixtureRequest, tmp_path):
     """Parametrized queue for tests that run against both backends."""
@@ -55,6 +57,7 @@ def queue(request: pytest.FixtureRequest, tmp_path):
 # ---------------------------------------------------------------------------
 # Integration tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.integration
 async def test_task_queue_put_get_complete_lifecycle(queue) -> None:
@@ -231,4 +234,66 @@ async def test_sqlite_task_queue_terminal_transition_race_has_single_winner(
     final_items = await queue.list_tasks()
     assert len(final_items) == 1
     assert final_items[0].status in {TaskStatus.DONE, TaskStatus.CANCELLED}
+    queue.close()
+
+
+@pytest.mark.integration
+async def test_task_queue_get_filters_in_sql(tmp_path) -> None:
+    """get() should filter at SQL level, not fetch all rows and filter in Python.
+
+    Creates 100 tasks (90 done, 10 todo). get() must return a todo task
+    and only todo tasks should be candidates.
+    """
+    db_path = str(tmp_path / "perf.db")
+    queue = SqliteTaskQueue(db_path=db_path)
+
+    # Arrange: insert 90 done tasks and 10 todo tasks
+    for i in range(90):
+        done_task = TaskItem(
+            id=f"done-{i}",
+            title=f"Done task {i}",
+            status=TaskStatus.DONE,
+            priority=TaskPriority.LOW,
+        )
+        await queue.put(done_task)
+
+    priorities = [
+        TaskPriority.LOW,
+        TaskPriority.MEDIUM,
+        TaskPriority.HIGH,
+        TaskPriority.CRITICAL,
+        TaskPriority.LOW,
+        TaskPriority.MEDIUM,
+        TaskPriority.HIGH,
+        TaskPriority.LOW,
+        TaskPriority.MEDIUM,
+        TaskPriority.LOW,
+    ]
+    for i in range(10):
+        todo_task = TaskItem(
+            id=f"todo-{i}",
+            title=f"Todo task {i}",
+            status=TaskStatus.TODO,
+            priority=priorities[i],
+        )
+        await queue.put(todo_task)
+
+    # Act: get() should return the highest-priority todo task
+    claimed = await queue.get()
+
+    # Assert
+    assert claimed is not None
+    assert claimed.status == TaskStatus.IN_PROGRESS
+    # The critical task (todo-3) should be claimed first
+    assert claimed.id == "todo-3"
+    assert claimed.priority == TaskPriority.CRITICAL
+
+    # Verify that done tasks remain untouched
+    done_items = await queue.list_tasks(TaskFilter(status=TaskStatus.DONE))
+    assert len(done_items) == 90
+
+    # Verify remaining todo tasks
+    todo_items = await queue.list_tasks(TaskFilter(status=TaskStatus.TODO))
+    assert len(todo_items) == 9  # One was claimed
+
     queue.close()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import shutil
 import tempfile
 import uuid
@@ -29,6 +30,23 @@ class ExecutionWorkspace(Protocol):
     async def list_active(self) -> list[WorkspaceHandle]: ...
 
 
+_SLUG_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
+
+
+def _validate_slug(value: str, name: str) -> None:
+    """Validate that *value* is a safe filesystem slug.
+
+    Allows alphanumeric characters, dashes, and underscores.
+    Length 1-64 chars, must start with alphanumeric.
+    Rejects path traversal, slashes, and other special characters.
+    """
+    if not _SLUG_RE.match(value):
+        raise ValueError(
+            f"Invalid {name}: must be alphanumeric/dash/underscore, "
+            f"1-64 chars, start with alphanumeric, got: {value!r}"
+        )
+
+
 class LocalWorkspace:
     """File-system backed workspace manager.
 
@@ -49,6 +67,8 @@ class LocalWorkspace:
         self, spec: WorkspaceSpec, agent_id: str, task_id: str
     ) -> WorkspaceHandle:
         """Create an isolated workspace according to *spec*."""
+        _validate_slug(agent_id, "agent_id")
+        _validate_slug(task_id, "task_id")
         path = await self._create_path(spec, agent_id, task_id)
         workspace_id = uuid.uuid4().hex[:12]
         handle = WorkspaceHandle(

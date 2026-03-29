@@ -150,6 +150,28 @@ class InMemoryGraphTaskBoard:
             )
             return True
 
+    # --- Cancel (not part of core GraphTaskBoard protocol — ISP) ---
+
+    async def cancel_task(self, task_id: str) -> bool:
+        """Cancel a task. Sets status to CANCELLED and releases checkout.
+
+        Returns True if the task was found and cancelled, False otherwise.
+        Only tasks in TODO or IN_PROGRESS can be cancelled.
+        """
+        async with self._lock:
+            task = self._tasks.get(task_id)
+            if task is None:
+                return False
+            if task.status not in (TaskStatus.TODO, TaskStatus.IN_PROGRESS):
+                return False
+            self._tasks[task_id] = replace(
+                task,
+                status=TaskStatus.CANCELLED,
+                checkout_agent_id=None,
+                completed_at=time.time(),
+            )
+            return True
+
     # --- Extra: GoalAncestry ---
 
     async def get_goal_ancestry(self, task_id: str) -> GoalAncestry | None:

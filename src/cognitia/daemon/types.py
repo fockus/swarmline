@@ -41,6 +41,9 @@ class DaemonConfig:
     max_concurrent_tasks: int = 5
     shutdown_timeout: float = 30.0  # graceful shutdown deadline
 
+    # Auth
+    auth_token: str | None = None
+
     # Metadata
     name: str = "cognitia-daemon"
     metadata: dict[str, Any] = field(default_factory=dict)

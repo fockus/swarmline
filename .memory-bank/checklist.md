@@ -141,6 +141,16 @@
 - ✅ 3.1: PluginRunner + worker shim — subprocess JSON-RPC — 21 tests
 - ✅ Review: S1 lock fix (workspace) + S2 publish→emit fix (task_session_store)
 
+## P1/P2 Audit Gaps (2026-03-30)
+⬜ Этап 1: P1 false-green completion + task board state consistency
+⬜ Этап 2: P1 ThinRuntime per-call config for LLM path
+⬜ Этап 3: P2 Concurrency (WorkflowGraph, SessionManager, Scheduler)
+⬜ Этап 4: P2 SQLite thread safety + task queue performance
+⬜ Этап 5: P2 Security hardening (SSRF, workspace, A2A, Docker, MCP, daemon)
+⬜ Этап 6: P3 Observability bounds + final verification
+⬜ Этап 7: Integration tests (KB, memory, pipeline, HITL, plugins, daemon, task progress) — 22 tests
+⬜ Этап 8: E2E tests (knowledge agent, graph orchestration, pipeline, daemon) — 9 tests
+
 ## Code Audit Fixes (2026-03-29)
 ⬜ C1: hmac.compare_digest в health.py
 ⬜ C2: FTS5 sanitization в procedural_sqlite.py

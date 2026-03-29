@@ -96,8 +96,8 @@ class TestEventBusTracingSubscriberIntegration:
             pass
 
         # TracingSubscriber should have created at least one span (llm_call)
-        assert len(tracer._spans) >= 1
-        span_names = {s["name"] for s in tracer._spans.values()}
+        assert len(tracer._completed_spans) >= 1
+        span_names = {s["name"] for s in tracer._completed_spans}
         assert "llm_call" in span_names
 
 

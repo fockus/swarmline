@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
+import threading
 from datetime import datetime
 
 from cognitia.memory.episodic_types import Episode
@@ -16,10 +17,14 @@ class SqliteEpisodicMemory:
     def __init__(self, db_path: str = ":memory:") -> None:
         self._db_path = db_path
         self._conn: sqlite3.Connection | None = None
+        self._lock = threading.Lock()
 
     def _get_conn(self) -> sqlite3.Connection:
         if self._conn is None:
-            self._conn = sqlite3.connect(self._db_path)
+            self._conn = sqlite3.connect(
+                self._db_path,
+                check_same_thread=False,
+            )
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._init_tables()
         return self._conn
@@ -65,85 +70,96 @@ class SqliteEpisodicMemory:
 
     async def store(self, episode: Episode) -> None:
         def _insert() -> None:
-            conn = self._get_conn()
-            conn.execute(
-                """INSERT OR REPLACE INTO episodes
-                   (id, summary, key_decisions, tools_used, outcome,
-                    session_id, timestamp, tags, metadata)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    episode.id,
-                    episode.summary,
-                    json.dumps(list(episode.key_decisions)),
-                    json.dumps(list(episode.tools_used)),
-                    episode.outcome,
-                    episode.session_id,
-                    episode.timestamp.isoformat(),
-                    json.dumps(list(episode.tags)),
-                    json.dumps(episode.metadata),
-                ),
-            )
-            conn.commit()
+            with self._lock:
+                conn = self._get_conn()
+                conn.execute(
+                    """INSERT OR REPLACE INTO episodes
+                       (id, summary, key_decisions, tools_used, outcome,
+                        session_id, timestamp, tags, metadata)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        episode.id,
+                        episode.summary,
+                        json.dumps(list(episode.key_decisions)),
+                        json.dumps(list(episode.tools_used)),
+                        episode.outcome,
+                        episode.session_id,
+                        episode.timestamp.isoformat(),
+                        json.dumps(list(episode.tags)),
+                        json.dumps(episode.metadata),
+                    ),
+                )
+                conn.commit()
 
         await asyncio.to_thread(_insert)
 
     async def recall(self, query: str, *, top_k: int = 5) -> list[Episode]:
         def _search() -> list[Episode]:
-            conn = self._get_conn()
-            # FTS5 query — sanitize to prevent operator injection
-            sanitized = query.replace('"', '""')
-            safe_query = f'"{sanitized}"'
-            try:
-                rows = conn.execute(
-                    """SELECT e.* FROM episodes e
-                       JOIN episodes_fts f ON e.rowid = f.rowid
-                       WHERE episodes_fts MATCH ?
-                       ORDER BY rank
-                       LIMIT ?""",
-                    (safe_query, top_k),
-                ).fetchall()
-            except sqlite3.OperationalError:
-                # Fallback to LIKE if FTS fails — escape LIKE wildcards
-                escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                rows = conn.execute(
-                    """SELECT * FROM episodes
-                       WHERE summary LIKE ? ESCAPE '\\'
-                       LIMIT ?""",
-                    (f"%{escaped}%", top_k),
-                ).fetchall()
-            return [self._row_to_episode(r) for r in rows]
+            with self._lock:
+                conn = self._get_conn()
+                # FTS5 query — sanitize to prevent operator injection
+                sanitized = query.replace('"', '""')
+                safe_query = f'"{sanitized}"'
+                try:
+                    rows = conn.execute(
+                        """SELECT e.* FROM episodes e
+                           JOIN episodes_fts f ON e.rowid = f.rowid
+                           WHERE episodes_fts MATCH ?
+                           ORDER BY rank
+                           LIMIT ?""",
+                        (safe_query, top_k),
+                    ).fetchall()
+                except sqlite3.OperationalError:
+                    # Fallback to LIKE if FTS fails — escape LIKE wildcards
+                    escaped = (
+                        query.replace("\\", "\\\\")
+                        .replace("%", "\\%")
+                        .replace("_", "\\_")
+                    )
+                    rows = conn.execute(
+                        """SELECT * FROM episodes
+                           WHERE summary LIKE ? ESCAPE '\\'
+                           LIMIT ?""",
+                        (f"%{escaped}%", top_k),
+                    ).fetchall()
+                return [self._row_to_episode(r) for r in rows]
 
         return await asyncio.to_thread(_search)
 
     async def recall_recent(self, n: int = 10) -> list[Episode]:
         def _recent() -> list[Episode]:
-            conn = self._get_conn()
-            rows = conn.execute(
-                "SELECT * FROM episodes ORDER BY timestamp DESC LIMIT ?",
-                (n,),
-            ).fetchall()
-            return [self._row_to_episode(r) for r in rows]
+            with self._lock:
+                conn = self._get_conn()
+                rows = conn.execute(
+                    "SELECT * FROM episodes ORDER BY timestamp DESC LIMIT ?",
+                    (n,),
+                ).fetchall()
+                return [self._row_to_episode(r) for r in rows]
 
         return await asyncio.to_thread(_recent)
 
     async def recall_by_tag(self, tag: str) -> list[Episode]:
         def _by_tag() -> list[Episode]:
-            conn = self._get_conn()
-            # JSON array contains check
-            rows = conn.execute(
-                """SELECT * FROM episodes
-                   WHERE tags LIKE ?
-                   ORDER BY timestamp DESC""",
-                (f'%"{tag}"%',),
-            ).fetchall()
-            return [self._row_to_episode(r) for r in rows]
+            with self._lock:
+                conn = self._get_conn()
+                # JSON array contains check
+                rows = conn.execute(
+                    """SELECT * FROM episodes
+                       WHERE tags LIKE ?
+                       ORDER BY timestamp DESC""",
+                    (f'%"{tag}"%',),
+                ).fetchall()
+                return [self._row_to_episode(r) for r in rows]
 
         return await asyncio.to_thread(_by_tag)
 
     async def count(self) -> int:
         def _count() -> int:
-            conn = self._get_conn()
-            row = conn.execute("SELECT COUNT(*) FROM episodes").fetchone()
-            return row[0] if row else 0
+            with self._lock:
+                conn = self._get_conn()
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM episodes",
+                ).fetchone()
+                return row[0] if row else 0
 
         return await asyncio.to_thread(_count)

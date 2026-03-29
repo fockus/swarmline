@@ -46,11 +46,20 @@ class Scheduler:
         await sched.run_until(stop_event)
     """
 
-    def __init__(self, *, tick_interval: float = 1.0) -> None:
+    def __init__(
+        self,
+        *,
+        tick_interval: float = 1.0,
+        max_concurrent: int = 0,
+    ) -> None:
         self._tasks: dict[str, _Task] = {}
         self._paused = False
         self._tick_interval = tick_interval
         self._pending_asyncio_tasks: set[asyncio.Task[None]] = set()
+        # max_concurrent=0 means unlimited (no semaphore).
+        self._semaphore: asyncio.Semaphore | None = (
+            asyncio.Semaphore(max_concurrent) if max_concurrent > 0 else None
+        )
 
     def every(
         self,
@@ -104,14 +113,16 @@ class Scheduler:
         for t in self._tasks.values():
             # Convert monotonic next_run to wall-clock for external use
             wall_next = wall_now + (t.next_run - now)
-            result.append(ScheduledTaskInfo(
-                name=t.name,
-                interval_seconds=t.interval,
-                next_run_at=wall_next,
-                last_run_at=t.last_run_wall,
-                run_count=t.run_count,
-                is_active=t.active,
-            ))
+            result.append(
+                ScheduledTaskInfo(
+                    name=t.name,
+                    interval_seconds=t.interval,
+                    next_run_at=wall_next,
+                    last_run_at=t.last_run_wall,
+                    run_count=t.run_count,
+                    is_active=t.active,
+                )
+            )
         return result
 
     def pause(self) -> None:
@@ -149,7 +160,8 @@ class Scheduler:
         # Drain in-flight tasks on shutdown
         if self._pending_asyncio_tasks:
             done, pending = await asyncio.wait(
-                self._pending_asyncio_tasks, timeout=5.0,
+                self._pending_asyncio_tasks,
+                timeout=5.0,
             )
             for t in pending:
                 t.cancel()
@@ -184,7 +196,19 @@ class Scheduler:
             self._tasks.pop(name, None)
 
     async def _run_task(self, task: _Task) -> None:
-        """Run a task, logging exceptions."""
+        """Run a task, logging exceptions.
+
+        If a concurrency semaphore is configured (max_concurrent > 0),
+        the task waits to acquire a slot before executing.
+        """
+        if self._semaphore is not None:
+            async with self._semaphore:
+                await self._run_task_inner(task)
+        else:
+            await self._run_task_inner(task)
+
+    async def _run_task_inner(self, task: _Task) -> None:
+        """Execute the task coroutine, logging exceptions."""
         try:
             await task.coro_factory()
         except Exception:

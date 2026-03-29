@@ -77,7 +77,7 @@ class OpenShellSandboxProvider:
 
             # Real SDK import (lazy — only when actually used)
             try:
-                from openshell import SandboxClient
+                from openshell import SandboxClient  # type: ignore[import-untyped]
             except ImportError as exc:
                 raise RuntimeError(
                     "openshell not installed. Run: pip install cognitia[openshell]"

@@ -110,12 +110,13 @@ class DefaultGraphOrchestrator:
         run_id = uuid.uuid4().hex[:12]
         root_task_id = f"root-{run_id}"
 
-        # Create root task on the board
+        # Create root task on the board and checkout immediately
         await self._task_board.create_task(GraphTaskItem(
             id=root_task_id,
             title=goal,
             assignee_agent_id=root.id,
         ))
+        await self._task_board.checkout_task(root_task_id, root.id)
 
         self._runs[run_id] = _RunState(
             run_id=run_id,
@@ -149,7 +150,7 @@ class DefaultGraphOrchestrator:
 
     async def delegate(self, request: DelegationRequest) -> None:
         """Delegate a task to an agent. Creates subtask and launches execution."""
-        # Create subtask on the board
+        # Create subtask on the board and checkout immediately
         await self._task_board.create_task(GraphTaskItem(
             id=request.task_id,
             title=request.goal,
@@ -157,6 +158,7 @@ class DefaultGraphOrchestrator:
             parent_task_id=request.parent_task_id,
             stage=request.stage,
         ))
+        await self._task_board.checkout_task(request.task_id, request.agent_id)
 
         await self._emit("graph.orchestrator.delegated", {
             "task_id": request.task_id,
@@ -351,7 +353,10 @@ class DefaultGraphOrchestrator:
                         last_error = str(exc)
                         attempt += 1
 
-            # Exhausted retries → mark failed, escalate
+            # Exhausted retries → mark failed on board and in run state, escalate
+            if hasattr(self._task_board, "cancel_task"):
+                await self._task_board.cancel_task(task_id)
+
             if run:
                 idx = self._find_execution_index(run, task_id)
                 if idx is not None:
@@ -376,7 +381,9 @@ class DefaultGraphOrchestrator:
                 )
 
         except asyncio.CancelledError:
-            # Graceful stop �� do NOT retry
+            # Graceful stop -- cancel task on the board, do NOT retry
+            if hasattr(self._task_board, "cancel_task"):
+                await self._task_board.cancel_task(task_id)
             return
         finally:
             self._bg_tasks.pop(task_id, None)

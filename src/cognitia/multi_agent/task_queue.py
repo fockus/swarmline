@@ -53,9 +53,17 @@ def _matches(item: TaskItem, filters: TaskFilter | None) -> bool:
 def _matches_get(item: TaskItem, filters: TaskFilter | None) -> bool:
     if item.status is not TaskStatus.TODO:
         return False
-    if filters is not None and filters.status is not None and filters.status is not TaskStatus.TODO:
+    if (
+        filters is not None
+        and filters.status is not None
+        and filters.status is not TaskStatus.TODO
+    ):
         return False
-    if filters is not None and filters.priority is not None and item.priority != filters.priority:
+    if (
+        filters is not None
+        and filters.priority is not None
+        and item.priority != filters.priority
+    ):
         return False
     if filters is None or filters.assignee_agent_id is None:
         return item.assignee_agent_id is None
@@ -72,6 +80,7 @@ def _pick_best(items: list[TaskItem]) -> TaskItem | None:
 # InMemoryTaskQueue
 # ---------------------------------------------------------------------------
 
+
 class InMemoryTaskQueue:
     """In-memory task queue. Thread-safe via asyncio.Lock."""
 
@@ -85,10 +94,7 @@ class InMemoryTaskQueue:
 
     async def get(self, filters: TaskFilter | None = None) -> TaskItem | None:
         async with self._lock:
-            candidates = [
-                t for t in self._tasks.values()
-                if _matches_get(t, filters)
-            ]
+            candidates = [t for t in self._tasks.values() if _matches_get(t, filters)]
             claimed = _pick_best(candidates)
             if claimed is None:
                 return None
@@ -113,7 +119,8 @@ class InMemoryTaskQueue:
             return True
 
     async def list_tasks(
-        self, filters: TaskFilter | None = None,
+        self,
+        filters: TaskFilter | None = None,
     ) -> list[TaskItem]:
         async with self._lock:
             return [t for t in self._tasks.values() if _matches(t, filters)]
@@ -122,6 +129,7 @@ class InMemoryTaskQueue:
 # ---------------------------------------------------------------------------
 # SqliteTaskQueue
 # ---------------------------------------------------------------------------
+
 
 def _item_to_json(item: TaskItem) -> str:
     d = asdict(item)
@@ -144,8 +152,11 @@ class SqliteTaskQueue:
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._lock = threading.Lock()
         self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS tasks "
-            "(id TEXT PRIMARY KEY, data TEXT NOT NULL)"
+            "CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tasks_status "
+            "ON tasks(json_extract(data, '$.status'))"
         )
         self._conn.commit()
 
@@ -166,9 +177,7 @@ class SqliteTaskQueue:
 
     def _get_one_sync(self, task_id: str) -> str | None:
         with self._lock:
-            cur = self._conn.execute(
-                "SELECT data FROM tasks WHERE id = ?", (task_id,)
-            )
+            cur = self._conn.execute("SELECT data FROM tasks WHERE id = ?", (task_id,))
             row = cur.fetchone()
             return row[0] if row else None
 
@@ -176,19 +185,59 @@ class SqliteTaskQueue:
         with self._lock:
             try:
                 self._conn.execute("BEGIN IMMEDIATE")
-                cur = self._conn.execute("SELECT data FROM tasks")
-                candidates: list[TaskItem] = []
-                for raw in (row[0] for row in cur.fetchall()):
-                    item = _item_from_json(raw)
-                    if _matches_get(item, filters):
-                        candidates.append(item)
 
-                claimed = _pick_best(candidates)
-                if claimed is None:
+                # Build SQL-level filter to avoid full-table scan
+                assignee = filters.assignee_agent_id if filters is not None else None
+                priority_value = (
+                    filters.priority.value
+                    if filters is not None and filters.priority is not None
+                    else None
+                )
+
+                if assignee is not None:
+                    # Fetch tasks assigned to a specific agent
+                    sql = """
+                        SELECT data FROM tasks
+                        WHERE json_extract(data, '$.status') = 'todo'
+                          AND json_extract(data, '$.assignee_agent_id') = ?
+                    """
+                    params: tuple = (assignee,)
+                    if priority_value is not None:
+                        sql += " AND json_extract(data, '$.priority') = ?"
+                        params = (assignee, priority_value)
+                else:
+                    # No assignee filter: only pick unassigned tasks
+                    sql = """
+                        SELECT data FROM tasks
+                        WHERE json_extract(data, '$.status') = 'todo'
+                          AND json_extract(data, '$.assignee_agent_id') IS NULL
+                    """
+                    params = ()
+                    if priority_value is not None:
+                        sql += " AND json_extract(data, '$.priority') = ?"
+                        params = (priority_value,)
+
+                sql += """
+                    ORDER BY
+                      CASE json_extract(data, '$.priority')
+                        WHEN 'critical' THEN 0
+                        WHEN 'high' THEN 1
+                        WHEN 'medium' THEN 2
+                        WHEN 'low' THEN 3
+                      END
+                    LIMIT 1
+                """
+
+                cur = self._conn.execute(sql, params)
+                row = cur.fetchone()
+                if row is None:
                     self._conn.commit()
                     return None
 
-                claimed = replace(claimed, status=TaskStatus.IN_PROGRESS)
+                claimed = replace(
+                    _item_from_json(row[0]),
+                    status=TaskStatus.IN_PROGRESS,
+                )
                 self._conn.execute(
                     "UPDATE tasks SET data = ? WHERE id = ?",
                     (_item_to_json(claimed), claimed.id),
@@ -255,7 +304,8 @@ class SqliteTaskQueue:
         )
 
     async def list_tasks(
-        self, filters: TaskFilter | None = None,
+        self,
+        filters: TaskFilter | None = None,
     ) -> list[TaskItem]:
         rows = await asyncio.to_thread(self._get_all_sync)
         items = [_item_from_json(r) for r in rows]

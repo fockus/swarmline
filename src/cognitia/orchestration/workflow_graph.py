@@ -134,11 +134,11 @@ class WorkflowGraph:
     ) -> State:
         """Execute a single node (function or subgraph).
 
-    If interceptor is provided, it wraps the node execution:
-    interceptor receives (node_id, state) and returns the modified state.
-    The interceptor is responsible for calling the original node if needed,
-    or it can delegate to the default execution and post-process.
-    """
+        If interceptor is provided, it wraps the node execution:
+        interceptor receives (node_id, state) and returns the modified state.
+        The interceptor is responsible for calling the original node if needed,
+        or it can delegate to the default execution and post-process.
+        """
         if interceptor is not None:
             return await interceptor(node_id, state)
         node = self._nodes[node_id]
@@ -154,23 +154,31 @@ class WorkflowGraph:
         run_id: str | None = None,
         resume: bool = False,
         node_interceptor: NodeInterceptor | None = None,
+        _skip_interrupts: frozenset[str] | None = None,
+        _start_node: str | None = None,
     ) -> State:
         """Execute the workflow graph from entry to end.
 
-    Args:
-      initial_state: Starting state dict.
-      checkpoint: Optional checkpoint store for crash recovery.
-      run_id: Run identifier for checkpoint keying.
-      resume: Whether to resume from a previous checkpoint.
-      node_interceptor: Optional callable(node_id, state) -> state that
-        wraps each node execution. Used by runtime executors for
-        per-node instrumentation (e.g. runtime routing, observability).
-    """
+        Args:
+          initial_state: Starting state dict.
+          checkpoint: Optional checkpoint store for crash recovery.
+          run_id: Run identifier for checkpoint keying.
+          resume: Whether to resume from a previous checkpoint.
+          node_interceptor: Optional callable(node_id, state) -> state that
+            wraps each node execution. Used by runtime executors for
+            per-node instrumentation (e.g. runtime routing, observability).
+          _skip_interrupts: Internal — set of node_ids to skip interrupts for
+            in THIS execution only. Used by resume() for concurrency safety.
+          _start_node: Internal — override the entry point for THIS execution
+            only. Used by resume() for concurrency safety (avoids mutating
+            self._entry).
+        """
         state = dict(initial_state)
         loop_counts: dict[str, int] = {}
+        skip = _skip_interrupts or frozenset()
 
         # Resume from checkpoint
-        start_node = self._entry
+        start_node = _start_node if _start_node is not None else self._entry
         if resume and checkpoint and run_id:
             saved = checkpoint.load(run_id)
             if saved is not None:
@@ -189,7 +197,9 @@ class WorkflowGraph:
                 group = self._parallel_groups[current]
                 results = await asyncio.gather(
                     *[
-                        self._execute_node(nid, dict(state), interceptor=node_interceptor)
+                        self._execute_node(
+                            nid, dict(state), interceptor=node_interceptor
+                        )
                         for nid in group.node_ids
                     ]
                 )
@@ -202,8 +212,8 @@ class WorkflowGraph:
             if current not in self._nodes:
                 break
 
-            # Check interrupt BEFORE execution
-            if current in self._interrupts:
+            # Check interrupt BEFORE execution (skip if this execution bypasses it)
+            if current in self._interrupts and current not in skip:
                 raise WorkflowInterrupt(node_id=current, state=state, graph=self)
 
             # Checkpoint before execution
@@ -211,7 +221,9 @@ class WorkflowGraph:
                 checkpoint.save(run_id, current, state)
 
             # Execute node
-            state = await self._execute_node(current, state, interceptor=node_interceptor)
+            state = await self._execute_node(
+                current, state, interceptor=node_interceptor
+            )
 
             # Track loops
             loop_counts[current] = loop_counts.get(current, 0) + 1
@@ -227,28 +239,31 @@ class WorkflowGraph:
     async def resume(
         self, interrupt: WorkflowInterrupt, human_input: State | None = None
     ) -> State:
-        """Resume execution after a HITL interrupt."""
+        """Resume execution after a HITL interrupt.
+
+        Concurrency-safe: does NOT mutate any shared graph state
+        (``_interrupts``, ``_entry``). Instead, passes per-execution
+        ``_skip_interrupts`` and ``_start_node`` overrides so that only
+        THIS resumption skips the interrupt node and starts from the
+        correct point. Other concurrent executions on the same graph
+        instance are unaffected.
+        """
         state = dict(interrupt.state)
         if human_input:
             state.update(human_input)
-
-        # Remove interrupt for the resumed node so it doesn't trigger again
-        self._interrupts.discard(interrupt.node_id)
 
         # Find next node after the interrupted one
         next_node = self._get_next(interrupt.node_id, state)
         if next_node is None or next_node == END_NODE:
             return state
 
-        # Continue execution from next node
-        saved_entry = self._entry
-        self._entry = next_node
-        try:
-            return await self.execute(state)
-        finally:
-            self._entry = saved_entry
-            # Restore interrupt point
-            self._interrupts.add(interrupt.node_id)
+        # Continue execution from next node, skipping the interrupt
+        # only for THIS execution (concurrency-safe, no shared mutation).
+        return await self.execute(
+            state,
+            _skip_interrupts=frozenset({interrupt.node_id}),
+            _start_node=next_node,
+        )
 
     def to_mermaid(self) -> str:
         """Generate Mermaid flowchart from graph."""

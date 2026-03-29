@@ -104,6 +104,12 @@ class DockerSandboxProvider:
                 detach=True,
                 tty=True,
                 working_dir=self._workspace,
+                # Security hardening
+                security_opt=["no-new-privileges=true"],
+                cap_drop=["ALL"],
+                mem_limit=getattr(self._config, "mem_limit", "512m"),
+                network_mode=getattr(self._config, "network_mode", "none"),
+                read_only=getattr(self._config, "read_only", False),
             )
         except Exception as exc:
             raise RuntimeError("Docker daemon is unavailable for the sandbox container.") from exc

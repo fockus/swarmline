@@ -151,8 +151,8 @@ class TestCoexistenceWithTracingSubscriber:
         # OTel spans
         assert len(span_exporter.get_finished_spans()) == 2
 
-        # ConsoleTracer spans
-        console_names = {s["name"] for s in console_tracer._spans.values()}
+        # ConsoleTracer completed spans (active spans cleared after end)
+        console_names = {s["name"] for s in console_tracer._completed_spans}
         assert "llm_call" in console_names
         assert "tool_call" in console_names
 

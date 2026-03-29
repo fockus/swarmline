@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
+import socket
 from urllib.parse import urlparse
 
 import structlog
@@ -21,6 +22,15 @@ except ImportError:
     trafilatura = None  # type: ignore[assignment]
 
 _log = structlog.get_logger(component="web_httpx")
+
+
+def _is_ip(hostname: str) -> bool:
+    """Return True if hostname is already a literal IP address."""
+    try:
+        ipaddress.ip_address(hostname)
+        return True
+    except ValueError:
+        return False
 
 
 def _extract_text(html: str) -> str:
@@ -62,7 +72,14 @@ class HttpxWebProvider:
 
     @staticmethod
     def _validate_url(url: str) -> str | None:
-        """Return rejection reason if URL targets a private/reserved network, else None."""
+        """Return rejection reason if URL targets a private/reserved network, else None.
+
+        Checks:
+        1. Cloud metadata endpoints (AWS, GCP, Azure)
+        2. Literal localhost hostnames
+        3. Direct IP addresses (private/loopback/link-local/reserved)
+        4. DNS-resolved IPs — prevents DNS rebinding to private ranges
+        """
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname or ""
@@ -74,13 +91,33 @@ class HttpxWebProvider:
         if hostname in _BLOCKED_HOSTS:
             return f"Blocked host: {hostname}"
 
-        # Check if hostname resolves to a private/reserved IP
+        # Block literal localhost hostnames
+        if hostname in ("localhost", "localhost.localdomain"):
+            return f"Blocked host: {hostname}"
+
+        # Check if hostname is a direct IP address
         try:
             addr = ipaddress.ip_address(hostname)
             if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
                 return f"Private/reserved IP blocked: {hostname}"
         except ValueError:
-            pass  # hostname is a domain, not IP — OK
+            pass  # hostname is a domain, not IP — resolve via DNS below
+
+        # DNS resolution check: resolve hostname and validate all returned IPs
+        if hostname and not _is_ip(hostname):
+            try:
+                addrs = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+                for _family, _type, _proto, _canonname, sockaddr in addrs:
+                    resolved = ipaddress.ip_address(sockaddr[0])
+                    if (
+                        resolved.is_private
+                        or resolved.is_loopback
+                        or resolved.is_link_local
+                        or resolved.is_reserved
+                    ):
+                        return f"DNS resolves to private IP: {sockaddr[0]}"
+            except socket.gaierror:
+                pass  # Can't resolve — will fail on fetch anyway
 
         return None
 
@@ -105,7 +142,7 @@ class HttpxWebProvider:
             return "httpx не установлен. pip install cognitia[web]"
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=False) as client:
                 response = await client.get(url)
                 response.raise_for_status()
                 html = response.text

@@ -40,15 +40,37 @@ def _check_code_safety(code: str) -> str | None:
     return None
 
 
-async def exec_code(code: str, timeout_seconds: int = 30) -> dict[str, Any]:
+async def exec_code(
+    code: str, timeout_seconds: int = 30, *, trusted: bool = False
+) -> dict[str, Any]:
     """Execute Python code in a restricted subprocess and return stdout/stderr.
 
+    Parameters
+    ----------
+    code:
+        Python code to execute.
+    timeout_seconds:
+        Maximum execution time in seconds.
+    trusted:
+        Must be ``True`` to allow execution. Host execution is not sandboxed,
+        so callers must explicitly opt in. Defaults to ``False`` (blocked).
+
     Safety measures:
+    - Trusted flag gate (must be explicitly enabled)
     - Dangerous pattern blocklist
     - Restricted environment (no inherited secrets)
     - Timeout enforcement
     - Temporary working directory
     """
+    if not trusted:
+        return {
+            "ok": False,
+            "error": (
+                "Code execution requires trusted=True. "
+                "Host execution is not sandboxed."
+            ),
+        }
+
     # Check for dangerous patterns
     rejection = _check_code_safety(code)
     if rejection:

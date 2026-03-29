@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections import deque
 from typing import Any, Protocol, runtime_checkable
 
 from cognitia.observability.event_bus import EventBus
@@ -57,11 +58,12 @@ class ConsoleTracer:
     Also tracks spans internally for testing/introspection.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, max_completed: int = 1000) -> None:
         import structlog
 
         self._log = structlog.get_logger(component="tracer")
         self._spans: dict[str, dict[str, Any]] = {}
+        self._completed_spans: deque[dict[str, Any]] = deque(maxlen=max_completed)
         self._counter = 0
 
     def start_span(self, name: str, attrs: dict[str, Any] | None = None) -> str:
@@ -79,12 +81,13 @@ class ConsoleTracer:
         return span_id
 
     def end_span(self, span_id: str) -> None:
-        """End a span and log duration."""
-        span = self._spans.get(span_id)
+        """End a span, log duration, and move from active to completed."""
+        span = self._spans.pop(span_id, None)
         if span is not None:
             duration_ms = int((time.monotonic() - span["started_at"]) * 1000)
             span["ended"] = True
             span["duration_ms"] = duration_ms
+            self._completed_spans.append(span)
             self._log.info(
                 "span_end",
                 span_id=span_id,

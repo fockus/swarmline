@@ -14,6 +14,7 @@ from cognitia.multi_agent.graph_orchestrator_types import (
 from cognitia.multi_agent.graph_store import InMemoryAgentGraph
 from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
 from cognitia.multi_agent.graph_types import AgentNode
+from cognitia.multi_agent.task_types import TaskStatus
 from cognitia.protocols.graph_orchestrator import GraphOrchestrator
 
 
@@ -586,3 +587,128 @@ class TestDelegateWithStage:
         task = next((t for t in all_tasks if t.id == "sub-no-stage"), None)
         assert task is not None
         assert task.stage == ""
+
+
+# ---------------------------------------------------------------------------
+# Task board consistency (P1 bugs)
+# ---------------------------------------------------------------------------
+
+
+class TestTaskBoardConsistency:
+    """Verify that orchestrator keeps task board in sync with execution state.
+
+    Bugs addressed:
+    1. start()/delegate() create tasks but never call checkout_task()
+    2. After max retries exhausted, task board is never updated
+    3. On asyncio.CancelledError (stop), task board is never updated
+    """
+
+    async def test_start_checks_out_root_task(self, make_orchestrator, task_board) -> None:
+        """start() must call checkout_task so root task transitions to IN_PROGRESS."""
+        runner = AsyncMock(return_value="Done")
+        orch = make_orchestrator(agent_runner=runner)
+        await orch.start("Build a web app")
+        await asyncio.sleep(0.15)
+
+        tasks = await task_board.list_tasks()
+        assert len(tasks) >= 1
+        root = tasks[0]
+        # Root task must have been checked out by the root agent
+        assert root.checkout_agent_id is not None, "Root task was never checked out"
+        # After the runner completes, task should be DONE (or at least IN_PROGRESS)
+        assert root.status in (TaskStatus.IN_PROGRESS, TaskStatus.DONE)
+
+    async def test_delegate_checks_out_task(self, make_orchestrator, task_board) -> None:
+        """delegate() must call checkout_task so subtask transitions to IN_PROGRESS."""
+        runner = AsyncMock(return_value="Done")
+        orch = make_orchestrator(agent_runner=runner)
+        run_id = await orch.start("Build")
+        await asyncio.sleep(0.1)
+        status = await orch.get_status(run_id)
+
+        req = DelegationRequest(
+            task_id="sub-checkout",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
+        )
+        await orch.delegate(req)
+        await asyncio.sleep(0.15)
+
+        tasks = await task_board.list_tasks()
+        sub = next((t for t in tasks if t.id == "sub-checkout"), None)
+        assert sub is not None
+        assert sub.checkout_agent_id == "eng1", "Subtask was never checked out"
+        assert sub.status in (TaskStatus.IN_PROGRESS, TaskStatus.DONE)
+
+    async def test_failed_agent_cancels_task_on_board(
+        self, make_orchestrator, task_board,
+    ) -> None:
+        """After max retries exhausted, task must be CANCELLED on the board."""
+        call_count = 0
+
+        async def failing_runner(
+            agent_id: str, task_id: str, goal: str, system_prompt: str,
+        ) -> str:
+            nonlocal call_count
+            call_count += 1
+            if "eng" in agent_id:
+                raise RuntimeError("permanent failure")
+            return "ok"
+
+        orch = make_orchestrator(agent_runner=failing_runner, max_retries=0)
+        run_id = await orch.start("Build")
+        await asyncio.sleep(0.1)
+        status = await orch.get_status(run_id)
+
+        req = DelegationRequest(
+            task_id="fail-task",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
+            max_retries=0,
+        )
+        await orch.delegate(req)
+        await asyncio.sleep(0.5)
+
+        tasks = await task_board.list_tasks()
+        failed = next((t for t in tasks if t.id == "fail-task"), None)
+        assert failed is not None
+        assert failed.status == TaskStatus.CANCELLED, (
+            f"Expected CANCELLED after retries exhausted, got {failed.status}"
+        )
+
+    async def test_cancelled_agent_cancels_task_on_board(
+        self, make_orchestrator, task_board,
+    ) -> None:
+        """On asyncio.CancelledError (stop()), task must be CANCELLED on the board."""
+        async def slow_runner(
+            agent_id: str, task_id: str, goal: str, system_prompt: str,
+        ) -> str:
+            await asyncio.sleep(10)
+            return "done"
+
+        orch = make_orchestrator(agent_runner=slow_runner)
+        run_id = await orch.start("Build")
+        await asyncio.sleep(0.1)
+        status = await orch.get_status(run_id)
+
+        req = DelegationRequest(
+            task_id="cancel-task",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
+        )
+        await orch.delegate(req)
+        await asyncio.sleep(0.1)
+
+        # Stop the run — should cancel all background tasks
+        await orch.stop(run_id)
+        await asyncio.sleep(0.2)
+
+        tasks = await task_board.list_tasks()
+        cancelled = next((t for t in tasks if t.id == "cancel-task"), None)
+        assert cancelled is not None
+        assert cancelled.status == TaskStatus.CANCELLED, (
+            f"Expected CANCELLED after stop(), got {cancelled.status}"
+        )
