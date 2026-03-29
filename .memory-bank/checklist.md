@@ -116,3 +116,16 @@
 - ✅ Wave 4: CLI Client (Click app + 6 command groups) — 32 tests
 - ✅ Wave 5: SKILL.md + 10 references + integration configs (claude-code/codex/opencode) + docs (4 files)
 - ✅ Wave 6: 7 E2E Use Case Tests (31 tests) + docs/use-cases.md update
+
+## Code Audit Fixes (2026-03-29)
+⬜ C1: hmac.compare_digest в health.py
+⬜ C2: FTS5 sanitization в procedural_sqlite.py
+⬜ C4: --token в CLI pause/resume
+⬜ C7: cost extractor в budget wrap_runner
+⬜ C9: max_retries `if is not None` в orchestrator
+⬜ C10: metadata column в graph_communication_postgres
+⬜ S2/S3/S4: Any → Protocol types (системно)
+⬜ S5: CLI/YAML priority fix
+⬜ S6: task tracking при shutdown
+⬜ S12: dataclasses.replace() вместо manual construction
+⬜ S15: [nats]/[redis] extras в pyproject.toml
