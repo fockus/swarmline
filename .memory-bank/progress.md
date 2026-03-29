@@ -1,5 +1,19 @@
 # Progress
 
+## 2026-03-29 (Paperclip-inspired Components)
+
+- Проанализирован Paperclip AI (TypeScript control plane для AI-агентов, ~700 файлов, ~50 DB-таблиц).
+- Gap-анализ: из 9 идей Paperclip 5 уже реализованы (daemon/scheduler, pipeline/budget, plugins/registry, task comments, enhanced task workflow). Выявлено 6 реальных gaps.
+- Реализовано 6 новых универсальных компонентов (protocol-first, zero new deps):
+  - **TaskSessionStore** (session/) — привязка session к agent+task для resume между heartbeats. InMemory + SQLite. 26 contract tests.
+  - **ActivityLog** + **ActivityLogSubscriber** (observability/) — persistent structured audit trail с EventBus bridge. InMemory + SQLite. 39 tests.
+  - **PersistentBudgetStore** (pipeline/) — cross-run budget tracking с monthly/lifetime windows, scoped per agent/graph/tenant. InMemory + SQLite. 26 tests.
+  - **RoutineBridge** (daemon/) — Scheduler → TaskBoard auto-task creation с dedup. 17 tests (14 unit + 3 integration).
+  - **ExecutionWorkspace** (multi_agent/) — изоляция рабочей среды: temp_dir, git_worktree, copy. 10 tests.
+  - **PluginRunner** + worker shim (plugins/) — subprocess JSON-RPC с crash recovery, exponential backoff, graceful shutdown. 21 tests.
+- Code review: 2 серьёзных issue найдены и исправлены (list_active без lock, publish→emit mismatch).
+- Итого: 31 файл, +4010 LOC, 139 новых тестов, ruff + mypy clean.
+
 ## 2026-03-18
 
 - Реализованы P1 follow-up fixes для `cli` runtime, `agent_tool` и `TaskQueue`.

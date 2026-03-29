@@ -131,6 +131,16 @@
 - ✅ Phase 3: Progress auto-calc с рекурсивной propagation (_propagate_parent)
 - ✅ Phase 4: Stage в delegate_task tool + exports WorkflowConfig/WorkflowStage
 
+## Paperclip-inspired Components (2026-03-29)
+
+- ✅ 1.1: TaskSessionStore — protocol + InMemory + SQLite — 26 tests
+- ✅ 1.2: ActivityLog + ActivityLogSubscriber — protocol + InMemory + SQLite — 39 tests
+- ✅ 1.3: PersistentBudgetStore — protocol + InMemory + SQLite — 26 tests
+- ✅ 2.1: RoutineBridge — Scheduler → TaskBoard bridge — 17 tests (14 unit + 3 integration)
+- ✅ 2.2: ExecutionWorkspace — temp_dir/git_worktree/copy isolation — 10 tests
+- ✅ 3.1: PluginRunner + worker shim — subprocess JSON-RPC — 21 tests
+- ✅ Review: S1 lock fix (workspace) + S2 publish→emit fix (task_session_store)
+
 ## Code Audit Fixes (2026-03-29)
 ⬜ C1: hmac.compare_digest в health.py
 ⬜ C2: FTS5 sanitization в procedural_sqlite.py
