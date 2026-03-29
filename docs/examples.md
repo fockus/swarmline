@@ -87,6 +87,12 @@ Default behavior:
 | 26 | `26_code_project_team.py` | Multi-agent development team workflow |
 | 27 | `27_nano_claw.py` | Claude Code-like CLI assistant with optional `--live` mode |
 
+### Integrations (28+)
+
+| # | File | What it demonstrates |
+|---|------|----------------------|
+| 28 | `28_opentelemetry_tracing.py` | OpenTelemetry span export from EventBus events |
+
 ## Picking a Starting Point
 
 - Start with `01`, `02`, `03` if you are new to the facade API.

@@ -17,11 +17,11 @@ from cognitia.observability.event_bus import InMemoryEventBus
 # Skip entire module if opentelemetry SDK not installed
 otel_sdk = pytest.importorskip("opentelemetry.sdk")
 
-from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult
-from opentelemetry.trace import StatusCode
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider  # noqa: E402
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult  # noqa: E402
+from opentelemetry.trace import StatusCode  # noqa: E402
 
-from cognitia.observability.otel_exporter import OTelExporter
+from cognitia.observability.otel_exporter import OTelExporter  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -307,6 +307,7 @@ class TestOTelExporterConfig:
         """runtime_name and session_id appear as span attributes."""
         provider, span_exporter = otel_setup
         exporter = OTelExporter(
+            event_bus,
             tracer_provider=provider,
             runtime_name="thin",
             session_id="s1",
@@ -431,3 +432,21 @@ class TestOTelExporterLifecycle:
         assert len(spans) == 0
 
 
+# ---------------------------------------------------------------------------
+# Import error handling
+# ---------------------------------------------------------------------------
+
+
+class TestOTelExporterImportGuard:
+    """Missing opentelemetry raises a helpful ImportError."""
+
+    def test_missing_otel_gives_clear_error(self) -> None:
+        """If opentelemetry is not installed, _try_import_otel raises ImportError with install hint."""
+        with patch.dict(
+            "sys.modules",
+            {"opentelemetry": None, "opentelemetry.trace": None},
+        ):
+            from cognitia.observability.otel_exporter import _try_import_otel
+
+            with pytest.raises(ImportError, match="(?i)opentelemetry"):
+                _try_import_otel()

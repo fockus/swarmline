@@ -14,7 +14,7 @@ import asyncio
 try:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory import InMemorySpanExporter
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 except ImportError:
     raise SystemExit(
         "OpenTelemetry SDK is required for this example.\n"

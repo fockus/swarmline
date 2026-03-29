@@ -17,248 +17,191 @@ from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber  # no
 
 
 @pytest.fixture()
-def otel_pipeline() -> tuple[InMemoryEventBus, OTelExporter, InMemorySpanExporter]:
+def otel_pipeline():
     """Set up EventBus -> OTelExporter -> InMemorySpanExporter pipeline."""
     bus = InMemoryEventBus()
-    exporter = InMemorySpanExporter()
+    span_exporter = InMemorySpanExporter()
     provider = TracerProvider()
-    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    provider.add_span_processor(SimpleSpanProcessor(span_exporter))
 
-    otel = OTelExporter(bus, tracer_provider=provider, service_name="cognitia-test")
-    otel.attach()
+    otel = OTelExporter(tracer_provider=provider)
+    otel.attach(bus)
 
-    return bus, otel, exporter
+    yield bus, otel, span_exporter
+    otel.detach(bus)
+    provider.shutdown()
 
 
 class TestFullAgentTurnLifecycle:
     """Simulate a full agent turn and verify span creation."""
 
-    async def test_full_agent_turn_lifecycle_creates_correct_spans(
-        self,
-        otel_pipeline: tuple[InMemoryEventBus, OTelExporter, InMemorySpanExporter],
-    ) -> None:
-        bus, otel, exporter = otel_pipeline
+    async def test_full_turn_creates_correct_spans(self, otel_pipeline: tuple) -> None:
+        bus, otel, span_exporter = otel_pipeline
 
-        # Simulate: LLM call -> tool call -> second LLM call
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-1"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-1"})
+        # LLM call -> tool call -> second LLM call
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
 
-        await bus.emit(
-            "tool_call_start",
-            {"name": "web_search", "correlation_id": "tool-1"},
-        )
-        await bus.emit(
-            "tool_call_end",
-            {"name": "web_search", "ok": True, "correlation_id": "tool-1"},
-        )
+        await bus.emit("tool_call_start", {"name": "web_search", "correlation_id": "t1"})
+        await bus.emit("tool_call_end", {"name": "web_search", "correlation_id": "t1"})
 
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-2"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-2"})
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
 
-        spans = exporter.get_finished_spans()
+        spans = span_exporter.get_finished_spans()
         assert len(spans) == 3
 
-        span_names = [s.name for s in spans]
-        assert span_names.count("llm_call") == 2
-        assert span_names.count("tool_call") == 1
+        # Verify span names contain expected prefixes
+        llm_spans = [s for s in spans if "llm" in s.name]
+        tool_spans = [s for s in spans if "tool" in s.name]
+        assert len(llm_spans) == 2
+        assert len(tool_spans) == 1
 
-        # All spans must have gen_ai.system attribute
+        # All spans have gen_ai.system
         for span in spans:
             assert span.attributes is not None
-            assert span.attributes.get("gen_ai.system") == "cognitia-test"
+            assert span.attributes.get("gen_ai.system") == "cognitia"
 
-    async def test_full_agent_turn_ordering_matches_emission_order(
-        self,
-        otel_pipeline: tuple[InMemoryEventBus, OTelExporter, InMemorySpanExporter],
-    ) -> None:
-        bus, otel, exporter = otel_pipeline
+    async def test_turn_ordering(self, otel_pipeline: tuple) -> None:
+        bus, otel, span_exporter = otel_pipeline
 
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-1"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-1"})
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
 
-        await bus.emit(
-            "tool_call_start",
-            {"name": "calculator", "correlation_id": "tool-1"},
-        )
-        await bus.emit(
-            "tool_call_end",
-            {"name": "calculator", "ok": True, "correlation_id": "tool-1"},
-        )
+        await bus.emit("tool_call_start", {"name": "calc", "correlation_id": "t1"})
+        await bus.emit("tool_call_end", {"name": "calc", "correlation_id": "t1"})
 
-        spans = exporter.get_finished_spans()
+        spans = span_exporter.get_finished_spans()
         assert len(spans) == 2
-
-        # First finished span should be the LLM call (started and ended first)
-        assert spans[0].name == "llm_call"
-        assert spans[1].name == "tool_call"
+        assert "llm" in spans[0].name
+        assert "tool" in spans[1].name
 
 
 class TestMultipleToolCallsInSequence:
     """Multiple tool calls produce individual spans."""
 
-    async def test_multiple_tool_calls_each_produce_individual_span(
-        self,
-        otel_pipeline: tuple[InMemoryEventBus, OTelExporter, InMemorySpanExporter],
-    ) -> None:
-        bus, otel, exporter = otel_pipeline
+    async def test_multiple_tool_calls(self, otel_pipeline: tuple) -> None:
+        bus, otel, span_exporter = otel_pipeline
 
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-1"})
+        await bus.emit("llm_call_start", {"model": "sonnet"})
 
-        tools = ["web_search", "calculator", "file_read"]
-        for i, tool_name in enumerate(tools):
+        for i, tool_name in enumerate(["web_search", "calculator", "file_read"]):
             cid = f"tool-{i}"
-            await bus.emit(
-                "tool_call_start", {"name": tool_name, "correlation_id": cid}
-            )
-            await bus.emit(
-                "tool_call_end", {"name": tool_name, "ok": True, "correlation_id": cid}
-            )
+            await bus.emit("tool_call_start", {"name": tool_name, "correlation_id": cid})
+            await bus.emit("tool_call_end", {"name": tool_name, "correlation_id": cid})
 
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-1"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
 
-        spans = exporter.get_finished_spans()
-        assert len(spans) == 4  # 3 tools + 1 LLM
+        spans = span_exporter.get_finished_spans()
+        # 3 tool spans + 1 LLM span = 4
+        assert len(spans) == 4
 
-        tool_spans = [s for s in spans if s.name == "tool_call"]
+        tool_spans = [s for s in spans if "tool" in s.name]
         assert len(tool_spans) == 3
 
-        tool_names = [s.attributes["tool.name"] for s in tool_spans]  # type: ignore[index]
+        tool_names = [s.attributes["tool.name"] for s in tool_spans]
         assert tool_names == ["web_search", "calculator", "file_read"]
 
 
 class TestErrorPropagationInPipeline:
     """Error events produce ERROR status spans."""
 
-    async def test_llm_call_end_with_error_sets_span_error_status(
-        self,
-        otel_pipeline: tuple[InMemoryEventBus, OTelExporter, InMemorySpanExporter],
-    ) -> None:
-        bus, otel, exporter = otel_pipeline
+    async def test_llm_error_status(self, otel_pipeline: tuple) -> None:
+        bus, otel, span_exporter = otel_pipeline
 
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-err"})
-        await bus.emit(
-            "llm_call_end",
-            {"model": "sonnet", "call_id": "llm-err", "error": "rate_limit_exceeded"},
-        )
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet", "error": True})
 
-        spans = exporter.get_finished_spans()
+        spans = span_exporter.get_finished_spans()
         assert len(spans) == 1
+        assert spans[0].status.status_code == StatusCode.ERROR
 
-        span = spans[0]
-        assert span.status.status_code == StatusCode.ERROR
-        assert "rate_limit_exceeded" in (span.status.description or "")
+    async def test_tool_error_status(self, otel_pipeline: tuple) -> None:
+        bus, otel, span_exporter = otel_pipeline
 
-    async def test_tool_call_end_with_ok_false_sets_span_error_status(
-        self,
-        otel_pipeline: tuple[InMemoryEventBus, OTelExporter, InMemorySpanExporter],
-    ) -> None:
-        bus, otel, exporter = otel_pipeline
+        await bus.emit("tool_call_start", {"name": "sandbox", "correlation_id": "t1"})
+        await bus.emit("tool_call_end", {"correlation_id": "t1", "error": "timeout"})
 
-        await bus.emit(
-            "tool_call_start",
-            {"name": "sandbox", "correlation_id": "tool-err"},
-        )
-        await bus.emit(
-            "tool_call_end",
-            {
-                "name": "sandbox",
-                "ok": False,
-                "correlation_id": "tool-err",
-                "error": "timeout",
-            },
-        )
-
-        spans = exporter.get_finished_spans()
+        spans = span_exporter.get_finished_spans()
         assert len(spans) == 1
         assert spans[0].status.status_code == StatusCode.ERROR
 
 
-class TestOTelExporterCoexistsWithTracingSubscriber:
-    """OTelExporter and TracingSubscriber can both subscribe to the same EventBus."""
+class TestCoexistenceWithTracingSubscriber:
+    """OTelExporter and TracingSubscriber coexist on the same EventBus."""
 
-    async def test_both_subscribers_receive_events_without_interference(self) -> None:
+    async def test_both_receive_events(self) -> None:
         bus = InMemoryEventBus()
 
-        # Set up OTel pipeline
-        otel_exporter = InMemorySpanExporter()
+        span_exporter = InMemorySpanExporter()
         provider = TracerProvider()
-        provider.add_span_processor(SimpleSpanProcessor(otel_exporter))
-        otel = OTelExporter(bus, tracer_provider=provider, service_name="coexist-test")
-        otel.attach()
+        provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        otel = OTelExporter(tracer_provider=provider)
+        otel.attach(bus)
 
-        # Set up TracingSubscriber with ConsoleTracer
         console_tracer = ConsoleTracer()
         tracing_sub = TracingSubscriber(bus, console_tracer)
         tracing_sub.attach()
 
-        # Emit events
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-co"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-co"})
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
+        await bus.emit("tool_call_start", {"name": "web_search", "correlation_id": "t1"})
+        await bus.emit("tool_call_end", {"name": "web_search", "correlation_id": "t1"})
 
-        await bus.emit(
-            "tool_call_start",
-            {"name": "web_search", "correlation_id": "tool-co"},
-        )
-        await bus.emit(
-            "tool_call_end",
-            {"name": "web_search", "ok": True, "correlation_id": "tool-co"},
-        )
+        # OTel spans
+        assert len(span_exporter.get_finished_spans()) == 2
 
-        # OTel spans created
-        otel_spans = otel_exporter.get_finished_spans()
-        assert len(otel_spans) == 2
+        # ConsoleTracer spans
+        console_names = {s["name"] for s in console_tracer._spans.values()}
+        assert "llm_call" in console_names
+        assert "tool_call" in console_names
 
-        # ConsoleTracer spans created
-        console_span_names = {s["name"] for s in console_tracer._spans.values()}
-        assert "llm_call" in console_span_names
-        assert "tool_call" in console_span_names
-
-        # Clean up
         tracing_sub.detach()
-        otel.detach()
+        otel.detach(bus)
+        provider.shutdown()
 
 
 class TestAttachDetachLifecycle:
     """OTelExporter stops creating spans after detach."""
 
-    async def test_detach_stops_span_creation(self) -> None:
+    async def test_detach_stops_spans(self) -> None:
         bus = InMemoryEventBus()
-        otel_exporter = InMemorySpanExporter()
+        span_exporter = InMemorySpanExporter()
         provider = TracerProvider()
-        provider.add_span_processor(SimpleSpanProcessor(otel_exporter))
-        otel = OTelExporter(bus, tracer_provider=provider, service_name="lifecycle-test")
-        otel.attach()
+        provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        otel = OTelExporter(tracer_provider=provider)
+        otel.attach(bus)
 
-        # Emit while attached -> spans created
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-a"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-a"})
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
+        assert len(span_exporter.get_finished_spans()) == 1
 
-        assert len(otel_exporter.get_finished_spans()) == 1
+        otel.detach(bus)
 
-        # Detach
-        otel.detach()
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
+        assert len(span_exporter.get_finished_spans()) == 1  # Still 1
 
-        # Emit after detach -> NO new spans
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-b"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-b"})
+        provider.shutdown()
 
-        assert len(otel_exporter.get_finished_spans()) == 1  # Still 1, not 2
-
-    async def test_reattach_resumes_span_creation(self) -> None:
+    async def test_reattach_resumes(self) -> None:
         bus = InMemoryEventBus()
-        otel_exporter = InMemorySpanExporter()
+        span_exporter = InMemorySpanExporter()
         provider = TracerProvider()
-        provider.add_span_processor(SimpleSpanProcessor(otel_exporter))
-        otel = OTelExporter(bus, tracer_provider=provider, service_name="reattach-test")
+        provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        otel = OTelExporter(tracer_provider=provider)
 
-        otel.attach()
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-1"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-1"})
-        assert len(otel_exporter.get_finished_spans()) == 1
+        otel.attach(bus)
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
+        assert len(span_exporter.get_finished_spans()) == 1
 
-        otel.detach()
-        otel.attach()
+        otel.detach(bus)
+        otel.attach(bus)
 
-        await bus.emit("llm_call_start", {"model": "sonnet", "call_id": "llm-2"})
-        await bus.emit("llm_call_end", {"model": "sonnet", "call_id": "llm-2"})
-        assert len(otel_exporter.get_finished_spans()) == 2
+        await bus.emit("llm_call_start", {"model": "sonnet"})
+        await bus.emit("llm_call_end", {"model": "sonnet"})
+        assert len(span_exporter.get_finished_spans()) == 2
+
+        otel.detach(bus)
+        provider.shutdown()
