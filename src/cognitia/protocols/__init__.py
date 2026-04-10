@@ -37,9 +37,15 @@ from cognitia.protocols.tools import LocalToolResolver, ToolIdCodec
 # AgentRuntime is now defined in protocols.runtime (domain layer)
 from cognitia.protocols.runtime import AgentRuntime  # noqa: F401
 
+# HostAdapter facade for external consumers
+from cognitia.protocols.host_adapter import AgentAuthority, AgentHandle, HostAdapter  # noqa: F401
+
 __all__ = [
+    "AgentAuthority",
+    "AgentHandle",
     "AgentRegistry",
     "AgentTool",
+    "HostAdapter",
     "TaskQueue",
     "ContextBuilder",
     "FactStore",

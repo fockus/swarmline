@@ -47,6 +47,10 @@ providers:
       aliases: [o3m]
       description: "Быстрая reasoning модель OpenAI"
 
+    codex-mini:
+      aliases: [codex, codex-mini-latest]
+      description: "OpenAI Codex agent model (fast, code-optimized)"
+
   google:
     gemini-2.5-pro:
       aliases: [gemini-pro, gemini]

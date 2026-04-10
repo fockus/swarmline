@@ -347,6 +347,9 @@ class DefaultGraphOrchestrator:
                             "agent_id": agent_id,
                             "task_id": task_id,
                         })
+
+                        # Lifecycle mode handling
+                        await self._handle_lifecycle(agent_id, task_id)
                         return
 
                     except Exception as exc:  # noqa: BLE001
@@ -390,6 +393,36 @@ class DefaultGraphOrchestrator:
             return
         finally:
             self._bg_tasks.pop(task_id, None)
+
+    # ------------------------------------------------------------------
+    # Internal: lifecycle mode handling
+    # ------------------------------------------------------------------
+
+    async def _handle_lifecycle(self, agent_id: str, task_id: str) -> None:
+        """Handle agent lifecycle after task completion."""
+        try:
+            node = await self._graph.get_node(agent_id)
+        except Exception:  # noqa: BLE001
+            return
+        if node is None or not hasattr(node, "lifecycle"):
+            return
+
+        from cognitia.multi_agent.graph_types import LifecycleMode
+
+        if node.lifecycle == LifecycleMode.EPHEMERAL:
+            if hasattr(self._graph, "remove_node"):
+                await self._graph.remove_node(agent_id)
+            await self._emit("graph.agent.self_terminated", {"agent_id": agent_id})
+        elif node.lifecycle == LifecycleMode.SUPERVISED:
+            await self._emit("graph.agent.awaiting_review", {
+                "agent_id": agent_id,
+                "task_id": task_id,
+            })
+        elif node.lifecycle == LifecycleMode.PERSISTENT:
+            from cognitia.multi_agent.registry_types import AgentStatus
+            if hasattr(self._graph, "update_status"):
+                await self._graph.update_status(agent_id, AgentStatus.IDLE)
+            await self._emit("graph.agent.ready", {"agent_id": agent_id})
 
     # ------------------------------------------------------------------
     # Internal helpers

@@ -10,7 +10,7 @@ import threading
 from dataclasses import replace
 from typing import Any
 
-from cognitia.multi_agent.graph_types import AgentNode, EdgeType, GraphEdge, GraphSnapshot
+from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode, EdgeType, GraphEdge, GraphSnapshot, LifecycleMode
 from cognitia.multi_agent.registry_types import AgentStatus
 
 
@@ -38,6 +38,7 @@ class SqliteAgentGraph:
     # --- Serialization ---
 
     def _serialize(self, node: AgentNode) -> str:
+        caps = node.capabilities
         return json.dumps({
             "id": node.id,
             "name": node.name,
@@ -46,14 +47,42 @@ class SqliteAgentGraph:
             "parent_id": node.parent_id,
             "allowed_tools": list(node.allowed_tools),
             "skills": list(node.skills),
+            "mcp_servers": list(node.mcp_servers),
+            "capabilities": {
+                "can_hire": caps.can_hire,
+                "can_delegate": caps.can_delegate,
+                "max_children": caps.max_children,
+                "max_depth": caps.max_depth,
+                "can_delegate_authority": caps.can_delegate_authority,
+                "can_use_subagents": caps.can_use_subagents,
+                "allowed_subagent_ids": list(caps.allowed_subagent_ids),
+                "can_use_team_mode": caps.can_use_team_mode,
+            },
             "runtime_config": node.runtime_config,
+            "model": node.model,
+            "runtime": node.runtime,
+            "api_key_env": node.api_key_env,
             "budget_limit_usd": node.budget_limit_usd,
+            "lifecycle": node.lifecycle.value,
+            "hooks": list(node.hooks),
             "status": node.status.value,
             "metadata": node.metadata,
         })
 
     def _deserialize(self, data: str) -> AgentNode:
         d = json.loads(data)
+        caps_data = d.get("capabilities", {})
+        capabilities = AgentCapabilities(
+            can_hire=caps_data.get("can_hire", False),
+            can_delegate=caps_data.get("can_delegate", True),
+            max_children=caps_data.get("max_children"),
+            max_depth=caps_data.get("max_depth"),
+            can_delegate_authority=caps_data.get("can_delegate_authority", False),
+            can_use_subagents=caps_data.get("can_use_subagents", False),
+            allowed_subagent_ids=tuple(caps_data.get("allowed_subagent_ids", ())),
+            can_use_team_mode=caps_data.get("can_use_team_mode", False),
+        ) if caps_data else AgentCapabilities()
+        lifecycle_str = d.get("lifecycle", "ephemeral")
         return AgentNode(
             id=d["id"],
             name=d["name"],
@@ -62,8 +91,15 @@ class SqliteAgentGraph:
             parent_id=d.get("parent_id"),
             allowed_tools=tuple(d.get("allowed_tools", ())),
             skills=tuple(d.get("skills", ())),
+            mcp_servers=tuple(d.get("mcp_servers", ())),
+            capabilities=capabilities,
             runtime_config=d.get("runtime_config"),
+            model=d.get("model", ""),
+            runtime=d.get("runtime", ""),
+            api_key_env=d.get("api_key_env"),
             budget_limit_usd=d.get("budget_limit_usd"),
+            lifecycle=LifecycleMode(lifecycle_str),
+            hooks=tuple(d.get("hooks", ())),
             status=AgentStatus(d.get("status", "idle")),
             metadata=d.get("metadata", {}),
         )
@@ -248,3 +284,6 @@ class SqliteAgentGraph:
 
     async def update_node(self, node_id: str, **updates: Any) -> AgentNode | None:
         return await asyncio.to_thread(self._update_sync, node_id, **updates)
+
+    async def update_status(self, node_id: str, status: AgentStatus) -> None:
+        await self.update_node(node_id, status=status)

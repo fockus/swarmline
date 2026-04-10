@@ -252,6 +252,10 @@ result = await pipeline.run()
 | **Pipeline Engine** | Multi-phase execution with budget gates, builder DSL |
 | **Human-in-the-Loop** | Approval patterns for tool-level, plan-level, and output-level human review |
 | **Plugin Runner** | Subprocess JSON-RPC plugin host for extensible agent capabilities |
+| **HostAdapter Protocol** | Universal agent management API (spawn/send/stop/status) with AgentSDKAdapter (Claude) and CodexAdapter (OpenAI) |
+| **Three Lifecycle Modes** | EPHEMERAL (self-terminate), SUPERVISED (creator controls), PERSISTENT (survives across goals) |
+| **Authority & Capability Delegation** | Hierarchical permission system: can_hire, max_depth, can_delegate_authority with governance checks |
+| **Persistent Agent Graphs** | Long-lived agent organizations with FIFO goal queues for sequential goal processing |
 
 ### Memory & Persistence
 
@@ -623,6 +627,10 @@ Legend: ✅ Built-in  ⚠️ Partial/manual  ❌ Not available  CP = Checkpointe
 - [Multi-Agent Coordination](docs/multi-agent.md) — agent-as-tool, task queues, agent registry
 - [Pipeline Engine](docs/pipeline.md) — multi-phase execution with budget gates
 - [Human-in-the-Loop](docs/hitl.md) — approval patterns for agent actions
+- [HostAdapter Protocol](docs/host-adapter.md) — universal agent management API with two adapters
+- [Lifecycle Modes](docs/lifecycle-modes.md) — EPHEMERAL, SUPERVISED, PERSISTENT agent lifecycles
+- [Authority System](docs/authority-system.md) — capability delegation and governance checks
+- [Persistent Graph](docs/persistent-graph.md) — long-lived agent orgs with goal queues
 
 ### Advanced
 - [Orchestration](docs/orchestration.md) — planning, subagents, team mode

@@ -9,6 +9,19 @@ from typing import Any
 from cognitia.multi_agent.registry_types import AgentStatus
 
 
+class LifecycleMode(str, Enum):
+    """Agent lifecycle mode — how the agent lives and dies.
+
+    EPHEMERAL: self-terminates after goal completion (default).
+    SUPERVISED: creator decides when to terminate.
+    PERSISTENT: only orchestrator/user can remove; stays alive across goals.
+    """
+
+    EPHEMERAL = "ephemeral"
+    SUPERVISED = "supervised"
+    PERSISTENT = "persistent"
+
+
 class EdgeType(str, Enum):
     """Type of relationship between agent nodes."""
 
@@ -24,6 +37,8 @@ class AgentCapabilities:
     can_hire: bool = False
     can_delegate: bool = True
     max_children: int | None = None  # None = unlimited
+    max_depth: int | None = None  # Per-agent depth limit (None = use global)
+    can_delegate_authority: bool = False  # Can children also hire sub-agents?
 
     # Runtime capabilities (outside graph)
     can_use_subagents: bool = False
@@ -49,6 +64,8 @@ class AgentNode:
     runtime: str = ""
     api_key_env: str | None = None
     budget_limit_usd: float | None = None
+    lifecycle: LifecycleMode = LifecycleMode.SUPERVISED
+    hooks: tuple[str, ...] = ()
     status: AgentStatus = AgentStatus.IDLE
     metadata: dict[str, Any] = field(default_factory=dict)
 

@@ -59,6 +59,13 @@ async def check_hire_allowed(
     if depth >= config.max_depth:
         return f"Max graph depth ({config.max_depth}) would be exceeded"
 
+    # Per-agent max_depth override (stricter wins)
+    if caps.max_depth is not None and depth >= caps.max_depth:
+        return (
+            f"Agent '{parent_node.name}' per-agent max_depth "
+            f"({caps.max_depth}) would be exceeded"
+        )
+
     # Check max_agents via subtree from root
     root = await graph_query.get_root()
     if root is not None:
@@ -83,4 +90,42 @@ def check_delegate_allowed(
     if not agent_node.capabilities.can_delegate:
         return f"Agent '{agent_node.name}' does not have can_delegate permission"
 
+    return None
+
+
+def check_authority_delegation(
+    parent_caps: AgentCapabilities,
+    child_caps: AgentCapabilities,
+) -> str | None:
+    """Check if parent can delegate authority to child.
+
+    Returns error message string if denied, or None if allowed.
+    """
+    if child_caps.can_hire and not parent_caps.can_hire:
+        return "Parent without can_hire cannot grant can_hire to child"
+    if child_caps.can_hire and not parent_caps.can_delegate_authority:
+        return "Parent does not have can_delegate_authority permission"
+    return None
+
+
+def validate_capability_delegation(
+    parent: Any,  # AgentNode
+    child_tools: tuple[str, ...],
+    child_skills: tuple[str, ...],
+    child_hooks: tuple[str, ...],
+) -> str | None:
+    """Validate child receives only subset of parent's capabilities.
+
+    Empty parent tuple = all allowed (no restriction).
+    Returns error message string if invalid, or None if valid.
+    """
+    if parent.allowed_tools and not set(child_tools).issubset(set(parent.allowed_tools)):
+        extra = set(child_tools) - set(parent.allowed_tools)
+        return f"Child tools {extra} not in parent's allowed_tools"
+    if parent.skills and not set(child_skills).issubset(set(parent.skills)):
+        extra = set(child_skills) - set(parent.skills)
+        return f"Child skills {extra} not in parent's skills"
+    if hasattr(parent, "hooks") and parent.hooks and not set(child_hooks).issubset(set(parent.hooks)):
+        extra = set(child_hooks) - set(parent.hooks)
+        return f"Child hooks {extra} not in parent's hooks"
     return None

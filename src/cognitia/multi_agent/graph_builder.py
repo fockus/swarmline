@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode, GraphSnapshot
+from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode, GraphSnapshot, LifecycleMode
 
 
 class GraphBuilder:
@@ -40,6 +40,8 @@ class GraphBuilder:
         capabilities: AgentCapabilities | None = None,
         runtime_config: dict[str, Any] | None = None,
         budget_limit_usd: float | None = None,
+        lifecycle: LifecycleMode | None = None,
+        hooks: tuple[str, ...] = (),
         metadata: dict[str, Any] | None = None,
     ) -> GraphBuilder:
         self._queue.append(AgentNode(
@@ -54,6 +56,8 @@ class GraphBuilder:
             capabilities=capabilities or AgentCapabilities(),
             runtime_config=runtime_config,
             budget_limit_usd=budget_limit_usd,
+            lifecycle=lifecycle or LifecycleMode.SUPERVISED,
+            hooks=hooks,
             metadata=metadata or {},
         ))
         return self
@@ -72,6 +76,8 @@ class GraphBuilder:
         capabilities: AgentCapabilities | None = None,
         runtime_config: dict[str, Any] | None = None,
         budget_limit_usd: float | None = None,
+        lifecycle: LifecycleMode | None = None,
+        hooks: tuple[str, ...] = (),
         metadata: dict[str, Any] | None = None,
     ) -> GraphBuilder:
         self._queue.append(AgentNode(
@@ -86,6 +92,8 @@ class GraphBuilder:
             capabilities=capabilities or AgentCapabilities(),
             runtime_config=runtime_config,
             budget_limit_usd=budget_limit_usd,
+            lifecycle=lifecycle or LifecycleMode.SUPERVISED,
+            hooks=hooks,
             metadata=metadata or {},
         ))
         return self
@@ -123,10 +131,14 @@ class GraphBuilder:
                 can_hire=caps_data.get("can_hire", False),
                 can_delegate=caps_data.get("can_delegate", True),
                 max_children=caps_data.get("max_children"),
+                max_depth=caps_data.get("max_depth"),
+                can_delegate_authority=caps_data.get("can_delegate_authority", False),
                 can_use_subagents=caps_data.get("can_use_subagents", False),
                 allowed_subagent_ids=tuple(caps_data.get("allowed_subagent_ids", ())),
                 can_use_team_mode=caps_data.get("can_use_team_mode", False),
             )
+        lifecycle_str = node.get("lifecycle", "ephemeral")
+        lifecycle = LifecycleMode(lifecycle_str)
         kwargs: dict[str, Any] = {
             "system_prompt": node.get("system_prompt", ""),
             "allowed_tools": tuple(node.get("allowed_tools", ())),
@@ -135,6 +147,8 @@ class GraphBuilder:
             "capabilities": capabilities,
             "runtime_config": node.get("runtime_config"),
             "budget_limit_usd": node.get("budget_limit_usd"),
+            "lifecycle": lifecycle,
+            "hooks": tuple(node.get("hooks", ())),
             "metadata": node.get("metadata", {}),
         }
         if parent_id is None:
