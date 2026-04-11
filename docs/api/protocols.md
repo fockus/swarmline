@@ -4,36 +4,36 @@ Core protocol interfaces following Interface Segregation Principle (ISP). Each p
 
 ## Memory Protocols
 
-::: cognitia.protocols.memory.MessageStore
+::: swarmline.protocols.memory.MessageStore
 
-::: cognitia.protocols.memory.FactStore
+::: swarmline.protocols.memory.FactStore
 
-::: cognitia.protocols.memory.GoalStore
+::: swarmline.protocols.memory.GoalStore
 
-::: cognitia.protocols.memory.SummaryStore
+::: swarmline.protocols.memory.SummaryStore
 
-::: cognitia.protocols.memory.SessionStateStore
+::: swarmline.protocols.memory.SessionStateStore
 
-::: cognitia.protocols.memory.ToolEventStore
+::: swarmline.protocols.memory.ToolEventStore
 
 ## Runtime Protocol
 
-::: cognitia.protocols.runtime.RuntimePort
+::: swarmline.protocols.runtime.RuntimePort
 
 ## Session Protocols
 
-::: cognitia.protocols.session.SessionManager
+::: swarmline.protocols.session.SessionManager
 
-::: cognitia.protocols.session.SessionRehydrator
+::: swarmline.protocols.session.SessionRehydrator
 
 ## Routing Protocols
 
-::: cognitia.protocols.routing.RoleRouter
+::: swarmline.protocols.routing.RoleRouter
 
-::: cognitia.protocols.routing.ModelSelector
+::: swarmline.protocols.routing.ModelSelector
 
 ## Tools Protocols
 
-::: cognitia.protocols.tools.ToolIdCodec
+::: swarmline.protocols.tools.ToolIdCodec
 
-::: cognitia.protocols.tools.LocalToolResolver
+::: swarmline.protocols.tools.LocalToolResolver

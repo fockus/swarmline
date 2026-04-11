@@ -1,6 +1,6 @@
 # Cookbook
 
-Practical recipes for common tasks with the cognitia library. Each recipe is self-contained, runnable code.
+Practical recipes for common tasks with the swarmline library. Each recipe is self-contained, runnable code.
 
 ---
 
@@ -10,7 +10,7 @@ Practical recipes for common tasks with the cognitia library. Each recipe is sel
 
 ```python
 import asyncio
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 async def main():
     # Anthropic Claude (default)
@@ -52,8 +52,8 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from cognitia import Agent, AgentConfig
-from cognitia.agent.tool import tool
+from swarmline import Agent, AgentConfig
+from swarmline.agent.tool import tool
 
 @tool("lookup_price", description="Look up the current price of a product.")
 async def lookup_price(product_name: str, currency: str = "USD") -> str:
@@ -92,7 +92,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 async def main():
     agent = Agent(AgentConfig(
@@ -132,8 +132,8 @@ asyncio.run(main())
 ```python
 import asyncio
 from pydantic import BaseModel
-from cognitia import Agent, AgentConfig
-from cognitia.runtime.structured_output import (
+from swarmline import Agent, AgentConfig
+from swarmline.runtime.structured_output import (
     extract_pydantic_schema,
     validate_structured_output,
 )
@@ -177,7 +177,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from cognitia.guardrails import (
+from swarmline.guardrails import (
     ContentLengthGuardrail,
     GuardrailContext,
     GuardrailResult,
@@ -227,7 +227,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from cognitia.session.backends import (
+from swarmline.session.backends import (
     MemoryScope,
     SqliteSessionBackend,
     scoped_key,
@@ -272,8 +272,8 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from cognitia import Agent, AgentConfig
-from cognitia.agent.middleware import CostTracker as CostMiddleware
+from swarmline import Agent, AgentConfig
+from swarmline.agent.middleware import CostTracker as CostMiddleware
 
 async def main():
     # Middleware approach: auto-track cost from Agent results
@@ -298,7 +298,7 @@ asyncio.run(main())
 For standalone cost tracking without an agent:
 
 ```python
-from cognitia.runtime.cost import CostBudget, CostTracker, load_pricing
+from swarmline.runtime.cost import CostBudget, CostTracker, load_pricing
 
 pricing = load_pricing()
 budget = CostBudget(max_cost_usd=1.00, action_on_exceed="error")
@@ -309,7 +309,7 @@ print(f"Cost so far: ${tracker.total_cost_usd:.6f}")
 print(f"Budget status: {tracker.check_budget()}")  # "ok" | "warning" | "exceeded"
 ```
 
-**Notes:** The middleware `CostTracker` raises `BudgetExceededError` when the cumulative cost exceeds the budget. The standalone `CostTracker` in `cognitia.runtime.cost` does not raise but returns a status string.
+**Notes:** The middleware `CostTracker` raises `BudgetExceededError` when the cumulative cost exceeds the budget. The standalone `CostTracker` in `swarmline.runtime.cost` does not raise but returns a status string.
 
 ---
 
@@ -318,8 +318,8 @@ print(f"Budget status: {tracker.check_budget()}")  # "ok" | "warning" | "exceede
 **Problem:** Retry failed LLM calls with exponential backoff and fall back to alternative models.
 
 ```python
-from cognitia.retry import ExponentialBackoff, ModelFallbackChain
-from cognitia.resilience.circuit_breaker import CircuitBreaker
+from swarmline.retry import ExponentialBackoff, ModelFallbackChain
+from swarmline.resilience.circuit_breaker import CircuitBreaker
 
 # 1. Exponential backoff with jitter
 backoff = ExponentialBackoff(
@@ -369,7 +369,7 @@ else:
 
 ```python
 import asyncio
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 async def main():
     agent = Agent(AgentConfig(
@@ -406,12 +406,12 @@ asyncio.run(main())
 
 ## 10. Custom Memory Provider
 
-**Problem:** Implement your own storage backend that satisfies the cognitia memory protocols.
+**Problem:** Implement your own storage backend that satisfies the swarmline memory protocols.
 
 ```python
 from typing import Any
-from cognitia.memory.types import MemoryMessage
-from cognitia.protocols import MessageStore, FactStore
+from swarmline.memory.types import MemoryMessage
+from swarmline.protocols import MessageStore, FactStore
 
 
 class RedisMemoryProvider:

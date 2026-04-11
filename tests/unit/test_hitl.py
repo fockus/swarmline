@@ -6,14 +6,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cognitia.hitl.gate import ApprovalDeniedError, ApprovalGate
-from cognitia.hitl.policies import (
+from swarmline.hitl.gate import ApprovalDeniedError, ApprovalGate
+from swarmline.hitl.policies import (
     AlwaysApprovePolicy,
     AlwaysDenyPolicy,
     CostApprovalPolicy,
     ToolApprovalPolicy,
 )
-from cognitia.hitl.types import (
+from swarmline.hitl.types import (
     ApprovalCallback,
     ApprovalPolicy,
     ApprovalRequest,

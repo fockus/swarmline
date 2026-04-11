@@ -9,7 +9,7 @@ Universal facade for spawning and managing AI agents across different runtimes.
 ## API
 
 ```python
-from cognitia.protocols.host_adapter import HostAdapter, AgentHandle, AgentAuthority, AgentHandleStatus
+from swarmline.protocols.host_adapter import HostAdapter, AgentHandle, AgentAuthority, AgentHandleStatus
 ```
 
 ### `spawn_agent(role, goal, **kwargs) -> AgentHandle`
@@ -55,21 +55,21 @@ Get the current status of an agent. Returns an `AgentHandleStatus` constant:
 Uses Claude Agent SDK (`claude-agent-sdk` package). Best for Claude-native workflows with MCP support.
 
 ```python
-from cognitia.runtime.agent_sdk_adapter import AgentSDKAdapter
+from swarmline.runtime.agent_sdk_adapter import AgentSDKAdapter
 
 adapter = AgentSDKAdapter(default_model="opus")
 ```
 
 - Lazy-imports `claude_code_sdk` to avoid hard dependency
 - Resolves model names via `ModelRegistry` (`"opus"` -> `"claude-opus-4-20250514"`)
-- Install: `pip install cognitia[claude]`
+- Install: `pip install swarmline[claude]`
 
 ### CodexAdapter (OpenAI/Codex)
 
 Uses OpenAI SDK for Codex/GPT agents. Best for OpenAI-native workflows.
 
 ```python
-from cognitia.runtime.codex_adapter import CodexAdapter
+from swarmline.runtime.codex_adapter import CodexAdapter
 
 adapter = CodexAdapter(default_model="codex", api_key="sk-...")
 ```
@@ -77,13 +77,13 @@ adapter = CodexAdapter(default_model="codex", api_key="sk-...")
 - Lazy-imports `openai` to avoid hard dependency
 - Resolves model names via `ModelRegistry` (`"codex"` -> `"codex-mini"`)
 - Supports multi-turn conversation history
-- Install: `pip install cognitia[openai-agents]`
+- Install: `pip install swarmline[openai-agents]`
 
 ## Usage Example
 
 ```python
 import asyncio
-from cognitia.runtime.agent_sdk_adapter import AgentSDKAdapter
+from swarmline.runtime.agent_sdk_adapter import AgentSDKAdapter
 
 async def main():
     adapter = AgentSDKAdapter(default_model="opus")
@@ -110,7 +110,7 @@ asyncio.run(main())
 Both adapters pass `isinstance(adapter, HostAdapter)` thanks to `@runtime_checkable`. No inheritance required — structural subtyping via Python Protocols.
 
 ```python
-from cognitia.protocols.host_adapter import HostAdapter
+from swarmline.protocols.host_adapter import HostAdapter
 
 assert isinstance(AgentSDKAdapter(), HostAdapter)  # True
 assert isinstance(CodexAdapter(), HostAdapter)      # True

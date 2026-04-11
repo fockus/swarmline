@@ -2,7 +2,7 @@
 
 ## Principles
 
-Cognitia is built on Clean Architecture and SOLID:
+Swarmline is built on Clean Architecture and SOLID:
 
 - **Protocol-driven**: all contracts are `typing.Protocol` with `@runtime_checkable`. No abstract classes.
 - **ISP**: each Protocol contains no more than 5 methods.
@@ -15,9 +15,9 @@ Cognitia is built on Clean Architecture and SOLID:
 ```text
 ┌──────────────────────────────────────────────────────────┐
 │  Business Application (your_app)                         │
-│  Knows about cognitia. Implements concrete providers.    │
+│  Knows about swarmline. Implements concrete providers.    │
 ├──────────────────────────────────────────────────────────┤
-│  cognitia (library)                                       │
+│  swarmline (library)                                       │
 │  bootstrap | context | runtime (claude/thin/cli/deep)    │
 │  policy | session | tools | memory | skills | routing     │
 │  memory_bank | orchestration | hooks | observability      │
@@ -30,7 +30,7 @@ Cognitia is built on Clean Architecture and SOLID:
 
 | Package | Purpose | Dependencies |
 | ------- | ------- | ------------ |
-| `bootstrap` | Facade: `CognitiaStack.create()`, capabilities wiring | core |
+| `bootstrap` | Facade: `SwarmlineStack.create()`, capabilities wiring | core |
 | `context` | System prompt assembly with token budget | core |
 | `session` | SessionManager, Rehydrator, TaskSessionStore | memory |
 | `memory` | Message, fact, goal storage + Episodic, Procedural, Consolidation | core |
@@ -52,7 +52,7 @@ Cognitia is built on Clean Architecture and SOLID:
 | `eval` | Agent evaluation: EvalRunner, Scorers, Reporters, Compare | core |
 | `plugins` | PluginRunner (subprocess JSON-RPC), worker shim | core |
 | `a2a` | Agent-to-Agent protocol (JSON-RPC 2.0 / SSE) | starlette, httpx |
-| `serve` | HTTP API (`cognitia serve`) | starlette |
+| `serve` | HTTP API (`swarmline serve`) | starlette |
 
 ## Protocol Map
 

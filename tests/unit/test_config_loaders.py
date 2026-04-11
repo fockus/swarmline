@@ -1,4 +1,4 @@
-"""Tests for cognitia.config - configuration loaders. Iteration 2: TDD tests for migrated loaders.
+"""Tests for swarmline.config - configuration loaders. Iteration 2: TDD tests for migrated loaders.
 Testing Trophy: unit + integration (fixture YAML)."""
 
 from __future__ import annotations
@@ -6,8 +6,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from cognitia.config.role_router import RoleRouterConfig, load_role_router_config
-from cognitia.config.role_skills import YamlRoleSkillsLoader
+from swarmline.config.role_router import RoleRouterConfig, load_role_router_config
+from swarmline.config.role_skills import YamlRoleSkillsLoader
 
 # ---------------------------------------------------------------------------
 # YamlRoleSkillsLoader tests

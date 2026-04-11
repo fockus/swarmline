@@ -11,10 +11,10 @@ from typing import Any
 
 import pytest
 
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, ToolSpec
-from cognitia.tools.sandbox_local import LocalSandboxProvider
-from cognitia.tools.types import SandboxConfig
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, ToolSpec
+from swarmline.tools.sandbox_local import LocalSandboxProvider
+from swarmline.tools.types import SandboxConfig
 
 
 def _make_sandbox(tmp_path: Path) -> LocalSandboxProvider:

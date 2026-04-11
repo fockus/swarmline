@@ -7,8 +7,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
-from cognitia.orchestration.subagent_types import SubagentSpec, SubagentStatus
-from cognitia.orchestration.team_types import TeamConfig, TeamMessage
+from swarmline.orchestration.subagent_types import SubagentSpec, SubagentStatus
+from swarmline.orchestration.team_types import TeamConfig, TeamMessage
 
 
 def _now() -> datetime:
@@ -19,7 +19,7 @@ class TestMessageBus:
     """MessageBus - shina soobshcheniy mezhdu agentami."""
 
     async def test_send_and_receive(self) -> None:
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         msg = TeamMessage(from_agent="lead", to_agent="w1", content="начинай", timestamp=_now())
@@ -30,14 +30,14 @@ class TestMessageBus:
         assert inbox[0].content == "начинай"
 
     async def test_inbox_empty(self) -> None:
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         inbox = await bus.get_inbox("w1")
         assert inbox == []
 
     async def test_multiple_messages(self) -> None:
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         await bus.send(
@@ -57,7 +57,7 @@ class TestMessageBus:
 
     async def test_broadcast(self) -> None:
         """Broadcast - message vsem agentam."""
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         await bus.broadcast("lead", "всем: старт", ["w1", "w2", "w3"])
@@ -69,7 +69,7 @@ class TestMessageBus:
 
     async def test_get_outbox(self) -> None:
         """Outbox - messages otpravlennye agentom."""
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         await bus.send(
@@ -82,7 +82,7 @@ class TestMessageBus:
 
     async def test_history(self) -> None:
         """Full history soobshcheniy."""
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         await bus.send(TeamMessage(from_agent="a", to_agent="b", content="1", timestamp=_now()))
@@ -92,7 +92,7 @@ class TestMessageBus:
         assert len(history) == 2
 
     async def test_clear(self) -> None:
-        from cognitia.orchestration.message_bus import MessageBus
+        from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
         await bus.send(TeamMessage(from_agent="a", to_agent="b", content="x", timestamp=_now()))
@@ -105,7 +105,7 @@ class TestTeamWithMessaging:
 
     async def test_send_message_delivers(self) -> None:
         """send_message realno dostavlyaet message in inbox workera."""
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()
         mock_sub.spawn.side_effect = ["a1", "a2"]
@@ -135,7 +135,7 @@ class TestTeamWithMessaging:
 
     async def test_worker_replies_to_lead(self) -> None:
         """Worker mozhet responseit lidu cherez bus."""
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()
         mock_sub.spawn.side_effect = ["a1"]
@@ -160,7 +160,7 @@ class TestTeamWithMessaging:
 
     async def test_message_count_in_status(self) -> None:
         """messages_exchanged in TeamStatus otrazhaet realnoe kolichestvo."""
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()
         mock_sub.spawn.side_effect = ["a1"]
@@ -183,7 +183,7 @@ class TestTeamWithMessaging:
         assert status.messages_exchanged == 2
 
     async def test_start_registers_send_message_executor_when_supported(self) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub = AsyncMock()
         mock_sub.spawn.side_effect = ["a1"]

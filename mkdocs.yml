@@ -1,12 +1,12 @@
-site_name: Cognitia
-site_url: https://fockus.github.io/cognitia
+site_name: Swarmline
+site_url: https://fockus.github.io/swarmline
 site_description: LLM-agnostic Python framework for building AI agents with pluggable runtimes, memory, tools, and observability
-site_author: cognitia contributors
-repo_url: https://github.com/fockus/cognitia
-repo_name: fockus/cognitia
+site_author: swarmline contributors
+repo_url: https://github.com/fockus/swarmline
+repo_name: fockus/swarmline
 edit_uri: edit/main/docs/
 
-copyright: Copyright &copy; 2024-2026 cognitia contributors
+copyright: Copyright &copy; 2024-2026 swarmline contributors
 
 theme:
   name: material
@@ -57,7 +57,7 @@ nav:
     - Start Here: getting-started.md
     - Use Cases: use-cases.md
     - Credentials & Providers: credentials.md
-    - Why Cognitia?: why-cognitia.md
+    - Why Swarmline?: why-swarmline.md
   - Build:
     - Agent Facade API: agent-facade.md
     - Runtimes: runtimes.md
@@ -167,9 +167,9 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/fockus/cognitia
+      link: https://github.com/fockus/swarmline
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/cognitia/
+      link: https://pypi.org/project/swarmline/
   generator: false
 
 extra_css:

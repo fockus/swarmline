@@ -8,8 +8,8 @@ import pytest
 
 aiosqlite = pytest.importorskip("aiosqlite", reason="aiosqlite не установлен")
 
-from cognitia.memory.sqlite import SQLiteMemoryProvider  # noqa: E402
-from cognitia.memory.types import GoalState, ToolEvent  # noqa: E402
+from swarmline.memory.sqlite import SQLiteMemoryProvider  # noqa: E402
+from swarmline.memory.types import GoalState, ToolEvent  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # noqa: E402
 

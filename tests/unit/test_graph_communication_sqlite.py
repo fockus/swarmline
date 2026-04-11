@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cognitia.multi_agent.graph_comm_types import ChannelType, GraphMessage
-from cognitia.multi_agent.graph_communication_sqlite import SqliteGraphCommunication
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_types import AgentNode
+from swarmline.multi_agent.graph_comm_types import ChannelType, GraphMessage
+from swarmline.multi_agent.graph_communication_sqlite import SqliteGraphCommunication
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_types import AgentNode
 
 
 @pytest.fixture

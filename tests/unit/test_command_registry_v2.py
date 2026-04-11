@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cognitia.commands.registry import CommandRegistry
+from swarmline.commands.registry import CommandRegistry
 
 
 class TestCommandTypedParams:
@@ -73,7 +73,7 @@ class TestCommandYamlAutoDiscovery:
 
     async def test_command_yaml_auto_discovery(self, tmp_path: Path) -> None:
         """load_commands_from_yaml chitaet YAML-file and returns list[LoadedCommand]."""
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         yaml_content = """
 commands:
@@ -108,7 +108,7 @@ commands:
         self, tmp_path: Path
     ) -> None:
         """YAML-parameters (JSON Schema) correctly deserializuyutsya in LoadedCommand.parameters."""
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         yaml_content = """
 commands:

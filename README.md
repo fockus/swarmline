@@ -46,17 +46,17 @@ Swarmline covers the full spectrum: **simple single-agent assistants** that you 
 ## Install
 
 ```bash
-pip install cognitia                # core (protocols, types, in-memory providers)
-pip install cognitia[thin]          # + lightweight built-in multi-provider runtime
-pip install cognitia[claude]        # + Claude Agent SDK runtime (subprocess + MCP)
-pip install cognitia[deepagents]    # + DeepAgents runtime baseline (native graph + Anthropic path)
+pip install swarmline                # core (protocols, types, in-memory providers)
+pip install swarmline[thin]          # + lightweight built-in multi-provider runtime
+pip install swarmline[claude]        # + Claude Agent SDK runtime (subprocess + MCP)
+pip install swarmline[deepagents]    # + DeepAgents runtime baseline (native graph + Anthropic path)
 ```
 
 For DeepAgents provider overrides install the provider bridge explicitly:
 
 ```bash
-pip install cognitia[deepagents] langchain-openai openai
-pip install cognitia[deepagents] langchain-google-genai
+pip install swarmline[deepagents] langchain-openai openai
+pip install swarmline[deepagents] langchain-google-genai
 ```
 
 ## Credentials & Provider Setup
@@ -93,7 +93,7 @@ Important: `deepagents` does not use `openrouter:*` as a native provider prefix.
 ### Simple agent (3 lines)
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(system_prompt="You are a helpful assistant.", runtime="thin"))
 result = await agent.query("What is the capital of France?")
@@ -103,7 +103,7 @@ print(result.text)
 ### Streaming
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(system_prompt="You are a helpful assistant.", runtime="thin"))
 
@@ -115,7 +115,7 @@ async for event in agent.stream("Explain quantum computing"):
 ### Multi-turn conversation
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(system_prompt="You are a helpful assistant.", runtime="thin"))
 
@@ -128,7 +128,7 @@ async with agent.conversation() as conv:
 ### Custom tools
 
 ```python
-from cognitia import AgentConfig, Agent, tool
+from swarmline import AgentConfig, Agent, tool
 
 @tool(name="calculate", description="Calculate a math expression")
 async def calculate(expression: str) -> str:
@@ -146,7 +146,7 @@ print(result.text)
 ### Structured output
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(
     system_prompt="Extract user info.",
@@ -167,8 +167,8 @@ print(result.structured_output)
 ### Middleware (cost tracking, security)
 
 ```python
-from cognitia import Agent, AgentConfig
-from cognitia.agent import CostTracker, SecurityGuard
+from swarmline import Agent, AgentConfig
+from swarmline.agent import CostTracker, SecurityGuard
 
 tracker = CostTracker(budget_usd=1.0)
 guard = SecurityGuard(block_patterns=["password", "secret"])
@@ -189,11 +189,11 @@ When a single agent isn't enough, scale to teams:
 ### Agent graph (hierarchical teams)
 
 ```python
-from cognitia.multi_agent.graph_communication import InMemoryGraphCommunication
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_communication import InMemoryGraphCommunication
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
 
 async def my_runner(agent_id: str, task_id: str, goal: str, system_prompt: str) -> str:
     return f"{agent_id}: {goal}"
@@ -221,11 +221,11 @@ print(result)
 ### Knowledge Bank (shared agent memory)
 
 ```python
-from cognitia.memory_bank.knowledge_inmemory import (
+from swarmline.memory_bank.knowledge_inmemory import (
     InMemoryKnowledgeSearcher,
     InMemoryKnowledgeStore,
 )
-from cognitia.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
+from swarmline.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
 
 store = InMemoryKnowledgeStore()
 searcher = InMemoryKnowledgeSearcher(store)
@@ -245,8 +245,8 @@ print(results[0].path)
 ### Pipeline (multi-phase execution)
 
 ```python
-from cognitia.pipeline.builder import PipelineBuilder
-from cognitia.pipeline.types import BudgetPolicy
+from swarmline.pipeline.builder import PipelineBuilder
+from swarmline.pipeline.types import BudgetPolicy
 
 async def run_task(agent_id: str, task_id: str, goal: str, system_prompt: str) -> str:
     return f"{agent_id}: {goal}"
@@ -344,7 +344,7 @@ print(result.status)
 | **Hooks** | Lifecycle hooks: `PreToolUse`, `PostToolUse`, `Stop`, `UserPromptSubmit` |
 | **Observability** | Structured JSON logging via structlog + OpenTelemetry export + ActivityLog audit trail |
 | **Evaluation Framework** | Agent eval with custom scorers, compare/history, console + JSON reporters |
-| **HTTP API** | `cognitia serve` — REST API for agent interaction |
+| **HTTP API** | `swarmline serve` — REST API for agent interaction |
 | **Daemon** | Universal long-running process manager with health checks, scheduler, PID management |
 | **Circuit Breaker** | Resilience pattern for external service calls |
 | **Session Management** | Multi-session support with rehydration from persistent storage |
@@ -371,15 +371,15 @@ agent = Agent(AgentConfig(system_prompt="...", runtime="cli"))
 
 Or via environment variable:
 ```bash
-export COGNITIA_RUNTIME=thin
+export SWARMLINE_RUNTIME=thin
 ```
 
 | Runtime | Best For | LLM Support | MCP | Install |
 | ------- | -------- | ----------- | --- | ------- |
-| `thin` | Fast prototyping, direct API, alternative LLMs | Anthropic, OpenAI-compatible, Google | Built-in client | `cognitia[thin]` |
-| `claude_sdk` | Full Claude ecosystem, native MCP, subagents | Claude only | Native | `cognitia[claude]` |
-| `deepagents` | DeepAgents graph runtime, LangGraph workflows | Anthropic baseline; OpenAI/Google via provider package | Not a portable guarantee | `cognitia[deepagents]` |
-| `cli` | External CLI agents, NDJSON subprocess integrations | Whatever the wrapped CLI provides | No portable MCP guarantee | `cognitia` |
+| `thin` | Fast prototyping, direct API, alternative LLMs | Anthropic, OpenAI-compatible, Google | Built-in client | `swarmline[thin]` |
+| `claude_sdk` | Full Claude ecosystem, native MCP, subagents | Claude only | Native | `swarmline[claude]` |
+| `deepagents` | DeepAgents graph runtime, LangGraph workflows | Anthropic baseline; OpenAI/Google via provider package | Not a portable guarantee | `swarmline[deepagents]` |
+| `cli` | External CLI agents, NDJSON subprocess integrations | Whatever the wrapped CLI provides | No portable MCP guarantee | `swarmline` |
 
 ### Runtime Feature Matrix
 
@@ -424,7 +424,7 @@ The **Swarmline library** column shows what works with **any** runtime — memor
 - `deepagents` keeps native power through `feature_mode="hybrid"` and `feature_mode="native_first"`; native notices and resume metadata surface through `native_metadata`.
 - `thin` is the lightweight tier. It is intentionally not treated as a full-runtime parity target.
 - DeepAgents provider notes:
-  - `cognitia[deepagents]` installs the baseline runtime and Anthropic-ready path.
+  - `swarmline[deepagents]` installs the baseline runtime and Anthropic-ready path.
   - OpenAI and Google paths require `langchain-openai` / `openai` or `langchain-google-genai`.
   - Native built-ins require an explicit `native_config["backend"]`; without it Swarmline now fails fast instead of silently falling back to DeepAgents `StateBackend`.
   - Tool-heavy Gemini built-ins remain a provider-specific limitation today; use `feature_mode="portable"` when you need the strongest parity guarantees.
@@ -446,7 +446,7 @@ print(result.text)
 Each runtime declares its capabilities. Use `CapabilityRequirements` to ensure your chosen runtime supports what you need:
 
 ```python
-from cognitia.runtime.capabilities import CapabilityRequirements
+from swarmline.runtime.capabilities import CapabilityRequirements
 
 agent = Agent(AgentConfig(
     system_prompt="...",
@@ -521,15 +521,15 @@ Three interchangeable providers, all implementing the same 8 protocols:
 
 ```python
 # Development — no database needed
-from cognitia.memory import InMemoryMemoryProvider
+from swarmline.memory import InMemoryMemoryProvider
 memory = InMemoryMemoryProvider()
 
 # Lightweight persistence — SQLite
-from cognitia.memory import SQLiteMemoryProvider
+from swarmline.memory import SQLiteMemoryProvider
 memory = SQLiteMemoryProvider(db_path="./agent.db")
 
 # Production — PostgreSQL
-from cognitia.memory import PostgresMemoryProvider
+from swarmline.memory import PostgresMemoryProvider
 memory = PostgresMemoryProvider(session_factory)
 ```
 
@@ -538,13 +538,13 @@ memory = PostgresMemoryProvider(session_factory)
 Enable only what you need — each capability is an independent toggle:
 
 ```python
-from cognitia.bootstrap import CognitiaStack
-from cognitia.runtime.types import RuntimeConfig
-from cognitia.tools.sandbox_local import LocalSandboxProvider
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.todo.inmemory_provider import InMemoryTodoProvider
+from swarmline.bootstrap import SwarmlineStack
+from swarmline.runtime.types import RuntimeConfig
+from swarmline.tools.sandbox_local import LocalSandboxProvider
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.todo.inmemory_provider import InMemoryTodoProvider
 
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     prompts_dir="./prompts",
     skills_dir="./skills",
     project_root=".",
@@ -563,15 +563,15 @@ Pluggable web search with 4 providers and 3 fetch backends:
 
 ```python
 # Search providers (pick one)
-from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider  # no API key
-from cognitia.tools.web_providers.brave import BraveSearchProvider            # BRAVE_API_KEY
-from cognitia.tools.web_providers.tavily import TavilySearchProvider          # TAVILY_API_KEY
-from cognitia.tools.web_providers.searxng import SearXNGSearchProvider        # self-hosted
+from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider  # no API key
+from swarmline.tools.web_providers.brave import BraveSearchProvider            # BRAVE_API_KEY
+from swarmline.tools.web_providers.tavily import TavilySearchProvider          # TAVILY_API_KEY
+from swarmline.tools.web_providers.searxng import SearXNGSearchProvider        # self-hosted
 
 # Fetch providers (pick one)
-from cognitia.tools.web_httpx import HttpxWebProvider           # default (httpx)
-from cognitia.tools.web_providers.jina import JinaReaderFetchProvider    # JINA_API_KEY
-from cognitia.tools.web_providers.crawl4ai import Crawl4AIFetchProvider  # Playwright
+from swarmline.tools.web_httpx import HttpxWebProvider           # default (httpx)
+from swarmline.tools.web_providers.jina import JinaReaderFetchProvider    # JINA_API_KEY
+from swarmline.tools.web_providers.crawl4ai import Crawl4AIFetchProvider  # Playwright
 ```
 
 ## Model Registry
@@ -579,7 +579,7 @@ from cognitia.tools.web_providers.crawl4ai import Crawl4AIFetchProvider  # Playw
 Multi-provider model resolution with human-friendly aliases:
 
 ```python
-from cognitia.runtime.types import resolve_model_name
+from swarmline.runtime.types import resolve_model_name
 
 resolve_model_name("sonnet")   # "claude-sonnet-4-20250514"
 resolve_model_name("opus")     # "claude-opus-4-20250514"
@@ -662,7 +662,7 @@ Legend: ✅ Built-in  ⚠️ Partial/manual  ❌ Not available  CP = Checkpointe
 ## Documentation
 
 ### Getting Started
-- [Why Swarmline?](docs/why-cognitia.md) — value proposition, design philosophy
+- [Why Swarmline?](docs/why-swarmline.md) — value proposition, design philosophy
 - [Getting Started](docs/getting-started.md) — installation, first agent, step-by-step
 - [Agent Facade API](docs/agent-facade.md) — Agent, AgentConfig, @tool, Result, Conversation, Middleware
 
@@ -671,7 +671,7 @@ Legend: ✅ Built-in  ⚠️ Partial/manual  ❌ Not available  CP = Checkpointe
 - [Memory](docs/memory.md) — InMemory, PostgreSQL, SQLite + Episodic, Procedural, Consolidation
 - [Tools & Skills](docs/tools-and-skills.md) — @tool decorator, MCP skills, tool policy
 - [Capabilities](docs/capabilities.md) — sandbox, web, todo, memory bank, planning, thinking
-- [Configuration](docs/configuration.md) — CognitiaStack, RuntimeConfig, environment variables
+- [Configuration](docs/configuration.md) — SwarmlineStack, RuntimeConfig, environment variables
 
 ### Multi-Agent
 - [Agent Graph System](docs/graph-agents.md) — hierarchical multi-agent with governance, task boards, communication

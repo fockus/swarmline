@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cognitia.multi_agent.graph_orchestrator_types import DelegationRequest
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_types import AgentNode
+from swarmline.multi_agent.graph_orchestrator_types import DelegationRequest
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_types import AgentNode
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ def approval_gate():
 @pytest.fixture
 def tools(org, task_board, orchestrator, approval_gate):
     """Create graph tools from factory."""
-    from cognitia.multi_agent.graph_tools import create_graph_tools
+    from swarmline.multi_agent.graph_tools import create_graph_tools
     return create_graph_tools(
         graph=org,
         task_board=task_board,

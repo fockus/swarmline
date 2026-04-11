@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.hooks.registry import HookRegistry
+from swarmline.hooks.registry import HookRegistry
 
 
 async def _dummy_hook_a(**kwargs: object) -> None:

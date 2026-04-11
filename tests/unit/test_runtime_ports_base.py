@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from cognitia.runtime.ports.base import convert_event
-from cognitia.runtime.types import RuntimeEvent
+from swarmline.runtime.ports.base import convert_event
+from swarmline.runtime.types import RuntimeEvent
 
 
 def test_convert_event_maps_approval_required() -> None:

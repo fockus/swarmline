@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.orchestration.subagent_types import SubagentSpec, SubagentStatus
-from cognitia.orchestration.team_types import TeamConfig, TeamMessage
+from swarmline.orchestration.subagent_types import SubagentSpec, SubagentStatus
+from swarmline.orchestration.team_types import TeamConfig, TeamMessage
 
 
 def _config() -> TeamConfig:
@@ -31,7 +31,7 @@ def mock_sub_orch() -> AsyncMock:
 
 class TestDeepAgentsTeamOrchestrator:
     async def test_start(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "задача")
@@ -39,7 +39,7 @@ class TestDeepAgentsTeamOrchestrator:
         assert mock_sub_orch.spawn.call_count == 2  # 2 workers
 
     async def test_stop(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
@@ -47,7 +47,7 @@ class TestDeepAgentsTeamOrchestrator:
         assert mock_sub_orch.cancel.call_count == 2
 
     async def test_get_status(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
@@ -56,7 +56,7 @@ class TestDeepAgentsTeamOrchestrator:
         assert len(status.workers) == 2
 
     async def test_get_status_all_terminal_failures_returns_failed(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub_orch.get_status.side_effect = [
             SubagentStatus(state="failed"),
@@ -72,7 +72,7 @@ class TestDeepAgentsTeamOrchestrator:
         assert status.workers["w2"].state == "cancelled"
 
     async def test_send_message(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
@@ -84,7 +84,7 @@ class TestDeepAgentsTeamOrchestrator:
         assert status.messages_exchanged == 1
 
     async def test_pause_and_resume_respawn_worker(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
@@ -99,7 +99,7 @@ class TestDeepAgentsTeamOrchestrator:
         self,
         mock_sub_orch,
     ) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub_orch.register_tool = MagicMock()
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
@@ -118,7 +118,7 @@ class TestDeepAgentsTeamOrchestrator:
         mock_sub_orch.register_tool.assert_called_once()
 
     async def test_resume_agent_reuses_composed_worker_task(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub_orch.register_tool = MagicMock()
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
@@ -134,8 +134,8 @@ class TestDeepAgentsTeamOrchestrator:
         assert "investigate issue" in resumed_task
 
     async def test_isinstance_protocol(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
-        from cognitia.orchestration.team_protocol import (
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.team_protocol import (
             ResumableTeamOrchestrator,
             TeamOrchestrator,
         )
@@ -147,7 +147,7 @@ class TestDeepAgentsTeamOrchestrator:
 
 class TestClaudeTeamOrchestrator:
     async def test_start(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.claude_team import ClaudeTeamOrchestrator
+        from swarmline.orchestration.claude_team import ClaudeTeamOrchestrator
 
         orch = ClaudeTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
@@ -157,8 +157,8 @@ class TestClaudeTeamOrchestrator:
         assert "worker 'w1'" in first_worker_task
 
     async def test_isinstance_protocol(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.claude_team import ClaudeTeamOrchestrator
-        from cognitia.orchestration.team_protocol import TeamOrchestrator
+        from swarmline.orchestration.claude_team import ClaudeTeamOrchestrator
+        from swarmline.orchestration.team_protocol import TeamOrchestrator
 
         orch = ClaudeTeamOrchestrator(mock_sub_orch)
         assert isinstance(orch, TeamOrchestrator)
@@ -166,8 +166,8 @@ class TestClaudeTeamOrchestrator:
 
 class TestTeamManager:
     async def test_start_and_list(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
-        from cognitia.orchestration.team_manager import TeamManager
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.team_manager import TeamManager
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         mgr = TeamManager(orch)
@@ -177,8 +177,8 @@ class TestTeamManager:
         assert team_id in teams
 
     async def test_stop_removes_from_list(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
-        from cognitia.orchestration.team_manager import TeamManager
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.team_manager import TeamManager
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         mgr = TeamManager(orch)
@@ -189,8 +189,8 @@ class TestTeamManager:
         assert team_id not in teams
 
     async def test_get_status(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
-        from cognitia.orchestration.team_manager import TeamManager
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.team_manager import TeamManager
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         mgr = TeamManager(orch)
@@ -200,8 +200,8 @@ class TestTeamManager:
         assert status.team_id == team_id
 
     async def test_resume_agent_delegates_to_orchestrator(self, mock_sub_orch) -> None:
-        from cognitia.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
-        from cognitia.orchestration.team_manager import TeamManager
+        from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
+        from swarmline.orchestration.team_manager import TeamManager
 
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         mgr = TeamManager(orch)
@@ -213,7 +213,7 @@ class TestTeamManager:
         assert orch._teams[team_id].worker_ids["w1"] == "a3"
 
     async def test_resume_agent_noop_for_non_resumable_orchestrator(self) -> None:
-        from cognitia.orchestration.team_manager import TeamManager
+        from swarmline.orchestration.team_manager import TeamManager
 
         class NonResumableOrchestrator:
             async def start(self, config, task):
@@ -224,7 +224,7 @@ class TestTeamManager:
                 _ = team_id
 
             async def get_team_status(self, team_id):
-                from cognitia.orchestration.team_types import TeamStatus
+                from swarmline.orchestration.team_types import TeamStatus
 
                 return TeamStatus(team_id=team_id)
 

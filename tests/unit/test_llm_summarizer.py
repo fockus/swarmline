@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.memory.llm_summarizer import LlmSummaryGenerator
-from cognitia.memory.types import MemoryMessage
+from swarmline.memory.llm_summarizer import LlmSummaryGenerator
+from swarmline.memory.types import MemoryMessage
 
 
 def _make_messages(n: int = 5) -> list[MemoryMessage]:

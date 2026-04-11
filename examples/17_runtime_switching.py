@@ -7,12 +7,12 @@ No API keys required.
 
 import asyncio
 
-from cognitia.runtime.capabilities import (
+from swarmline.runtime.capabilities import (
     CapabilityRequirements,
     get_runtime_capabilities,
 )
-from cognitia.runtime.factory import RuntimeFactory
-from cognitia.runtime.registry import get_default_registry
+from swarmline.runtime.factory import RuntimeFactory
+from swarmline.runtime.registry import get_default_registry
 
 
 async def main() -> None:
@@ -65,7 +65,7 @@ async def main() -> None:
         print(f"Validation failed: {validation_error.message}")
 
     # 5. Same Agent code, different runtimes (requires API key)
-    # from cognitia import Agent, AgentConfig
+    # from swarmline import Agent, AgentConfig
     # for runtime in ["thin", "claude_sdk", "deepagents"]:
     #     agent = Agent(AgentConfig(system_prompt="Hi", runtime=runtime))
     #     result = await agent.query("Hello")

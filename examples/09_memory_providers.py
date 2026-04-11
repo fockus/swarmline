@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.memory.inmemory import InMemoryMemoryProvider
+from swarmline.memory.inmemory import InMemoryMemoryProvider
 
 
 async def main() -> None:
@@ -49,7 +49,7 @@ async def main() -> None:
 
     # --- 4. Goals ---
     print("\n=== Goals ===")
-    from cognitia.memory.types import GoalState
+    from swarmline.memory.types import GoalState
 
     # Note: save_goal stores by (user_id, goal.goal_id) key,
     # get_active_goal retrieves by (user_id, topic_id) key.

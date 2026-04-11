@@ -1,6 +1,6 @@
-# Cognitia Integration for Codex CLI
+# Swarmline Integration for Codex CLI
 
-Connect Cognitia's persistent memory, planning, and team coordination to OpenAI Codex CLI via MCP.
+Connect Swarmline's persistent memory, planning, and team coordination to OpenAI Codex CLI via MCP.
 
 ## Prerequisites
 
@@ -8,25 +8,25 @@ Connect Cognitia's persistent memory, planning, and team coordination to OpenAI 
 - Codex CLI installed and working
 
 ```bash
-pip install cognitia[code-agent]
+pip install swarmline[code-agent]
 ```
 
 Verify the entry point:
 
 ```bash
-cognitia-mcp --help
+swarmline-mcp --help
 ```
 
 ## Configuration
 
-Add the Cognitia MCP server to your Codex CLI config. Codex reads MCP configuration from its config file (typically `~/.codex/config.toml` or the project-level `.codex/config.toml`).
+Add the Swarmline MCP server to your Codex CLI config. Codex reads MCP configuration from its config file (typically `~/.codex/config.toml` or the project-level `.codex/config.toml`).
 
 Copy the TOML block from `config.toml.example` into your config file:
 
 ```toml
-[mcp.cognitia]
+[mcp.swarmline]
 transport = "stdio"
-command = "cognitia-mcp"
+command = "swarmline-mcp"
 args = ["--mode", "auto"]
 ```
 
@@ -36,10 +36,10 @@ The `auto` mode detects API keys at startup. Without `ANTHROPIC_API_KEY`, only h
 
 ```bash
 # Test the server starts correctly:
-cognitia-mcp --mode headless
+swarmline-mcp --mode headless
 
 # Check CLI status:
-cognitia status
+swarmline status
 ```
 
 ## Usage
@@ -65,10 +65,10 @@ Full mode adds 3 agent tools: `agent_create`, `agent_list`, `agent_query`.
 
 ## Troubleshooting
 
-**`cognitia-mcp: command not found`** -- Ensure the Python scripts directory is on PATH. Alternative: set `command = "python"` and `args = ["-m", "cognitia.mcp", "--mode", "auto"]`.
+**`swarmline-mcp: command not found`** -- Ensure the Python scripts directory is on PATH. Alternative: set `command = "python"` and `args = ["-m", "swarmline.mcp", "--mode", "auto"]`.
 
-**`ImportError: fastmcp`** -- Run `pip install cognitia[code-agent]` to install the required extra.
+**`ImportError: fastmcp`** -- Run `pip install swarmline[code-agent]` to install the required extra.
 
-**Logs on stderr** -- Cognitia writes all structured logs to stderr. MCP protocol uses stdout. This is expected behavior.
+**Logs on stderr** -- Swarmline writes all structured logs to stderr. MCP protocol uses stdout. This is expected behavior.
 
 **Tools not appearing** -- Restart Codex CLI after config changes. Verify the config path is correct for your Codex version.

@@ -1,4 +1,4 @@
-# Why Cognitia?
+# Why Swarmline?
 
 ## The Problem
 
@@ -12,13 +12,13 @@ Building production AI agents requires far more than an LLM API call. A real age
 
 Most frameworks either force you into their ecosystem (vendor lock-in) or provide a thin wrapper that leaves you to build everything else yourself.
 
-## Cognitia's Approach
+## Swarmline's Approach
 
-Cognitia is a **modular, protocol-driven framework** built on Clean Architecture principles. Every component is an abstraction you can swap.
+Swarmline is a **modular, protocol-driven framework** built on Clean Architecture principles. Every component is an abstraction you can swap.
 
 ### 1. Protocol-First Design
 
-Every interface in cognitia is a `typing.Protocol` with ≤5 methods (ISP). Your business code depends on abstractions — never on concrete implementations:
+Every interface in swarmline is a `typing.Protocol` with ≤5 methods (ISP). Your business code depends on abstractions — never on concrete implementations:
 
 ```python
 # Your code depends on FactStore protocol
@@ -56,7 +56,7 @@ All four runtimes implement the same `AgentRuntime` protocol. Your application c
 Enable only what you need. Each capability is an independent toggle:
 
 ```python
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     prompts_dir="./prompts",
     skills_dir="./skills",
     project_root=".",
@@ -90,7 +90,7 @@ Use any LLM provider with human-friendly aliases:
 
 ## Design Principles
 
-| Principle | How cognitia applies it |
+| Principle | How swarmline applies it |
 | --------- | ----------------------- |
 | **Clean Architecture** | Infrastructure → Application → Domain. Domain has zero external deps |
 | **SOLID** | SRP (focused modules), OCP (extend via protocols), LSP (substitutable implementations), ISP (≤5 methods per protocol), DIP (depend on abstractions) |
@@ -98,7 +98,7 @@ Use any LLM provider with human-friendly aliases:
 | **KISS** | Agent facade: 3 lines for a working agent. Complexity opt-in via capabilities |
 | **YAGNI** | No capability loads unless explicitly toggled. Core has 3 dependencies |
 
-## When to Use Cognitia
+## When to Use Swarmline
 
 **Good fit:**
 
@@ -111,5 +111,5 @@ Use any LLM provider with human-friendly aliases:
 **Not the best fit:**
 
 - You just need a single LLM API call — use the provider SDK directly
-- You're deeply committed to LangChain — use it directly (though cognitia integrates via `deepagents` runtime)
-- You need a UI framework — cognitia is backend-only; pair with your preferred frontend
+- You're deeply committed to LangChain — use it directly (though swarmline integrates via `deepagents` runtime)
+- You need a UI framework — swarmline is backend-only; pair with your preferred frontend

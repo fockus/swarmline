@@ -5,7 +5,7 @@
 
 import time
 
-from cognitia.resilience.circuit_breaker import CircuitBreaker, CircuitState
+from swarmline.resilience.circuit_breaker import CircuitBreaker, CircuitState
 
 
 class TestCircuitBreaker:
@@ -85,7 +85,7 @@ class TestCircuitBreakerRegistry:
 
     def test_get_or_create(self) -> None:
         """Get or create breaker for server_id."""
-        from cognitia.resilience.circuit_breaker import CircuitBreakerRegistry
+        from swarmline.resilience.circuit_breaker import CircuitBreakerRegistry
 
         registry = CircuitBreakerRegistry(failure_threshold=3, cooldown_seconds=5)
         cb1 = registry.get("iss")
@@ -94,7 +94,7 @@ class TestCircuitBreakerRegistry:
 
     def test_different_servers(self) -> None:
         """Different servers - different breakers."""
-        from cognitia.resilience.circuit_breaker import CircuitBreakerRegistry
+        from swarmline.resilience.circuit_breaker import CircuitBreakerRegistry
 
         registry = CircuitBreakerRegistry(failure_threshold=3, cooldown_seconds=5)
         cb_iss = registry.get("iss")

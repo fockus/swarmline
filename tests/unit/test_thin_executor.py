@@ -4,8 +4,8 @@ import json
 
 import httpx
 import pytest
-from cognitia.agent.tool import tool
-from cognitia.runtime.thin.executor import ToolExecutor
+from swarmline.agent.tool import tool
+from swarmline.runtime.thin.executor import ToolExecutor
 
 
 class TestToolExecutorLocal:
@@ -115,7 +115,7 @@ class TestToolExecutorMcp:
                 _ = (args, kwargs)
                 return _Response()
 
-        monkeypatch.setattr("cognitia.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
 
         executor = ToolExecutor(mcp_servers={"iss": "https://example.test/mcp"})
         result = await executor.execute("mcp__iss__get_bonds", {"q": "test"})
@@ -150,7 +150,7 @@ class TestToolExecutorMcp:
                 _ = (args, kwargs)
                 raise httpx.TimeoutException("timeout")
 
-        monkeypatch.setattr("cognitia.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
 
         executor = ToolExecutor(
             mcp_servers={"iss": "https://example.test/mcp"}, timeout_seconds=0.01

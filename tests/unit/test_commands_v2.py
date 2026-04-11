@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from cognitia.commands.registry import CommandRegistry
+from swarmline.commands.registry import CommandRegistry
 
 
 class TestCommandTypedParamsValidated:
@@ -39,7 +39,7 @@ class TestCommandYamlAutoDiscovery:
     """Commands from YAML zagruzhayutsya avtomaticheski."""
 
     async def test_command_yaml_auto_discovery(self, tmp_path) -> None:
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         yaml_content = """
 commands:

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.pipeline.builder import PipelineBuilder
-from cognitia.pipeline.pipeline import Pipeline
-from cognitia.pipeline.runner import PipelineRunner
-from cognitia.pipeline.types import (
+from swarmline.pipeline.builder import PipelineBuilder
+from swarmline.pipeline.pipeline import Pipeline
+from swarmline.pipeline.runner import PipelineRunner
+from swarmline.pipeline.types import (
     BudgetPolicy,
     PhaseStatus,
 )
@@ -228,7 +228,7 @@ class TestPipelineRun:
             .build()
         )
         # Manually exhaust budget
-        from cognitia.pipeline.types import CostRecord
+        from swarmline.pipeline.types import CostRecord
         pipeline._budget.record(CostRecord(agent_id="a1", task_id="t0", cost_usd=1.0))
 
         result = await pipeline.run("Test goal")

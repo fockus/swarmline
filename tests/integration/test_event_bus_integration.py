@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 def _make_echo_llm(text: str = "Hello!"):

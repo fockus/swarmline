@@ -1,6 +1,6 @@
 # CLI Agent Runtime
 
-The CLI Agent Runtime runs external command-line agents as subprocesses and parses their NDJSON output into Cognitia's `RuntimeEvent` stream. This enables integration with any CLI-based agent (Claude Code, custom scripts, third-party tools) without tight coupling.
+The CLI Agent Runtime runs external command-line agents as subprocesses and parses their NDJSON output into Swarmline's `RuntimeEvent` stream. This enables integration with any CLI-based agent (Claude Code, custom scripts, third-party tools) without tight coupling.
 
 ## Overview
 
@@ -23,7 +23,7 @@ The runtime:
 
 For a full matrix of provider credentials and env-passing patterns across all runtimes,
 see [Credentials & Provider Setup](credentials.md). For `cli` specifically, the key point
-is that Cognitia passes credentials through to the wrapped command via shell env or
+is that Swarmline passes credentials through to the wrapped command via shell env or
 `CliConfig.env`.
 
 ## CliConfig
@@ -31,7 +31,7 @@ is that Cognitia passes credentials through to the wrapped command via shell env
 Configuration for the CLI subprocess:
 
 ```python
-from cognitia.runtime.cli.types import CliConfig
+from swarmline.runtime.cli.types import CliConfig
 
 config = CliConfig(
     command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"],
@@ -59,7 +59,7 @@ Parsers convert raw NDJSON lines from the subprocess into `RuntimeEvent` objects
 ### NdjsonParser Protocol
 
 ```python
-from cognitia.runtime.cli.parser import NdjsonParser
+from swarmline.runtime.cli.parser import NdjsonParser
 
 class NdjsonParser(Protocol):
     def parse_line(self, line: str) -> RuntimeEvent | None:
@@ -72,7 +72,7 @@ class NdjsonParser(Protocol):
 Parses Claude Code `--verbose --output-format stream-json` format:
 
 ```python
-from cognitia.runtime.cli.parser import ClaudeNdjsonParser
+from swarmline.runtime.cli.parser import ClaudeNdjsonParser
 
 parser = ClaudeNdjsonParser()
 ```
@@ -91,7 +91,7 @@ Event mapping:
 Fallback parser for non-Claude CLI tools. Wraps any valid JSON object as a `status` event:
 
 ```python
-from cognitia.runtime.cli.parser import GenericNdjsonParser
+from swarmline.runtime.cli.parser import GenericNdjsonParser
 
 parser = GenericNdjsonParser()
 event = parser.parse_line('{"step": "processing", "progress": 0.5}')
@@ -107,9 +107,9 @@ The main runtime class. Implements the `AgentRuntime` protocol and supports asyn
 ### Initialization
 
 ```python
-from cognitia.runtime.cli.runtime import CliAgentRuntime
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.cli.runtime import CliAgentRuntime
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.types import RuntimeConfig
 
 runtime = CliAgentRuntime(
     config=RuntimeConfig(runtime_name="cli", model="sonnet"),
@@ -130,7 +130,7 @@ Parser auto-selection:
 The `run()` method is an async generator yielding `RuntimeEvent` objects:
 
 ```python
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.types import Message, RuntimeConfig
 
 messages = [Message(role="user", content="Explain async/await in Python")]
 
@@ -205,10 +205,10 @@ async with CliAgentRuntime(config, cli_config) as runtime:
 Register `CliAgentRuntime` as a named runtime so it can be selected via `runtime="cli"`:
 
 ```python
-from cognitia.runtime.registry import RuntimeRegistry
-from cognitia.runtime.cli.runtime import CliAgentRuntime
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.registry import RuntimeRegistry
+from swarmline.runtime.cli.runtime import CliAgentRuntime
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.types import RuntimeConfig
 
 def create_cli_runtime(config: RuntimeConfig) -> CliAgentRuntime:
     return CliAgentRuntime(
@@ -231,9 +231,9 @@ A complete example running Claude Code CLI as a sub-agent:
 
 ```python
 import asyncio
-from cognitia.runtime.cli.runtime import CliAgentRuntime
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.cli.runtime import CliAgentRuntime
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 async def main() -> None:
@@ -273,8 +273,8 @@ if __name__ == "__main__":
 Implement the `NdjsonParser` protocol for custom CLI tools:
 
 ```python
-from cognitia.runtime.cli.parser import NdjsonParser
-from cognitia.runtime.types import RuntimeEvent
+from swarmline.runtime.cli.parser import NdjsonParser
+from swarmline.runtime.types import RuntimeEvent
 
 import json
 

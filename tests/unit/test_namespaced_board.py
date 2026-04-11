@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.protocols.graph_task import GraphTaskBoard
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.protocols.graph_task import GraphTaskBoard
 
 
 def _task(id: str, title: str = "Task", **kwargs) -> GraphTaskItem:

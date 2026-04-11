@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from cognitia.memory.episodic_types import Episode, EpisodicMemory
+from swarmline.memory.episodic_types import Episode, EpisodicMemory
 
 
 # ---------------------------------------------------------------------------
@@ -16,14 +16,14 @@ from cognitia.memory.episodic_types import Episode, EpisodicMemory
 
 @pytest.fixture
 def inmemory_store():
-    from cognitia.memory.episodic import InMemoryEpisodicMemory
+    from swarmline.memory.episodic import InMemoryEpisodicMemory
 
     return InMemoryEpisodicMemory()
 
 
 @pytest.fixture
 def sqlite_store(tmp_path):
-    from cognitia.memory.episodic_sqlite import SqliteEpisodicMemory
+    from swarmline.memory.episodic_sqlite import SqliteEpisodicMemory
 
     return SqliteEpisodicMemory(str(tmp_path / "episodes.db"))
 

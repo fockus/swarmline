@@ -1,7 +1,7 @@
 """Tests for AgentLogger and configure_logging - pokrytie observability."""
 
 import pytest
-from cognitia.observability.logger import AgentLogger, _level_to_int, configure_logging
+from swarmline.observability.logger import AgentLogger, _level_to_int, configure_logging
 
 
 class TestConfigureLogging:

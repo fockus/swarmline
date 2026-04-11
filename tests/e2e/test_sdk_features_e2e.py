@@ -1,10 +1,10 @@
-"""E2E: full user flow with SDK 0.1.48 features. Tests verify full scenarios ispolzovaniya novyh fich cognitia:
+"""E2E: full user flow with SDK 0.1.48 features. Tests verify full scenarios ispolzovaniya novyh fich swarmline:
 1. Hook-based security guard -> blocks dangerous commands
 2. In-process MCP tool -> used in runtime adapter flow
 3. Structured output -> query returns structured result
 4. Dynamic control -> model switching mid-session
 5. Session resume/fork -> conversation continuity
-6. File checkpointing -> rewind to checkpoint Vse tests ispolzuyut real komponotnty cognitia, mockaya tolko
+6. File checkpointing -> rewind to checkpoint Vse tests ispolzuyut real komponotnty swarmline, mockaya tolko
 ClaudeSDKClient (subprocess boundary).
 """
 
@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
-from cognitia.hooks.registry import HookRegistry
-from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks
-from cognitia.runtime.adapter import (
+from swarmline.hooks.registry import HookRegistry
+from swarmline.hooks.sdk_bridge import registry_to_sdk_hooks
+from swarmline.runtime.adapter import (
     AssistantMessage,
     ResultMessage,
     RuntimeAdapter,
@@ -27,11 +27,11 @@ from cognitia.runtime.adapter import (
     ToolResultBlock,
     ToolUseBlock,
 )
-from cognitia.runtime.claude_code import ClaudeCodeRuntime
-from cognitia.runtime.options_builder import ClaudeOptionsBuilder
-from cognitia.runtime.sdk_query import one_shot_query
-from cognitia.runtime.sdk_tools import create_mcp_server, mcp_tool
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.claude_code import ClaudeCodeRuntime
+from swarmline.runtime.options_builder import ClaudeOptionsBuilder
+from swarmline.runtime.sdk_query import one_shot_query
+from swarmline.runtime.sdk_tools import create_mcp_server, mcp_tool
+from swarmline.runtime.types import Message, RuntimeConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -255,7 +255,7 @@ class TestE2EStructuredOutput:
             yield _mock_assistant_msg([_mock_text_block("Analysis complete")])
             yield _mock_result_msg(structured_output=structured_data)
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             result = await one_shot_query(
                 "Diagnose my finances",
                 system_prompt="You are a financial analyst",

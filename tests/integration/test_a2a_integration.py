@@ -12,10 +12,10 @@ httpx = pytest.importorskip("httpx")
 
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 
-from cognitia.a2a.adapter import CognitiaA2AAdapter  # noqa: E402
-from cognitia.a2a.server import A2AServer  # noqa: E402
-from cognitia.a2a.types import AgentSkill  # noqa: E402
-from cognitia.agent.result import Result  # noqa: E402
+from swarmline.a2a.adapter import SwarmlineA2AAdapter  # noqa: E402
+from swarmline.a2a.server import A2AServer  # noqa: E402
+from swarmline.a2a.types import AgentSkill  # noqa: E402
+from swarmline.agent.result import Result  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ def _make_stack(agent: Any = None) -> tuple[A2AServer, Any]:
     """Create A2A server with in-process ASGI transport for httpx."""
     if agent is None:
         agent = _mock_agent()
-    adapter = CognitiaA2AAdapter(
+    adapter = SwarmlineA2AAdapter(
         agent,
         name="IntegrationBot",
         url="http://testserver",
@@ -157,18 +157,18 @@ class TestA2ANoCoreDependencies:
     """A2A module doesn't modify core agent/ — pure adapter pattern."""
 
     def test_adapter_has_no_agent_import(self) -> None:
-        """CognitiaA2AAdapter doesn't import from cognitia.agent.agent."""
+        """SwarmlineA2AAdapter doesn't import from swarmline.agent.agent."""
         import inspect
-        import cognitia.a2a.adapter as mod
+        import swarmline.a2a.adapter as mod
 
         source = inspect.getsource(mod)
-        assert "from cognitia.agent.agent import" not in source
-        assert "from cognitia.agent import Agent" not in source
+        assert "from swarmline.agent.agent import" not in source
+        assert "from swarmline.agent import Agent" not in source
 
     def test_types_module_is_standalone(self) -> None:
-        """a2a.types has no dependencies on cognitia.agent."""
+        """a2a.types has no dependencies on swarmline.agent."""
         import inspect
-        import cognitia.a2a.types as mod
+        import swarmline.a2a.types as mod
 
         source = inspect.getsource(mod)
-        assert "cognitia.agent" not in source
+        assert "swarmline.agent" not in source

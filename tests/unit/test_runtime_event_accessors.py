@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.runtime.types import (
+from swarmline.runtime.types import (
     RuntimeErrorData,
     RuntimeEvent,
 )

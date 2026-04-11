@@ -2,7 +2,7 @@
 
 import re
 
-from cognitia.runtime.thin.modes import VALID_MODES, detect_mode
+from swarmline.runtime.thin.modes import VALID_MODES, detect_mode
 
 
 class TestDetectModeHint:

@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.session.backends import InMemorySessionBackend, MemoryScope, scoped_key
+from swarmline.session.backends import InMemorySessionBackend, MemoryScope, scoped_key
 
 
 async def main() -> None:
@@ -43,7 +43,7 @@ async def main() -> None:
     print(f"After delete: {deleted}")
 
     # 5. SqliteSessionBackend (persistent, same API)
-    # from cognitia.session.backends import SqliteSessionBackend
+    # from swarmline.session.backends import SqliteSessionBackend
     # sqlite_backend = SqliteSessionBackend(db_path="sessions.db")
     # await sqlite_backend.save(agent_key, {"turn": 1})
     # data = await sqlite_backend.load(agent_key)

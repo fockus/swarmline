@@ -6,10 +6,10 @@ import asyncio
 
 import pytest
 
-from cognitia.daemon.routine_bridge import RoutineBridge
-from cognitia.daemon.routine_types import Routine
-from cognitia.daemon.scheduler import Scheduler
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.daemon.routine_bridge import RoutineBridge
+from swarmline.daemon.routine_types import Routine
+from swarmline.daemon.scheduler import Scheduler
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
 
 
 pytestmark = pytest.mark.integration

@@ -11,7 +11,7 @@ class TestThinkingTool:
 
     async def test_basic_thought(self) -> None:
         """Mysl zapisyvaetsya and returnssya in JSON."""
-        from cognitia.tools.thinking import thinking_executor
+        from swarmline.tools.thinking import thinking_executor
 
         result = await thinking_executor(
             {
@@ -28,7 +28,7 @@ class TestThinkingTool:
 
     async def test_empty_thought_returns_error(self) -> None:
         """Empty mysl -> error."""
-        from cognitia.tools.thinking import thinking_executor
+        from swarmline.tools.thinking import thinking_executor
 
         result = await thinking_executor({"thought": "", "next_steps": ["step"]})
         data = json.loads(result)
@@ -36,7 +36,7 @@ class TestThinkingTool:
 
     async def test_missing_next_steps_returns_error(self) -> None:
         """Without next_steps -> error."""
-        from cognitia.tools.thinking import thinking_executor
+        from swarmline.tools.thinking import thinking_executor
 
         result = await thinking_executor({"thought": "think"})
         data = json.loads(result)
@@ -44,7 +44,7 @@ class TestThinkingTool:
 
     async def test_empty_next_steps_returns_error(self) -> None:
         """Empty array next_steps -> error."""
-        from cognitia.tools.thinking import thinking_executor
+        from swarmline.tools.thinking import thinking_executor
 
         result = await thinking_executor({"thought": "think", "next_steps": []})
         data = json.loads(result)
@@ -52,7 +52,7 @@ class TestThinkingTool:
 
     def test_tool_spec(self) -> None:
         """ThinkingTool returns correct ToolSpec."""
-        from cognitia.tools.thinking import create_thinking_tool
+        from swarmline.tools.thinking import create_thinking_tool
 
         spec, executor = create_thinking_tool()
 
@@ -63,7 +63,7 @@ class TestThinkingTool:
 
     def test_schema_required_fields(self) -> None:
         """JSON Schema contains required fields."""
-        from cognitia.tools.thinking import create_thinking_tool
+        from swarmline.tools.thinking import create_thinking_tool
 
         spec, _ = create_thinking_tool()
         schema = spec.parameters

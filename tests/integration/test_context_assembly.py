@@ -5,10 +5,10 @@ Verify sloi, byudzhet, truncation.
 from pathlib import Path
 
 import pytest
-from cognitia.context.budget import ContextBudget
-from cognitia.context.builder import BuiltContext, ContextInput, DefaultContextBuilder
-from cognitia.memory.types import UserProfile
-from cognitia.skills.types import LoadedSkill, McpServerSpec, SkillSpec
+from swarmline.context.budget import ContextBudget
+from swarmline.context.builder import BuiltContext, ContextInput, DefaultContextBuilder
+from swarmline.memory.types import UserProfile
+from swarmline.skills.types import LoadedSkill, McpServerSpec, SkillSpec
 
 
 @pytest.fixture

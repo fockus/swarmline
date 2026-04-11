@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from cognitia.commands import CommandRegistry, auto_discover_commands, load_commands_from_yaml
+from swarmline.commands import CommandRegistry, auto_discover_commands, load_commands_from_yaml
 
 
 class TestCommandRegistryYamlDiscoveryExecute:

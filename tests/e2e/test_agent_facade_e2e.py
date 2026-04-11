@@ -7,7 +7,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from cognitia.agent import (
+from swarmline.agent import (
     Agent,
     AgentConfig,
     BudgetExceededError,
@@ -242,9 +242,9 @@ class TestE2ECostTracker:
 class TestE2EPublicAPI:
     """Public API imports work."""
 
-    def test_import_from_cognitia(self) -> None:
-        """from cognitia import Agent, AgentConfig, tool, Result, Conversation."""
-        from cognitia import Agent, AgentConfig, Conversation, Result, tool
+    def test_import_from_swarmline(self) -> None:
+        """from swarmline import Agent, AgentConfig, tool, Result, Conversation."""
+        from swarmline import Agent, AgentConfig, Conversation, Result, tool
 
         assert Agent is not None
         assert AgentConfig is not None
@@ -252,9 +252,9 @@ class TestE2EPublicAPI:
         assert Result is not None
         assert tool is not None
 
-    def test_import_from_cognitia_agent(self) -> None:
-        """from cognitia.agent import all facade types."""
-        from cognitia.agent import (
+    def test_import_from_swarmline_agent(self) -> None:
+        """from swarmline.agent import all facade types."""
+        from swarmline.agent import (
             Agent,
             AgentConfig,
             BudgetExceededError,

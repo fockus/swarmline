@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.observability.activity_log import InMemoryActivityLog
-from cognitia.observability.activity_subscriber import ActivityLogSubscriber
-from cognitia.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
-from cognitia.observability.event_bus import InMemoryEventBus
+from swarmline.observability.activity_log import InMemoryActivityLog
+from swarmline.observability.activity_subscriber import ActivityLogSubscriber
+from swarmline.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
+from swarmline.observability.event_bus import InMemoryEventBus
 
 
 # ---------------------------------------------------------------------------

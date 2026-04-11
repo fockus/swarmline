@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.observability.tracer import ConsoleTracer
+from swarmline.observability.tracer import ConsoleTracer
 
 
 class TestTracerRemovesEndedSpans:

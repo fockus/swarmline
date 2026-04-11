@@ -1,13 +1,13 @@
 # Tools & Skills
 
-Cognitia provides two mechanisms for giving agents capabilities: **tools** (code-defined) and **skills** (declarative MCP).
+Swarmline provides two mechanisms for giving agents capabilities: **tools** (code-defined) and **skills** (declarative MCP).
 
 ## @tool Decorator
 
 Define tools as async Python functions with automatic JSON Schema inference:
 
 ```python
-from cognitia import tool
+from swarmline import tool
 
 @tool(name="lookup_user", description="Look up user by email")
 async def lookup_user(email: str) -> str:
@@ -29,7 +29,7 @@ async def lookup_user(email: str) -> str:
 ### Using tools with Agent
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(
     runtime="thin",
@@ -44,13 +44,13 @@ The `@tool` decorator handles the conversion between your natural Python functio
 - Your handler: `async def fn(a: int, b: str) -> str`
 - SDK expects: `handler({"a": 1, "b": "hello"}) -> {"content": [{"type": "text", "text": "result"}]}`
 
-Cognitia's `_adapt_handler` bridges this gap transparently. If your handler raises an exception, it's caught and returned as an error in MCP format.
+Swarmline's `_adapt_handler` bridges this gap transparently. If your handler raises an exception, it's caught and returned as an error in MCP format.
 
 ## MCP Skills
 
-Skills are declarative MCP server connections with tool allowlists and agent instructions. Cognitia supports **two formats**:
+Skills are declarative MCP server connections with tool allowlists and agent instructions. Swarmline supports **two formats**:
 
-### Format 1: Cognitia Native (skill.yaml + INSTRUCTION.md)
+### Format 1: Swarmline Native (skill.yaml + INSTRUCTION.md)
 
 ```yaml
 # skills/finuslugi/skill.yaml
@@ -116,17 +116,17 @@ Use these tools to accomplish the task...
 | `name` | `skill_id` | Skill identifier (defaults to dir name) |
 | `description` | `description` | Short description |
 | `allowed-tools` | `tool_include` | Tool allowlist |
-| `mcp-servers` | `mcp_servers` | MCP servers (Cognitia extension) |
-| `intents` | `intents` | Activation keywords (Cognitia extension) |
-| `local-tools` | `local_tools` | Local tool IDs (Cognitia extension) |
+| `mcp-servers` | `mcp_servers` | MCP servers (Swarmline extension) |
+| `intents` | `intents` | Activation keywords (Swarmline extension) |
+| `local-tools` | `local_tools` | Local tool IDs (Swarmline extension) |
 
 **Priority:** When both `skill.yaml` and `SKILL.md` exist in the same directory, `skill.yaml` takes precedence.
 
 ### Loading skills
 
 ```python
-from cognitia.skills import SkillRegistry
-from cognitia.skills.loader import YamlSkillLoader
+from swarmline.skills import SkillRegistry
+from swarmline.skills.loader import YamlSkillLoader
 
 loader = YamlSkillLoader("./skills")
 skills = loader.load_all()  # Loads both skill.yaml and SKILL.md formats
@@ -153,7 +153,7 @@ tools = registry.get_tool_allowlist(["finuslugi"])
 Default-deny policy controls which tools agents can use:
 
 ```python
-from cognitia.policy import DefaultToolPolicy
+from swarmline.policy import DefaultToolPolicy
 
 policy = DefaultToolPolicy()
 
@@ -182,7 +182,7 @@ A tool is allowed if:
 MCP tools use a namespaced format: `mcp__<server>__<tool>`.
 
 ```python
-from cognitia.policy import DefaultToolIdCodec
+from swarmline.policy import DefaultToolIdCodec
 
 codec = DefaultToolIdCodec()
 codec.encode("finuslugi", "get_deposits")     # "mcp__finuslugi__get_deposits"
@@ -206,7 +206,7 @@ deposit_advisor:
 ```
 
 ```python
-from cognitia.config import YamlRoleSkillsLoader
+from swarmline.config import YamlRoleSkillsLoader
 
 loader = YamlRoleSkillsLoader("./prompts/role_skills.yaml")
 skills = loader.get_skills("deposit_advisor")  # ["finuslugi", "funds"]

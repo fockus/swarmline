@@ -1,11 +1,11 @@
 # CLI
 
-Command-line interface for the Cognitia agent framework.
+Command-line interface for the Swarmline agent framework.
 
 ## CLI App
 
-::: cognitia.cli._app.cli
+::: swarmline.cli._app.cli
 
 ## Init Command
 
-::: cognitia.cli.init_cmd.init_command
+::: swarmline.cli.init_cmd.init_command

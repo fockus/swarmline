@@ -6,9 +6,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.conversation import Conversation
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.conversation import Conversation
 from conftest import FakeStreamEvent
 
 # ---------------------------------------------------------------------------
@@ -78,7 +78,7 @@ class TestConversationSay:
     @pytest.mark.asyncio
     async def test_say_preserves_runtime_new_messages_in_history(self) -> None:
         """final.new_messages should pofail in conversation history."""
-        from cognitia.runtime.types import Message
+        from swarmline.runtime.types import Message
 
         agent = _make_agent()
         conv = Conversation(agent=agent)
@@ -115,7 +115,7 @@ class TestConversationSay:
     @pytest.mark.asyncio
     async def test_say_passes_mcp_servers_to_portable_runtime(self) -> None:
         """Portable runtime path should poluchat AgentConfig.mcp_servers."""
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         agent = _make_agent(
             runtime="deepagents",
@@ -125,7 +125,7 @@ class TestConversationSay:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -135,7 +135,7 @@ class TestConversationSay:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             result = await conv.say("hello")
 
         assert result.ok is True
@@ -206,7 +206,7 @@ class TestConversationSay:
         fake_factory = MagicMock()
         fake_factory.create.return_value = BrokenRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             result = await conv.say("Hello")
 
         assert result.ok is False
@@ -246,7 +246,7 @@ class TestConversationStream:
     @pytest.mark.asyncio
     async def test_stream_preserves_runtime_new_messages_in_history(self) -> None:
         """stream() should use canonical new_messages for history."""
-        from cognitia.runtime.types import Message
+        from swarmline.runtime.types import Message
 
         agent = _make_agent()
         conv = Conversation(agent=agent)
@@ -278,7 +278,7 @@ class TestConversationStream:
     @pytest.mark.asyncio
     async def test_stream_passes_mcp_servers_to_portable_runtime(self) -> None:
         """Portable runtime path in stream() tozhe should videt AgentConfig.mcp_servers."""
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         agent = _make_agent(
             runtime="deepagents",
@@ -288,7 +288,7 @@ class TestConversationStream:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -298,7 +298,7 @@ class TestConversationStream:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in conv._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -341,7 +341,7 @@ class TestConversationStream:
         fake_factory = MagicMock()
         fake_factory.create.return_value = BrokenRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in conv.stream("Hi"):
                 events.append(event)
@@ -436,8 +436,8 @@ class TestConversationLifecycle:
     async def test_create_adapter_propagates_runtime_options(self) -> None:
         """_create_adapter probrasyvaet remote MCP, max_turns, permission_mode and setting_sources."""
         pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
-        from cognitia.hooks.registry import HookRegistry
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.hooks.registry import HookRegistry
+        from swarmline.skills.types import McpServerSpec
 
         hooks = HookRegistry()
 
@@ -463,12 +463,12 @@ class TestConversationLifecycle:
 
         with (
             patch(
-                "cognitia.runtime.options_builder.ClaudeOptionsBuilder",
+                "swarmline.runtime.options_builder.ClaudeOptionsBuilder",
                 return_value=fake_builder,
             ),
-            patch("cognitia.runtime.adapter.RuntimeAdapter", return_value=fake_adapter),
+            patch("swarmline.runtime.adapter.RuntimeAdapter", return_value=fake_adapter),
             patch(
-                "cognitia.hooks.sdk_bridge.registry_to_sdk_hooks",
+                "swarmline.hooks.sdk_bridge.registry_to_sdk_hooks",
                 return_value={"PreToolUse": []},
             ),
         ):
@@ -486,7 +486,7 @@ class TestConversationLifecycle:
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_passes_tool_executors(self) -> None:
-        from cognitia.agent.tool import tool
+        from swarmline.agent.tool import tool
 
         @tool(name="calc", description="Calculator")
         async def calc(expr: str) -> str:
@@ -497,7 +497,7 @@ class TestConversationLifecycle:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -507,7 +507,7 @@ class TestConversationLifecycle:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in conv._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -518,7 +518,7 @@ class TestConversationLifecycle:
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_passes_mcp_servers(self) -> None:
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         agent = _make_agent(
             runtime="deepagents",
@@ -528,7 +528,7 @@ class TestConversationLifecycle:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -538,7 +538,7 @@ class TestConversationLifecycle:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in conv._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -549,7 +549,7 @@ class TestConversationLifecycle:
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_omits_mcp_servers_for_cli(self) -> None:
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         agent = _make_agent(
             runtime="cli",
@@ -559,7 +559,7 @@ class TestConversationLifecycle:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -569,7 +569,7 @@ class TestConversationLifecycle:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in conv._execute_agent_runtime("hello", "cli"):
                 events.append(event)
@@ -625,7 +625,7 @@ class TestConversationMergeHooks:
 
     def test_only_config_hooks(self) -> None:
         """Tolko config.hooks -> returns tot zhe registry."""
-        from cognitia.hooks.registry import HookRegistry
+        from swarmline.hooks.registry import HookRegistry
 
         hooks = HookRegistry()
 
@@ -641,7 +641,7 @@ class TestConversationMergeHooks:
 
     def test_only_middleware_hooks(self) -> None:
         """Middleware with hooks, without config.hooks -> middleware hooks."""
-        from cognitia.agent.middleware import SecurityGuard
+        from swarmline.agent.middleware import SecurityGuard
 
         guard = SecurityGuard(block_patterns=["rm -rf"])
         agent = _make_agent(middleware=(guard,))
@@ -652,8 +652,8 @@ class TestConversationMergeHooks:
 
     def test_merge_config_and_middleware(self) -> None:
         """Config hooks + middleware hooks → merged registry."""
-        from cognitia.agent.middleware import SecurityGuard
-        from cognitia.hooks.registry import HookRegistry
+        from swarmline.agent.middleware import SecurityGuard
+        from swarmline.hooks.registry import HookRegistry
 
         config_hooks = HookRegistry()
 

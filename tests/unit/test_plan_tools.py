@@ -7,8 +7,8 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.orchestration.plan_store import InMemoryPlanStore
-from cognitia.orchestration.types import Plan, PlanStep
+from swarmline.orchestration.plan_store import InMemoryPlanStore
+from swarmline.orchestration.types import Plan, PlanStep
 
 
 def _now() -> datetime:
@@ -53,8 +53,8 @@ def mock_planner(plan_store) -> AsyncMock:
 
 @pytest.fixture()
 def tools(mock_planner, plan_store):
-    from cognitia.orchestration.manager import PlanManager
-    from cognitia.orchestration.plan_tools import create_plan_tools
+    from swarmline.orchestration.manager import PlanManager
+    from swarmline.orchestration.plan_tools import create_plan_tools
 
     manager = PlanManager(planner=mock_planner, plan_store=plan_store)
     return create_plan_tools(manager, user_id="u1", topic_id="t1")

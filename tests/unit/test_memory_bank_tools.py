@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 
 import pytest
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.types import MemoryBankConfig
 
 
 @pytest.fixture()
 def provider(tmp_path):
-    from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+    from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
     config = MemoryBankConfig(enabled=True, root_path=tmp_path)
     return FilesystemMemoryBankProvider(config, user_id="u1", topic_id="t1")
@@ -18,7 +18,7 @@ def provider(tmp_path):
 
 @pytest.fixture()
 def tools(provider):
-    from cognitia.memory_bank.tools import create_memory_bank_tools
+    from swarmline.memory_bank.tools import create_memory_bank_tools
 
     return create_memory_bank_tools(provider)
 

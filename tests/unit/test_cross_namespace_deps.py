@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.multi_agent.shared_agents import CrossNamespaceResolver
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent.shared_agents import CrossNamespaceResolver
 
 
 def _task(id: str, title: str = "Task", **kwargs) -> GraphTaskItem:

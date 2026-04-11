@@ -13,12 +13,12 @@ from typing import Any
 
 import pytest
 
-from cognitia.guardrails import (
+from swarmline.guardrails import (
     ContentLengthGuardrail,
     RegexGuardrail,
 )
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 
 
 # ---------------------------------------------------------------------------

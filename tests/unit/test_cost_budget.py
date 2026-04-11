@@ -12,14 +12,14 @@ class TestModelPricing:
     """ModelPricing dataclass creation and immutability."""
 
     def test_create_model_pricing_stores_values(self) -> None:
-        from cognitia.runtime.cost import ModelPricing
+        from swarmline.runtime.cost import ModelPricing
 
         p = ModelPricing(input_per_1m=3.0, output_per_1m=15.0)
         assert p.input_per_1m == 3.0
         assert p.output_per_1m == 15.0
 
     def test_model_pricing_frozen(self) -> None:
-        from cognitia.runtime.cost import ModelPricing
+        from swarmline.runtime.cost import ModelPricing
 
         p = ModelPricing(input_per_1m=3.0, output_per_1m=15.0)
         with pytest.raises(AttributeError):
@@ -30,7 +30,7 @@ class TestCostBudget:
     """CostBudget dataclass defaults and creation."""
 
     def test_defaults_all_none(self) -> None:
-        from cognitia.runtime.cost import CostBudget
+        from swarmline.runtime.cost import CostBudget
 
         b = CostBudget()
         assert b.max_cost_usd is None
@@ -38,7 +38,7 @@ class TestCostBudget:
         assert b.action_on_exceed == "error"
 
     def test_custom_values(self) -> None:
-        from cognitia.runtime.cost import CostBudget
+        from swarmline.runtime.cost import CostBudget
 
         b = CostBudget(max_cost_usd=1.5, max_total_tokens=100_000, action_on_exceed="warn")
         assert b.max_cost_usd == 1.5
@@ -46,7 +46,7 @@ class TestCostBudget:
         assert b.action_on_exceed == "warn"
 
     def test_frozen(self) -> None:
-        from cognitia.runtime.cost import CostBudget
+        from swarmline.runtime.cost import CostBudget
 
         b = CostBudget()
         with pytest.raises(AttributeError):
@@ -63,7 +63,7 @@ class TestCostTracker:
         max_total_tokens: int | None = None,
         action_on_exceed: str = "error",
     ):
-        from cognitia.runtime.cost import CostBudget, CostTracker, ModelPricing
+        from swarmline.runtime.cost import CostBudget, CostTracker, ModelPricing
 
         budget = CostBudget(
             max_cost_usd=max_cost_usd,
@@ -153,20 +153,20 @@ class TestLoadPricing:
     """load_pricing() loads pricing.json correctly."""
 
     def test_load_pricing_returns_dict(self) -> None:
-        from cognitia.runtime.cost import load_pricing
+        from swarmline.runtime.cost import load_pricing
 
         pricing = load_pricing()
         assert isinstance(pricing, dict)
         assert len(pricing) > 0
 
     def test_load_pricing_contains_default(self) -> None:
-        from cognitia.runtime.cost import load_pricing
+        from swarmline.runtime.cost import load_pricing
 
         pricing = load_pricing()
         assert "_default" in pricing
 
     def test_load_pricing_values_are_model_pricing(self) -> None:
-        from cognitia.runtime.cost import ModelPricing, load_pricing
+        from swarmline.runtime.cost import ModelPricing, load_pricing
 
         pricing = load_pricing()
         for key, val in pricing.items():
@@ -177,7 +177,7 @@ class TestLoadPricing:
         pricing_path = (
             Path(__file__).resolve().parents[2]
             / "src"
-            / "cognitia"
+            / "swarmline"
             / "runtime"
             / "pricing.json"
         )
@@ -192,14 +192,14 @@ class TestRuntimeConfigCostBudget:
     """RuntimeConfig accepts cost_budget field."""
 
     def test_runtime_config_default_cost_budget_none(self) -> None:
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.types import RuntimeConfig
 
         rc = RuntimeConfig(runtime_name="thin")
         assert rc.cost_budget is None
 
     def test_runtime_config_with_cost_budget(self) -> None:
-        from cognitia.runtime.cost import CostBudget
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.cost import CostBudget
+        from swarmline.runtime.types import RuntimeConfig
 
         budget = CostBudget(max_cost_usd=5.0)
         rc = RuntimeConfig(runtime_name="thin", cost_budget=budget)
@@ -211,7 +211,7 @@ class TestBudgetStatusValues:
     """BudgetStatus literal type accepts expected values."""
 
     def test_budget_status_values(self) -> None:
-        from cognitia.runtime.cost import BudgetStatus
+        from swarmline.runtime.cost import BudgetStatus
 
         # BudgetStatus is a Literal type alias — verify the values
         valid: list[BudgetStatus] = ["ok", "warning", "exceeded"]

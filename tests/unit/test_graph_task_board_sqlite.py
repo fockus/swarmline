@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.graph_task_board_sqlite import SqliteGraphTaskBoard
-from cognitia.multi_agent.graph_task_types import GraphTaskItem, TaskComment
-from cognitia.multi_agent.task_types import TaskStatus
+from swarmline.multi_agent.graph_task_board_sqlite import SqliteGraphTaskBoard
+from swarmline.multi_agent.graph_task_types import GraphTaskItem, TaskComment
+from swarmline.multi_agent.task_types import TaskStatus
 
 
 @pytest.fixture

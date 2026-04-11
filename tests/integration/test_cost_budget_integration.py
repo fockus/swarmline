@@ -11,7 +11,7 @@ class TestCostTrackerWithRealPricing:
     """CostTracker with real pricing.json data."""
 
     def test_cost_tracker_with_real_pricing_correct_calculation(self) -> None:
-        from cognitia.runtime.cost import CostBudget, CostTracker, load_pricing
+        from swarmline.runtime.cost import CostBudget, CostTracker, load_pricing
 
         pricing = load_pricing()
         budget = CostBudget(max_cost_usd=10.0)
@@ -45,8 +45,8 @@ class TestThinRuntimeCostBudgetIntegration:
 
     async def test_thin_runtime_without_budget_no_tracking(self) -> None:
         """Backward compat: no cost_budget = no cost tracking, no errors."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin")
         runtime = ThinRuntime(config=config, llm_call=self._make_llm_call())
@@ -67,9 +67,9 @@ class TestThinRuntimeCostBudgetIntegration:
 
     async def test_thin_runtime_with_budget_records_cost_in_final(self) -> None:
         """When budget is set, final event includes total_cost_usd."""
-        from cognitia.runtime.cost import CostBudget
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.cost import CostBudget
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         budget = CostBudget(max_cost_usd=100.0)
         config = RuntimeConfig(runtime_name="thin", cost_budget=budget)
@@ -94,9 +94,9 @@ class TestThinRuntimeCostBudgetIntegration:
 
     async def test_thin_runtime_budget_exceeded_emits_error(self) -> None:
         """When budget already exceeded pre-call, error event emitted."""
-        from cognitia.runtime.cost import CostBudget
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.cost import CostBudget
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         # Set a very small budget that will be exceeded immediately after first call
         budget = CostBudget(max_cost_usd=0.0, max_total_tokens=0)
@@ -122,9 +122,9 @@ class TestThinRuntimeCostBudgetIntegration:
 
     async def test_thin_runtime_budget_warn_mode_no_error(self) -> None:
         """With action_on_exceed='warn', no error event — just final with cost."""
-        from cognitia.runtime.cost import CostBudget
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.cost import CostBudget
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         budget = CostBudget(max_cost_usd=100.0, action_on_exceed="warn")
         config = RuntimeConfig(runtime_name="thin", cost_budget=budget)
@@ -145,9 +145,9 @@ class TestThinRuntimeCostBudgetIntegration:
 
     async def test_thin_runtime_post_call_budget_exceeded_suppresses_final(self) -> None:
         """If the response itself blows the budget, runtime emits budget_exceeded without final."""
-        from cognitia.runtime.cost import CostBudget
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.cost import CostBudget
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         budget = CostBudget(max_total_tokens=1)
         config = RuntimeConfig(runtime_name="thin", cost_budget=budget)
@@ -168,9 +168,9 @@ class TestThinRuntimeCostBudgetIntegration:
 
     async def test_thin_runtime_post_call_budget_warn_emits_status_and_final(self) -> None:
         """Warn mode reports the over-budget turn but still returns the final event."""
-        from cognitia.runtime.cost import CostBudget
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.cost import CostBudget
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         budget = CostBudget(max_total_tokens=1, action_on_exceed="warn")
         config = RuntimeConfig(runtime_name="thin", cost_budget=budget)

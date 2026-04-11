@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.agent_registry_sqlite import SqliteAgentRegistry
-from cognitia.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
+from swarmline.multi_agent.agent_registry_sqlite import SqliteAgentRegistry
+from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
 
 
 @pytest.fixture

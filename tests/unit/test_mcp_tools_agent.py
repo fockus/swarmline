@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.mcp._session import StatefulSession
-from cognitia.mcp._tools_agent import agent_create, agent_list, agent_query
+from swarmline.mcp._session import StatefulSession
+from swarmline.mcp._tools_agent import agent_create, agent_list, agent_query
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ class TestAgentCreate:
 
     @pytest.mark.asyncio
     async def test_create_in_full_returns_agent_id(self, full_session):
-        with patch("cognitia.agent.Agent"):
+        with patch("swarmline.agent.Agent"):
             result = await agent_create(full_session, system_prompt="You are a helper")
             assert result["ok"] is True
             assert result["data"]["agent_id"].startswith("agent-")
@@ -37,7 +37,7 @@ class TestAgentCreate:
 
     @pytest.mark.asyncio
     async def test_create_with_custom_model(self, full_session):
-        with patch("cognitia.agent.Agent"):
+        with patch("swarmline.agent.Agent"):
             result = await agent_create(
                 full_session, system_prompt="test", model="haiku"
             )
@@ -57,7 +57,7 @@ class TestAgentQuery:
         mock_agent.query = AsyncMock(
             return_value=MagicMock(ok=True, text="Hello!", error=None)
         )
-        with patch("cognitia.agent.Agent", return_value=mock_agent):
+        with patch("swarmline.agent.Agent", return_value=mock_agent):
             aid = await agent_create(full_session, system_prompt="test")
             agent_id = aid["data"]["agent_id"]
             result = await agent_query(full_session, agent_id, "hi")
@@ -80,7 +80,7 @@ class TestAgentList:
 
     @pytest.mark.asyncio
     async def test_list_after_create(self, full_session):
-        with patch("cognitia.agent.Agent"):
+        with patch("swarmline.agent.Agent"):
             await agent_create(full_session, system_prompt="test1")
             await agent_create(full_session, system_prompt="test2")
             result = await agent_list(full_session)

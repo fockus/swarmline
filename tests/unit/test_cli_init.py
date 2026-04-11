@@ -1,4 +1,4 @@
-"""Unit: cognitia init CLI command — project scaffolding."""
+"""Unit: swarmline init CLI command — project scaffolding."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from cognitia.cli._app import cli
+from swarmline.cli._app import cli
 
 
 # ---------------------------------------------------------------------------
@@ -294,9 +294,9 @@ class TestInitContentValidity:
             assert ":" in content
             assert not content.startswith("def ")
 
-    def test_pyproject_toml_contains_cognitia(self, tmp_path: Path) -> None:
+    def test_pyproject_toml_contains_swarmline(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
             _invoke(runner, ["init", "mybot"])
             content = Path("mybot/pyproject.toml").read_text()
-            assert "cognitia" in content
+            assert "swarmline" in content

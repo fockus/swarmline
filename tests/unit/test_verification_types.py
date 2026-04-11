@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.verification_types import (
     CheckDetail,
     VerificationResult,
     VerificationStatus,

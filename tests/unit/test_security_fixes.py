@@ -23,53 +23,53 @@ class TestSSRFDnsResolution:
 
     def test_ssrf_blocks_dns_resolved_private_loopback(self) -> None:
         """Hostname that resolves to 127.0.0.1 must be blocked."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         fake_addrs = [
             (2, 1, 6, "", ("127.0.0.1", 0)),  # AF_INET, SOCK_STREAM
         ]
-        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             result = HttpxWebProvider._validate_url("http://evil.example.com/data")
         assert result is not None
         assert "private" in result.lower() or "127.0.0.1" in result
 
     def test_ssrf_blocks_dns_resolved_private_rfc1918(self) -> None:
         """Hostname resolving to 10.x.x.x must be blocked."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         fake_addrs = [
             (2, 1, 6, "", ("10.0.0.5", 0)),
         ]
-        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             result = HttpxWebProvider._validate_url("http://internal.corp/api")
         assert result is not None
         assert "private" in result.lower() or "10.0.0.5" in result
 
     def test_ssrf_blocks_dns_resolved_link_local(self) -> None:
         """Hostname resolving to 169.254.x.x (link-local) must be blocked."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         fake_addrs = [
             (2, 1, 6, "", ("169.254.1.1", 0)),
         ]
-        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             result = HttpxWebProvider._validate_url("http://link-local-host.test/")
         assert result is not None
 
     def test_ssrf_allows_public_dns(self) -> None:
         """Hostname resolving to a public IP must be allowed."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         fake_addrs = [
             (2, 1, 6, "", ("93.184.216.34", 0)),
         ]
-        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             result = HttpxWebProvider._validate_url("http://example.com/page")
         assert result is None
 
     def test_ssrf_blocks_localhost_hostname(self) -> None:
         """Literal 'localhost' must be blocked before DNS resolution."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         result = HttpxWebProvider._validate_url("http://localhost:8080/admin")
         assert result is not None
@@ -77,7 +77,7 @@ class TestSSRFDnsResolution:
 
     def test_ssrf_blocks_localhost_localdomain(self) -> None:
         """'localhost.localdomain' must also be blocked."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         result = HttpxWebProvider._validate_url("http://localhost.localdomain/admin")
         assert result is not None
@@ -87,10 +87,10 @@ class TestSSRFDnsResolution:
         """If DNS resolution fails (gaierror), allow — will fail at fetch time."""
         import socket
 
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         with patch(
-            "cognitia.tools.web_httpx.socket.getaddrinfo",
+            "swarmline.tools.web_httpx.socket.getaddrinfo",
             side_effect=socket.gaierror("Name resolution failed"),
         ):
             result = HttpxWebProvider._validate_url("http://nonexistent.invalid/")
@@ -98,13 +98,13 @@ class TestSSRFDnsResolution:
 
     async def test_ssrf_follow_redirects_disabled(self) -> None:
         """httpx client must NOT follow redirects automatically."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         provider = HttpxWebProvider(timeout=5)
 
         # Mock socket.getaddrinfo to allow the URL
         fake_addrs = [(2, 1, 6, "", ("93.184.216.34", 0))]
-        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             mock_response = MagicMock()
             mock_response.is_redirect = False
             mock_response.status_code = 200
@@ -131,7 +131,7 @@ class TestSSRFDnsResolution:
 
     async def test_fetch_binds_request_to_resolved_public_ip(self) -> None:
         """Resolved public IP must be used for the connect path to avoid DNS rebinding."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         provider = HttpxWebProvider(timeout=5)
         fake_addrs = [(2, 1, 6, "", ("93.184.216.34", 0))]
@@ -143,7 +143,7 @@ class TestSSRFDnsResolution:
 
         sent_requests: list[Any] = []
 
-        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             with patch("httpx.AsyncClient") as mock_client_cls:
                 mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -170,7 +170,7 @@ class TestSSRFDnsResolution:
 
     async def test_fetch_blocks_private_redirect_hop(self) -> None:
         """Every redirect hop must be revalidated before issuing the next request."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         provider = HttpxWebProvider(timeout=5)
         addrs = {
@@ -184,7 +184,7 @@ class TestSSRFDnsResolution:
         redirect_response.raise_for_status = MagicMock()
 
         with patch(
-            "cognitia.tools.web_httpx.socket.getaddrinfo",
+            "swarmline.tools.web_httpx.socket.getaddrinfo",
             side_effect=lambda host, *_args, **_kwargs: addrs[host],
         ):
             with patch("httpx.AsyncClient") as mock_client_cls:
@@ -204,11 +204,11 @@ class TestSSRFDnsResolution:
 
     async def test_fetch_logs_security_decision_for_blocked_target(self) -> None:
         """Blocked targets must emit a structured security decision log."""
-        from cognitia.tools.web_httpx import HttpxWebProvider
+        from swarmline.tools.web_httpx import HttpxWebProvider
 
         provider = HttpxWebProvider(timeout=5)
 
-        with patch("cognitia.tools.web_httpx._log") as mock_log:
+        with patch("swarmline.tools.web_httpx._log") as mock_log:
             result = await provider.fetch("http://localhost:8080/admin")
 
         assert "URL blocked" in result
@@ -233,8 +233,8 @@ class TestWorkspacePathInjection:
 
     async def test_workspace_rejects_path_traversal_agent_id(self) -> None:
         """agent_id with '../' must raise ValueError."""
-        from cognitia.multi_agent.workspace import LocalWorkspace
-        from cognitia.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace import LocalWorkspace
+        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -243,8 +243,8 @@ class TestWorkspacePathInjection:
 
     async def test_workspace_rejects_path_traversal_task_id(self) -> None:
         """task_id with '../' must raise ValueError."""
-        from cognitia.multi_agent.workspace import LocalWorkspace
-        from cognitia.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace import LocalWorkspace
+        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -253,8 +253,8 @@ class TestWorkspacePathInjection:
 
     async def test_workspace_rejects_slash_in_agent_id(self) -> None:
         """agent_id with '/' must raise ValueError."""
-        from cognitia.multi_agent.workspace import LocalWorkspace
-        from cognitia.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace import LocalWorkspace
+        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -263,8 +263,8 @@ class TestWorkspacePathInjection:
 
     async def test_workspace_rejects_empty_agent_id(self) -> None:
         """Empty agent_id must raise ValueError."""
-        from cognitia.multi_agent.workspace import LocalWorkspace
-        from cognitia.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace import LocalWorkspace
+        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -273,8 +273,8 @@ class TestWorkspacePathInjection:
 
     async def test_workspace_accepts_valid_slugs(self) -> None:
         """Valid alphanumeric slugs with dashes and underscores must work."""
-        from cognitia.multi_agent.workspace import LocalWorkspace
-        from cognitia.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace import LocalWorkspace
+        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -300,14 +300,14 @@ class TestA2AServerAuth:
         pytest.importorskip("starlette")
         from starlette.testclient import TestClient
 
-        from cognitia.a2a.adapter import CognitiaA2AAdapter
-        from cognitia.a2a.server import A2AServer
-        from cognitia.a2a.types import AgentSkill
-        from cognitia.agent.result import Result
+        from swarmline.a2a.adapter import SwarmlineA2AAdapter
+        from swarmline.a2a.server import A2AServer
+        from swarmline.a2a.types import AgentSkill
+        from swarmline.agent.result import Result
 
         agent = MagicMock()
         agent.query = AsyncMock(return_value=Result(text="OK"))
-        adapter = CognitiaA2AAdapter(
+        adapter = SwarmlineA2AAdapter(
             agent,
             name="AuthBot",
             url="http://localhost:8000",
@@ -370,14 +370,14 @@ class TestA2AServerAuth:
     def test_a2a_no_auth_requires_explicit_local_opt_in(self) -> None:
         """Server without auth_token must fail fast unless local opt-in is explicit."""
         pytest.importorskip("starlette")
-        from cognitia.a2a.adapter import CognitiaA2AAdapter
-        from cognitia.a2a.server import A2AServer
-        from cognitia.a2a.types import AgentSkill
-        from cognitia.agent.result import Result
+        from swarmline.a2a.adapter import SwarmlineA2AAdapter
+        from swarmline.a2a.server import A2AServer
+        from swarmline.a2a.types import AgentSkill
+        from swarmline.agent.result import Result
 
         agent = MagicMock()
         agent.query = AsyncMock(return_value=Result(text="OK"))
-        adapter = CognitiaA2AAdapter(
+        adapter = SwarmlineA2AAdapter(
             agent,
             name="AuthBot",
             url="http://localhost:8000",
@@ -402,14 +402,14 @@ class TestA2AServerAuth:
 
     def test_a2a_no_auth_non_loopback_rejected(self) -> None:
         pytest.importorskip("starlette")
-        from cognitia.a2a.adapter import CognitiaA2AAdapter
-        from cognitia.a2a.server import A2AServer
-        from cognitia.a2a.types import AgentSkill
-        from cognitia.agent.result import Result
+        from swarmline.a2a.adapter import SwarmlineA2AAdapter
+        from swarmline.a2a.server import A2AServer
+        from swarmline.a2a.types import AgentSkill
+        from swarmline.agent.result import Result
 
         agent = MagicMock()
         agent.query = AsyncMock(return_value=Result(text="OK"))
-        adapter = CognitiaA2AAdapter(
+        adapter = SwarmlineA2AAdapter(
             agent,
             name="AuthBot",
             url="http://localhost:8000",
@@ -453,7 +453,7 @@ class TestDockerSandboxHardening:
 
     async def test_docker_default_cap_drop(self) -> None:
         """containers.run must be called with cap_drop=['ALL']."""
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         config = SandboxConfig(
             root_path="/tmp",
@@ -469,7 +469,7 @@ class TestDockerSandboxHardening:
         mock_docker_module.from_env.return_value = mock_client
 
         with patch.dict(sys.modules, {"docker": mock_docker_module}):
-            import cognitia.tools.sandbox_docker as sd_mod
+            import swarmline.tools.sandbox_docker as sd_mod
 
             provider = sd_mod.DockerSandboxProvider(config)
             await provider._ensure_container()
@@ -481,8 +481,8 @@ class TestDockerSandboxHardening:
 
     async def test_docker_no_new_privileges(self) -> None:
         """containers.run must be called with security_opt=['no-new-privileges=true']."""
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.types import SandboxConfig
 
         config = SandboxConfig(
             root_path="/tmp",
@@ -518,7 +518,7 @@ class TestMCPExecTrustedFlag:
 
     async def test_mcp_exec_requires_trusted_default_blocks(self) -> None:
         """Calling exec_code without trusted=True must return error."""
-        from cognitia.mcp._tools_code import exec_code
+        from swarmline.mcp._tools_code import exec_code
 
         result = await exec_code("print('hello')")
         assert result["ok"] is False
@@ -526,7 +526,7 @@ class TestMCPExecTrustedFlag:
 
     async def test_mcp_exec_trusted_true_allows_execution(self) -> None:
         """Calling exec_code with trusted=True must execute the code."""
-        from cognitia.mcp._tools_code import exec_code
+        from swarmline.mcp._tools_code import exec_code
 
         result = await exec_code("print(42)", trusted=True)
         assert result["ok"] is True
@@ -534,7 +534,7 @@ class TestMCPExecTrustedFlag:
 
     async def test_mcp_exec_trusted_false_explicit_blocks(self) -> None:
         """Explicitly passing trusted=False must block execution."""
-        from cognitia.mcp._tools_code import exec_code
+        from swarmline.mcp._tools_code import exec_code
 
         result = await exec_code("print('hello')", trusted=False)
         assert result["ok"] is False
@@ -551,28 +551,28 @@ class TestDaemonHealthAuth:
 
     def test_daemon_config_has_auth_token_field(self) -> None:
         """DaemonConfig must accept auth_token parameter."""
-        from cognitia.daemon.types import DaemonConfig
+        from swarmline.daemon.types import DaemonConfig
 
         config = DaemonConfig(auth_token="my-secret")
         assert config.auth_token == "my-secret"
 
     def test_daemon_config_has_local_opt_in_flag(self) -> None:
-        from cognitia.daemon.types import DaemonConfig
+        from swarmline.daemon.types import DaemonConfig
 
         config = DaemonConfig(allow_unauthenticated_local=True)
         assert config.allow_unauthenticated_local is True
 
     def test_daemon_config_auth_token_default_none(self) -> None:
         """DaemonConfig.auth_token defaults to None."""
-        from cognitia.daemon.types import DaemonConfig
+        from swarmline.daemon.types import DaemonConfig
 
         config = DaemonConfig()
         assert config.auth_token is None
 
     def test_daemon_runner_passes_auth_to_health(self, tmp_path: Any) -> None:
         """DaemonRunner must pass auth_token from config to HealthServer."""
-        from cognitia.daemon.runner import DaemonRunner
-        from cognitia.daemon.types import DaemonConfig
+        from swarmline.daemon.runner import DaemonRunner
+        from swarmline.daemon.types import DaemonConfig
 
         config = DaemonConfig(
             pid_path=str(tmp_path / "test.pid"),
@@ -585,8 +585,8 @@ class TestDaemonHealthAuth:
 
     def test_daemon_runner_requires_explicit_local_opt_in_without_auth(self, tmp_path: Any) -> None:
         """DaemonRunner without auth_token must not build insecure health endpoint implicitly."""
-        from cognitia.daemon.runner import DaemonRunner
-        from cognitia.daemon.types import DaemonConfig
+        from swarmline.daemon.runner import DaemonRunner
+        from swarmline.daemon.types import DaemonConfig
 
         config = DaemonConfig(
             pid_path=str(tmp_path / "test.pid"),
@@ -597,8 +597,8 @@ class TestDaemonHealthAuth:
 
     def test_daemon_runner_no_auth_with_explicit_local_opt_in(self, tmp_path: Any) -> None:
         """DaemonRunner can start local-only health endpoint when explicitly opted in."""
-        from cognitia.daemon.runner import DaemonRunner
-        from cognitia.daemon.types import DaemonConfig
+        from swarmline.daemon.runner import DaemonRunner
+        from swarmline.daemon.types import DaemonConfig
 
         config = DaemonConfig(
             pid_path=str(tmp_path / "test.pid"),

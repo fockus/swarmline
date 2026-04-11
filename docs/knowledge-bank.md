@@ -1,14 +1,14 @@
 # Knowledge Bank
 
-Knowledge Bank is Cognitia's **domain-agnostic structured knowledge layer** built on top of [Memory Bank](memory-bank.md). While Memory Bank provides raw file-based storage (`read_file`, `write_file`), Knowledge Bank adds typed documents with YAML frontmatter, full-text search, checklists, progress tracking, and episode-to-knowledge consolidation.
+Knowledge Bank is Swarmline's **domain-agnostic structured knowledge layer** built on top of [Memory Bank](memory-bank.md). While Memory Bank provides raw file-based storage (`read_file`, `write_file`), Knowledge Bank adds typed documents with YAML frontmatter, full-text search, checklists, progress tracking, and episode-to-knowledge consolidation.
 
 Knowledge Bank was introduced in v1.2.0 and works with any domain -- research, business, education, engineering -- without code-development specifics.
 
 ## Quick Start
 
 ```python
-from cognitia.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
-from cognitia.memory_bank.knowledge_inmemory import (
+from swarmline.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
+from swarmline.memory_bank.knowledge_inmemory import (
     InMemoryKnowledgeStore,
     InMemoryKnowledgeSearcher,
 )
@@ -45,7 +45,7 @@ results = await searcher.search_by_tags(["api", "rest"])
 Every knowledge document carries a `DocumentMeta` header with structured metadata:
 
 ```python
-from cognitia.memory_bank.knowledge_types import DocumentMeta
+from swarmline.memory_bank.knowledge_types import DocumentMeta
 
 meta = DocumentMeta(
     kind="note",              # Document kind (see table below)
@@ -78,7 +78,7 @@ meta = DocumentMeta(
 Documents are stored as markdown with YAML frontmatter. The `frontmatter` module handles parsing and rendering:
 
 ```python
-from cognitia.memory_bank.frontmatter import parse_frontmatter, render_frontmatter
+from swarmline.memory_bank.frontmatter import parse_frontmatter, render_frontmatter
 
 # Parse a document
 text = """---
@@ -109,7 +109,7 @@ Knowledge Bank provides two store implementations with identical APIs.
 Dict-based, zero dependencies. Ideal for tests and development:
 
 ```python
-from cognitia.memory_bank.knowledge_inmemory import InMemoryKnowledgeStore
+from swarmline.memory_bank.knowledge_inmemory import InMemoryKnowledgeStore
 
 store = InMemoryKnowledgeStore()
 
@@ -129,9 +129,9 @@ notes_only = await store.list_entries(kind="note")
 Wraps any `MemoryBankProvider` (filesystem or database) for persistent storage. Automatically manages a JSON search index (`index.json`):
 
 ```python
-from cognitia.memory_bank.knowledge_store import DefaultKnowledgeStore
-from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.knowledge_store import DefaultKnowledgeStore
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
 from pathlib import Path
 
 # Use a filesystem provider as the backend
@@ -167,7 +167,7 @@ Knowledge Bank provides full-text and tag-based search through the `KnowledgeSea
 Word-overlap search over `InMemoryKnowledgeStore`. Scores results by the ratio of matching query words:
 
 ```python
-from cognitia.memory_bank.knowledge_inmemory import (
+from swarmline.memory_bank.knowledge_inmemory import (
     InMemoryKnowledgeStore,
     InMemoryKnowledgeSearcher,
 )
@@ -196,7 +196,7 @@ index = await searcher.get_index()
 Wraps a `MemoryBankProvider`, scans all `.md` files, and persists the index as `index.json`:
 
 ```python
-from cognitia.memory_bank.knowledge_search import DefaultKnowledgeSearcher
+from swarmline.memory_bank.knowledge_search import DefaultKnowledgeSearcher
 
 searcher = DefaultKnowledgeSearcher(provider)
 
@@ -214,7 +214,7 @@ The search algorithm uses word-overlap scoring: query words are compared against
 The search index (`KnowledgeIndex`) is a flat list of lightweight `IndexEntry` objects:
 
 ```python
-from cognitia.memory_bank.knowledge_types import KnowledgeIndex, IndexEntry
+from swarmline.memory_bank.knowledge_types import KnowledgeIndex, IndexEntry
 
 # IndexEntry contains metadata without full content
 IndexEntry(
@@ -234,8 +234,8 @@ IndexEntry(
 ### InMemoryChecklistManager
 
 ```python
-from cognitia.memory_bank.knowledge_inmemory import InMemoryChecklistManager
-from cognitia.memory_bank.knowledge_types import ChecklistItem
+from swarmline.memory_bank.knowledge_inmemory import InMemoryChecklistManager
+from swarmline.memory_bank.knowledge_types import ChecklistItem
 
 checklist = InMemoryChecklistManager()
 
@@ -262,7 +262,7 @@ removed_count = await checklist.clear_done()
 Wraps a `MemoryBankProvider`, persists the checklist as a markdown file (`checklist.md` by default):
 
 ```python
-from cognitia.memory_bank.knowledge_checklist import DefaultChecklistManager
+from swarmline.memory_bank.knowledge_checklist import DefaultChecklistManager
 
 checklist = DefaultChecklistManager(provider, path="checklist.md")
 await checklist.add_item(ChecklistItem(text="Deploy to staging"))
@@ -283,7 +283,7 @@ The markdown format uses standard GitHub-compatible checkboxes:
 ### InMemoryProgressLog
 
 ```python
-from cognitia.memory_bank.knowledge_inmemory import InMemoryProgressLog
+from swarmline.memory_bank.knowledge_inmemory import InMemoryProgressLog
 
 progress = InMemoryProgressLog()
 
@@ -306,7 +306,7 @@ full_log = await progress.get_all()
 Wraps a `MemoryBankProvider`, persists to `progress.md` by default:
 
 ```python
-from cognitia.memory_bank.knowledge_progress import DefaultProgressLog
+from swarmline.memory_bank.knowledge_progress import DefaultProgressLog
 
 progress = DefaultProgressLog(provider, path="progress.md")
 await progress.append("Deployed v1.2.0 to production")
@@ -319,7 +319,7 @@ Progress logs are **append-only** -- entries are never edited or deleted. This e
 Knowledge Bank exposes 3 agent tools via `create_knowledge_tools()`. These tools allow agents to search, create, and inspect knowledge during conversations:
 
 ```python
-from cognitia.memory_bank.tools import create_knowledge_tools
+from swarmline.memory_bank.tools import create_knowledge_tools
 
 specs, executors = create_knowledge_tools(store, searcher)
 # specs: {"knowledge_search": ToolSpec, "knowledge_save_note": ToolSpec, "knowledge_get_context": ToolSpec}
@@ -371,7 +371,7 @@ Returns JSON with:
 `KnowledgeConsolidator` converts episodic memory (conversation episodes) into structured knowledge entries. This bridges short-term conversation data with the long-term knowledge bank.
 
 ```python
-from cognitia.memory_bank.knowledge_consolidation import KnowledgeConsolidator
+from swarmline.memory_bank.knowledge_consolidation import KnowledgeConsolidator
 
 consolidator = KnowledgeConsolidator()
 
@@ -405,7 +405,7 @@ The result is a `ConsolidationResult` tracking `entries_created`, `episodes_proc
 Knowledge Bank includes several supporting types for structured knowledge management:
 
 ```python
-from cognitia.memory_bank.knowledge_types import (
+from swarmline.memory_bank.knowledge_types import (
     ExperimentRecord,
     LearnedPattern,
     QualityCriterion,

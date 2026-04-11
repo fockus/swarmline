@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.orchestration.plan_store import InMemoryPlanStore
+from swarmline.orchestration.plan_store import InMemoryPlanStore
 
 
 def _now() -> datetime:
@@ -50,7 +50,7 @@ def plan_store() -> InMemoryPlanStore:
 
 @pytest.fixture()
 def planner(mock_llm, plan_store):
-    from cognitia.orchestration.thin_planner import ThinPlannerMode
+    from swarmline.orchestration.thin_planner import ThinPlannerMode
 
     return ThinPlannerMode(llm=mock_llm, plan_store=plan_store)
 

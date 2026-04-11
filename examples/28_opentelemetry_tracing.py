@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Example: OpenTelemetry tracing with Cognitia EventBus.
+"""Example: OpenTelemetry tracing with Swarmline EventBus.
 
 Demonstrates how OTelExporter bridges EventBus events to OTel spans.
 Uses InMemorySpanExporter to capture and print spans locally.
 
-Requires: pip install cognitia[otel]
+Requires: pip install swarmline[otel]
 """
 
 from __future__ import annotations
@@ -18,11 +18,11 @@ try:
 except ImportError:
     raise SystemExit(
         "OpenTelemetry SDK is required for this example.\n"
-        "Install with: pip install cognitia[otel]"
+        "Install with: pip install swarmline[otel]"
     ) from None
 
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.otel_exporter import OTelExporter
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.otel_exporter import OTelExporter
 
 
 async def main() -> None:

@@ -9,9 +9,9 @@ from typing import Any
 
 import pytest
 
-from cognitia.orchestration.workflow_executor import ThinWorkflowExecutor
-from cognitia.orchestration.workflow_graph import END_NODE, State, WorkflowGraph
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.orchestration.workflow_executor import ThinWorkflowExecutor
+from swarmline.orchestration.workflow_graph import END_NODE, State, WorkflowGraph
+from swarmline.runtime.types import RuntimeConfig
 
 
 class TestWorkflowGraphWithThinRuntimeNodes:

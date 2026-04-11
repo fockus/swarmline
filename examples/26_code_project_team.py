@@ -9,11 +9,11 @@ from __future__ import annotations
 import asyncio
 import time
 
-from cognitia.multi_agent.agent_registry import InMemoryAgentRegistry
-from cognitia.multi_agent.registry_types import AgentRecord, AgentStatus
-from cognitia.multi_agent.task_queue import InMemoryTaskQueue
-from cognitia.multi_agent.task_types import TaskFilter, TaskItem, TaskPriority, TaskStatus
-from cognitia.orchestration.workflow_graph import END_NODE, WorkflowGraph
+from swarmline.multi_agent.agent_registry import InMemoryAgentRegistry
+from swarmline.multi_agent.registry_types import AgentRecord, AgentStatus
+from swarmline.multi_agent.task_queue import InMemoryTaskQueue
+from swarmline.multi_agent.task_types import TaskFilter, TaskItem, TaskPriority, TaskStatus
+from swarmline.orchestration.workflow_graph import END_NODE, WorkflowGraph
 
 # ---------------------------------------------------------------------------
 # Team roster — IDs used across registry, tasks, and workflow state

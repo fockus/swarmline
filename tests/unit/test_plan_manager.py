@@ -8,8 +8,8 @@ from datetime import UTC
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.orchestration.plan_store import InMemoryPlanStore
-from cognitia.orchestration.types import Plan, PlanStep
+from swarmline.orchestration.plan_store import InMemoryPlanStore
+from swarmline.orchestration.types import Plan, PlanStep
 
 
 def _plan_json() -> str:
@@ -63,7 +63,7 @@ def store() -> InMemoryPlanStore:
 
 @pytest.fixture()
 def manager(mock_planner, store):
-    from cognitia.orchestration.manager import PlanManager
+    from swarmline.orchestration.manager import PlanManager
 
     return PlanManager(planner=mock_planner, plan_store=store)
 

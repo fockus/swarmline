@@ -18,10 +18,10 @@ All components are pure domain objects with zero framework dependencies.
 Get a verification pipeline running in 10 lines:
 
 ```python
-from cognitia.orchestration.coding_standards import CodingStandardsConfig
-from cognitia.orchestration.tdd_code_verifier import TddCodeVerifier
-from cognitia.orchestration.dod_state_machine import DoDStateMachine
-from cognitia.orchestration.code_workflow_engine import CodeWorkflowEngine
+from swarmline.orchestration.coding_standards import CodingStandardsConfig
+from swarmline.orchestration.tdd_code_verifier import TddCodeVerifier
+from swarmline.orchestration.dod_state_machine import DoDStateMachine
+from swarmline.orchestration.code_workflow_engine import CodeWorkflowEngine
 
 config = CodingStandardsConfig.strict()
 verifier = TddCodeVerifier(config=config, runner=my_shell_runner)
@@ -80,7 +80,7 @@ print(result.status)  # WorkflowStatus.SUCCESS | FAILED | DOD_NOT_MET
 Declarative configuration for code quality checks. All flags are **OFF by default** — opt-in, not opt-out.
 
 ```python
-from cognitia.orchestration.coding_standards import CodingStandardsConfig
+from swarmline.orchestration.coding_standards import CodingStandardsConfig
 ```
 
 ### Fields
@@ -132,7 +132,7 @@ config = CodingStandardsConfig(
 Controls which pipeline steps run automatically without user intervention.
 
 ```python
-from cognitia.orchestration.coding_standards import WorkflowAutomationConfig
+from swarmline.orchestration.coding_standards import WorkflowAutomationConfig
 
 # Fields: auto_lint, auto_format, auto_test, auto_commit, auto_review (all bool, default False)
 
@@ -146,7 +146,7 @@ off = WorkflowAutomationConfig.off()      # all False
 Controls the agent's autonomous execution loop boundaries.
 
 ```python
-from cognitia.orchestration.coding_standards import AutonomousLoopConfig
+from swarmline.orchestration.coding_standards import AutonomousLoopConfig
 
 # Fields:
 #   max_iterations: int = 10        — max loop iterations
@@ -163,7 +163,7 @@ light = AutonomousLoopConfig.light()    # max_iterations=20, stop_on_failure=Fal
 Defines which agent roles are active in a team.
 
 ```python
-from cognitia.orchestration.coding_standards import TeamAgentsConfig
+from swarmline.orchestration.coding_standards import TeamAgentsConfig
 
 team = TeamAgentsConfig(
     use_architect=True,
@@ -179,7 +179,7 @@ team = TeamAgentsConfig(
 Combines all four configs into a single pipeline configuration object.
 
 ```python
-from cognitia.orchestration.coding_standards import CodePipelineConfig
+from swarmline.orchestration.coding_standards import CodePipelineConfig
 
 # Production: strict standards, full automation, conservative loop
 prod = CodePipelineConfig.production()
@@ -208,7 +208,7 @@ print(pipeline.loop.max_iterations)      # 5
 The `CodeVerifier` protocol defines 5 verification methods — one per quality dimension. It follows ISP (Interface Segregation Principle): exactly 5 methods, each with a single responsibility.
 
 ```python
-from cognitia.orchestration.code_verifier import CodeVerifier, CommandRunner, CommandResult
+from swarmline.orchestration.code_verifier import CodeVerifier, CommandRunner, CommandResult
 ```
 
 ### Protocol Definition
@@ -254,8 +254,8 @@ class CommandResult:
 ### Implementing a Custom Verifier
 
 ```python
-from cognitia.orchestration.code_verifier import CodeVerifier
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.code_verifier import CodeVerifier
+from swarmline.orchestration.verification_types import (
     VerificationResult, VerificationStatus, CheckDetail,
 )
 
@@ -298,7 +298,7 @@ class MyProjectVerifier:
 The built-in implementation of `CodeVerifier`. It respects `CodingStandardsConfig` — **disabled checks automatically return `SKIP`**, not `FAIL`.
 
 ```python
-from cognitia.orchestration.tdd_code_verifier import TddCodeVerifier
+from swarmline.orchestration.tdd_code_verifier import TddCodeVerifier
 ```
 
 ### Construction
@@ -346,7 +346,7 @@ assert linters.status in (VerificationStatus.PASS, VerificationStatus.FAIL)  # a
 ## Verification Types
 
 ```python
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.verification_types import (
     VerificationStatus,
     CheckDetail,
     VerificationResult,
@@ -410,7 +410,7 @@ else:
 The Definition of Done state machine runs a **verify → fix → re-verify loop** until all criteria pass or the maximum number of loops is exceeded.
 
 ```python
-from cognitia.orchestration.dod_state_machine import DoDStateMachine, DoDStatus, DoDResult
+from swarmline.orchestration.dod_state_machine import DoDStateMachine, DoDStatus, DoDResult
 ```
 
 ### State Diagram
@@ -491,7 +491,7 @@ match result.status:
 The top-level orchestrator that runs the full pipeline: **plan → execute → verify DoD**.
 
 ```python
-from cognitia.orchestration.code_workflow_engine import (
+from swarmline.orchestration.code_workflow_engine import (
     CodeWorkflowEngine, WorkflowStatus, WorkflowResult,
 )
 ```
@@ -598,7 +598,7 @@ assert result.status == WorkflowStatus.SUCCESS
 A generic 5-stage pipeline contract for building custom workflow implementations.
 
 ```python
-from cognitia.orchestration.workflow_pipeline import WorkflowPipeline
+from swarmline.orchestration.workflow_pipeline import WorkflowPipeline
 ```
 
 ```python
@@ -676,14 +676,14 @@ End-to-end: configure standards → build verifier → create DoD machine → ru
 import asyncio
 from dataclasses import dataclass
 
-from cognitia.orchestration.coding_standards import (
+from swarmline.orchestration.coding_standards import (
     CodingStandardsConfig,
     CodePipelineConfig,
 )
-from cognitia.orchestration.code_verifier import CommandRunner, CommandResult
-from cognitia.orchestration.tdd_code_verifier import TddCodeVerifier
-from cognitia.orchestration.dod_state_machine import DoDStateMachine, DoDStatus
-from cognitia.orchestration.code_workflow_engine import (
+from swarmline.orchestration.code_verifier import CommandRunner, CommandResult
+from swarmline.orchestration.tdd_code_verifier import TddCodeVerifier
+from swarmline.orchestration.dod_state_machine import DoDStateMachine, DoDStatus
+from swarmline.orchestration.code_workflow_engine import (
     CodeWorkflowEngine,
     WorkflowStatus,
 )

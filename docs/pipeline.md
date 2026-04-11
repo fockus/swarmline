@@ -1,6 +1,6 @@
 # Pipeline Engine
 
-Multi-phase execution engine for Cognitia agent graphs with quality gates, budget tracking, and circuit breakers. This subsystem was introduced in v1.2.0.
+Multi-phase execution engine for Swarmline agent graphs with quality gates, budget tracking, and circuit breakers. This subsystem was introduced in v1.2.0.
 
 ## Overview
 
@@ -27,7 +27,7 @@ The Pipeline Engine orchestrates agent work across sequential phases. Each phase
 ## Quick Start
 
 ```python
-from cognitia.pipeline import PipelineBuilder, BudgetPolicy
+from swarmline.pipeline import PipelineBuilder, BudgetPolicy
 
 async def my_runner(agent_id: str, task_id: str, goal: str, system_prompt: str) -> str:
     """Your LLM runner — called for each agent execution."""
@@ -105,7 +105,7 @@ Parameters:
 Add quality gates that run after a specific phase:
 
 ```python
-from cognitia.pipeline import CallbackGate, CompositeGate
+from swarmline.pipeline import CallbackGate, CompositeGate
 
 # Callback gate -- simple async function
 async def tests_pass(phase_id: str, results: dict) -> bool:
@@ -121,7 +121,7 @@ builder.add_gate("exec", my_custom_gate)
 ### Budget
 
 ```python
-from cognitia.pipeline import BudgetPolicy
+from swarmline.pipeline import BudgetPolicy
 
 builder.with_budget(BudgetPolicy(
     max_total_usd=10.0,
@@ -168,7 +168,7 @@ Missing components get in-memory defaults:
 A `PipelinePhase` is a frozen dataclass defining one stage of the pipeline.
 
 ```python
-from cognitia.pipeline import PipelinePhase
+from swarmline.pipeline import PipelinePhase
 
 phase = PipelinePhase(
     id="exec",
@@ -197,7 +197,7 @@ Each phase goes through these statuses (`PhaseStatus`):
 ### Phase Results
 
 ```python
-from cognitia.pipeline import PhaseResult
+from swarmline.pipeline import PhaseResult
 
 # After pipeline.run():
 for phase_result in result.phases:
@@ -215,7 +215,7 @@ Quality gates are verification checkpoints that run after each phase. If any gat
 ### QualityGate Protocol
 
 ```python
-from cognitia.pipeline import QualityGate, GateResult
+from swarmline.pipeline import QualityGate, GateResult
 
 class MyGate:
     async def check(self, phase_id: str, results: dict[str, Any]) -> GateResult:
@@ -234,7 +234,7 @@ The `results` dict contains `{"goal": str, "run_id": str}` from the phase execut
 For simple cases, wrap an async function:
 
 ```python
-from cognitia.pipeline import CallbackGate
+from swarmline.pipeline import CallbackGate
 
 async def check_tests(phase_id: str, results: dict) -> bool:
     # Return True if tests pass
@@ -248,7 +248,7 @@ gate = CallbackGate("test_suite", check_tests)
 Chain multiple gates -- all must pass:
 
 ```python
-from cognitia.pipeline import CompositeGate
+from swarmline.pipeline import CompositeGate
 
 composite = CompositeGate([gate_lint, gate_tests, gate_coverage])
 # Runs gates in order, stops on first failure
@@ -257,7 +257,7 @@ composite = CompositeGate([gate_lint, gate_tests, gate_coverage])
 ### GateResult
 
 ```python
-from cognitia.pipeline import GateResult
+from swarmline.pipeline import GateResult
 
 # Returned by gate.check()
 result = GateResult(
@@ -277,7 +277,7 @@ Budget tracking operates at two levels: in-pipeline tracking (`BudgetTracker`) f
 Defines limits for a pipeline run:
 
 ```python
-from cognitia.pipeline import BudgetPolicy
+from swarmline.pipeline import BudgetPolicy
 
 policy = BudgetPolicy(
     max_total_usd=10.0,        # Total budget for the entire pipeline
@@ -292,7 +292,7 @@ policy = BudgetPolicy(
 In-memory tracker for a single pipeline run. Created automatically by `PipelineBuilder` when you call `.with_budget()`.
 
 ```python
-from cognitia.pipeline import BudgetTracker, BudgetPolicy, CostRecord
+from swarmline.pipeline import BudgetTracker, BudgetPolicy, CostRecord
 
 tracker = BudgetTracker(BudgetPolicy(max_total_usd=5.0))
 
@@ -340,7 +340,7 @@ Cross-run budget tracking with time windows. Two implementations are provided.
 #### Scopes and Windows
 
 ```python
-from cognitia.pipeline import BudgetScope, BudgetScopeType, BudgetWindow
+from swarmline.pipeline import BudgetScope, BudgetScopeType, BudgetWindow
 
 # Track by agent, graph, or tenant
 scope = BudgetScope(scope_type=BudgetScopeType.AGENT, scope_id="dev-1")
@@ -355,7 +355,7 @@ window = BudgetWindow.LIFETIME  # Cumulative, never resets
 For testing and development:
 
 ```python
-from cognitia.pipeline import (
+from swarmline.pipeline import (
     InMemoryPersistentBudgetStore,
     BudgetScope,
     BudgetScopeType,
@@ -397,7 +397,7 @@ incidents = await store.list_incidents(scope)
 File-based persistence with WAL mode for concurrent reads:
 
 ```python
-from cognitia.pipeline import SqlitePersistentBudgetStore
+from swarmline.pipeline import SqlitePersistentBudgetStore
 
 store = SqlitePersistentBudgetStore(db_path="budget.db")
 
@@ -491,7 +491,7 @@ result.phases                  # Tuple[PhaseResult, ...]
 Convenience wrapper with event callbacks:
 
 ```python
-from cognitia.pipeline import PipelineRunner
+from swarmline.pipeline import PipelineRunner
 
 runner = PipelineRunner(pipeline)
 

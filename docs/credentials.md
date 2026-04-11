@@ -1,6 +1,6 @@
 # Credentials & Provider Setup
 
-This page is the canonical reference for API keys, environment variables, and provider-specific parameters across Cognitia runtimes.
+This page is the canonical reference for API keys, environment variables, and provider-specific parameters across Swarmline runtimes.
 
 ## Quick Matrix
 
@@ -20,7 +20,7 @@ This page is the canonical reference for API keys, environment variables, and pr
 If you use the facade:
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(
     AgentConfig(
@@ -38,8 +38,8 @@ set provider credentials in the shell environment before creating the agent.
 If you instantiate a runtime directly, you can pass `base_url` explicitly:
 
 ```python
-from cognitia.runtime.types import RuntimeConfig
-from cognitia.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import RuntimeConfig
+from swarmline.runtime.thin.runtime import ThinRuntime
 
 runtime = ThinRuntime(
     config=RuntimeConfig(
@@ -52,9 +52,9 @@ runtime = ThinRuntime(
 
 The high-level `AgentConfig` facade does not currently expose `base_url`.
 
-### 3. OpenRouter is an OpenAI-compatible path in Cognitia
+### 3. OpenRouter is an OpenAI-compatible path in Swarmline
 
-For Cognitia portable runtimes, OpenRouter should be treated as an OpenAI-compatible endpoint:
+For Swarmline portable runtimes, OpenRouter should be treated as an OpenAI-compatible endpoint:
 
 - `thin`: use `model="openrouter:..."` or another OpenAI-compatible model with `OPENAI_API_KEY`
 - `deepagents`: use the OpenAI provider path, for example `model="openai:anthropic/claude-3.5-haiku"`
@@ -133,7 +133,7 @@ agent = Agent(AgentConfig(
 ))
 ```
 
-No manual `base_url` is required here; Cognitia auto-resolves OpenRouter's endpoint for the `openrouter:` provider prefix.
+No manual `base_url` is required here; Swarmline auto-resolves OpenRouter's endpoint for the `openrouter:` provider prefix.
 
 #### Custom OpenAI-compatible endpoint
 
@@ -196,7 +196,7 @@ It does **not** accept `openrouter:*`, `groq:*`, `together:*`, or other portable
 
 ### Anthropic baseline
 
-Installed by `cognitia[deepagents]`:
+Installed by `swarmline[deepagents]`:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -215,7 +215,7 @@ agent = Agent(AgentConfig(
 Install bridge packages first:
 
 ```bash
-pip install cognitia[deepagents] langchain-openai openai
+pip install swarmline[deepagents] langchain-openai openai
 ```
 
 Environment:
@@ -256,7 +256,7 @@ For direct runtime construction you can pass `RuntimeConfig(base_url=...)` inste
 Install bridge packages:
 
 ```bash
-pip install cognitia[deepagents] langchain-google-genai
+pip install swarmline[deepagents] langchain-google-genai
 ```
 
 Environment:
@@ -291,9 +291,9 @@ python your_script.py
 ### Pass explicit env via `CliConfig.env`
 
 ```python
-from cognitia.runtime.cli.runtime import CliAgentRuntime
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.cli.runtime import CliAgentRuntime
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.types import RuntimeConfig
 
 runtime = CliAgentRuntime(
     config=RuntimeConfig(runtime_name="cli"),
@@ -304,7 +304,7 @@ runtime = CliAgentRuntime(
 )
 ```
 
-If you wrap a non-Claude CLI, use the environment variables expected by that CLI, not Cognitia-specific names.
+If you wrap a non-Claude CLI, use the environment variables expected by that CLI, not Swarmline-specific names.
 
 ## Example-Specific Convenience Variables
 

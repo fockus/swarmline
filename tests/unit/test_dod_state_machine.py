@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 from _stubs import StubPlannerMode as PlannerMode
-from cognitia.orchestration.code_workflow_engine import (
+from swarmline.orchestration.code_workflow_engine import (
     CodeWorkflowEngine,
     WorkflowStatus,
 )
-from cognitia.orchestration.dod_state_machine import DoDStateMachine, DoDStatus
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.dod_state_machine import DoDStateMachine, DoDStatus
+from swarmline.orchestration.verification_types import (
     VerificationResult,
     VerificationStatus,
 )
-from cognitia.orchestration.workflow_pipeline import WorkflowPipeline
+from swarmline.orchestration.workflow_pipeline import WorkflowPipeline
 
 
 class AlwaysPassVerifier:

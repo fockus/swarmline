@@ -6,8 +6,8 @@ No API keys required.
 
 import asyncio
 
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import NoopTracer, TracingSubscriber
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import NoopTracer, TracingSubscriber
 
 
 async def main() -> None:
@@ -55,7 +55,7 @@ async def main() -> None:
     print("TracingSubscriber detached")
 
     # 6. ConsoleTracer (requires structlog -- uncomment to try)
-    # from cognitia.observability.tracer import ConsoleTracer
+    # from swarmline.observability.tracer import ConsoleTracer
     # console_tracer = ConsoleTracer()
     # span_id = console_tracer.start_span("my_operation", {"key": "value"})
     # console_tracer.add_event(span_id, "checkpoint", {"step": 1})

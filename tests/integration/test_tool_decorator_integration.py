@@ -7,8 +7,8 @@ import enum
 import pytest
 from pydantic import BaseModel
 
-from cognitia.agent.tool import ToolDefinition, tool
-from cognitia.runtime.types import ToolSpec
+from swarmline.agent.tool import ToolDefinition, tool
+from swarmline.runtime.types import ToolSpec
 
 
 class Priority(enum.Enum):

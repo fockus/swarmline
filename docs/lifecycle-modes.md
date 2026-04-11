@@ -5,7 +5,7 @@ Agent lifecycle modes control how an agent lives and dies within the system.
 ## Overview
 
 ```python
-from cognitia.multi_agent.graph_types import LifecycleMode
+from swarmline.multi_agent.graph_types import LifecycleMode
 ```
 
 `LifecycleMode` is a `str` enum with three values:
@@ -55,7 +55,7 @@ await adapter.stop_agent(handle)
 Agent stays alive across goals. Only the orchestrator or user can remove it. Used with `PersistentGraphOrchestrator` for long-running organizational structures.
 
 ```python
-from cognitia.multi_agent.persistent_graph import PersistentGraphOrchestrator
+from swarmline.multi_agent.persistent_graph import PersistentGraphOrchestrator
 
 orchestrator = PersistentGraphOrchestrator(graph=graph, task_board=board, agent_runner=runner)
 

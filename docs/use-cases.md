@@ -1,8 +1,8 @@
 # Use Cases
 
-Cognitia is most useful when you need more than a single LLM call but do not want to marry your whole application to one runtime, one provider, or one framework-specific abstraction.
+Swarmline is most useful when you need more than a single LLM call but do not want to marry your whole application to one runtime, one provider, or one framework-specific abstraction.
 
-This page is the shortest path to answering: **"Is Cognitia a good fit for what I am building?"**
+This page is the shortest path to answering: **"Is Swarmline a good fit for what I am building?"**
 
 ## 1. Internal assistant for tools, files, or operations
 
@@ -15,7 +15,7 @@ Build an internal assistant that can:
 - keep session context across turns
 - run with guardrails and budget limits
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - `@tool` gives you a low-friction tool surface
 - the same app can start on `thin` and later move to `claude_sdk` or `cli`
@@ -46,7 +46,7 @@ Build a research or analysis assistant that can:
 - return typed summaries, briefs, or reports
 - remember user goals and previous work
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - web providers and RAG filters plug into the same agent surface
 - structured output works across runtimes
@@ -73,7 +73,7 @@ Build a research or analysis assistant that can:
 
 Build an API/backend that powers product features while keeping the LLM layer replaceable for cost, latency, compliance, or integration reasons.
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - the `Agent` facade stays stable while the runtime changes
 - `thin` supports Anthropic, OpenAI-compatible, and Google paths
@@ -100,11 +100,11 @@ Build an API/backend that powers product features while keeping the LLM layer re
 
 Use DeepAgents or LangGraph-native behavior, but keep a simpler top-level application surface for the rest of the codebase.
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - `deepagents` runtime lives behind the same `Agent` facade
 - you can keep portable mode for the common path and enable native features only where needed
-- Cognitia still handles structured output, sessions, orchestration helpers, and shared docs/tests around the facade
+- Swarmline still handles structured output, sessions, orchestration helpers, and shared docs/tests around the facade
 
 **Good starting stack**
 
@@ -124,13 +124,13 @@ Use DeepAgents or LangGraph-native behavior, but keep a simpler top-level applic
 
 **Typical goal**
 
-Reuse an external CLI agent already proven in your team, but expose it through a consistent Cognitia runtime interface.
+Reuse an external CLI agent already proven in your team, but expose it through a consistent Swarmline runtime interface.
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - `cli` runtime lets you wrap NDJSON-emitting CLIs as `AgentRuntime`
 - you keep the same facade-level `query`, `stream`, and `conversation` surface
-- credentials stay with the CLI you are wrapping, not with Cognitia-specific assumptions
+- credentials stay with the CLI you are wrapping, not with Swarmline-specific assumptions
 
 **Good starting stack**
 
@@ -151,7 +151,7 @@ Reuse an external CLI agent already proven in your team, but expose it through a
 
 Coordinate more than one agent over a queue, workflow, or task graph.
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - workflow graph and orchestration helpers are already included
 - sessions and memory give you a place to keep state outside one runtime call
@@ -174,12 +174,12 @@ Coordinate more than one agent over a queue, workflow, or task graph.
 
 **Typical goal**
 
-Give your code agent (Claude Code, Codex CLI, OpenCode, or any MCP-compatible client) persistent memory, structured planning, team coordination, and safe code execution — without any LLM cost from Cognitia itself.
+Give your code agent (Claude Code, Codex CLI, OpenCode, or any MCP-compatible client) persistent memory, structured planning, team coordination, and safe code execution — without any LLM cost from Swarmline itself.
 
-**Why Cognitia fits**
+**Why Swarmline fits**
 
 - the MCP server exposes 20 tools over STDIO — zero configuration beyond `pip install`
-- headless mode (default) adds zero LLM calls — the code agent is the brain, Cognitia is the hands
+- headless mode (default) adds zero LLM calls — the code agent is the brain, Swarmline is the hands
 - memory persists facts, messages, and summaries across tool calls within a session
 - plans provide a state machine (draft → approved → step-by-step execution) for structured work
 - team tools let multiple agents coordinate via a task queue with priority and claiming
@@ -187,8 +187,8 @@ Give your code agent (Claude Code, Codex CLI, OpenCode, or any MCP-compatible cl
 
 **Good starting stack**
 
-- install: `pip install cognitia[code-agent]`
-- MCP config: add `cognitia-mcp --mode auto` to your client's MCP settings
+- install: `pip install swarmline[code-agent]`
+- MCP config: add `swarmline-mcp --mode auto` to your client's MCP settings
 - start with memory tools for cross-session knowledge
 - add plans when tasks have 3+ steps
 - add team tools when coordinating multiple agents
@@ -214,9 +214,9 @@ Give your code agent (Claude Code, Codex CLI, OpenCode, or any MCP-compatible cl
 
 ---
 
-## When Cognitia is the wrong tool
+## When Swarmline is the wrong tool
 
-You may not need Cognitia if:
+You may not need Swarmline if:
 
 - you only need a single provider SDK call and no long-lived agent state
 - you are already fully committed to one framework and do not want a portability layer

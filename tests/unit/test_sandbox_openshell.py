@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cognitia.tools.sandbox_openshell import OpenShellSandboxProvider
-from cognitia.tools.types import SandboxConfig, SandboxViolation
+from swarmline.tools.sandbox_openshell import OpenShellSandboxProvider
+from swarmline.tools.types import SandboxConfig, SandboxViolation
 
 
 def _config(tmp_path, **kwargs) -> SandboxConfig:
@@ -51,7 +51,7 @@ def _mock_session(exec_result: FakeExecResult | None = None):
 class TestProtocolCompliance:
     def test_isinstance_sandbox_provider(self, tmp_path) -> None:
         """OpenShellSandboxProvider satisfies SandboxProvider protocol."""
-        from cognitia.tools.protocols import SandboxProvider
+        from swarmline.tools.protocols import SandboxProvider
 
         provider = OpenShellSandboxProvider(_config(tmp_path), _session=_mock_session())
         assert isinstance(provider, SandboxProvider)

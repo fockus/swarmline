@@ -1,7 +1,7 @@
 """TDD Red Phase: MessageBus wiring + send_message tool (Etap 2.3). Tests verify:
 - Agent A sends -> Agent B receives cherez MessageBus
 - broadcast -> all agents receive
-- send_message tool -> message appears in bus Contract: cognitia.orchestration.message_tools.send_message tool
+- send_message tool -> message appears in bus Contract: swarmline.orchestration.message_tools.send_message tool
 + MessageBus integration with ThinTeamOrchestrator
 """
 
@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
-from cognitia.orchestration.message_bus import MessageBus
-from cognitia.orchestration.team_types import TeamMessage
+from swarmline.orchestration.message_bus import MessageBus
+from swarmline.orchestration.team_types import TeamMessage
 
 # ---------------------------------------------------------------------------
 # MessageBus direct tests (sushchestvuyushchiy funktsional - smoke)
@@ -76,7 +76,7 @@ class TestSendMessageTool:
     @pytest.mark.asyncio
     async def test_message_tool_sends_via_bus(self) -> None:
         """Tool call send_message → message appears in MessageBus."""
-        from cognitia.orchestration.message_tools import create_send_message_tool
+        from swarmline.orchestration.message_tools import create_send_message_tool
 
         bus = MessageBus()
         send_message_executor = create_send_message_tool(
@@ -99,7 +99,7 @@ class TestSendMessageTool:
     @pytest.mark.asyncio
     async def test_message_tool_broadcast_via_bus(self) -> None:
         """Tool call send_message with to_agent='*' -> broadcast."""
-        from cognitia.orchestration.message_tools import create_send_message_tool
+        from swarmline.orchestration.message_tools import create_send_message_tool
 
         bus = MessageBus()
         send_message_executor = create_send_message_tool(
@@ -119,7 +119,7 @@ class TestSendMessageTool:
 
     def test_message_tool_spec_has_correct_schema(self) -> None:
         """send_message tool imeet pravilnyy ToolSpec."""
-        from cognitia.orchestration.message_tools import SEND_MESSAGE_TOOL_SPEC
+        from swarmline.orchestration.message_tools import SEND_MESSAGE_TOOL_SPEC
 
         assert SEND_MESSAGE_TOOL_SPEC.name == "send_message"
         assert "to_agent" in str(SEND_MESSAGE_TOOL_SPEC.parameters)

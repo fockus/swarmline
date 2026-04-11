@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ class TestAgentCapabilities:
 class TestGovernanceConfig:
 
     def test_defaults(self) -> None:
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
 
         config = GraphGovernanceConfig()
         assert config.max_agents == 50
@@ -74,7 +74,7 @@ class TestGovernanceConfig:
         assert config.allow_dynamic_delegation is True
 
     def test_custom_values(self) -> None:
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
 
         config = GraphGovernanceConfig(
             max_agents=10,
@@ -113,7 +113,7 @@ class TestCheckHireAllowed:
         return store
 
     async def test_hire_denied_no_permission(self, org) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_hire_allowed,
         )
@@ -125,7 +125,7 @@ class TestCheckHireAllowed:
         assert "can_hire" in error
 
     async def test_hire_denied_globally_disabled(self, org) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_hire_allowed,
         )
@@ -137,7 +137,7 @@ class TestCheckHireAllowed:
         assert "globally disabled" in error.lower()
 
     async def test_hire_denied_max_children(self, org) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_hire_allowed,
         )
@@ -149,7 +149,7 @@ class TestCheckHireAllowed:
         assert "max_children" in error
 
     async def test_hire_denied_max_depth(self) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_hire_allowed,
         )
@@ -174,7 +174,7 @@ class TestCheckHireAllowed:
         assert "depth" in error.lower()
 
     async def test_hire_denied_max_agents(self) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_hire_allowed,
         )
@@ -194,7 +194,7 @@ class TestCheckHireAllowed:
         assert "max agents" in error.lower()
 
     async def test_hire_allowed(self, org) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_hire_allowed,
         )
@@ -213,7 +213,7 @@ class TestCheckHireAllowed:
 class TestCheckDelegateAllowed:
 
     def test_delegate_denied_no_permission(self) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_delegate_allowed,
         )
@@ -228,7 +228,7 @@ class TestCheckDelegateAllowed:
         assert "can_delegate" in error
 
     def test_delegate_denied_globally_disabled(self) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_delegate_allowed,
         )
@@ -243,7 +243,7 @@ class TestCheckDelegateAllowed:
         assert "globally disabled" in error.lower()
 
     def test_delegate_allowed(self) -> None:
-        from cognitia.multi_agent.graph_governance import (
+        from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
             check_delegate_allowed,
         )
@@ -265,7 +265,7 @@ class TestCheckDelegateAllowed:
 class TestGovernanceError:
 
     def test_governance_error_attrs(self) -> None:
-        from cognitia.multi_agent.graph_governance import GovernanceError
+        from swarmline.multi_agent.graph_governance import GovernanceError
 
         err = GovernanceError("oops", action="hire", agent_id="a1")
         assert str(err) == "oops"
@@ -281,7 +281,7 @@ class TestGovernanceError:
 class TestCapabilitiesInSystemPrompt:
 
     async def test_capabilities_in_system_prompt(self) -> None:
-        from cognitia.multi_agent.graph_context import GraphContextBuilder
+        from swarmline.multi_agent.graph_context import GraphContextBuilder
 
         store = InMemoryAgentGraph()
         await store.add_node(AgentNode(
@@ -299,7 +299,7 @@ class TestCapabilitiesInSystemPrompt:
         assert "Can use subagents: Yes" in prompt
 
     async def test_capabilities_no_permissions_section_shows_defaults(self) -> None:
-        from cognitia.multi_agent.graph_context import GraphContextBuilder
+        from swarmline.multi_agent.graph_context import GraphContextBuilder
 
         store = InMemoryAgentGraph()
         await store.add_node(AgentNode(
@@ -313,7 +313,7 @@ class TestCapabilitiesInSystemPrompt:
         assert "Can hire subordinates: No" in prompt
 
     async def test_team_mode_shown_when_enabled(self) -> None:
-        from cognitia.multi_agent.graph_context import GraphContextBuilder
+        from swarmline.multi_agent.graph_context import GraphContextBuilder
 
         store = InMemoryAgentGraph()
         await store.add_node(AgentNode(
@@ -334,7 +334,7 @@ class TestCapabilitiesInSystemPrompt:
 class TestBuilderWithCapabilities:
 
     async def test_builder_add_root_with_capabilities(self) -> None:
-        from cognitia.multi_agent.graph_builder import GraphBuilder
+        from swarmline.multi_agent.graph_builder import GraphBuilder
 
         store = InMemoryAgentGraph()
         caps = AgentCapabilities(can_hire=True, max_children=10)
@@ -345,7 +345,7 @@ class TestBuilderWithCapabilities:
         assert snap.nodes[0].capabilities.max_children == 10
 
     async def test_builder_add_child_with_capabilities(self) -> None:
-        from cognitia.multi_agent.graph_builder import GraphBuilder
+        from swarmline.multi_agent.graph_builder import GraphBuilder
 
         store = InMemoryAgentGraph()
         builder = GraphBuilder(store)
@@ -358,7 +358,7 @@ class TestBuilderWithCapabilities:
         assert eng.capabilities.can_delegate is False
 
     async def test_builder_default_capabilities(self) -> None:
-        from cognitia.multi_agent.graph_builder import GraphBuilder
+        from swarmline.multi_agent.graph_builder import GraphBuilder
 
         store = InMemoryAgentGraph()
         builder = GraphBuilder(store)
@@ -367,7 +367,7 @@ class TestBuilderWithCapabilities:
         assert snap.nodes[0].capabilities == AgentCapabilities()
 
     async def test_from_dict_with_capabilities(self) -> None:
-        from cognitia.multi_agent.graph_builder import GraphBuilder
+        from swarmline.multi_agent.graph_builder import GraphBuilder
 
         store = InMemoryAgentGraph()
         config = {
@@ -404,7 +404,7 @@ class TestBuilderWithCapabilities:
         assert eng.capabilities.can_delegate is True  # default
 
     async def test_from_dict_without_capabilities(self) -> None:
-        from cognitia.multi_agent.graph_builder import GraphBuilder
+        from swarmline.multi_agent.graph_builder import GraphBuilder
 
         store = InMemoryAgentGraph()
         config = {"id": "ceo", "name": "CEO", "role": "exec"}
@@ -435,9 +435,9 @@ class TestGovernanceInGraphTools:
     async def test_hire_blocked_by_governance(self, org_with_caps) -> None:
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         tools = create_graph_tools(
             graph=org_with_caps,
@@ -454,9 +454,9 @@ class TestGovernanceInGraphTools:
     async def test_hire_allowed_by_governance(self, org_with_caps) -> None:
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         tools = create_graph_tools(
             graph=org_with_caps,
@@ -474,9 +474,9 @@ class TestGovernanceInGraphTools:
         """Backward compat: governance=None should not break existing behavior."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         store = InMemoryAgentGraph()
         await store.add_node(AgentNode(
@@ -497,9 +497,9 @@ class TestGovernanceInGraphTools:
         """delegate_task must enforce can_delegate via governance."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         # Add agent with can_delegate=False
         await org_with_caps.add_node(AgentNode(
@@ -522,9 +522,9 @@ class TestGovernanceInGraphTools:
         """delegate_task with can_delegate=True should succeed."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         tools = create_graph_tools(
             graph=org_with_caps,
@@ -542,9 +542,9 @@ class TestGovernanceInGraphTools:
         """delegate_task denied when allow_dynamic_delegation=False."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         tools = create_graph_tools(
             graph=org_with_caps,
@@ -562,9 +562,9 @@ class TestGovernanceInGraphTools:
         """Backward compat: no caller_agent_id skips governance check."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         tools = create_graph_tools(
             graph=org_with_caps,
@@ -582,9 +582,9 @@ class TestGovernanceInGraphTools:
         """delegate_task with stage parameter passes it to DelegationRequest."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         orch_mock = AsyncMock()
         tools = create_graph_tools(
@@ -607,9 +607,9 @@ class TestGovernanceInGraphTools:
         """delegate_task without stage defaults to empty string in DelegationRequest."""
         from unittest.mock import AsyncMock
 
-        from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
-        from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-        from cognitia.multi_agent.graph_tools import create_graph_tools
+        from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
+        from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+        from swarmline.multi_agent.graph_tools import create_graph_tools
 
         orch_mock = AsyncMock()
         tools = create_graph_tools(

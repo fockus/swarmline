@@ -13,13 +13,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from cognitia.multi_agent.task_types import (
+from swarmline.multi_agent.task_types import (
     TaskFilter,
     TaskItem,
     TaskPriority,
     TaskStatus,
 )
-from cognitia.protocols.multi_agent import TaskQueue
+from swarmline.protocols.multi_agent import TaskQueue
 
 if TYPE_CHECKING:
     pass
@@ -119,7 +119,7 @@ class TestTaskQueueProtocol:
 @pytest.fixture(params=["inmemory", "sqlite"])
 def queue(request: pytest.FixtureRequest, tmp_path):
     """Parametrized queue — runs every test against all backends."""
-    from cognitia.multi_agent.task_queue import InMemoryTaskQueue, SqliteTaskQueue
+    from swarmline.multi_agent.task_queue import InMemoryTaskQueue, SqliteTaskQueue
 
     if request.param == "inmemory":
         yield InMemoryTaskQueue()

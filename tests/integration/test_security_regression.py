@@ -7,8 +7,8 @@ from __future__ import annotations
 from datetime import UTC
 
 import pytest
-from cognitia.memory_bank.types import MemoryBankConfig, MemoryBankViolation
-from cognitia.tools.types import SandboxConfig, SandboxViolation
+from swarmline.memory_bank.types import MemoryBankConfig, MemoryBankViolation
+from swarmline.tools.types import SandboxConfig, SandboxViolation
 
 pytestmark = pytest.mark.security
 
@@ -18,7 +18,7 @@ class TestPathIsolationPrefixBypass:
 
     async def test_sandbox_workspace_prefix_bypass(self, tmp_path) -> None:
         """workspace=/tmp/ws -> popytka chitat /tmp/ws2 cherez 'ws2/secret'."""
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         # Create dva workspace: ws and ws2
         ws = tmp_path / "u1" / "t1" / "workspace"
@@ -38,7 +38,7 @@ class TestPathIsolationPrefixBypass:
 
     async def test_memory_bank_prefix_bypass(self, tmp_path) -> None:
         """memory=/tmp/u1/t1/memory -> popytka chitat /tmp/u1/t1/memory2/secret."""
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         cfg = MemoryBankConfig(enabled=True, root_path=tmp_path)
         p = FilesystemMemoryBankProvider(cfg, user_id="u1", topic_id="t1")
@@ -56,7 +56,7 @@ class TestPathIsolationPrefixBypass:
             SandboxConfig(root_path=str(tmp_path), user_id="../escape", topic_id="t1")
 
     def test_memory_bank_rejects_namespace_path_traversal(self, tmp_path) -> None:
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         cfg = MemoryBankConfig(enabled=True, root_path=tmp_path)
         with pytest.raises(ValueError, match="Invalid user_id"):
@@ -67,7 +67,7 @@ class TestCrossTenantIsolation:
     """Security: cross-user and cross-topic isolation."""
 
     async def test_sandbox_cross_user_cannot_read(self, tmp_path) -> None:
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sb_a = LocalSandboxProvider(
             SandboxConfig(root_path=str(tmp_path), user_id="alice", topic_id="t1")
@@ -82,7 +82,7 @@ class TestCrossTenantIsolation:
             await sb_b.read_file("private.txt")
 
     async def test_memory_bank_cross_user_cannot_read(self, tmp_path) -> None:
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         cfg = MemoryBankConfig(enabled=True, root_path=tmp_path)
         pa = FilesystemMemoryBankProvider(cfg, user_id="alice", topic_id="t1")
@@ -95,8 +95,8 @@ class TestCrossTenantIsolation:
         """PlanStore filtruet list_plans by user_id/topic_id."""
         from datetime import datetime
 
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.types import Plan, PlanStep
 
         store = InMemoryPlanStore()
         now = datetime.now(tz=UTC)
@@ -131,8 +131,8 @@ class TestPolicyCaseSensitivity:
     """P1: ToolPolicy obrabatyvaet oba naming convention."""
 
     def test_snake_case_denied(self) -> None:
-        from cognitia.policy import DefaultToolPolicy, PermissionDeny
-        from cognitia.policy.tool_policy import ToolPolicyInput
+        from swarmline.policy import DefaultToolPolicy, PermissionDeny
+        from swarmline.policy.tool_policy import ToolPolicyInput
 
         policy = DefaultToolPolicy()
         state = ToolPolicyInput(
@@ -143,8 +143,8 @@ class TestPolicyCaseSensitivity:
         assert isinstance(policy.can_use_tool("read", {}, state), PermissionDeny)
 
     def test_pascal_case_denied(self) -> None:
-        from cognitia.policy import DefaultToolPolicy, PermissionDeny
-        from cognitia.policy.tool_policy import ToolPolicyInput
+        from swarmline.policy import DefaultToolPolicy, PermissionDeny
+        from swarmline.policy.tool_policy import ToolPolicyInput
 
         policy = DefaultToolPolicy()
         state = ToolPolicyInput(
@@ -154,8 +154,8 @@ class TestPolicyCaseSensitivity:
         assert isinstance(policy.can_use_tool("Read", {}, state), PermissionDeny)
 
     def test_whitelist_both_cases(self) -> None:
-        from cognitia.policy import DefaultToolPolicy, PermissionAllow
-        from cognitia.policy.tool_policy import ToolPolicyInput
+        from swarmline.policy import DefaultToolPolicy, PermissionAllow
+        from swarmline.policy.tool_policy import ToolPolicyInput
 
         policy = DefaultToolPolicy(allowed_system_tools={"Bash", "bash"})
         state = ToolPolicyInput(

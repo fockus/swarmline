@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from cognitia.orchestration.generic_workflow_engine import (
+from swarmline.orchestration.generic_workflow_engine import (
     GenericWorkflowEngine,
     GenericWorkflowStatus,
 )

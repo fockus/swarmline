@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.runtime.cancellation import CancellationToken
+from swarmline.runtime.cancellation import CancellationToken
 
 
 async def simulated_long_task(token: CancellationToken) -> str:

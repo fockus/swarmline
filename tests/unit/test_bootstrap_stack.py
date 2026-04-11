@@ -1,26 +1,26 @@
-"""Tests for cognitia.bootstrap.CognitiaStack. Iteration 3: TDD tests for public integration API.
+"""Tests for swarmline.bootstrap.SwarmlineStack. Iteration 3: TDD tests for public integration API.
 Testing Trophy: unit (factory output) + integration (real YAML fixtures)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from cognitia.bootstrap import CognitiaStack
-from cognitia.config.role_router import RoleRouterConfig
-from cognitia.config.role_skills import YamlRoleSkillsLoader
-from cognitia.context import DefaultContextBuilder
-from cognitia.policy import DefaultToolIdCodec, DefaultToolPolicy
-from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
-from cognitia.protocols import LocalToolResolver
-from cognitia.routing import KeywordRoleRouter
-from cognitia.runtime.factory import RuntimeFactory
-from cognitia.runtime.model_policy import ModelPolicy
-from cognitia.runtime.types import RuntimeConfig
-from cognitia.skills import SkillRegistry
+from swarmline.bootstrap import SwarmlineStack
+from swarmline.config.role_router import RoleRouterConfig
+from swarmline.config.role_skills import YamlRoleSkillsLoader
+from swarmline.context import DefaultContextBuilder
+from swarmline.policy import DefaultToolIdCodec, DefaultToolPolicy
+from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup
+from swarmline.protocols import LocalToolResolver
+from swarmline.routing import KeywordRoleRouter
+from swarmline.runtime.factory import RuntimeFactory
+from swarmline.runtime.model_policy import ModelPolicy
+from swarmline.runtime.types import RuntimeConfig
+from swarmline.skills import SkillRegistry
 
 
 def _create_fixture_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
-    """Create a minimal fixture structure for CognitiaStack."""
+    """Create a minimal fixture structure for SwarmlineStack."""
     project_root = tmp_path / "project"
     project_root.mkdir()
     prompts_dir = project_root / "prompts"
@@ -46,14 +46,14 @@ def _create_fixture_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
     return project_root, prompts_dir, skills_dir
 
 
-class TestCognitiaStackCreate:
-    """CognitiaStack.create() creates all library components."""
+class TestSwarmlineStackCreate:
+    """SwarmlineStack.create() creates all library components."""
 
     def test_create_returns_all_components(self, tmp_path: Path) -> None:
-        """create() returns CognitiaStack with all components."""
+        """create() returns SwarmlineStack with all components."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -75,7 +75,7 @@ class TestCognitiaStackCreate:
         """Role router config loads from YAML."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -88,7 +88,7 @@ class TestCognitiaStackCreate:
         """RoleSkillsLoader loads skills and local_tools."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -101,7 +101,7 @@ class TestCognitiaStackCreate:
         """escalate_roles is passed in ModelPolicy."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -120,7 +120,7 @@ class TestCognitiaStackCreate:
         skills_dir.mkdir()
 
         # Not role_skills.yaml, role_router.yaml - should be created without errors
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -147,7 +147,7 @@ class TestCognitiaStackCreate:
             base_url="https://example.test",
         )
         resolver = DummyResolver()
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -169,7 +169,7 @@ class TestCognitiaStackCreate:
                 return None
 
         provider = DummyMemoryProvider()
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,
@@ -218,7 +218,7 @@ class TestCognitiaStackCreate:
             max_tools=2,
             group_priority=[ToolGroup.WEB, ToolGroup.ALWAYS],
         )
-        stack = CognitiaStack.create(
+        stack = SwarmlineStack.create(
             prompts_dir=prompts_dir,
             skills_dir=skills_dir,
             project_root=project_root,

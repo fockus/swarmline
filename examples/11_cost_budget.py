@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.runtime.cost import (
+from swarmline.runtime.cost import (
     CostBudget,
     CostTracker,
     ModelPricing,

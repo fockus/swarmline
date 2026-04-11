@@ -11,7 +11,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from cognitia.runtime.types import (
+from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
     RuntimeEvent,
@@ -51,7 +51,7 @@ class TestDeepAgentsMcpToolDiscovery:
 
     def test_deepagents_accepts_mcp_servers_parameter(self) -> None:
         """DeepAgentsRuntime.__init__ accepts the mcp_servers parameter."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         config = RuntimeConfig(runtime_name="deepagents")
         mcp_servers = {"weather": "https://weather.test/mcp"}
@@ -63,7 +63,7 @@ class TestDeepAgentsMcpToolDiscovery:
     @pytest.mark.asyncio
     async def test_deepagents_mcp_tools_discovered(self) -> None:
         """mcp_servers provided -> MCP tools are discovered via McpBridge."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
         config = RuntimeConfig(runtime_name="deepagents", feature_mode="hybrid")
@@ -92,7 +92,7 @@ class TestDeepAgentsMcpToolDiscovery:
 
     def test_deepagents_no_mcp_servers_no_change(self) -> None:
         """Without mcp_servers -> behavior does not change (backward compat)."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         config = RuntimeConfig(runtime_name="deepagents")
 
@@ -113,7 +113,7 @@ class TestDeepAgentsMcpToolExecution:
     @pytest.mark.asyncio
     async def test_deepagents_mcp_tool_execution(self) -> None:
         """LLM calls MCP tool -> McpBridge.call_tool() delegates call."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
         config = RuntimeConfig(runtime_name="deepagents", feature_mode="hybrid")
@@ -140,7 +140,7 @@ class TestDeepAgentsMcpMergedWithCustomTools:
     @pytest.mark.asyncio
     async def test_deepagents_mcp_merged_with_custom_tools(self) -> None:
         """MCP tools + custom tools -> both types are available for LLM."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
         config = RuntimeConfig(runtime_name="deepagents", feature_mode="hybrid")
@@ -183,7 +183,7 @@ class TestDeepAgentsMcpFeatureMode:
     @pytest.mark.parametrize("mode", ["portable", "hybrid", "native_first"])
     def test_deepagents_mcp_feature_mode_all(self, mode: str) -> None:
         """MCP tools are available in portable/hybrid/native_first."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         mcp_servers = {"svc": "https://svc.test/mcp"}
         config = RuntimeConfig(runtime_name="deepagents", feature_mode=mode)

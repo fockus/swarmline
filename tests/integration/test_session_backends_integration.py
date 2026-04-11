@@ -6,14 +6,14 @@ from typing import Any
 
 import pytest
 
-from cognitia.session.backends import (
+from swarmline.session.backends import (
     InMemorySessionBackend,
     MemoryScope,
     SqliteSessionBackend,
     scoped_key,
 )
-from cognitia.session.manager import InMemorySessionManager
-from cognitia.session.types import SessionKey, SessionState
+from swarmline.session.manager import InMemorySessionManager
+from swarmline.session.types import SessionKey, SessionState
 
 
 def _make_state(

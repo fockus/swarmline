@@ -1,37 +1,37 @@
 # MCP Server
 
-Cognitia exposes its agent infrastructure as an MCP (Model Context Protocol) server. Any MCP-compatible client -- Claude Code, Codex CLI, OpenCode, or custom applications -- can use Cognitia's memory, planning, team coordination, and code execution tools over STDIO transport.
+Swarmline exposes its agent infrastructure as an MCP (Model Context Protocol) server. Any MCP-compatible client -- Claude Code, Codex CLI, OpenCode, or custom applications -- can use Swarmline's memory, planning, team coordination, and code execution tools over STDIO transport.
 
 ## Installation
 
 ```bash
-pip install cognitia[code-agent]
+pip install swarmline[code-agent]
 ```
 
 ## Quick Start
 
 ```bash
 # Auto-detect mode (uses full mode if API keys are found)
-cognitia-mcp auto
+swarmline-mcp auto
 
 # Headless only (no LLM calls, no API key needed)
-cognitia-mcp headless
+swarmline-mcp headless
 
 # Full mode (requires ANTHROPIC_API_KEY or OPENAI_API_KEY)
 export ANTHROPIC_API_KEY=sk-ant-...
-cognitia-mcp full
+swarmline-mcp full
 ```
 
 You can also start the server via the CLI:
 
 ```bash
-cognitia mcp-serve --mode auto
+swarmline mcp-serve --mode auto
 ```
 
 Or as a Python module:
 
 ```bash
-python -m cognitia.mcp auto
+python -m swarmline.mcp auto
 ```
 
 ## Modes
@@ -48,44 +48,44 @@ python -m cognitia.mcp auto
 
 | Tool | Description |
 |------|-------------|
-| `cognitia_memory_upsert_fact` | Store or update a key-value fact scoped by user and optional topic |
-| `cognitia_memory_get_facts` | Retrieve all facts for a user, optionally filtered by topic |
-| `cognitia_memory_save_message` | Save a conversation message (role + content) to history |
-| `cognitia_memory_get_messages` | Get recent messages from a conversation with configurable limit |
-| `cognitia_memory_save_summary` | Save a conversation summary with count of messages covered |
-| `cognitia_memory_get_summary` | Retrieve the latest conversation summary for a user/topic pair |
+| `swarmline_memory_upsert_fact` | Store or update a key-value fact scoped by user and optional topic |
+| `swarmline_memory_get_facts` | Retrieve all facts for a user, optionally filtered by topic |
+| `swarmline_memory_save_message` | Save a conversation message (role + content) to history |
+| `swarmline_memory_get_messages` | Get recent messages from a conversation with configurable limit |
+| `swarmline_memory_save_summary` | Save a conversation summary with count of messages covered |
+| `swarmline_memory_get_summary` | Retrieve the latest conversation summary for a user/topic pair |
 
 ### Plans (5 tools)
 
 | Tool | Description |
 |------|-------------|
-| `cognitia_plan_create` | Create a plan with a goal and ordered steps |
-| `cognitia_plan_get` | Load a plan by its ID |
-| `cognitia_plan_list` | List all plans in a user/topic namespace |
-| `cognitia_plan_approve` | Approve a draft plan for execution |
-| `cognitia_plan_update_step` | Update a step's status (`in_progress`, `completed`, `failed`, `skipped`) with optional result |
+| `swarmline_plan_create` | Create a plan with a goal and ordered steps |
+| `swarmline_plan_get` | Load a plan by its ID |
+| `swarmline_plan_list` | List all plans in a user/topic namespace |
+| `swarmline_plan_approve` | Approve a draft plan for execution |
+| `swarmline_plan_update_step` | Update a step's status (`in_progress`, `completed`, `failed`, `skipped`) with optional result |
 
 ### Team (5 tools)
 
 | Tool | Description |
 |------|-------------|
-| `cognitia_team_register_agent` | Register an agent with id, name, role, and optional parent |
-| `cognitia_team_list_agents` | List registered agents with optional role/status filters |
-| `cognitia_team_create_task` | Create a task with id, title, priority, and optional assignee |
-| `cognitia_team_claim_task` | Claim the highest-priority available task from the queue |
-| `cognitia_team_list_tasks` | List tasks with optional status/priority/assignee filters |
+| `swarmline_team_register_agent` | Register an agent with id, name, role, and optional parent |
+| `swarmline_team_list_agents` | List registered agents with optional role/status filters |
+| `swarmline_team_create_task` | Create a task with id, title, priority, and optional assignee |
+| `swarmline_team_claim_task` | Claim the highest-priority available task from the queue |
+| `swarmline_team_list_tasks` | List tasks with optional status/priority/assignee filters |
 
 ### Code (1 tool)
 
 | Tool | Description |
 |------|-------------|
-| `cognitia_exec_code` | Execute Python code in an isolated subprocess with configurable timeout (default 30s) |
+| `swarmline_exec_code` | Execute Python code in an isolated subprocess with configurable timeout (default 30s) |
 
 ### System (1 tool)
 
 | Tool | Description |
 |------|-------------|
-| `cognitia_status` | Get server status: current mode, number of active agents |
+| `swarmline_status` | Get server status: current mode, number of active agents |
 
 ### Agents (3 tools, full mode only)
 
@@ -93,9 +93,9 @@ These tools are only available when the server runs in `full` mode with a valid 
 
 | Tool | Description |
 |------|-------------|
-| `cognitia_agent_create` | Create a new LLM-powered agent with system prompt, model alias, and runtime |
-| `cognitia_agent_query` | Send a prompt to an existing agent and get its response |
-| `cognitia_agent_list` | List all created agents with their configurations |
+| `swarmline_agent_create` | Create a new LLM-powered agent with system prompt, model alias, and runtime |
+| `swarmline_agent_query` | Send a prompt to an existing agent and get its response |
+| `swarmline_agent_list` | List all created agents with their configurations |
 
 ## Integration
 
@@ -106,8 +106,8 @@ Add to `.claude/settings.json` (project-level) or `~/.claude/settings.json` (glo
 ```json
 {
   "mcpServers": {
-    "cognitia": {
-      "command": "cognitia-mcp",
+    "swarmline": {
+      "command": "swarmline-mcp",
       "args": ["auto"]
     }
   }
@@ -121,8 +121,8 @@ Add to `codex.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "cognitia": {
-      "command": "cognitia-mcp",
+    "swarmline": {
+      "command": "swarmline-mcp",
       "args": ["auto"]
     }
   }
@@ -137,7 +137,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 async def main():
-    server = StdioServerParameters(command="cognitia-mcp", args=["auto"])
+    server = StdioServerParameters(command="swarmline-mcp", args=["auto"])
     async with stdio_client(server) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
@@ -148,7 +148,7 @@ async def main():
 
             # Store a fact
             result = await session.call_tool(
-                "cognitia_memory_upsert_fact",
+                "swarmline_memory_upsert_fact",
                 {"user_id": "alice", "key": "language", "value": "Python"},
             )
             print(result)
@@ -165,7 +165,7 @@ Tool responses follow a uniform schema: `{"ok": true, "data": {...}}` on success
 ## Troubleshooting
 
 **"FastMCP is required" error on startup**
-Install the MCP extra: `pip install cognitia[code-agent]`. The `fastmcp` package is an optional dependency.
+Install the MCP extra: `pip install swarmline[code-agent]`. The `fastmcp` package is an optional dependency.
 
 **Agent tools not appearing**
 The server is running in `headless` mode. Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in your environment and use `auto` or `full` mode.

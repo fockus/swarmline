@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cognitia.runtime.openai_agents.event_mapper import map_run_error, map_stream_event
-from cognitia.runtime.openai_agents.types import OpenAIAgentsConfig
-from cognitia.runtime.types import Message
+from swarmline.runtime.openai_agents.event_mapper import map_run_error, map_stream_event
+from swarmline.runtime.openai_agents.types import OpenAIAgentsConfig
+from swarmline.runtime.types import Message
 
 
 # ---------------------------------------------------------------------------
@@ -193,13 +193,13 @@ class TestOpenAIAgentsRegistration:
 
     def test_valid_runtime_name(self) -> None:
         """openai_agents is a valid runtime name."""
-        from cognitia.runtime.capabilities import VALID_RUNTIME_NAMES
+        from swarmline.runtime.capabilities import VALID_RUNTIME_NAMES
 
         assert "openai_agents" in VALID_RUNTIME_NAMES
 
     def test_capabilities_registered(self) -> None:
         """openai_agents has capabilities."""
-        from cognitia.runtime.capabilities import get_runtime_capabilities
+        from swarmline.runtime.capabilities import get_runtime_capabilities
 
         caps = get_runtime_capabilities("openai_agents")
         assert caps.runtime_name == "openai_agents"
@@ -208,7 +208,7 @@ class TestOpenAIAgentsRegistration:
 
     def test_registry_has_factory(self) -> None:
         """openai_agents factory is in the default registry."""
-        from cognitia.runtime.registry import get_default_registry, reset_default_registry
+        from swarmline.runtime.registry import get_default_registry, reset_default_registry
 
         reset_default_registry()
         registry = get_default_registry()
@@ -217,7 +217,7 @@ class TestOpenAIAgentsRegistration:
 
     def test_agent_config_accepts_openai_agents(self) -> None:
         """AgentConfig validates openai_agents as a valid runtime."""
-        from cognitia.agent.config import AgentConfig
+        from swarmline.agent.config import AgentConfig
 
         config = AgentConfig(
             system_prompt="test",
@@ -236,7 +236,7 @@ class TestOpenAIAgentsRuntime:
 
     def test_extract_user_input(self) -> None:
         """Extracts last user message."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [
             Message(role="system", content="sys"),
@@ -248,7 +248,7 @@ class TestOpenAIAgentsRuntime:
 
     def test_extract_user_input_empty(self) -> None:
         """Returns empty string when no user messages."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [Message(role="system", content="sys")]
         assert OpenAIAgentsRuntime._extract_user_input(messages) == ""
@@ -256,7 +256,7 @@ class TestOpenAIAgentsRuntime:
     @pytest.mark.asyncio
     async def test_run_no_user_message_yields_error(self) -> None:
         """run() yields error when no user message in messages."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         rt = OpenAIAgentsRuntime()
         events = []
@@ -272,7 +272,7 @@ class TestOpenAIAgentsRuntime:
 
     def test_cancel(self) -> None:
         """cancel() sets flag."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         rt = OpenAIAgentsRuntime()
         assert rt._cancel_requested is False
@@ -282,7 +282,7 @@ class TestOpenAIAgentsRuntime:
     @pytest.mark.asyncio
     async def test_cleanup(self) -> None:
         """cleanup() resets cancel flag."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         rt = OpenAIAgentsRuntime()
         rt.cancel()
@@ -292,7 +292,7 @@ class TestOpenAIAgentsRuntime:
     @pytest.mark.asyncio
     async def test_context_manager(self) -> None:
         """Context manager returns runtime and resets cancel on exit."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         async with OpenAIAgentsRuntime() as rt:
             assert isinstance(rt, OpenAIAgentsRuntime)
@@ -311,14 +311,14 @@ class TestToolBridge:
 
     def test_toolspecs_to_agent_tools_empty(self) -> None:
         """Empty list returns empty list."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspecs_to_agent_tools
+        from swarmline.runtime.openai_agents.tool_bridge import toolspecs_to_agent_tools
 
         assert toolspecs_to_agent_tools([]) == []
 
     def test_toolspecs_filters_non_local(self) -> None:
         """Only is_local=True tools are converted."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspecs_to_agent_tools
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.runtime.openai_agents.tool_bridge import toolspecs_to_agent_tools
+        from swarmline.runtime.types import ToolSpec
 
         specs = [
             ToolSpec(name="remote_tool", description="Remote", parameters={}, is_local=False),
@@ -329,8 +329,8 @@ class TestToolBridge:
 
     def test_toolspec_to_function_tool_with_executor(self) -> None:
         """Tool with executor calls the executor."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.types import ToolSpec
 
         calls: list[tuple[str, dict]] = []
 
@@ -344,8 +344,8 @@ class TestToolBridge:
 
     def test_toolspec_to_function_tool_no_executor(self) -> None:
         """Tool without executor returns error JSON."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.types import ToolSpec
 
         spec = ToolSpec(name="orphan", description="No exec", parameters={}, is_local=True)
         tool = toolspec_to_function_tool(spec, executor=None)
@@ -354,8 +354,8 @@ class TestToolBridge:
     @pytest.mark.asyncio
     async def test_on_invoke_calls_executor(self) -> None:
         """_on_invoke delegates to executor and returns result."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.types import ToolSpec
 
         calls: list[tuple[str, dict]] = []
 
@@ -372,8 +372,8 @@ class TestToolBridge:
     @pytest.mark.asyncio
     async def test_on_invoke_invalid_json_returns_error(self) -> None:
         """_on_invoke with invalid JSON returns error instead of crashing."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.types import ToolSpec
 
         spec = ToolSpec(name="t", description="T", parameters={}, is_local=True)
         tool = toolspec_to_function_tool(spec, executor=None)
@@ -384,8 +384,8 @@ class TestToolBridge:
     @pytest.mark.asyncio
     async def test_on_invoke_no_executor_returns_error(self) -> None:
         """_on_invoke without executor returns error JSON."""
-        from cognitia.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.types import ToolSpec
 
         spec = ToolSpec(name="t", description="T", parameters={}, is_local=True)
         tool = toolspec_to_function_tool(spec, executor=None)
@@ -404,7 +404,7 @@ class TestBuildInput:
 
     def test_single_user_message_returns_string(self) -> None:
         """Single user message returns plain string."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [Message(role="user", content="hello")]
         result = OpenAIAgentsRuntime._build_input(messages)
@@ -412,7 +412,7 @@ class TestBuildInput:
 
     def test_multi_turn_returns_list(self) -> None:
         """Multi-turn conversation returns list of dicts."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [
             Message(role="user", content="first"),
@@ -427,7 +427,7 @@ class TestBuildInput:
 
     def test_system_messages_excluded(self) -> None:
         """System messages are skipped (Agent.instructions handles them)."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [
             Message(role="system", content="sys prompt"),
@@ -438,7 +438,7 @@ class TestBuildInput:
 
     def test_no_user_messages_returns_empty(self) -> None:
         """No user messages returns empty string."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [Message(role="system", content="sys")]
         result = OpenAIAgentsRuntime._build_input(messages)
@@ -446,7 +446,7 @@ class TestBuildInput:
 
     def test_legacy_extract_still_works(self) -> None:
         """_extract_user_input (deprecated) still works."""
-        from cognitia.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
 
         messages = [
             Message(role="user", content="first"),

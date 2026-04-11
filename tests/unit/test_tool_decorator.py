@@ -8,7 +8,7 @@ from typing import Optional
 import pytest
 from pydantic import BaseModel
 
-from cognitia.agent.tool import ToolDefinition, tool
+from swarmline.agent.tool import ToolDefinition, tool
 
 
 # --- Fixtures / helpers ---

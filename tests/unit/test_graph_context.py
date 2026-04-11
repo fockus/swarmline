@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.graph_context import GraphContextBuilder, GraphContextSnapshot
-from cognitia.multi_agent.graph_runtime_config import GraphRuntimeResolver
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.multi_agent.graph_types import AgentNode
+from swarmline.multi_agent.graph_context import GraphContextBuilder, GraphContextSnapshot
+from swarmline.multi_agent.graph_runtime_config import GraphRuntimeResolver
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent.graph_types import AgentNode
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +265,7 @@ class TestSkillsAndMcpContext:
 class TestBuildExecutionContext:
 
     async def test_build_execution_context_returns_all_fields(self) -> None:
-        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+        from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
         store = InMemoryAgentGraph()
         await store.add_node(AgentNode(

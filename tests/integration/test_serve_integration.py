@@ -1,4 +1,4 @@
-"""Integration: cognitia serve — HTTP client → agent end-to-end."""
+"""Integration: swarmline serve — HTTP client → agent end-to-end."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 
-from cognitia.serve.app import create_app
+from swarmline.serve.app import create_app
 
 
 def _mock_agent(responses: dict[str, str] | None = None) -> MagicMock:

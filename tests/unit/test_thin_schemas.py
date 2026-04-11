@@ -1,7 +1,7 @@
 """Tests for Pydantic-shem ThinRuntime - ActionEnvelope, PlanSchema."""
 
 import pytest
-from cognitia.runtime.thin.schemas import (
+from swarmline.runtime.thin.schemas import (
     ActionEnvelope,
     PlanSchema,
     PlanStep,

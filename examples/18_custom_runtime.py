@@ -8,9 +8,9 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import Any
 
-from cognitia.runtime.capabilities import RuntimeCapabilities
-from cognitia.runtime.registry import RuntimeRegistry
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.registry import RuntimeRegistry
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 
 class EchoRuntime:
@@ -103,7 +103,7 @@ async def main() -> None:
 
     # 6. Entry point plugins (for pip-installable runtimes)
     print("\n# To make your runtime pip-installable, add to pyproject.toml:")
-    print("# [project.entry-points.'cognitia.runtimes']")
+    print("# [project.entry-points.'swarmline.runtimes']")
     print("# my_runtime = 'my_package.runtime:factory_fn'")
 
 

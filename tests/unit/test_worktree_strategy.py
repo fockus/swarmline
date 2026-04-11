@@ -6,12 +6,12 @@ import dataclasses
 
 import pytest
 
-from cognitia.multi_agent.worktree_strategy import (
+from swarmline.multi_agent.worktree_strategy import (
     FactoryWorktreeStrategy,
     MergeResult,
     WorktreePolicy,
 )
-from cognitia.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
 
 
 # --- FactoryWorktreeStrategy enum ---

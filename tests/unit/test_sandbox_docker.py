@@ -6,7 +6,7 @@ import sys
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.tools.types import SandboxConfig
+from swarmline.tools.types import SandboxConfig
 
 
 @pytest.fixture()
@@ -22,7 +22,7 @@ def config() -> SandboxConfig:
 
 class TestDockerSandboxProvider:
     async def test_read_file(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         mock_container.exec_run.return_value = (0, b"file content")
@@ -32,7 +32,7 @@ class TestDockerSandboxProvider:
         assert result == "file content"
 
     async def test_write_file(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         mock_container.exec_run.return_value = (0, b"")
@@ -42,7 +42,7 @@ class TestDockerSandboxProvider:
         mock_container.exec_run.assert_called()
 
     async def test_execute(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         mock_container.exec_run.return_value = (0, b"output\n")
@@ -53,31 +53,31 @@ class TestDockerSandboxProvider:
         assert result.exit_code == 0
 
     async def test_execute_denied_command(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
-        from cognitia.tools.types import SandboxViolation
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.types import SandboxViolation
 
         provider = DockerSandboxProvider(config, _container=AsyncMock())
         with pytest.raises(SandboxViolation):
             await provider.execute("rm -rf /")
 
     async def test_execute_denied_command_via_shell_wrapper_sh(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
-        from cognitia.tools.types import SandboxViolation
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.types import SandboxViolation
 
         provider = DockerSandboxProvider(config, _container=AsyncMock())
         with pytest.raises(SandboxViolation):
             await provider.execute("sh -c 'rm -rf /'")
 
     async def test_execute_denied_command_via_shell_wrapper_bash(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
-        from cognitia.tools.types import SandboxViolation
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.types import SandboxViolation
 
         provider = DockerSandboxProvider(config, _container=AsyncMock())
         with pytest.raises(SandboxViolation):
             await provider.execute('bash -lc "rm -rf /"')
 
     async def test_list_dir(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         mock_container.exec_run.return_value = (0, b"a.txt\nb.py\n")
@@ -87,7 +87,7 @@ class TestDockerSandboxProvider:
         assert sorted(result) == ["a.txt", "b.py"]
 
     async def test_glob_files(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         mock_container.exec_run.return_value = (0, b"main.py\nsrc/utils.py\n")
@@ -97,16 +97,16 @@ class TestDockerSandboxProvider:
         assert "main.py" in result
 
     async def test_glob_traversal_blocked(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
-        from cognitia.tools.types import SandboxViolation
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.types import SandboxViolation
 
         provider = DockerSandboxProvider(config, _container=AsyncMock())
         with pytest.raises(SandboxViolation):
             await provider.glob_files("../../*.txt")
 
     async def test_isinstance_protocol(self, config) -> None:
-        from cognitia.tools.protocols import SandboxProvider
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.protocols import SandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         provider = DockerSandboxProvider(config, _container=mock_container)
@@ -115,7 +115,7 @@ class TestDockerSandboxProvider:
     async def test_execute_timeout(self, config) -> None:
         import asyncio
 
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         async def slow_exec(*args, **kwargs):
             await asyncio.sleep(0.2)
@@ -135,7 +135,7 @@ class TestDockerSandboxProvider:
         assert result.timed_out is True
 
     async def test_close_calls_stop_and_remove(self, config) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         mock_container = AsyncMock()
         provider = DockerSandboxProvider(config, _container=mock_container)
@@ -146,7 +146,7 @@ class TestDockerSandboxProvider:
     async def test_dependency_or_daemon_error_raises_runtime_error(
         self, config, monkeypatch
     ) -> None:
-        from cognitia.tools.sandbox_docker import DockerSandboxProvider
+        from swarmline.tools.sandbox_docker import DockerSandboxProvider
 
         class BrokenDocker:
             @staticmethod

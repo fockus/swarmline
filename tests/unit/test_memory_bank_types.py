@@ -9,7 +9,7 @@ import pytest
 
 class TestMemoryBankConfig:
     def test_defaults(self) -> None:
-        from cognitia.memory_bank.types import MemoryBankConfig
+        from swarmline.memory_bank.types import MemoryBankConfig
 
         cfg = MemoryBankConfig()
         assert cfg.enabled is False
@@ -20,7 +20,7 @@ class TestMemoryBankConfig:
         assert cfg.default_folders == ["plans", "reports", "notes"]
 
     def test_custom(self) -> None:
-        from cognitia.memory_bank.types import MemoryBankConfig
+        from swarmline.memory_bank.types import MemoryBankConfig
 
         cfg = MemoryBankConfig(
             enabled=True,
@@ -36,7 +36,7 @@ class TestMemoryBankConfig:
 
 class TestMemoryEntry:
     def test_create(self) -> None:
-        from cognitia.memory_bank.types import MemoryEntry
+        from swarmline.memory_bank.types import MemoryEntry
 
         entry = MemoryEntry(
             path="plans/2026-02-12_feature.md",
@@ -50,35 +50,35 @@ class TestMemoryEntry:
 
 class TestPathValidation:
     def test_valid_root_file(self) -> None:
-        from cognitia.memory_bank.types import validate_memory_path
+        from swarmline.memory_bank.types import validate_memory_path
 
         validate_memory_path("MEMORY.md", max_depth=2)  # Does not raise
 
     def test_valid_subfolder_file(self) -> None:
-        from cognitia.memory_bank.types import validate_memory_path
+        from swarmline.memory_bank.types import validate_memory_path
 
         validate_memory_path("plans/2026-02-12_feature.md", max_depth=2)
 
     def test_depth_exceeded(self) -> None:
-        from cognitia.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
 
         with pytest.raises(MemoryBankViolation, match="depth"):
             validate_memory_path("a/b/c/file.md", max_depth=2)
 
     def test_traversal_blocked(self) -> None:
-        from cognitia.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
 
         with pytest.raises(MemoryBankViolation, match="traversal"):
             validate_memory_path("../etc/passwd", max_depth=2)
 
     def test_absolute_path_blocked(self) -> None:
-        from cognitia.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
 
         with pytest.raises(MemoryBankViolation, match="абсолютный"):
             validate_memory_path("/etc/passwd", max_depth=2)
 
     def test_empty_path_blocked(self) -> None:
-        from cognitia.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
 
         with pytest.raises(MemoryBankViolation):
             validate_memory_path("", max_depth=2)
@@ -86,7 +86,7 @@ class TestPathValidation:
 
 class TestMemoryBankProviderProtocol:
     def test_runtime_checkable(self) -> None:
-        from cognitia.memory_bank.protocols import MemoryBankProvider
+        from swarmline.memory_bank.protocols import MemoryBankProvider
 
         class FakeMB:
             async def read_file(self, path: str) -> str | None:
@@ -107,7 +107,7 @@ class TestMemoryBankProviderProtocol:
         assert isinstance(FakeMB(), MemoryBankProvider)
 
     def test_incomplete_not_instance(self) -> None:
-        from cognitia.memory_bank.protocols import MemoryBankProvider
+        from swarmline.memory_bank.protocols import MemoryBankProvider
 
         class Incomplete:
             async def read_file(self, path: str) -> str | None:
@@ -116,7 +116,7 @@ class TestMemoryBankProviderProtocol:
         assert not isinstance(Incomplete(), MemoryBankProvider)
 
     def test_isp_max_5(self) -> None:
-        from cognitia.memory_bank.protocols import MemoryBankProvider
+        from swarmline.memory_bank.protocols import MemoryBankProvider
 
         methods = [
             n
@@ -128,8 +128,8 @@ class TestMemoryBankProviderProtocol:
     def test_no_freedom_imports(self) -> None:
         import inspect
 
-        import cognitia.memory_bank.protocols as p
-        import cognitia.memory_bank.types as t
+        import swarmline.memory_bank.protocols as p
+        import swarmline.memory_bank.types as t
 
         assert "freedom_agent" not in inspect.getsource(t)
         assert "freedom_agent" not in inspect.getsource(p)

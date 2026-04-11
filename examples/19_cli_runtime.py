@@ -1,4 +1,4 @@
-"""CLI Agent Runtime: run external CLI processes as cognitia runtimes.
+"""CLI Agent Runtime: run external CLI processes as swarmline runtimes.
 
 Demonstrates: CliAgentRuntime, CliConfig, NdjsonParser, registry integration.
 No API keys required (uses mock subprocess).
@@ -7,9 +7,9 @@ No API keys required (uses mock subprocess).
 import asyncio
 import json
 
-from cognitia.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.registry import get_default_registry
+from swarmline.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.registry import get_default_registry
 
 
 async def main() -> None:
@@ -77,8 +77,8 @@ async def main() -> None:
 
     # 4. Full runtime usage (requires CLI tool installed)
     print("\n=== Full Usage (requires CLI) ===")
-    print("# from cognitia.runtime.cli.runtime import CliAgentRuntime")
-    print("# from cognitia.runtime.types import RuntimeConfig, Message")
+    print("# from swarmline.runtime.cli.runtime import CliAgentRuntime")
+    print("# from swarmline.runtime.types import RuntimeConfig, Message")
     print("#")
     print("# async with CliAgentRuntime(")
     print("#     config=RuntimeConfig(runtime_name='cli'),")

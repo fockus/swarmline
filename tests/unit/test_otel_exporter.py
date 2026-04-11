@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from cognitia.observability.event_bus import InMemoryEventBus
+from swarmline.observability.event_bus import InMemoryEventBus
 
 # Skip entire module if opentelemetry SDK not installed
 otel_sdk = pytest.importorskip("opentelemetry.sdk")
@@ -21,7 +21,7 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider  # noqa: E402
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult  # noqa: E402
 from opentelemetry.trace import StatusCode  # noqa: E402
 
-from cognitia.observability.otel_exporter import OTelExporter  # noqa: E402
+from swarmline.observability.otel_exporter import OTelExporter  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ class TestOTelExporterLlmCallSpan:
 
         spans = span_exporter.get_finished_spans()
         assert len(spans) == 1
-        assert spans[0].name == "cognitia.llm.sonnet"
+        assert spans[0].name == "swarmline.llm.sonnet"
 
     async def test_llm_call_span_has_genai_attributes(
         self, event_bus: InMemoryEventBus, otel_setup: tuple
@@ -115,7 +115,7 @@ class TestOTelExporterLlmCallSpan:
 
         spans = span_exporter.get_finished_spans()
         attrs = dict(spans[0].attributes or {})
-        assert attrs["gen_ai.system"] == "cognitia"
+        assert attrs["gen_ai.system"] == "swarmline"
         assert attrs["gen_ai.request.model"] == "opus"
 
     async def test_llm_call_with_token_usage_sets_usage_attributes(
@@ -204,7 +204,7 @@ class TestOTelExporterToolCallSpan:
 
         spans = span_exporter.get_finished_spans()
         assert len(spans) == 1
-        assert spans[0].name == "cognitia.tool.web_search"
+        assert spans[0].name == "swarmline.tool.web_search"
         attrs = dict(spans[0].attributes or {})
         assert attrs["tool.name"] == "web_search"
 
@@ -282,12 +282,12 @@ class TestOTelExporterToolCallSpan:
         assert len(spans) == 2
 
         span_names = {s.name for s in spans}
-        assert span_names == {"cognitia.tool.tool_a", "cognitia.tool.tool_b"}
+        assert span_names == {"swarmline.tool.tool_a", "swarmline.tool.tool_b"}
 
         # Each span has its own correlation_id
         for span in spans:
             attrs = dict(span.attributes or {})
-            if span.name == "cognitia.tool.tool_a":
+            if span.name == "swarmline.tool.tool_a":
                 assert attrs["tool.correlation_id"] == "a1"
             else:
                 assert attrs["tool.correlation_id"] == "b1"
@@ -320,8 +320,8 @@ class TestOTelExporterConfig:
         exporter.detach()
 
         attrs = dict(span_exporter.get_finished_spans()[0].attributes or {})
-        assert attrs["cognitia.runtime"] == "thin"
-        assert attrs["cognitia.session_id"] == "s1"
+        assert attrs["swarmline.runtime"] == "thin"
+        assert attrs["swarmline.session_id"] == "s1"
 
     async def test_finish_reason_attribute(
         self, event_bus: InMemoryEventBus, otel_setup: tuple
@@ -355,8 +355,8 @@ class TestOTelExporterConfig:
         exporter.detach()
 
         attrs = dict(span_exporter.get_finished_spans()[0].attributes or {})
-        assert "cognitia.runtime" not in attrs
-        assert "cognitia.session_id" not in attrs
+        assert "swarmline.runtime" not in attrs
+        assert "swarmline.session_id" not in attrs
 
 
 # ---------------------------------------------------------------------------
@@ -381,7 +381,7 @@ class TestOTelExporterLifecycle:
 
         spans = span_exporter.get_finished_spans()
         assert len(spans) == 1
-        assert spans[0].name == "cognitia.llm.sonnet"
+        assert spans[0].name == "swarmline.llm.sonnet"
 
     async def test_detach_clears_subscriptions_no_new_spans(
         self, event_bus: InMemoryEventBus, otel_setup: tuple
@@ -446,7 +446,7 @@ class TestOTelExporterImportGuard:
             "sys.modules",
             {"opentelemetry": None, "opentelemetry.trace": None},
         ):
-            from cognitia.observability.otel_exporter import _try_import_otel
+            from swarmline.observability.otel_exporter import _try_import_otel
 
             with pytest.raises(ImportError, match="(?i)opentelemetry"):
                 _try_import_otel()

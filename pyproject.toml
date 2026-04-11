@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cognitia"
-version = "1.4.0"
+name = "swarmline"
+version = "1.4.1"
 description = "LLM-agnostic framework for building AI agents with pluggable runtimes, memory, tools, and observability"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [
-    { name = "cognitia contributors" },
+    { name = "swarmline contributors" },
 ]
 keywords = [
     "ai",
@@ -44,11 +44,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/fockus/cognitia"
-Documentation = "https://fockus.github.io/cognitia"
-Repository = "https://github.com/fockus/cognitia"
-Issues = "https://github.com/fockus/cognitia/issues"
-Changelog = "https://github.com/fockus/cognitia/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/fockus/swarmline"
+Documentation = "https://fockus.github.io/swarmline"
+Repository = "https://github.com/fockus/swarmline"
+Issues = "https://github.com/fockus/swarmline/issues"
+Changelog = "https://github.com/fockus/swarmline/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 # Runtime: Claude Agent SDK
@@ -145,13 +145,13 @@ mcp = ["fastmcp>=2.0"]
 # CLI (click-based)
 cli = ["click>=8.1"]
 # Code agent meta-extra (MCP + CLI)
-code-agent = ["cognitia[mcp,cli]"]
+code-agent = ["swarmline[mcp,cli]"]
 # A2A protocol (Agent-to-Agent)
 a2a = [
     "starlette>=0.40",
     "httpx>=0.28",
 ]
-# HTTP serve (cognitia serve)
+# HTTP serve (swarmline serve)
 serve = [
     "starlette>=0.40",
     "uvicorn>=0.30",
@@ -164,7 +164,7 @@ nats = ["nats-py>=2.0"]
 redis = ["redis>=5.0"]
 # All runtimes + all storage + web (for development)
 all = [
-    "cognitia[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a,serve,daemon]",
+    "swarmline[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a,serve,daemon]",
 ]
 dev = [
     "pytest>=8.0",
@@ -179,9 +179,9 @@ docs = [
 ]
 
 [project.scripts]
-cognitia = "cognitia.cli:main"
-cognitia-mcp = "cognitia.mcp:main"
-cognitia-daemon = "cognitia.daemon.cli_entry:main"
+swarmline = "swarmline.cli:main"
+swarmline-mcp = "swarmline.mcp:main"
+swarmline-daemon = "swarmline.daemon.cli_entry:main"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -197,11 +197,11 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cognitia"]
+packages = ["src/swarmline"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/cognitia/runtime/models.yaml" = "cognitia/runtime/models.yaml"
-"src/cognitia/py.typed" = "cognitia/py.typed"
+"src/swarmline/runtime/models.yaml" = "swarmline/runtime/models.yaml"
+"src/swarmline/py.typed" = "swarmline/py.typed"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -209,9 +209,9 @@ asyncio_mode = "auto"
 addopts = ["-m", "not live"]
 markers = [
     "security: security regression and provider isolation",
-    "requires_claude_sdk: requires claude-agent-sdk (pip install cognitia[claude])",
-    "requires_anthropic: requires anthropic SDK (pip install cognitia[thin])",
-    "requires_langchain: requires langchain (pip install cognitia[deepagents])",
+    "requires_claude_sdk: requires claude-agent-sdk (pip install swarmline[claude])",
+    "requires_anthropic: requires anthropic SDK (pip install swarmline[thin])",
+    "requires_langchain: requires langchain (pip install swarmline[deepagents])",
     "live: requires network access (web search, API calls)",
     "integration: integration tests with external dependencies",
 ]

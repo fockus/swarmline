@@ -6,7 +6,7 @@ Parse and validate LLM responses against Pydantic models or JSON Schema — with
 
 ```python
 from pydantic import BaseModel
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 class WeatherReport(BaseModel):
     city: str
@@ -35,7 +35,7 @@ Setting `output_type` automatically:
 ### With Pydantic model (recommended)
 
 ```python
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -93,7 +93,7 @@ config = RuntimeConfig(runtime_name="thin", output_type=Person)
 The `structured_output` module exposes stateless functions for custom use cases:
 
 ```python
-from cognitia.runtime.structured_output import (
+from swarmline.runtime.structured_output import (
     validate_structured_output,        # parse JSON + Pydantic validation, raises on failure
     try_resolve_structured_output,     # returns (result, error_str), never raises
     extract_structured_output,         # extract first JSON object from text
@@ -151,7 +151,7 @@ The simplest way to get type-safe structured output:
 
 ```python
 from pydantic import BaseModel
-from cognitia.agent import Agent, AgentConfig, StructuredOutputError
+from swarmline.agent import Agent, AgentConfig, StructuredOutputError
 
 class Sentiment(BaseModel):
     label: str

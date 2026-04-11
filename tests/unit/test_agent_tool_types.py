@@ -11,14 +11,14 @@ class TestAgentToolResult:
     """AgentToolResult frozen dataclass tests."""
 
     def test_agent_tool_result_is_frozen_cannot_mutate(self) -> None:
-        from cognitia.multi_agent.types import AgentToolResult
+        from swarmline.multi_agent.types import AgentToolResult
 
         result = AgentToolResult(success=True, output="hello")
         with pytest.raises(dataclasses.FrozenInstanceError):
             result.success = False  # type: ignore[misc]
 
     def test_agent_tool_result_default_values(self) -> None:
-        from cognitia.multi_agent.types import AgentToolResult
+        from swarmline.multi_agent.types import AgentToolResult
 
         result = AgentToolResult(success=True, output="ok")
         assert result.error is None
@@ -27,7 +27,7 @@ class TestAgentToolResult:
         assert result.cost_usd == 0.0
 
     def test_agent_tool_result_all_fields(self) -> None:
-        from cognitia.multi_agent.types import AgentToolResult
+        from swarmline.multi_agent.types import AgentToolResult
 
         result = AgentToolResult(
             success=False,
@@ -45,11 +45,11 @@ class TestAgentToolResult:
         assert result.cost_usd == pytest.approx(0.003)
 
     def test_agent_tool_result_is_dataclass(self) -> None:
-        from cognitia.multi_agent.types import AgentToolResult
+        from swarmline.multi_agent.types import AgentToolResult
 
         assert dataclasses.is_dataclass(AgentToolResult)
 
     def test_agent_tool_result_importable_from_multi_agent(self) -> None:
-        from cognitia.multi_agent import AgentToolResult
+        from swarmline.multi_agent import AgentToolResult
 
         assert AgentToolResult is not None

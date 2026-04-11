@@ -4,20 +4,20 @@ Event bus, tracing, and OpenTelemetry integration.
 
 ## EventBus Protocol
 
-::: cognitia.observability.event_bus.EventBus
+::: swarmline.observability.event_bus.EventBus
 
 ## InMemoryEventBus
 
-::: cognitia.observability.event_bus.InMemoryEventBus
+::: swarmline.observability.event_bus.InMemoryEventBus
 
 ## Tracer Protocol
 
-::: cognitia.observability.tracer.Tracer
+::: swarmline.observability.tracer.Tracer
 
 ## ConsoleTracer
 
-::: cognitia.observability.tracer.ConsoleTracer
+::: swarmline.observability.tracer.ConsoleTracer
 
 ## OTelExporter
 
-::: cognitia.observability.otel_exporter.OTelExporter
+::: swarmline.observability.otel_exporter.OTelExporter

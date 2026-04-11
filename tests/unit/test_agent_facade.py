@@ -7,12 +7,12 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.middleware import Middleware
-from cognitia.agent.result import Result
-from cognitia.agent.tool import tool
-from cognitia.runtime.thin.runtime import ThinRuntime
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import Middleware
+from swarmline.agent.result import Result
+from swarmline.agent.tool import tool
+from swarmline.runtime.thin.runtime import ThinRuntime
 from conftest import FakeStreamEvent
 
 # ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ class TestAgentQueryBasic:
     @pytest.mark.asyncio
     async def test_query_preserves_runtime_new_messages(self) -> None:
         """final.new_messages should byt dostupen downstream consumers."""
-        from cognitia.runtime.types import Message
+        from swarmline.runtime.types import Message
 
         agent = Agent(_make_config())
         expected_new_messages = [
@@ -162,7 +162,7 @@ class TestAgentQueryBasic:
             llm_call=FakeLLM(),
         )
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             result = await agent.query("John is 30 years old")
 
         assert result.ok is True
@@ -268,8 +268,8 @@ class TestAgentRuntimeCapabilities:
         assert caps.tier == "light"
 
     def test_runtime_capabilities_for_custom_runtime(self) -> None:
-        from cognitia.runtime.capabilities import RuntimeCapabilities
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.capabilities import RuntimeCapabilities
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(
@@ -293,8 +293,8 @@ class TestAgentClaudeSdkWiring:
     @pytest.mark.asyncio
     async def test_execute_claude_sdk_passes_hooks_and_native_options(self) -> None:
         pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
-        from cognitia.hooks.registry import HookRegistry
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.hooks.registry import HookRegistry
+        from swarmline.skills.types import McpServerSpec
 
         hooks = HookRegistry()
 
@@ -325,7 +325,7 @@ class TestAgentClaudeSdkWiring:
             yield FakeStreamEvent("done", text="ok", is_final=True, session_id="s1")
 
         with patch(
-            "cognitia.runtime.sdk_query.stream_one_shot_query",
+            "swarmline.runtime.sdk_query.stream_one_shot_query",
             side_effect=fake_stream_one_shot_query,
         ):
             events = []
@@ -356,7 +356,7 @@ class TestAgentClaudeSdkWiring:
             yield FakeStreamEvent("done", text="Hello World", is_final=True)
 
         with patch(
-            "cognitia.runtime.sdk_query.stream_one_shot_query",
+            "swarmline.runtime.sdk_query.stream_one_shot_query",
             side_effect=fake_stream_query,
         ):
             events = []
@@ -384,7 +384,7 @@ class TestAgentRuntimeFactoryWiring:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -394,7 +394,7 @@ class TestAgentRuntimeFactoryWiring:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in agent._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -406,7 +406,7 @@ class TestAgentRuntimeFactoryWiring:
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_passes_mcp_servers(self) -> None:
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         agent = Agent(
             _make_config(
@@ -417,7 +417,7 @@ class TestAgentRuntimeFactoryWiring:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -427,7 +427,7 @@ class TestAgentRuntimeFactoryWiring:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in agent._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -438,7 +438,7 @@ class TestAgentRuntimeFactoryWiring:
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_omits_mcp_servers_for_cli(self) -> None:
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         agent = Agent(
             _make_config(
@@ -449,7 +449,7 @@ class TestAgentRuntimeFactoryWiring:
 
         class FakeRuntime:
             async def run(self, **kwargs: Any):
-                from cognitia.runtime.types import RuntimeEvent
+                from swarmline.runtime.types import RuntimeEvent
 
                 yield RuntimeEvent.final("ok")
 
@@ -459,7 +459,7 @@ class TestAgentRuntimeFactoryWiring:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             events = []
             async for event in agent._execute_agent_runtime("hello", "cli"):
                 events.append(event)
@@ -586,7 +586,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_collects_text_deltas(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             yield FakeStreamEvent("text_delta", text="Hello ")
@@ -598,7 +598,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_done_text_overrides_accumulated(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             yield FakeStreamEvent("text_delta", text="partial")
@@ -609,7 +609,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_done_empty_text_keeps_accumulated(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             yield FakeStreamEvent("text_delta", text="accumulated")
@@ -620,7 +620,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_collects_metrics(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             yield FakeStreamEvent(
@@ -644,8 +644,8 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_collects_new_messages(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
-        from cognitia.runtime.types import Message
+        from swarmline.agent.agent import collect_stream_result
+        from swarmline.runtime.types import Message
 
         expected_new_messages = [
             Message(role="assistant", content="Thinking"),
@@ -662,7 +662,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_error_event(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             yield FakeStreamEvent("error", text="boom")
@@ -673,7 +673,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_error_empty_text_default(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             yield FakeStreamEvent("error", text="")
@@ -683,7 +683,7 @@ class TestCollectStreamResult:
 
     @pytest.mark.asyncio
     async def test_empty_stream(self) -> None:
-        from cognitia.agent.agent import collect_stream_result
+        from swarmline.agent.agent import collect_stream_result
 
         async def stream():
             return
@@ -699,14 +699,14 @@ class TestApplyBeforeQuery:
 
     @pytest.mark.asyncio
     async def test_empty_middleware(self) -> None:
-        from cognitia.agent.agent import apply_before_query
+        from swarmline.agent.agent import apply_before_query
 
         result = await apply_before_query("hello", (), None)
         assert result == "hello"
 
     @pytest.mark.asyncio
     async def test_single_middleware(self) -> None:
-        from cognitia.agent.agent import apply_before_query
+        from swarmline.agent.agent import apply_before_query
 
         class Prefix(Middleware):
             async def before_query(self, prompt: str, config: Any) -> str:
@@ -717,7 +717,7 @@ class TestApplyBeforeQuery:
 
     @pytest.mark.asyncio
     async def test_chain_order(self) -> None:
-        from cognitia.agent.agent import apply_before_query
+        from swarmline.agent.agent import apply_before_query
 
         class Add1(Middleware):
             async def before_query(self, prompt: str, config: Any) -> str:
@@ -767,12 +767,12 @@ class TestRuntimeEventAdapter:
     """_RuntimeEventAdapter - mapping RuntimeEvent -> StreamEvent-like."""
 
     def _make_event(self, etype: str, data: dict[str, Any] | None = None) -> Any:
-        from cognitia.runtime.types import RuntimeEvent
+        from swarmline.runtime.types import RuntimeEvent
 
         return RuntimeEvent(type=etype, data=data or {})
 
     def test_assistant_delta_maps_to_text_delta(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(self._make_event("assistant_delta", {"text": "Hello"}))
         assert adapted.type == "text_delta"
@@ -780,7 +780,7 @@ class TestRuntimeEventAdapter:
         assert adapted.is_final is False
 
     def test_final_maps_to_done(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
             self._make_event(
@@ -807,20 +807,20 @@ class TestRuntimeEventAdapter:
         assert adapted.new_messages == [{"role": "assistant", "content": "Result"}]
 
     def test_error_maps_to_error(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(self._make_event("error", {"message": "Something broke"}))
         assert adapted.type == "error"
         assert adapted.text == "Something broke"
 
     def test_error_default_message(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(self._make_event("error", {}))
         assert adapted.text == "Unknown error"
 
     def test_tool_call_started(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
             self._make_event("tool_call_started", {"name": "calc", "args": {"x": 1}})
@@ -831,7 +831,7 @@ class TestRuntimeEventAdapter:
         assert adapted.text == ""
 
     def test_tool_call_finished(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
             self._make_event("tool_call_finished", {"name": "calc", "result_summary": "42"})
@@ -842,7 +842,7 @@ class TestRuntimeEventAdapter:
         assert adapted.text == ""
 
     def test_unknown_event_passthrough(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(self._make_event("status", {"text": "thinking..."}))
         assert adapted.type == "status"
@@ -850,7 +850,7 @@ class TestRuntimeEventAdapter:
         assert adapted.is_final is False
 
     def test_approval_required_passthrough(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
             self._make_event(
@@ -873,7 +873,7 @@ class TestRuntimeEventAdapter:
         assert adapted.text == "Review edit"
 
     def test_user_input_requested_passthrough(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
             self._make_event(
@@ -887,7 +887,7 @@ class TestRuntimeEventAdapter:
         assert adapted.interrupt_id == "interrupt-2"
 
     def test_native_notice_passthrough(self) -> None:
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
             self._make_event(
@@ -902,7 +902,7 @@ class TestRuntimeEventAdapter:
 
     def test_defaults_always_set(self) -> None:
         """Vse StreamEvent-like atributy vsegda prisutstvuyut."""
-        from cognitia.agent.agent import _RuntimeEventAdapter
+        from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(self._make_event("assistant_delta", {"text": "x"}))
         assert adapted.session_id is None
@@ -926,7 +926,7 @@ class TestErrorEvent:
     """_ErrorEvent — simple error event."""
 
     def test_error_event_attributes(self) -> None:
-        from cognitia.agent.agent import _ErrorEvent
+        from swarmline.agent.agent import _ErrorEvent
 
         evt = _ErrorEvent("connection lost")
         assert evt.type == "error"

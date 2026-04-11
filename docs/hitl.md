@@ -1,6 +1,6 @@
 # Human-in-the-Loop
 
-Cognitia provides a pluggable approval system that lets you pause agent execution and request human confirmation before sensitive actions proceed. The HITL module ships with built-in policies, an approval gate middleware, and first-class integration with every supported runtime.
+Swarmline provides a pluggable approval system that lets you pause agent execution and request human confirmation before sensitive actions proceed. The HITL module ships with built-in policies, an approval gate middleware, and first-class integration with every supported runtime.
 
 ## Overview
 
@@ -26,9 +26,9 @@ Agent action -> ApprovalGate.check()
 ## Quick Start
 
 ```python
-from cognitia.hitl.gate import ApprovalGate
-from cognitia.hitl.policies import ToolApprovalPolicy
-from cognitia.hitl.types import ApprovalRequest, ApprovalResponse
+from swarmline.hitl.gate import ApprovalGate
+from swarmline.hitl.policies import ToolApprovalPolicy
+from swarmline.hitl.types import ApprovalRequest, ApprovalResponse
 
 
 # 1. Define a callback (how you ask the human)
@@ -80,17 +80,17 @@ class ApprovalPolicy(Protocol):
 
 | Policy | Module | Behavior |
 |--------|--------|----------|
-| `AlwaysApprovePolicy` | `cognitia.hitl.policies` | Never requires approval (fully autonomous) |
-| `AlwaysDenyPolicy` | `cognitia.hitl.policies` | Always requires approval (safest mode) |
-| `ToolApprovalPolicy` | `cognitia.hitl.policies` | Requires approval only for named tools |
-| `CostApprovalPolicy` | `cognitia.hitl.policies` | Requires approval when estimated cost exceeds a threshold |
+| `AlwaysApprovePolicy` | `swarmline.hitl.policies` | Never requires approval (fully autonomous) |
+| `AlwaysDenyPolicy` | `swarmline.hitl.policies` | Always requires approval (safest mode) |
+| `ToolApprovalPolicy` | `swarmline.hitl.policies` | Requires approval only for named tools |
+| `CostApprovalPolicy` | `swarmline.hitl.policies` | Requires approval when estimated cost exceeds a threshold |
 
 ### AlwaysApprovePolicy
 
 The agent runs without interruption. Useful for trusted environments or batch processing.
 
 ```python
-from cognitia.hitl.policies import AlwaysApprovePolicy
+from swarmline.hitl.policies import AlwaysApprovePolicy
 
 policy = AlwaysApprovePolicy()
 policy.requires_approval("tool_call", {})  # False
@@ -102,7 +102,7 @@ policy.requires_approval("plan_step", {})  # False
 Every action is paused for approval. Use this during development or for high-risk deployments.
 
 ```python
-from cognitia.hitl.policies import AlwaysDenyPolicy
+from swarmline.hitl.policies import AlwaysDenyPolicy
 
 policy = AlwaysDenyPolicy()
 policy.requires_approval("tool_call", {})  # True
@@ -114,7 +114,7 @@ policy.requires_approval("plan_step", {})  # True
 Require approval only when the agent calls specific tools. Non-tool actions pass through.
 
 ```python
-from cognitia.hitl.policies import ToolApprovalPolicy
+from swarmline.hitl.policies import ToolApprovalPolicy
 
 policy = ToolApprovalPolicy(tools=frozenset({"execute_code", "write_file", "send_email"}))
 
@@ -133,7 +133,7 @@ policy.requires_approval("plan_step", {"tool_name": "execute_code"})  # False
 Require approval when the estimated cost exceeds a USD threshold. Works with any action type.
 
 ```python
-from cognitia.hitl.policies import CostApprovalPolicy
+from swarmline.hitl.policies import CostApprovalPolicy
 
 policy = CostApprovalPolicy(threshold_usd=0.50)
 
@@ -147,7 +147,7 @@ policy.requires_approval("query", {})                             # False (no co
 `ApprovalGate` is the middleware that connects a policy and a callback. It builds an `ApprovalRequest` from the action context, passes it to the callback, and returns the verdict.
 
 ```python
-from cognitia.hitl.gate import ApprovalGate, ApprovalDeniedError
+from swarmline.hitl.gate import ApprovalGate, ApprovalDeniedError
 
 gate = ApprovalGate(policy=my_policy, callback=my_callback)
 
@@ -182,7 +182,7 @@ Any additional keys are stored in `ApprovalRequest.context` for custom policies.
 
 ## Integration with Runtimes
 
-Cognitia surfaces HITL events uniformly across all runtimes through `RuntimeEvent` and `StreamEvent`.
+Swarmline surfaces HITL events uniformly across all runtimes through `RuntimeEvent` and `StreamEvent`.
 
 ### RuntimeEvent types
 
@@ -194,7 +194,7 @@ Two event types support HITL:
 | `user_input_requested` | The runtime requests free-form human input | `prompt`, `interrupt_id` |
 
 ```python
-from cognitia.domain_types import RuntimeEvent
+from swarmline.domain_types import RuntimeEvent
 
 # Emitting an approval request (used inside runtime adapters)
 event = RuntimeEvent.approval_required(
@@ -217,7 +217,7 @@ event = RuntimeEvent.user_input_requested(
 Each runtime declares whether it supports HITL natively via the `supports_hitl` flag in `RuntimeCapabilities`. Use this to check at configuration time:
 
 ```python
-from cognitia.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.capabilities import RuntimeCapabilities
 
 caps = RuntimeCapabilities(supports_hitl=True)
 assert caps.supports("hitl")
@@ -225,12 +225,12 @@ assert caps.supports("hitl")
 
 ### DeepAgents (LangGraph) runtime
 
-The DeepAgents runtime has native HITL support through LangGraph's interrupt mechanism. When the graph pauses for human review, Cognitia translates the interrupt payloads into standard `RuntimeEvent` objects.
+The DeepAgents runtime has native HITL support through LangGraph's interrupt mechanism. When the graph pauses for human review, Swarmline translates the interrupt payloads into standard `RuntimeEvent` objects.
 
-**Configuration requirement:** LangGraph interrupts require a checkpointer. Cognitia validates this at startup and emits a clear error if `interrupt_on` is configured without a checkpointer:
+**Configuration requirement:** LangGraph interrupts require a checkpointer. Swarmline validates this at startup and emits a clear error if `interrupt_on` is configured without a checkpointer:
 
 ```python
-from cognitia.runtime.deepagents_hitl import validate_hitl_config
+from swarmline.runtime.deepagents_hitl import validate_hitl_config
 
 # This will return an error — interrupt_on without checkpointer
 error = validate_hitl_config({"interrupt_on": {"edit_file": True}})
@@ -247,13 +247,13 @@ error = validate_hitl_config({
 
 **Interrupt-to-event mapping:**
 
-| LangGraph interrupt payload | Cognitia event |
+| LangGraph interrupt payload | Swarmline event |
 |-----------------------------|----------------|
 | `{"action_requests": [...], "review_configs": [...]}` | `approval_required` (one per action) |
 | `str` (plain text prompt) | `user_input_requested` |
 | Other | `native_notice` (unrecognized payload warning) |
 
-Example of how a LangGraph interrupt becomes Cognitia events:
+Example of how a LangGraph interrupt becomes Swarmline events:
 
 ```python
 # LangGraph emits an interrupt with action_requests + review_configs:
@@ -262,7 +262,7 @@ Example of how a LangGraph interrupt becomes Cognitia events:
 #     "review_configs": [{"action_name": "edit_file", "allowed_decisions": ["approve", "edit", "reject"]}],
 # }
 #
-# Cognitia translates this into:
+# Swarmline translates this into:
 # RuntimeEvent(
 #     type="approval_required",
 #     data={
@@ -280,8 +280,8 @@ Example of how a LangGraph interrupt becomes Cognitia events:
 The Thin runtime does not have native interrupt support. Use `ApprovalGate` as application-level middleware in your tool or hook handlers:
 
 ```python
-from cognitia.hitl.gate import ApprovalGate
-from cognitia.hitl.policies import ToolApprovalPolicy
+from swarmline.hitl.gate import ApprovalGate
+from swarmline.hitl.policies import ToolApprovalPolicy
 
 gate = ApprovalGate(
     policy=ToolApprovalPolicy(tools=frozenset({"execute_code"})),
@@ -300,10 +300,10 @@ if not approved:
 
 ### Claude Agent SDK runtime
 
-The Claude Agent SDK runtime handles approvals through its own hook system (`PreToolUse` / `PostToolUse`). Cognitia's hook registry integrates with it:
+The Claude Agent SDK runtime handles approvals through its own hook system (`PreToolUse` / `PostToolUse`). Swarmline's hook registry integrates with it:
 
 ```python
-from cognitia.hooks.registry import HookRegistry
+from swarmline.hooks.registry import HookRegistry
 
 hooks = HookRegistry()
 
@@ -325,7 +325,7 @@ hooks.on_pre_tool_use(approval_hook, matcher="execute_code")
 The `GraphOrchestrator` accepts an optional `approval_gate` parameter. When set, it checks approval before delegating work to any agent:
 
 ```python
-from cognitia.multi_agent.graph_orchestrator import GraphOrchestrator
+from swarmline.multi_agent.graph_orchestrator import GraphOrchestrator
 
 orchestrator = GraphOrchestrator(
     graph=agent_graph,
@@ -346,7 +346,7 @@ orchestrator = GraphOrchestrator(
 Any class implementing `ApprovalCallback` works as a handler:
 
 ```python
-from cognitia.hitl.types import ApprovalCallback, ApprovalRequest, ApprovalResponse
+from swarmline.hitl.types import ApprovalCallback, ApprovalRequest, ApprovalResponse
 
 
 class SlackApprovalCallback:
@@ -380,7 +380,7 @@ class SlackApprovalCallback:
 Implement the `ApprovalPolicy` protocol for domain-specific rules:
 
 ```python
-from cognitia.hitl.types import ApprovalPolicy
+from swarmline.hitl.types import ApprovalPolicy
 
 
 class BusinessHoursPolicy:
@@ -432,8 +432,8 @@ policy = CompositePolicy(
 ### Gating expensive operations
 
 ```python
-from cognitia.hitl.gate import ApprovalGate
-from cognitia.hitl.policies import CostApprovalPolicy
+from swarmline.hitl.gate import ApprovalGate
+from swarmline.hitl.policies import CostApprovalPolicy
 
 gate = ApprovalGate(
     policy=CostApprovalPolicy(threshold_usd=0.50),
@@ -453,7 +453,7 @@ approved = await gate.check(
 When consuming agent output through the streaming API, handle HITL events inline:
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(runtime="deepagents"))
 
@@ -479,7 +479,7 @@ async for event in agent.stream("Refactor the codebase"):
 Use `raise_on_deny=True` when denial should abort the entire operation:
 
 ```python
-from cognitia.hitl.gate import ApprovalDeniedError, ApprovalGate
+from swarmline.hitl.gate import ApprovalDeniedError, ApprovalGate
 
 gate = ApprovalGate(policy=my_policy, callback=my_callback)
 
@@ -526,7 +526,7 @@ class ReviewAndModifyCallback:
 
 ## API Reference
 
-### Types (`cognitia.hitl.types`)
+### Types (`swarmline.hitl.types`)
 
 | Class | Description |
 |-------|-------------|
@@ -535,14 +535,14 @@ class ReviewAndModifyCallback:
 | `ApprovalCallback` | Protocol with `async request_approval(ApprovalRequest) -> ApprovalResponse` |
 | `ApprovalPolicy` | Protocol with `requires_approval(action, context) -> bool` |
 
-### Gate (`cognitia.hitl.gate`)
+### Gate (`swarmline.hitl.gate`)
 
 | Class | Description |
 |-------|-------------|
 | `ApprovalGate` | Middleware: `__init__(policy, callback)`, `async check(action, context, *, description, raise_on_deny) -> bool` |
 | `ApprovalDeniedError` | Exception with `.request` and `.response` attributes |
 
-### Policies (`cognitia.hitl.policies`)
+### Policies (`swarmline.hitl.policies`)
 
 | Class | Parameters | Logic |
 |-------|------------|-------|
@@ -551,14 +551,14 @@ class ReviewAndModifyCallback:
 | `ToolApprovalPolicy` | `tools: frozenset[str]` | `True` when `action == "tool_call"` and `tool_name` is in the set |
 | `CostApprovalPolicy` | `threshold_usd: float` | `True` when `estimated_cost_usd > threshold` |
 
-### RuntimeEvent helpers (`cognitia.domain_types`)
+### RuntimeEvent helpers (`swarmline.domain_types`)
 
 | Factory method | Event type |
 |----------------|------------|
 | `RuntimeEvent.approval_required(action_name, args, allowed_decisions, interrupt_id, description)` | `"approval_required"` |
 | `RuntimeEvent.user_input_requested(prompt, interrupt_id)` | `"user_input_requested"` |
 
-### DeepAgents HITL (`cognitia.runtime.deepagents_hitl`)
+### DeepAgents HITL (`swarmline.runtime.deepagents_hitl`)
 
 | Function | Description |
 |----------|-------------|

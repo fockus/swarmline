@@ -15,7 +15,7 @@ class TestTodoItem:
     """Validation TodoItem dataclass."""
 
     def test_create_item(self) -> None:
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.types import TodoItem
 
         item = TodoItem(
             id="t1",
@@ -28,7 +28,7 @@ class TestTodoItem:
         assert item.status == "pending"
 
     def test_item_frozen(self) -> None:
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.types import TodoItem
 
         item = TodoItem(
             id="t1",
@@ -41,7 +41,7 @@ class TestTodoItem:
             item.status = "completed"  # type: ignore[misc]
 
     def test_to_dict(self) -> None:
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.types import TodoItem
 
         item = TodoItem(
             id="t1",
@@ -60,7 +60,7 @@ class TestTodoConfig:
     """Validation TodoConfig."""
 
     def test_defaults(self) -> None:
-        from cognitia.todo.types import TodoConfig
+        from swarmline.todo.types import TodoConfig
 
         config = TodoConfig()
         assert config.enabled is False
@@ -68,7 +68,7 @@ class TestTodoConfig:
         assert config.max_todos == 100
 
     def test_custom(self) -> None:
-        from cognitia.todo.types import TodoConfig
+        from swarmline.todo.types import TodoConfig
 
         config = TodoConfig(enabled=True, backend="database", max_todos=50)
         assert config.enabled is True
@@ -79,7 +79,7 @@ class TestTodoProviderProtocol:
     """Contract tests for TodoProvider Protocol."""
 
     def test_runtime_checkable(self) -> None:
-        from cognitia.todo.protocols import TodoProvider
+        from swarmline.todo.protocols import TodoProvider
 
         class FakeTodo:
             async def read_todos(self) -> list:
@@ -91,7 +91,7 @@ class TestTodoProviderProtocol:
         assert isinstance(FakeTodo(), TodoProvider)
 
     def test_incomplete_not_instance(self) -> None:
-        from cognitia.todo.protocols import TodoProvider
+        from swarmline.todo.protocols import TodoProvider
 
         class Incomplete:
             async def read_todos(self) -> list:
@@ -101,7 +101,7 @@ class TestTodoProviderProtocol:
 
     def test_protocol_has_two_methods(self) -> None:
         """ISP: TodoProvider has ≤5 methods."""
-        from cognitia.todo.protocols import TodoProvider
+        from swarmline.todo.protocols import TodoProvider
 
         methods = [
             n
@@ -115,15 +115,15 @@ class TestInMemoryTodoProvider:
     """Tests InMemoryTodoProvider."""
 
     async def test_empty_read(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
 
         provider = InMemoryTodoProvider(user_id="u1", topic_id="t1")
         todos = await provider.read_todos()
         assert todos == []
 
     async def test_write_and_read(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.types import TodoItem
 
         provider = InMemoryTodoProvider(user_id="u1", topic_id="t1")
         items = [
@@ -149,8 +149,8 @@ class TestInMemoryTodoProvider:
 
     async def test_bulk_replace(self) -> None:
         """write_todos replaces the entire todos."""
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.types import TodoItem
 
         provider = InMemoryTodoProvider(user_id="u1", topic_id="t1")
         now = datetime.now(tz=UTC)
@@ -172,8 +172,8 @@ class TestInMemoryTodoProvider:
 
     async def test_max_todos_limit(self) -> None:
         """Exceeding max_todos -> ValueError."""
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.types import TodoItem
 
         provider = InMemoryTodoProvider(user_id="u1", topic_id="t1", max_todos=2)
         now = datetime.now(tz=UTC)
@@ -187,8 +187,8 @@ class TestInMemoryTodoProvider:
 
     async def test_multi_tenant_isolation(self) -> None:
         """Different user_id/topic_id - isolated data."""
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.types import TodoItem
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.types import TodoItem
 
         now = datetime.now(tz=UTC)
         p1 = InMemoryTodoProvider(user_id="alice", topic_id="t1")
@@ -206,8 +206,8 @@ class TestInMemoryTodoProvider:
         assert len(await p2.read_todos()) == 0
 
     async def test_isinstance_protocol(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.protocols import TodoProvider
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.protocols import TodoProvider
 
         provider = InMemoryTodoProvider(user_id="u", topic_id="t")
         assert isinstance(provider, TodoProvider)
@@ -217,8 +217,8 @@ class TestTodoTools:
     """Tests todo_read / todo_write tools."""
 
     async def test_todo_read_empty(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.tools import create_todo_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.tools import create_todo_tools
 
         provider = InMemoryTodoProvider(user_id="u", topic_id="t")
         _specs, executors = create_todo_tools(provider)
@@ -228,8 +228,8 @@ class TestTodoTools:
         assert data["todos"] == []
 
     async def test_todo_write_and_read(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.tools import create_todo_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.tools import create_todo_tools
 
         provider = InMemoryTodoProvider(user_id="u", topic_id="t")
         _specs, executors = create_todo_tools(provider)
@@ -250,8 +250,8 @@ class TestTodoTools:
         assert len(data["todos"]) == 2
 
     async def test_todo_read_with_status_filter(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.tools import create_todo_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.tools import create_todo_tools
 
         provider = InMemoryTodoProvider(user_id="u", topic_id="t")
         _specs, executors = create_todo_tools(provider)
@@ -271,8 +271,8 @@ class TestTodoTools:
         assert data["todos"][0]["status"] == "in_progress"
 
     def test_tool_specs(self) -> None:
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.todo.tools import create_todo_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.todo.tools import create_todo_tools
 
         provider = InMemoryTodoProvider(user_id="u", topic_id="t")
         specs, executors = create_todo_tools(provider)

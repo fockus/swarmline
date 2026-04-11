@@ -1,7 +1,7 @@
 """Tests for bazovyh tipov: TurnContext, ContextPack, SkillSet."""
 
 import pytest
-from cognitia.types import ContextPack, SkillSet, TurnContext
+from swarmline.types import ContextPack, SkillSet, TurnContext
 
 
 class TestTurnContext:

@@ -12,8 +12,8 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any
 
-from cognitia.runtime.types import RuntimeErrorData, RuntimeEvent, TurnMetrics
-from cognitia.ui.projection import (
+from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, TurnMetrics
+from swarmline.ui.projection import (
     ChatProjection,
     ToolCallBlock,
     ToolResultBlock,

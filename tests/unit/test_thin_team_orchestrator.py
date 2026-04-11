@@ -5,7 +5,7 @@
 - send_message -> worker vidit in inbox
 - pause -> cancelled, resume -> re-spawned
 - lead_prompt composed: worker task = lead_prompt + worker_name + general_task
-- Vse workers completed -> team state = completed Contract: cognitia.orchestration.thin_team.ThinTeamOrchestrator
+- Vse workers completed -> team state = completed Contract: swarmline.orchestration.thin_team.ThinTeamOrchestrator
 Implements: TeamOrchestrator protocol (5 metodov) + ResumableTeamOrchestrator
 """
 
@@ -15,9 +15,9 @@ import asyncio
 from datetime import UTC, datetime
 
 import pytest
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
-from cognitia.orchestration.team_types import TeamConfig, TeamMessage, TeamStatus
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
+from swarmline.orchestration.team_types import TeamConfig, TeamMessage, TeamStatus
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -47,14 +47,14 @@ class TestThinTeamOrchestratorProtocol:
 
     def test_thin_team_implements_protocol(self) -> None:
         """ThinTeamOrchestrator — isinstance TeamOrchestrator."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         assert isinstance(orch, TeamOrchestrator)
 
     def test_thin_team_implements_resumable_protocol(self) -> None:
         """ThinTeamOrchestrator — isinstance ResumableTeamOrchestrator."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         assert isinstance(orch, ResumableTeamOrchestrator)
@@ -71,7 +71,7 @@ class TestThinTeamLifecycle:
     @pytest.mark.asyncio
     async def test_thin_team_start_spawns_workers(self) -> None:
         """start(config, task) → N workers running."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=3)
@@ -88,7 +88,7 @@ class TestThinTeamLifecycle:
     @pytest.mark.asyncio
     async def test_thin_team_stop_cancels_all(self) -> None:
         """stop -> vse workers cancelled."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=2)
@@ -106,7 +106,7 @@ class TestThinTeamLifecycle:
     @pytest.mark.asyncio
     async def test_thin_team_status_aggregated(self) -> None:
         """team_status otrazhaet sostoyanie vseh workers."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=2)
@@ -122,7 +122,7 @@ class TestThinTeamLifecycle:
     @pytest.mark.asyncio
     async def test_thin_team_all_completed(self) -> None:
         """Vse workers completed -> team state = completed."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
@@ -151,7 +151,7 @@ class TestThinTeamMessaging:
     @pytest.mark.asyncio
     async def test_thin_team_send_message_delivered(self) -> None:
         """send_message -> worker vidit in inbox."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=2)
@@ -173,7 +173,7 @@ class TestThinTeamMessaging:
     @pytest.mark.asyncio
     async def test_thin_team_worker_specs_advertise_send_message(self) -> None:
         """start(config, task) → worker spec advertises send_message tool."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=2)
@@ -198,7 +198,7 @@ class TestThinTeamPauseResume:
     @pytest.mark.asyncio
     async def test_thin_team_pause_resume_agent(self) -> None:
         """pause → worker cancelled, resume → worker re-spawned."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=2)
@@ -234,7 +234,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_stop_unknown_team_noop(self) -> None:
         """stop with notsushchestvuyushchim team_id -> not crash."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         await orch.stop("nonexistent-team-id")  # Not should raise
@@ -242,7 +242,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_status_unknown_team_returns_default(self) -> None:
         """get_team_status with notsushchestvuyushchim team_id -> default TeamStatus."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         status = await orch.get_team_status("nonexistent-team-id")
@@ -252,7 +252,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_send_message_unknown_team_noop(self) -> None:
         """send_message with notsushchestvuyushchim team_id -> not crash."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         msg = TeamMessage(
@@ -266,7 +266,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_pause_unknown_team_noop(self) -> None:
         """pause_agent with notsushchestvuyushchim team_id -> not crash."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         await orch.pause_agent("nonexistent", "worker_0")  # Not should raise
@@ -274,7 +274,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_pause_unknown_agent_noop(self) -> None:
         """pause_agent with notsushchestvuyushchim agent_id -> not crash."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
@@ -284,7 +284,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_resume_unknown_team_noop(self) -> None:
         """resume_agent with notsushchestvuyushchim team_id -> not crash."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         await orch.resume_agent("nonexistent", "worker_0")  # Not should raise
@@ -292,7 +292,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_resume_not_paused_noop(self) -> None:
         """resume_agent for not-paused worker -> not crash, nott effekta."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
@@ -303,7 +303,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_resume_unknown_agent_noop(self) -> None:
         """resume_agent for notsushchestvuyushchego agent -> not crash."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
@@ -313,7 +313,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_get_message_bus(self) -> None:
         """get_message_bus returns MessageBus for izvestnogo team_id."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = _make_team_config(n_workers=1)
@@ -324,7 +324,7 @@ class TestThinTeamEdgeCases:
     @pytest.mark.asyncio
     async def test_thin_team_get_message_bus_unknown_none(self) -> None:
         """get_message_bus for notizvestnogo team_id -> None."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         assert orch.get_message_bus("nonexistent") is None
@@ -336,7 +336,7 @@ class TestThinTeamLeadPrompt:
     @pytest.mark.asyncio
     async def test_thin_team_lead_prompt_composed(self) -> None:
         """Worker task = lead_prompt + worker_name + general_task."""
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator()
         config = TeamConfig(

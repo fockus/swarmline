@@ -56,7 +56,7 @@ class TestThinRuntimeBuiltinWiring:
 
     def test_runtime_accepts_sandbox_param(self, sandbox: _FakeSandboxProvider) -> None:
         """ThinRuntime.__init__ accepts sandbox parameter."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         rt = ThinRuntime(sandbox=sandbox)
         assert rt is not None
@@ -65,7 +65,7 @@ class TestThinRuntimeBuiltinWiring:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """Built-in tool executors are registered in ToolExecutor."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         rt = ThinRuntime(sandbox=sandbox)
         # Executor should recognize built-in tools
@@ -79,7 +79,7 @@ class TestThinRuntimeBuiltinWiring:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """Built-in tool can be executed through ToolExecutor."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         sandbox._files["hello.txt"] = "world"
         rt = ThinRuntime(sandbox=sandbox)
@@ -90,7 +90,7 @@ class TestThinRuntimeBuiltinWiring:
 
     async def test_runtime_without_sandbox_no_builtins(self) -> None:
         """Without sandbox, no built-in tools registered."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         rt = ThinRuntime()
         assert not rt._executor.has_tool("read_file")
@@ -100,8 +100,8 @@ class TestThinRuntimeBuiltinWiring:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """In react mode, built-in tools are callable by name."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message
 
         sandbox._files["data.txt"] = "test content"
 
@@ -144,7 +144,7 @@ class TestThinRuntimeBuiltinWiring:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """User local_tools and sandbox built-ins both registered."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         async def my_custom_tool(args: dict[str, Any]) -> str:
             return "custom result"

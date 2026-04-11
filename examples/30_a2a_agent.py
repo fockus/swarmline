@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Example: Expose a Cognitia Agent as an A2A service + call it as a client.
+"""Example: Expose a Swarmline Agent as an A2A service + call it as a client.
 
 Demonstrates the A2A (Agent-to-Agent) protocol: server discovery,
 task send, and task lifecycle — all in-process with a mock agent.
 
 No API keys required. No external HTTP server.
 
-Requires: pip install cognitia[a2a]
+Requires: pip install swarmline[a2a]
 """
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-from cognitia.a2a.adapter import CognitiaA2AAdapter
-from cognitia.a2a.server import A2AServer
-from cognitia.a2a.types import AgentSkill, Message, Task, TextPart
-from cognitia.agent.result import Result
+from swarmline.a2a.adapter import SwarmlineA2AAdapter
+from swarmline.a2a.server import A2AServer
+from swarmline.a2a.types import AgentSkill, Message, Task, TextPart
+from swarmline.agent.result import Result
 
 
 def _mock_agent() -> MagicMock:
@@ -33,14 +33,14 @@ def _mock_agent() -> MagicMock:
 
 
 async def main() -> None:
-    # 1. Create a mock Cognitia Agent
+    # 1. Create a mock Swarmline Agent
     agent = _mock_agent()
 
     # 2. Wrap it as an A2A service
-    adapter = CognitiaA2AAdapter(
+    adapter = SwarmlineA2AAdapter(
         agent,
         name="ResearchBot",
-        description="A research assistant powered by Cognitia",
+        description="A research assistant powered by Swarmline",
         url="http://localhost:8000",
         skills=[
             AgentSkill(

@@ -8,9 +8,9 @@ import asyncio
 import json
 from datetime import UTC, datetime
 
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
-from cognitia.orchestration.team_types import TeamConfig, TeamMessage
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
+from swarmline.orchestration.team_types import TeamConfig, TeamMessage
 
 
 def _make_llm_call(response_text: str = "done"):
@@ -46,7 +46,7 @@ class TestThinTeamStartSpawnsWorkers:
     """start(config, task) → N workers running."""
 
     async def test_thin_team_start_spawns_workers(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call("worker result"))
         team_id = await orch.start(_config(2), "Build feature X")
@@ -60,7 +60,7 @@ class TestThinTeamStopCancelsAll:
     """stop -> vse workers cancelled."""
 
     async def test_thin_team_stop_cancels_all(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_slow_llm_call(10.0))
         team_id = await orch.start(_config(2), "Long task")
@@ -76,7 +76,7 @@ class TestThinTeamStatusAggregated:
     """team_status otrazhaet sostoyanie vseh workers."""
 
     async def test_thin_team_status_aggregated(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call("done"))
         team_id = await orch.start(_config(2), "Quick task")
@@ -99,7 +99,7 @@ class TestThinTeamSendMessageDelivered:
     """send_message -> worker vidit in inbox MessageBus."""
 
     async def test_thin_team_send_message_delivered(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_slow_llm_call(10.0))
         team_id = await orch.start(_config(2), "Task")
@@ -125,7 +125,7 @@ class TestThinTeamPauseResumeAgent:
     """pause → cancelled, resume → re-spawned."""
 
     async def test_thin_team_pause_resume_agent(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_slow_llm_call(10.0))
         team_id = await orch.start(_config(2), "Task")
@@ -157,7 +157,7 @@ class TestThinTeamLeadPromptComposed:
     """worker task = lead_prompt + worker_name + general_task."""
 
     async def test_thin_team_lead_prompt_composed(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         captured_prompts: list[str] = []
 
@@ -182,7 +182,7 @@ class TestThinTeamAllCompleted:
     """Vse workers completed -> team state = completed."""
 
     async def test_thin_team_all_completed(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call("finished"))
         team_id = await orch.start(_config(3), "Quick parallel task")
@@ -199,13 +199,13 @@ class TestThinTeamProtocolCompliance:
     """ThinTeamOrchestrator udovletvoryaet TeamOrchestrator + ResumableTeamOrchestrator."""
 
     async def test_isinstance_team_orchestrator(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call())
         assert isinstance(orch, TeamOrchestrator)
 
     async def test_isinstance_resumable(self) -> None:
-        from cognitia.orchestration.thin_team import ThinTeamOrchestrator
+        from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 
         orch = ThinTeamOrchestrator(llm_call=_make_llm_call())
         assert isinstance(orch, ResumableTeamOrchestrator)

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 
 def test_builtin_tool_names_match_upstream_contract() -> None:
     """Canonical built-ins are the same as upstream create_deep_agent()."""
-    from cognitia.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_TOOLS
+    from swarmline.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_TOOLS
 
     assert {
         "write_todos",
@@ -24,7 +24,7 @@ def test_builtin_tool_names_match_upstream_contract() -> None:
 
 def test_canonicalize_builtin_name_maps_claude_style_aliases() -> None:
     """Claude-style alias names are mapped in canonical DeepAgents built-ins."""
-    from cognitia.runtime.deepagents_builtins import canonicalize_builtin_name
+    from swarmline.runtime.deepagents_builtins import canonicalize_builtin_name
 
     assert canonicalize_builtin_name("Bash") == "execute"
     assert canonicalize_builtin_name("Task") == "task"
@@ -35,7 +35,7 @@ def test_canonicalize_builtin_name_maps_claude_style_aliases() -> None:
 
 def test_filter_native_builtin_tools_removes_aliases_and_canonical_names() -> None:
     """Portable filter cuts out both aliases and canonical native built-ins."""
-    from cognitia.runtime.deepagents_builtins import filter_native_builtin_tools
+    from swarmline.runtime.deepagents_builtins import filter_native_builtin_tools
 
     tools = [
         ToolSpec(name="Bash", description="shell", parameters={}),
@@ -51,7 +51,7 @@ def test_filter_native_builtin_tools_removes_aliases_and_canonical_names() -> No
 
 def test_split_native_builtin_tools_returns_custom_tools_and_mappings() -> None:
     """Native path separates built-ins from custom tools and dedupe and canonical names."""
-    from cognitia.runtime.deepagents_builtins import split_native_builtin_tools
+    from swarmline.runtime.deepagents_builtins import split_native_builtin_tools
 
     tools = [
         ToolSpec(name="Bash", description="shell", parameters={}),

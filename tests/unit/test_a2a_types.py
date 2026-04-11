@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 
-from cognitia.a2a.types import (
+from swarmline.a2a.types import (
     AgentCapabilities,
     AgentCard,
     AgentProvider,
@@ -186,10 +186,10 @@ class TestAgentCard:
         card = AgentCard(
             name="Bot",
             url="http://localhost:8000",
-            provider=AgentProvider(organization="Cognitia Labs"),
+            provider=AgentProvider(organization="Swarmline Labs"),
         )
         data = card.model_dump(by_alias=True, exclude_none=True)
-        assert data["provider"]["organization"] == "Cognitia Labs"
+        assert data["provider"]["organization"] == "Swarmline Labs"
 
     def test_agent_card_json_roundtrip(self) -> None:
         card = AgentCard(

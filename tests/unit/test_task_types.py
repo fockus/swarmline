@@ -10,7 +10,7 @@ import dataclasses
 
 import pytest
 
-from cognitia.multi_agent.task_types import (
+from swarmline.multi_agent.task_types import (
     TaskFilter,
     TaskItem,
     TaskPriority,
@@ -153,7 +153,7 @@ class TestWorkflowConfig:
     """WorkflowConfig: frozen dataclass with stage lookup helpers."""
 
     def test_construction(self) -> None:
-        from cognitia.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
+        from swarmline.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
 
         stages = (
             WorkflowStage(name="backlog", maps_to=TaskStatus.TODO, order=0),
@@ -166,7 +166,7 @@ class TestWorkflowConfig:
         assert len(wf.stages) == 4
 
     def test_stage_for_found(self) -> None:
-        from cognitia.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
+        from swarmline.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
 
         stages = (WorkflowStage(name="review", maps_to=TaskStatus.IN_PROGRESS),)
         wf = WorkflowConfig(name="Test", stages=stages)
@@ -175,13 +175,13 @@ class TestWorkflowConfig:
         assert found.maps_to == TaskStatus.IN_PROGRESS
 
     def test_stage_for_not_found(self) -> None:
-        from cognitia.multi_agent.graph_task_types import WorkflowConfig
+        from swarmline.multi_agent.graph_task_types import WorkflowConfig
 
         wf = WorkflowConfig(name="Empty")
         assert wf.stage_for("nonexistent") is None
 
     def test_stages_for_status(self) -> None:
-        from cognitia.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
+        from swarmline.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
 
         stages = (
             WorkflowStage(name="design", maps_to=TaskStatus.IN_PROGRESS),
@@ -193,7 +193,7 @@ class TestWorkflowConfig:
         assert len(ip_stages) == 2
 
     def test_frozen(self) -> None:
-        from cognitia.multi_agent.graph_task_types import WorkflowStage
+        from swarmline.multi_agent.graph_task_types import WorkflowStage
 
         ws = WorkflowStage(name="test", maps_to=TaskStatus.TODO)
         with pytest.raises(AttributeError):

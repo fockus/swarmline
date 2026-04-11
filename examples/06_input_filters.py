@@ -6,8 +6,8 @@ No API keys required.
 
 import asyncio
 
-from cognitia.input_filters import MaxTokensFilter, SystemPromptInjector
-from cognitia.runtime.types import Message
+from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.runtime.types import Message
 
 
 async def main() -> None:

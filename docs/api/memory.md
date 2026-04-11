@@ -4,18 +4,18 @@ Memory providers and types for persistent agent state.
 
 ## Types
 
-::: cognitia.memory.types.MemoryMessage
+::: swarmline.memory.types.MemoryMessage
 
-::: cognitia.memory.types.UserProfile
+::: swarmline.memory.types.UserProfile
 
-::: cognitia.memory.types.GoalState
+::: swarmline.memory.types.GoalState
 
-::: cognitia.memory.types.ToolEvent
+::: swarmline.memory.types.ToolEvent
 
 ## InMemoryMemoryProvider
 
-::: cognitia.memory.inmemory.InMemoryMemoryProvider
+::: swarmline.memory.inmemory.InMemoryMemoryProvider
 
 ## MemoryScope
 
-::: cognitia.session.backends.MemoryScope
+::: swarmline.session.backends.MemoryScope

@@ -1,6 +1,6 @@
-# OpenCode MCP configuration for Cognitia
+# OpenCode MCP configuration for Swarmline
 mcp_servers:
-  cognitia:
-    command: cognitia-mcp
+  swarmline:
+    command: swarmline-mcp
     args: ["--mode", "auto"]
     transport: stdio

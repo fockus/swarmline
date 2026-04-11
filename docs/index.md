@@ -11,7 +11,7 @@ hide:
         <div class="eyebrow">One API · Four runtimes · Real agent infrastructure</div>
         <h1>Build agents once.<br>Choose the runtime later.</h1>
         <p class="hero-lead">
-          Cognitia is a Python framework for teams that want production-ready agents without
+          Swarmline is a Python framework for teams that want production-ready agents without
           hard-coding the whole stack to one SDK, one provider, or one orchestration style.
           Start with a simple facade. Add tools, memory, sessions, workflows, and runtime-specific
           power only when you need them.
@@ -32,9 +32,9 @@ hide:
 
       <aside class="hero-card">
         <div class="terminal">
-          <pre><code><span class="prompt">$</span> pip install cognitia[thin]
+          <pre><code><span class="prompt">$</span> pip install swarmline[thin]
 
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(
     system_prompt="You are a pragmatic research assistant.",
@@ -54,11 +54,11 @@ print(result.text)</code></pre>
 
   <section>
     <div class="section-intro">
-      <div class="section-kicker">Why Cognitia</div>
+      <div class="section-kicker">Why Swarmline</div>
       <h2>Designed for the moment when “just call the model” stops being enough.</h2>
       <p>
         Most agent projects become difficult when they need runtime portability, tool policies,
-        persistent state, multi-turn sessions, or workflow control. Cognitia gives you one stable
+        persistent state, multi-turn sessions, or workflow control. Swarmline gives you one stable
         application surface and lets the infrastructure evolve underneath it.
       </p>
     </div>
@@ -138,7 +138,7 @@ print(result.text)</code></pre>
       <div class="section-kicker">Runtime Matrix</div>
       <h2>Choose the execution model that matches the job.</h2>
       <p>
-        Cognitia is not one runtime pretending to fit every workload. It gives you a consistent
+        Swarmline is not one runtime pretending to fit every workload. It gives you a consistent
         application layer and lets you pick the runtime with the right trade-offs.
       </p>
     </div>
@@ -178,7 +178,7 @@ print(result.text)</code></pre>
           </div>
           <span class="runtime-badge">Claude-native</span>
         </div>
-        <p>Use the Claude agent surface while keeping Cognitia’s facade, sessions, middleware, and docs model.</p>
+        <p>Use the Claude agent surface while keeping Swarmline’s facade, sessions, middleware, and docs model.</p>
         <div class="runtime-meta">
           <div><strong>Best for</strong> Claude-centric workflows and Claude tool ecosystems</div>
           <div><strong>Strength</strong> Native Claude execution semantics with a cleaner top-level app API</div>
@@ -199,7 +199,7 @@ print(result.text)</code></pre>
           </div>
           <span class="runtime-badge">Wrap existing agents</span>
         </div>
-        <p>Expose an NDJSON-emitting CLI as a Cognitia runtime and keep the same `query`, `stream`, and session surface.</p>
+        <p>Expose an NDJSON-emitting CLI as a Swarmline runtime and keep the same `query`, `stream`, and session surface.</p>
         <div class="runtime-meta">
           <div><strong>Best for</strong> Teams that already trust a CLI agent and want a cleaner integration layer</div>
           <div><strong>Strength</strong> Preserve external toolchains without rewriting your whole app</div>
@@ -235,7 +235,7 @@ print(result.text)</code></pre>
       <div class="section-kicker">Capabilities</div>
       <h2>Add the pieces you need, not a monolith you have to work around.</h2>
       <p>
-        Cognitia stays modular: bring tools, memory, orchestration, structured output, web access,
+        Swarmline stays modular: bring tools, memory, orchestration, structured output, web access,
         and production safety in gradually instead of adopting a giant runtime-shaped abstraction on day one.
       </p>
     </div>
@@ -347,7 +347,7 @@ print(result.text)</code></pre>
       <div class="section-kicker">Use cases</div>
       <h2>Useful when your agent has to survive real product constraints.</h2>
       <p>
-        Cognitia is strongest when you need runtime portability and long-lived agent behavior,
+        Swarmline is strongest when you need runtime portability and long-lived agent behavior,
         not just a single provider call hidden inside one helper function.
       </p>
     </div>
@@ -448,7 +448,7 @@ print(result.text)</code></pre>
         <div class="path-step">1</div>
         <h3>Ask one useful question</h3>
         <div class="terminal">
-          <pre><code>from cognitia import Agent, AgentConfig
+          <pre><code>from swarmline import Agent, AgentConfig
 
 agent = Agent(
     AgentConfig(
@@ -466,7 +466,7 @@ print(result.text)</code></pre>
         <div class="path-step">2</div>
         <h3>Add one tool</h3>
         <div class="terminal">
-          <pre><code>from cognitia import tool
+          <pre><code>from swarmline import tool
 
 @tool
 async def get_ticket_status(ticket_id: str) -> str:
@@ -576,7 +576,7 @@ agent = Agent(
           </span>
           <h3>Architecture</h3>
         </div>
-        <p>Understand the protocol-first layering and how Cognitia keeps domain and infrastructure separated.</p>
+        <p>Understand the protocol-first layering and how Swarmline keeps domain and infrastructure separated.</p>
         <a href="architecture/">Open architecture</a>
       </article>
 
@@ -600,13 +600,13 @@ agent = Agent(
   <section class="final-cta">
     <h2>Good fit if you want agent infrastructure without framework lock-in.</h2>
     <p>
-      Cognitia is strongest when you care about runtime portability, session state, tools,
+      Swarmline is strongest when you care about runtime portability, session state, tools,
       storage, and gradual adoption. Start with the default facade now, then layer in the rest
       only when your product actually demands it.
     </p>
     <div class="hero-actions">
       <a class="button-primary" href="getting-started/">Build your first agent</a>
-      <a class="button-secondary" href="why-cognitia/">See when Cognitia is the right tool</a>
+      <a class="button-secondary" href="why-swarmline/">See when Swarmline is the right tool</a>
     </div>
   </section>
 </div>

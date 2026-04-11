@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.runtime.provider_resolver import resolve_provider
-from cognitia.runtime.thin.llm_providers import (
+from swarmline.runtime.provider_resolver import resolve_provider
+from swarmline.runtime.thin.llm_providers import (
     AnthropicAdapter,
     GoogleAdapter,
     OpenAICompatAdapter,
@@ -18,7 +18,7 @@ from cognitia.runtime.thin.llm_providers import (
     create_llm_adapter,
     get_cached_adapter,
 )
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 
 @pytest.fixture(autouse=True)
@@ -137,7 +137,7 @@ class TestDefaultLlmCallEndToEnd:
     @pytest.mark.asyncio
     async def test_anthropic_end_to_end(self) -> None:
         """config(model=sonnet) → AnthropicAdapter → SDK call."""
-        from cognitia.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.thin.llm_client import default_llm_call
 
         mock_response = MagicMock()
         mock_block = MagicMock()
@@ -162,7 +162,7 @@ class TestDefaultLlmCallEndToEnd:
     @pytest.mark.asyncio
     async def test_openai_end_to_end(self) -> None:
         """config(model=openai:gpt-4o) → OpenAICompatAdapter → SDK call."""
-        from cognitia.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.thin.llm_client import default_llm_call
 
         mock_choice = MagicMock()
         mock_choice.message.content = "GPT response"

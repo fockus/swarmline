@@ -7,7 +7,7 @@ No API keys required.
 import asyncio
 import time
 
-from cognitia.multi_agent.task_queue import (
+from swarmline.multi_agent.task_queue import (
     InMemoryTaskQueue,
     TaskFilter,
     TaskItem,
@@ -71,7 +71,7 @@ async def main() -> None:
 
     # 6. SqliteTaskQueue (persistent, same API)
     print("\n=== SqliteTaskQueue ===")
-    print("# from cognitia.multi_agent.task_queue import SqliteTaskQueue")
+    print("# from swarmline.multi_agent.task_queue import SqliteTaskQueue")
     print("# persistent_queue = SqliteTaskQueue(db_path='tasks.db')")
     print("# await persistent_queue.put(TaskItem(id='t1', title='...'))")
     print("# task = await persistent_queue.get()  # survives restart")

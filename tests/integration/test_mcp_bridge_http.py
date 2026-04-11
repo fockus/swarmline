@@ -10,8 +10,8 @@ from typing import Any
 import httpx
 import pytest
 
-from cognitia.runtime.mcp_bridge import McpBridge
-from cognitia.runtime.thin.mcp_client import McpClient
+from swarmline.runtime.mcp_bridge import McpBridge
+from swarmline.runtime.thin.mcp_client import McpClient
 
 
 def _create_mock_transport() -> httpx.MockTransport:

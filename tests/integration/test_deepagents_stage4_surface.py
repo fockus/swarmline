@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 pytest.importorskip("langgraph", reason="langgraph не установлен")
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.conversation import Conversation
-from cognitia.runtime.deepagents import DeepAgentsRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.conversation import Conversation
+from swarmline.runtime.deepagents import DeepAgentsRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 
 
 class FakeRuntime:
@@ -57,7 +57,7 @@ class TestDeepAgentsStage4Surface:
         fake_factory = MagicMock()
         fake_factory.create.return_value = runtime
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             result = await agent.query("hello")
 
         assert result.ok is True
@@ -82,7 +82,7 @@ class TestDeepAgentsStage4Surface:
         fake_factory = MagicMock()
         fake_factory.create.return_value = runtime
 
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             async for _ in conv._execute_agent_runtime("hello", "deepagents"):
                 pass
 
@@ -151,8 +151,8 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
         )
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
-            patch("cognitia.runtime.deepagents.build_deepagents_graph", return_value=fake_graph),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents.build_deepagents_graph", return_value=fake_graph),
         ):
             first_events = []
             async for event in runtime.run(
@@ -183,8 +183,8 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
         )
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
-            patch("cognitia.runtime.deepagents.build_deepagents_graph", return_value=fake_graph),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents.build_deepagents_graph", return_value=fake_graph),
         ):
             resumed_events = []
             async for event in resumed_runtime.run(

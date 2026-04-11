@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.memory_bank.types import MemoryBankConfig, MemoryBankViolation
+from swarmline.memory_bank.types import MemoryBankConfig, MemoryBankViolation
 
 
 @pytest.fixture()
@@ -13,7 +13,7 @@ def config(tmp_path) -> MemoryBankConfig:
 
 @pytest.fixture()
 def provider(config):
-    from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+    from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
     return FilesystemMemoryBankProvider(config, user_id="u1", topic_id="t1")
 
@@ -97,7 +97,7 @@ class TestFSMemoryBankSecurity:
 
 class TestFSMemoryBankIsolation:
     async def test_cross_user(self, config) -> None:
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         p1 = FilesystemMemoryBankProvider(config, user_id="alice", topic_id="t1")
         p2 = FilesystemMemoryBankProvider(config, user_id="bob", topic_id="t1")
@@ -106,7 +106,7 @@ class TestFSMemoryBankIsolation:
         assert await p2.read_file("secret.md") is None
 
     async def test_cross_topic(self, config) -> None:
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         p1 = FilesystemMemoryBankProvider(config, user_id="alice", topic_id="t-x")
         p2 = FilesystemMemoryBankProvider(config, user_id="alice", topic_id="t-y")
@@ -115,18 +115,18 @@ class TestFSMemoryBankIsolation:
         assert await p2.read_file("data.md") is None
 
     async def test_isinstance_protocol(self, provider) -> None:
-        from cognitia.memory_bank.protocols import MemoryBankProvider
+        from swarmline.memory_bank.protocols import MemoryBankProvider
 
         assert isinstance(provider, MemoryBankProvider)
 
     def test_invalid_user_id_rejected(self, config) -> None:
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         with pytest.raises(ValueError, match="Invalid user_id"):
             FilesystemMemoryBankProvider(config, user_id="../evil", topic_id="t1")
 
     def test_invalid_topic_id_rejected(self, config) -> None:
-        from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+        from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
         with pytest.raises(ValueError, match="Invalid topic_id"):
             FilesystemMemoryBankProvider(config, user_id="u1", topic_id="../evil")

@@ -5,14 +5,14 @@ from __future__ import annotations
 import json
 
 import pytest
-from cognitia.agent.middleware import (
+from swarmline.agent.middleware import (
     CostTracker,
     Middleware,
     SecurityGuard,
     ToolOutputCompressor,
     build_middleware_stack,
 )
-from cognitia.hooks.registry import HookRegistry
+from swarmline.hooks.registry import HookRegistry
 
 
 class TestToolOutputCompressorCompress:

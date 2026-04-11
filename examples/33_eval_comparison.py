@@ -13,10 +13,10 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
-from cognitia.eval.compare import EvalComparator
-from cognitia.eval.runner import EvalRunner
-from cognitia.eval.scorers import ContainsScorer, ExactMatchScorer
-from cognitia.eval.types import EvalCase
+from swarmline.eval.compare import EvalComparator
+from swarmline.eval.runner import EvalRunner
+from swarmline.eval.scorers import ContainsScorer, ExactMatchScorer
+from swarmline.eval.types import EvalCase
 
 
 SUITE = [

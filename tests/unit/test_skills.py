@@ -3,8 +3,8 @@
 from pathlib import Path
 
 import pytest
-from cognitia.skills import LoadedSkill, SkillRegistry, YamlSkillLoader
-from cognitia.skills.types import McpServerSpec, SkillSpec
+from swarmline.skills import LoadedSkill, SkillRegistry, YamlSkillLoader
+from swarmline.skills.types import McpServerSpec, SkillSpec
 
 
 @pytest.fixture
@@ -387,7 +387,7 @@ Instructions here.
         assert skills[0].spec.skill_id == "my-skill"
 
     def test_skill_md_with_mcp_servers(self, tmp_path: Path) -> None:
-        """SKILL.md can declare MCP servers (Cognitia extension)."""
+        """SKILL.md can declare MCP servers (Swarmline extension)."""
         skill_dir = tmp_path / "mcp-skill"
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text(
@@ -410,7 +410,7 @@ Use my-server tools.
         assert skills[0].spec.mcp_servers[0].name == "my-server"
 
     def test_skill_md_with_intents(self, tmp_path: Path) -> None:
-        """SKILL.md can declare intents (Cognitia extension)."""
+        """SKILL.md can declare intents (Swarmline extension)."""
         skill_dir = tmp_path / "intent-skill"
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text(

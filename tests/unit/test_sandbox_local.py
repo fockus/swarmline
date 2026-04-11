@@ -6,7 +6,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from cognitia.tools.types import SandboxConfig, SandboxViolation
+from swarmline.tools.types import SandboxConfig, SandboxViolation
 
 
 @pytest.fixture()
@@ -26,7 +26,7 @@ def sandbox_config(tmp_path: object) -> SandboxConfig:
 @pytest.fixture()
 async def sandbox(sandbox_config: SandboxConfig):
     """Ekzemplyar LocalSandboxProvider."""
-    from cognitia.tools.sandbox_local import LocalSandboxProvider
+    from swarmline.tools.sandbox_local import LocalSandboxProvider
 
     return LocalSandboxProvider(sandbox_config)
 
@@ -132,13 +132,13 @@ class TestLocalSandboxExecute:
 
     async def test_execute_without_host_opt_in_blocks(self, tmp_path) -> None:
         """Host execution без opt-in must fail fast."""
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         provider = LocalSandboxProvider(
             SandboxConfig(root_path=str(tmp_path), user_id="u", topic_id="t")
         )
 
-        with patch("cognitia.tools.sandbox_local._log") as mock_log:
+        with patch("swarmline.tools.sandbox_local._log") as mock_log:
             with pytest.raises(SandboxViolation, match="allow_host_execution=True"):
                 await provider.execute("echo hello")
 
@@ -186,7 +186,7 @@ class TestLocalSandboxExecute:
             timeout_seconds=1,  # 1 sekunda
             allow_host_execution=True,
         )
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sb = LocalSandboxProvider(config)
         result = await sb.execute("sleep 10")
@@ -269,7 +269,7 @@ class TestLocalSandboxIsolation:
 
     async def test_cross_user_isolation(self, tmp_path) -> None:
         """User A not vidit files user B."""
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sb_a = LocalSandboxProvider(
             SandboxConfig(root_path=str(tmp_path), user_id="alice", topic_id="t1")
@@ -285,7 +285,7 @@ class TestLocalSandboxIsolation:
 
     async def test_cross_topic_isolation(self, tmp_path) -> None:
         """Topic X not vidit files topic Y togo zhe user."""
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sb_x = LocalSandboxProvider(
             SandboxConfig(root_path=str(tmp_path), user_id="alice", topic_id="topic-x")
@@ -301,6 +301,6 @@ class TestLocalSandboxIsolation:
 
     async def test_isinstance_sandbox_provider(self, sandbox) -> None:
         """LocalSandboxProvider prohodit isinstance check for SandboxProvider."""
-        from cognitia.tools.protocols import SandboxProvider
+        from swarmline.tools.protocols import SandboxProvider
 
         assert isinstance(sandbox, SandboxProvider)

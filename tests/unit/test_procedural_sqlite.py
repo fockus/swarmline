@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.memory.procedural_sqlite import SqliteProceduralMemory
-from cognitia.memory.procedural_types import Procedure, ProcedureStep
+from swarmline.memory.procedural_sqlite import SqliteProceduralMemory
+from swarmline.memory.procedural_types import Procedure, ProcedureStep
 
 
 @pytest.fixture

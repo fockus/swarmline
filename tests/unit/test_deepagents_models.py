@@ -8,7 +8,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from cognitia.runtime.deepagents_models import (
+from swarmline.runtime.deepagents_models import (
     DeepAgentsModelError,
     build_deepagents_chat_model,
     resolve_deepagents_model,

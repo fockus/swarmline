@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.agent.tool import tool
+from swarmline.agent.tool import tool
 
 
 @tool("get_weather", description="Get current weather for a city.")

@@ -1,12 +1,12 @@
 # Multi-Agent Coordination
 
-Cognitia provides building blocks for multi-agent systems: **agent-as-tool** invocation, **task queues** for work distribution, and an **agent registry** for lifecycle management. All components follow the protocol-first approach with swappable implementations.
+Swarmline provides building blocks for multi-agent systems: **agent-as-tool** invocation, **task queues** for work distribution, and an **agent registry** for lifecycle management. All components follow the protocol-first approach with swappable implementations.
 
 > **Introduced in v1.2.0**: For hierarchical multi-agent organizations with governance, delegation, and inter-agent communication, see the [Agent Graph System](graph-agents.md).
 
 ## Overview
 
-Multi-agent coordination in Cognitia is built around three primitives:
+Multi-agent coordination in Swarmline is built around three primitives:
 
 | Primitive | Purpose | Protocol |
 |-----------|---------|----------|
@@ -24,7 +24,7 @@ For more advanced scenarios introduced in v1.2.0:
 | **Knowledge Bank** | Shared structured knowledge | [Knowledge Bank](knowledge-bank.md) |
 | **Pipeline Engine** | Multi-phase execution | [Pipeline](pipeline.md) |
 
-Each primitive has a protocol in `cognitia.protocols.multi_agent` and one or more implementations in `cognitia.multi_agent`.
+Each primitive has a protocol in `swarmline.protocols.multi_agent` and one or more implementations in `swarmline.multi_agent`.
 
 ## Agent-as-Tool
 
@@ -35,7 +35,7 @@ The agent-as-tool pattern lets an orchestrating agent call a sub-agent as if it 
 Use `create_agent_tool_spec` to define a tool that represents a sub-agent:
 
 ```python
-from cognitia.multi_agent import create_agent_tool_spec
+from swarmline.multi_agent import create_agent_tool_spec
 
 spec = create_agent_tool_spec(
     name="researcher",
@@ -51,7 +51,7 @@ The returned `ToolSpec` has a JSON Schema with one required string parameter `qu
 Use `execute_agent_tool` to run a sub-agent runtime and collect the final result:
 
 ```python
-from cognitia.multi_agent import execute_agent_tool
+from swarmline.multi_agent import execute_agent_tool
 
 result = await execute_agent_tool(
     run_fn=sub_agent_runtime.run,
@@ -78,7 +78,7 @@ Parameters:
 The result is a frozen dataclass with these fields:
 
 ```python
-from cognitia.multi_agent import AgentToolResult
+from swarmline.multi_agent import AgentToolResult
 
 # Fields:
 #   success: bool           -- True if completed without error
@@ -92,8 +92,8 @@ from cognitia.multi_agent import AgentToolResult
 ### Full Example
 
 ```python
-from cognitia import Agent, AgentConfig
-from cognitia.multi_agent import create_agent_tool_spec, execute_agent_tool
+from swarmline import Agent, AgentConfig
+from swarmline.multi_agent import create_agent_tool_spec, execute_agent_tool
 
 # 1. Create the sub-agent
 sub_agent = Agent(AgentConfig(
@@ -128,7 +128,7 @@ The task queue distributes work items between agents. Tasks have priority-based 
 ### Domain Types
 
 ```python
-from cognitia.multi_agent import TaskItem, TaskStatus, TaskPriority, TaskFilter
+from swarmline.multi_agent import TaskItem, TaskStatus, TaskPriority, TaskFilter
 
 # Create a task
 task = TaskItem(
@@ -154,7 +154,7 @@ urgent = TaskFilter(priority=TaskPriority.CRITICAL)
 Zero-dependency, thread-safe via `asyncio.Lock`:
 
 ```python
-from cognitia.multi_agent import InMemoryTaskQueue, TaskItem, TaskPriority
+from swarmline.multi_agent import InMemoryTaskQueue, TaskItem, TaskPriority
 
 queue = InMemoryTaskQueue()
 
@@ -176,7 +176,7 @@ await queue.complete("t1")  # returns True
 all_tasks = await queue.list_tasks()
 
 # List filtered
-from cognitia.multi_agent import TaskFilter, TaskStatus
+from swarmline.multi_agent import TaskFilter, TaskStatus
 pending = await queue.list_tasks(TaskFilter(status=TaskStatus.TODO))
 ```
 
@@ -185,7 +185,7 @@ pending = await queue.list_tasks(TaskFilter(status=TaskStatus.TODO))
 File-based persistence using SQLite. Uses `asyncio.to_thread()` for non-blocking I/O:
 
 ```python
-from cognitia.multi_agent import SqliteTaskQueue, TaskItem, TaskPriority
+from swarmline.multi_agent import SqliteTaskQueue, TaskItem, TaskPriority
 
 queue = SqliteTaskQueue(db_path="tasks.db")
 
@@ -219,7 +219,7 @@ The agent registry tracks registered agents, their roles, statuses, and metadata
 ### Domain Types
 
 ```python
-from cognitia.multi_agent import AgentRecord, AgentStatus, AgentFilter
+from swarmline.multi_agent import AgentRecord, AgentStatus, AgentFilter
 
 # Register an agent
 record = AgentRecord(
@@ -256,7 +256,7 @@ idle_researchers = AgentFilter(role="researcher", status=AgentStatus.IDLE)
 Thread-safe in-memory implementation:
 
 ```python
-from cognitia.multi_agent import InMemoryAgentRegistry, AgentRecord, AgentStatus, AgentFilter
+from swarmline.multi_agent import InMemoryAgentRegistry, AgentRecord, AgentStatus, AgentFilter
 
 registry = InMemoryAgentRegistry()
 
@@ -298,10 +298,10 @@ All implementations expose these 5 methods (ISP-compliant):
 
 ## Protocols
 
-All multi-agent components are defined as `@runtime_checkable` protocols in `cognitia.protocols.multi_agent`:
+All multi-agent components are defined as `@runtime_checkable` protocols in `swarmline.protocols.multi_agent`:
 
 ```python
-from cognitia.protocols.multi_agent import AgentTool, TaskQueue, AgentRegistry
+from swarmline.protocols.multi_agent import AgentTool, TaskQueue, AgentRegistry
 ```
 
 ### AgentTool Protocol
@@ -347,8 +347,8 @@ class AgentRegistry(Protocol):
 To create a custom implementation, implement the corresponding protocol. Use `isinstance()` checks at runtime thanks to `@runtime_checkable`:
 
 ```python
-from cognitia.protocols.multi_agent import TaskQueue
-from cognitia.multi_agent import TaskItem, TaskFilter
+from swarmline.protocols.multi_agent import TaskQueue
+from swarmline.multi_agent import TaskItem, TaskFilter
 
 class RedisTaskQueue:
     """Redis-backed task queue."""

@@ -8,7 +8,7 @@ import asyncio
 
 from pydantic import BaseModel
 
-from cognitia.runtime.structured_output import (
+from swarmline.runtime.structured_output import (
     extract_pydantic_schema,
     validate_structured_output,
 )

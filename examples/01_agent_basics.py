@@ -12,10 +12,10 @@ import os
 import sys
 from collections.abc import AsyncIterator
 
-from cognitia import Agent, AgentConfig
-from cognitia.runtime.capabilities import RuntimeCapabilities
-from cognitia.runtime.registry import get_default_registry
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline import Agent, AgentConfig
+from swarmline.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.registry import get_default_registry
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 _DEMO_RUNTIME_NAME = "agent_basics_mock"
 _DEMO_SESSION_ID = "agent-basics-demo"

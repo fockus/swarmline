@@ -7,13 +7,13 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.runtime.types import ToolSpec
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.runtime.types import ToolSpec
 
 
 @pytest.fixture()
 def orchestrator():
-    from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+    from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
 
     return ThinSubagentOrchestrator(max_concurrent=2)
 
@@ -114,7 +114,7 @@ class TestThinSubagentFullImpl:
 
     async def test_thin_subagent_spawn_with_real_runtime(self) -> None:
         """spawn with real ThinRuntime (mock LLM) -> get result."""
-        from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+        from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
 
         async def mock_llm(messages: list, system_prompt: str, **kwargs: object) -> str:
             return json.dumps({"type": "final", "final_message": "worker result"})
@@ -129,7 +129,7 @@ class TestThinSubagentFullImpl:
 
     async def test_thin_subagent_error_propagated(self) -> None:
         """LLM error -> status=failed, error message propagated."""
-        from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+        from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
 
         async def mock_llm(messages: list, system_prompt: str, **kwargs: object) -> str:
             raise RuntimeError("LLM connection failed")
@@ -144,7 +144,7 @@ class TestThinSubagentFullImpl:
 
     async def test_thin_subagent_tools_inherited(self) -> None:
         """Worker inherits tools from SubagentSpec."""
-        from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
+        from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
 
         received_tools: list[list[ToolSpec]] = []
 

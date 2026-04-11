@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cognitia.multi_agent.graph_task_board_postgres import PostgresGraphTaskBoard
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.multi_agent.task_types import TaskStatus
+from swarmline.multi_agent.graph_task_board_postgres import PostgresGraphTaskBoard
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent.task_types import TaskStatus
 
 
 def _task(

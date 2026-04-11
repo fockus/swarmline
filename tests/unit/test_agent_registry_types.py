@@ -13,8 +13,8 @@ import dataclasses
 
 import pytest
 
-from cognitia.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
-from cognitia.protocols.multi_agent import AgentRegistry
+from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
+from swarmline.protocols.multi_agent import AgentRegistry
 
 
 class TestAgentStatus:
@@ -164,15 +164,15 @@ class TestReExports:
     """Verify public API re-exports work."""
 
     def test_multi_agent_init_exports_registry_types(self) -> None:
-        from cognitia.multi_agent import AgentFilter as AF
-        from cognitia.multi_agent import AgentRecord as AR
-        from cognitia.multi_agent import AgentStatus as AS
+        from swarmline.multi_agent import AgentFilter as AF
+        from swarmline.multi_agent import AgentRecord as AR
+        from swarmline.multi_agent import AgentStatus as AS
 
         assert AF is AgentFilter
         assert AR is AgentRecord
         assert AS is AgentStatus
 
     def test_protocols_init_exports_agent_registry(self) -> None:
-        from cognitia.protocols import AgentRegistry as AR
+        from swarmline.protocols import AgentRegistry as AR
 
         assert AR is AgentRegistry

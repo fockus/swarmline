@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.middleware import (
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import (
     BudgetExceededError,
     CostTracker,
     Middleware,
     SecurityGuard,
 )
-from cognitia.agent.result import Result
+from swarmline.agent.result import Result
 
 # ---------------------------------------------------------------------------
 # Middleware Protocol/ABC

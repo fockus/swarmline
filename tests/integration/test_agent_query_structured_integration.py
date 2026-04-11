@@ -13,9 +13,9 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.structured import StructuredOutputError
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.structured import StructuredOutputError
 
 
 # ---------------------------------------------------------------------------
@@ -77,12 +77,12 @@ class TestAgentQueryStructuredIntegration:
         # Patch the runtime creation to inject mock LLM
         from unittest.mock import patch
 
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("cognitia.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
             result = await agent.query_structured(
                 "Analyze sentiment: I love sunny days!",
                 Sentiment,
@@ -111,12 +111,12 @@ class TestAgentQueryStructuredIntegration:
 
         from unittest.mock import patch
 
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("cognitia.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
             result = await agent.query_structured("Get user profile", UserProfile)
 
         assert isinstance(result, UserProfile)
@@ -133,12 +133,12 @@ class TestAgentQueryStructuredIntegration:
 
         from unittest.mock import patch
 
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("cognitia.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
             with pytest.raises(StructuredOutputError, match="Failed to parse"):
                 await agent.query_structured("Get sentiment", Sentiment)
 
@@ -153,12 +153,12 @@ class TestAgentQueryStructuredIntegration:
 
         from unittest.mock import patch
 
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("cognitia.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
             result = await agent.query("Give me sentiment")
 
         # query() returns Result with text, no structured_output (no output_type set)
@@ -177,12 +177,12 @@ class TestAgentQueryStructuredIntegration:
 
         from unittest.mock import patch
 
-        from cognitia.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.thin.runtime import ThinRuntime
 
         def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("cognitia.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
             result = await agent.query("Get user")
 
         assert result.ok

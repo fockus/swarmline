@@ -10,20 +10,20 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.tools.web_protocols import SearchResult, WebFetchProvider, WebSearchProvider
-from cognitia.tools.web_providers.brave import BraveSearchProvider
-from cognitia.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
-from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
-from cognitia.tools.web_providers.factory import (
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_protocols import SearchResult, WebFetchProvider, WebSearchProvider
+from swarmline.tools.web_providers.brave import BraveSearchProvider
+from swarmline.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
+from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
+from swarmline.tools.web_providers.factory import (
     SUPPORTED_FETCH_PROVIDERS,
     SUPPORTED_PROVIDERS,
     create_fetch_provider,
     create_search_provider,
 )
-from cognitia.tools.web_providers.jina import JinaReaderFetchProvider
-from cognitia.tools.web_providers.searxng import SearXNGSearchProvider
-from cognitia.tools.web_providers.tavily import TavilySearchProvider
+from swarmline.tools.web_providers.jina import JinaReaderFetchProvider
+from swarmline.tools.web_providers.searxng import SearXNGSearchProvider
+from swarmline.tools.web_providers.tavily import TavilySearchProvider
 
 # ---------------------------------------------------------------------------
 # Protocol compliance
@@ -60,7 +60,7 @@ class TestDuckDuckGoSearchProvider:
 
     async def test_search_returns_results(self) -> None:
         """S ustanovlennym ddgs returns SearchResult."""
-        import cognitia.tools.web_providers.duckduckgo as ddg_mod
+        import swarmline.tools.web_providers.duckduckgo as ddg_mod
 
         mock_results = [
             {"title": "Python", "href": "https://python.org", "body": "Official site"},
@@ -88,7 +88,7 @@ class TestDuckDuckGoSearchProvider:
 
     async def test_search_respects_max_results(self) -> None:
         """max_results and timeout are passed in DDGS().text()."""
-        import cognitia.tools.web_providers.duckduckgo as ddg_mod
+        import swarmline.tools.web_providers.duckduckgo as ddg_mod
 
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text = MagicMock(return_value=[])
@@ -106,7 +106,7 @@ class TestDuckDuckGoSearchProvider:
 
     async def test_missing_dep_returns_empty(self) -> None:
         """Without ddgs (not ustanovlen) -> empty list (graceful)."""
-        import cognitia.tools.web_providers.duckduckgo as ddg_mod
+        import swarmline.tools.web_providers.duckduckgo as ddg_mod
 
         original = ddg_mod.DDGS
         ddg_mod.DDGS = None
@@ -126,7 +126,7 @@ class TestDuckDuckGoSearchProvider:
 
     async def test_exception_returns_empty_and_logs(self) -> None:
         """Timeout/network error -> empty list + structlog warning."""
-        import cognitia.tools.web_providers.duckduckgo as ddg_mod
+        import swarmline.tools.web_providers.duckduckgo as ddg_mod
 
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text = MagicMock(side_effect=RuntimeError("Timeout"))
@@ -164,7 +164,7 @@ class TestTavilySearchProvider:
 
     async def test_exception_returns_empty(self) -> None:
         """API error -> empty list (graceful)."""
-        import cognitia.tools.web_providers.tavily as tavily_mod
+        import swarmline.tools.web_providers.tavily as tavily_mod
 
         mock_client = MagicMock()
         mock_client.search = MagicMock(side_effect=RuntimeError("API error"))
@@ -182,7 +182,7 @@ class TestTavilySearchProvider:
 
     async def test_search_returns_results(self) -> None:
         """S ustanovlennym tavily-python returns SearchResult."""
-        import cognitia.tools.web_providers.tavily as tavily_mod
+        import swarmline.tools.web_providers.tavily as tavily_mod
 
         mock_response = {
             "results": [
@@ -208,7 +208,7 @@ class TestTavilySearchProvider:
 
     async def test_missing_dep_returns_empty(self) -> None:
         """Without TavilyClient -> empty list."""
-        import cognitia.tools.web_providers.tavily as tavily_mod
+        import swarmline.tools.web_providers.tavily as tavily_mod
 
         original = tavily_mod.TavilyClient
         tavily_mod.TavilyClient = None
@@ -259,7 +259,7 @@ class TestSearXNGSearchProvider:
 
         import httpx as real_httpx
 
-        with patch("cognitia.tools.web_providers.searxng.httpx") as mock_httpx:
+        with patch("swarmline.tools.web_providers.searxng.httpx") as mock_httpx:
             mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
             mock_httpx.HTTPError = real_httpx.HTTPError
 
@@ -278,7 +278,7 @@ class TestSearXNGSearchProvider:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("cognitia.tools.web_providers.searxng.httpx") as mock_httpx:
+        with patch("swarmline.tools.web_providers.searxng.httpx") as mock_httpx:
             mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
             mock_httpx.HTTPError = real_httpx.HTTPError
 
@@ -328,7 +328,7 @@ class TestBraveSearchProvider:
 
         import httpx as real_httpx
 
-        with patch("cognitia.tools.web_providers.brave.httpx") as mock_httpx:
+        with patch("swarmline.tools.web_providers.brave.httpx") as mock_httpx:
             mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
             mock_httpx.HTTPError = real_httpx.HTTPError
 
@@ -401,7 +401,7 @@ class TestJinaReaderFetchProvider:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("cognitia.tools.web_providers.jina.httpx") as mock_httpx:
+        with patch("swarmline.tools.web_providers.jina.httpx") as mock_httpx:
             mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
             import httpx as real_httpx
 
@@ -424,7 +424,7 @@ class TestJinaReaderFetchProvider:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("cognitia.tools.web_providers.jina.httpx") as mock_httpx:
+        with patch("swarmline.tools.web_providers.jina.httpx") as mock_httpx:
             mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
             mock_httpx.HTTPError = real_httpx.HTTPError
 
@@ -455,7 +455,7 @@ class TestCrawl4AIFetchProvider:
 
     async def test_missing_dep_returns_empty(self) -> None:
         """Without crawl4ai (not ustanovlen) -> empty string."""
-        import cognitia.tools.web_providers.crawl4ai as crawl_mod
+        import swarmline.tools.web_providers.crawl4ai as crawl_mod
 
         original = crawl_mod.AsyncWebCrawler
         crawl_mod.AsyncWebCrawler = None
@@ -471,7 +471,7 @@ class TestCrawl4AIFetchProvider:
         """Empty URL -> empty string."""
         provider = Crawl4AIFetchProvider()
         # Dazhe pri ustanovlennom crawl4ai, empty URL -> ""
-        import cognitia.tools.web_providers.crawl4ai as crawl_mod
+        import swarmline.tools.web_providers.crawl4ai as crawl_mod
 
         original = crawl_mod.AsyncWebCrawler
         crawl_mod.AsyncWebCrawler = None
@@ -553,7 +553,7 @@ class TestSearchExecutor:
         """Empty query -> status=error."""
         import json
 
-        from cognitia.tools.builtin import create_web_tools
+        from swarmline.tools.builtin import create_web_tools
 
         mock_web = MagicMock()
         _, executors = create_web_tools(mock_web)
@@ -566,7 +566,7 @@ class TestSearchExecutor:
         """Response contains result_count."""
         import json
 
-        from cognitia.tools.builtin import create_web_tools
+        from swarmline.tools.builtin import create_web_tools
 
         mock_web = AsyncMock()
         mock_web.search = AsyncMock(
@@ -586,7 +586,7 @@ class TestSearchExecutor:
         """Exception in provaydere -> status=error."""
         import json
 
-        from cognitia.tools.builtin import create_web_tools
+        from swarmline.tools.builtin import create_web_tools
 
         mock_web = AsyncMock()
         mock_web.search = AsyncMock(side_effect=RuntimeError("Network down"))
@@ -600,7 +600,7 @@ class TestSearchExecutor:
         """Whitespace-only query → status=error."""
         import json
 
-        from cognitia.tools.builtin import create_web_tools
+        from swarmline.tools.builtin import create_web_tools
 
         mock_web = MagicMock()
         _, executors = create_web_tools(mock_web)
@@ -619,28 +619,28 @@ class TestExtractText:
 
     def test_removes_script_tags(self) -> None:
         """script tegi polnostyu udalyayutsya (regex fallback)."""
-        from cognitia.tools.web_httpx import _extract_text
+        from swarmline.tools.web_httpx import _extract_text
 
         html = "<html><body><script>var x = 1;</script><p>Hello</p></body></html>"
         # Prinuditelno otklyuchaem trafilatura chtoby check regex
-        with patch("cognitia.tools.web_httpx.trafilatura", None):
+        with patch("swarmline.tools.web_httpx.trafilatura", None):
             text = _extract_text(html)
         assert "var x" not in text
         assert "Hello" in text
 
     def test_removes_style_tags(self) -> None:
         """style tegi polnostyu udalyayutsya (regex fallback)."""
-        from cognitia.tools.web_httpx import _extract_text
+        from swarmline.tools.web_httpx import _extract_text
 
         html = "<html><body><style>.cls { color: red; }</style><p>World</p></body></html>"
-        with patch("cognitia.tools.web_httpx.trafilatura", None):
+        with patch("swarmline.tools.web_httpx.trafilatura", None):
             text = _extract_text(html)
         assert "color" not in text
         assert "World" in text
 
     def test_removes_html_tags(self) -> None:
         """HTML tegi zamenyayutsya on probely."""
-        from cognitia.tools.web_httpx import _extract_text
+        from swarmline.tools.web_httpx import _extract_text
 
         html = "<div><h1>Title</h1><p>Content</p></div>"
         text = _extract_text(html)
@@ -650,7 +650,7 @@ class TestExtractText:
 
     def test_limits_output_length(self) -> None:
         """Result ≤ 50000 simvolov."""
-        from cognitia.tools.web_httpx import _extract_text
+        from swarmline.tools.web_httpx import _extract_text
 
         html = "<p>" + "A" * 100000 + "</p>"
         text = _extract_text(html)
@@ -673,10 +673,10 @@ class TestHttpxWebProviderFetchDelegation:
 
     async def test_no_fetch_provider_uses_extract_text(self) -> None:
         """Without fetch_provider - _extract_text vyzyvaetsya on html."""
-        from cognitia.tools.web_httpx import _extract_text
+        from swarmline.tools.web_httpx import _extract_text
 
         html = "<html><body><p>Hello world</p></body></html>"
-        with patch("cognitia.tools.web_httpx.trafilatura", None):
+        with patch("swarmline.tools.web_httpx.trafilatura", None):
             text = _extract_text(html)
 
         assert "Hello world" in text

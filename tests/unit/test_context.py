@@ -3,15 +3,15 @@
 from pathlib import Path
 
 import pytest
-from cognitia.context import (
+from swarmline.context import (
     ContextBudget,
     ContextInput,
     DefaultContextBuilder,
     estimate_tokens,
     truncate_to_budget,
 )
-from cognitia.memory.types import UserProfile
-from cognitia.skills.types import LoadedSkill, SkillSpec
+from swarmline.memory.types import UserProfile
+from swarmline.skills.types import LoadedSkill, SkillSpec
 
 
 @pytest.fixture
@@ -278,7 +278,7 @@ class TestDefaultContextBuilder:
 # ---------------------------------------------------------------------------
 # P2.5: Poslednie messages dialoga (last_messages)
 # ---------------------------------------------------------------------------
-from cognitia.memory.types import MemoryMessage  # noqa: E402
+from swarmline.memory.types import MemoryMessage  # noqa: E402
 
 
 class TestContextBuilderLastMessages:

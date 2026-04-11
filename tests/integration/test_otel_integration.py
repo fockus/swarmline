@@ -11,9 +11,9 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor  # noqa: E402
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter  # noqa: E402
 from opentelemetry.trace import StatusCode  # noqa: E402
 
-from cognitia.observability.event_bus import InMemoryEventBus  # noqa: E402
-from cognitia.observability.otel_exporter import OTelExporter  # noqa: E402
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber  # noqa: E402
+from swarmline.observability.event_bus import InMemoryEventBus  # noqa: E402
+from swarmline.observability.otel_exporter import OTelExporter  # noqa: E402
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber  # noqa: E402
 
 
 @pytest.fixture()
@@ -60,7 +60,7 @@ class TestFullAgentTurnLifecycle:
         # All spans have gen_ai.system
         for span in spans:
             assert span.attributes is not None
-            assert span.attributes.get("gen_ai.system") == "cognitia"
+            assert span.attributes.get("gen_ai.system") == "swarmline"
 
     async def test_turn_ordering(self, otel_pipeline: tuple) -> None:
         bus, otel, span_exporter = otel_pipeline

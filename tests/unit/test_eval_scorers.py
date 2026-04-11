@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.eval.types import EvalCase, Scorer
+from swarmline.eval.types import EvalCase, Scorer
 
 # Import scorers (will create these)
-from cognitia.eval.scorers import (
+from swarmline.eval.scorers import (
     ContainsScorer,
     CostScorer,
     ExactMatchScorer,

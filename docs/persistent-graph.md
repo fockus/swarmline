@@ -12,7 +12,7 @@ Long-lived agent organizations that process goals sequentially.
 ## PersistentGraphOrchestrator
 
 ```python
-from cognitia.multi_agent.persistent_graph import PersistentGraphOrchestrator
+from swarmline.multi_agent.persistent_graph import PersistentGraphOrchestrator
 ```
 
 ### Constructor
@@ -43,7 +43,7 @@ orchestrator = PersistentGraphOrchestrator(
 In-memory FIFO queue with status tracking.
 
 ```python
-from cognitia.multi_agent.goal_queue import GoalQueue, GoalEntry, GoalStatus
+from swarmline.multi_agent.goal_queue import GoalQueue, GoalEntry, GoalStatus
 ```
 
 ### GoalStatus
@@ -63,9 +63,9 @@ Frozen dataclass with fields: `id`, `goal`, `status`, `submitted_at`, `completed
 
 ```python
 import asyncio
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_types import AgentCapabilities, LifecycleMode
-from cognitia.multi_agent.persistent_graph import PersistentGraphOrchestrator
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_types import AgentCapabilities, LifecycleMode
+from swarmline.multi_agent.persistent_graph import PersistentGraphOrchestrator
 
 async def main():
     # Build a persistent org structure

@@ -16,10 +16,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.runtime_factory_port import RuntimeFactoryPort
-from cognitia.domain_types import Message
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.runtime_factory_port import RuntimeFactoryPort
+from swarmline.domain_types import Message
 from conftest import FakeStreamEvent
 
 
@@ -200,7 +200,7 @@ class TestAgentRuntimeMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.run_portable_runtime",
+            "swarmline.agent.agent.run_portable_runtime",
             side_effect=fake_run_portable,
         ):
             history = [
@@ -238,7 +238,7 @@ class TestAgentRuntimeMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.run_portable_runtime",
+            "swarmline.agent.agent.run_portable_runtime",
             side_effect=fake_run_portable,
         ):
             async for _ in agent._execute_agent_runtime("hello", "thin"):
@@ -266,7 +266,7 @@ class TestAgentRuntimeMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.run_portable_runtime",
+            "swarmline.agent.agent.run_portable_runtime",
             side_effect=fake_run_portable,
         ):
             async for _ in agent._execute_agent_runtime(
@@ -295,7 +295,7 @@ class TestAgentRuntimeMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.run_portable_runtime",
+            "swarmline.agent.agent.run_portable_runtime",
             side_effect=fake_run_portable,
         ):
             async for _ in agent._execute_agent_runtime(
@@ -324,7 +324,7 @@ class TestAgentRuntimeMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.run_portable_runtime",
+            "swarmline.agent.agent.run_portable_runtime",
             side_effect=fake_run_portable,
         ):
             history = [
@@ -360,7 +360,7 @@ class TestAgentRuntimeMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.run_portable_runtime",
+            "swarmline.agent.agent.run_portable_runtime",
             side_effect=fake_run_portable,
         ):
             history = [Message(role="user", content="hello")]
@@ -392,7 +392,7 @@ class TestClaudeSdkMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.stream_claude_one_shot",
+            "swarmline.agent.agent.stream_claude_one_shot",
             side_effect=fake_stream_one_shot,
         ):
             history = [
@@ -422,7 +422,7 @@ class TestClaudeSdkMessagesParam:
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
         with patch(
-            "cognitia.agent.agent.stream_claude_one_shot",
+            "swarmline.agent.agent.stream_claude_one_shot",
             side_effect=fake_stream_one_shot,
         ):
             async for _ in agent._execute_claude_sdk("standalone"):

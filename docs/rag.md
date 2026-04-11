@@ -1,12 +1,12 @@
 # RAG (Retrieval-Augmented Generation)
 
-Inject relevant documents into the system prompt before each LLM call. Cognitia's RAG integrates via the `InputFilter` protocol — no special runtime changes needed.
+Inject relevant documents into the system prompt before each LLM call. Swarmline's RAG integrates via the `InputFilter` protocol — no special runtime changes needed.
 
 ## Quick Start
 
 ```python
-from cognitia.rag import Document, SimpleRetriever
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.rag import Document, SimpleRetriever
+from swarmline.runtime.types import RuntimeConfig
 
 docs = [
     Document(content="Paris is the capital of France.", metadata={"source": "geo"}),
@@ -73,7 +73,7 @@ class Document:
 A word-overlap retriever for development and testing. Not suitable for production — use a vector database instead.
 
 ```python
-from cognitia.rag import SimpleRetriever, Document
+from swarmline.rag import SimpleRetriever, Document
 
 retriever = SimpleRetriever(documents=[
     Document(content="Django is a Python web framework."),
@@ -128,7 +128,7 @@ class HybridRetriever:
 For more control, create `RagInputFilter` manually:
 
 ```python
-from cognitia.rag import RagInputFilter, SimpleRetriever
+from swarmline.rag import RagInputFilter, SimpleRetriever
 
 retriever = SimpleRetriever(documents=docs)
 rag_filter = RagInputFilter(retriever=retriever, top_k=3)
@@ -146,7 +146,7 @@ This gives you control over filter ordering. When using `RuntimeConfig.retriever
 RAG works alongside other input filters:
 
 ```python
-from cognitia.input_filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
 
 config = RuntimeConfig(
     runtime_name="thin",

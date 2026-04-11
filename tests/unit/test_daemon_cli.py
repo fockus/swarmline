@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from cognitia.daemon.cli_entry import main, _load_config
-from cognitia.daemon.types import DaemonConfig
+from swarmline.daemon.cli_entry import main, _load_config
+from swarmline.daemon.types import DaemonConfig
 
 
 class TestCliParsing:
@@ -45,7 +45,7 @@ class TestLoadConfig:
         assert isinstance(cfg, DaemonConfig)
         # DaemonConfig defaults used when CLI args are None
         assert cfg.health_port == 8471
-        assert cfg.name == "cognitia-daemon"
+        assert cfg.name == "swarmline-daemon"
 
     def test_cli_args_override(self) -> None:
         import argparse

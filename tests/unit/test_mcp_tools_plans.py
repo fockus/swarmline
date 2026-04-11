@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.mcp._session import StatefulSession
-from cognitia.mcp._tools_plans import (
+from swarmline.mcp._session import StatefulSession
+from swarmline.mcp._tools_plans import (
     plan_approve,
     plan_create,
     plan_get,

@@ -5,12 +5,12 @@ Fixture-based: any correct AgentRegistry implementation must pass all tests.
 
 import pytest
 
-from cognitia.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
+from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
 
 
 @pytest.fixture(params=["inmemory"])
 def registry(request):
-    from cognitia.multi_agent.agent_registry import InMemoryAgentRegistry
+    from swarmline.multi_agent.agent_registry import InMemoryAgentRegistry
 
     if request.param == "inmemory":
         return InMemoryAgentRegistry()

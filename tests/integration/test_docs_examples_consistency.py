@@ -55,7 +55,7 @@ def test_examples_docs_live_mode_claim_matches_current_surface() -> None:
 
 def test_readme_does_not_advertise_nonexistent_cli_extra() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "`cognitia[cli]`" not in readme
+    assert "`swarmline[cli]`" not in readme
 
 
 def _readme_quickstart_python_blocks() -> list[str]:
@@ -88,8 +88,8 @@ async def _fake_dispatch_runtime(runtime_name: str, claude_handler, portable_han
 async def test_readme_quickstart_code_fences_execute_offline(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from cognitia.agent import agent as agent_module
-    from cognitia.agent import conversation as conversation_module
+    from swarmline.agent import agent as agent_module
+    from swarmline.agent import conversation as conversation_module
 
     blocks = _readme_quickstart_python_blocks()
     assert blocks, "Expected at least one Python quickstart block in README.md"

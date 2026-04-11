@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.agent import Agent, AgentConfig
-from cognitia.runtime.capabilities import CapabilityRequirements
-from cognitia.runtime.factory import RuntimeFactory
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.agent import Agent, AgentConfig
+from swarmline.runtime.capabilities import CapabilityRequirements
+from swarmline.runtime.factory import RuntimeFactory
+from swarmline.runtime.types import RuntimeConfig
 
 
 class TestRuntimeCapabilityNegotiation:

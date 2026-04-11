@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from cognitia.eval.compare import EvalComparator
-from cognitia.eval.history import EvalHistory
-from cognitia.eval.types import EvalCase, EvalReport, EvalResult, ScorerResult
+from swarmline.eval.compare import EvalComparator
+from swarmline.eval.history import EvalHistory
+from swarmline.eval.types import EvalCase, EvalReport, EvalResult, ScorerResult
 
 
 # ---------------------------------------------------------------------------

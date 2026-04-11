@@ -1,6 +1,6 @@
 # Capabilities
 
-Cognitia provides 6 independent capabilities. Each is enabled with a separate toggle -- include only what you need.
+Swarmline provides 6 independent capabilities. Each is enabled with a separate toggle -- include only what you need.
 
 ## Readiness Status
 
@@ -18,7 +18,7 @@ Cognitia provides 6 independent capabilities. Each is enabled with a separate to
 | Capability | Toggle | Tools | Extras |
 | ---------- | ------ | ----- | ------ |
 | **Sandbox** | `sandbox_provider=` | bash, read, write, edit, multi_edit, ls, glob, grep | -- |
-| **Web** | `web_provider=` | web_fetch, web_search | `cognitia[web]` |
+| **Web** | `web_provider=` | web_fetch, web_search | `swarmline[web]` |
 | **Todo** | `todo_provider=` | todo_read, todo_write | -- |
 | **Memory Bank** | `memory_bank_provider=` | memory_read, memory_write, memory_append, memory_list, memory_delete | -- |
 | **Planning** | `plan_manager=` | plan_create, plan_status, plan_execute | -- |
@@ -36,14 +36,14 @@ Each user + topic combination gets a separate namespace: `{root_path}/{user_id}/
 | Provider | Use case | Extras |
 | -------- | -------- | ------ |
 | `LocalSandboxProvider` | Development, testing; host execution opt-in | -- |
-| `E2BSandboxProvider` | Production (cloud) | `cognitia[e2b]` |
-| `DockerSandboxProvider` | Production (self-hosted) | `cognitia[docker]` |
+| `E2BSandboxProvider` | Production (cloud) | `swarmline[e2b]` |
+| `DockerSandboxProvider` | Production (self-hosted) | `swarmline[docker]` |
 
 ### Sandbox Usage
 
 ```python
-from cognitia.tools.sandbox_local import LocalSandboxProvider
-from cognitia.tools.types import SandboxConfig
+from swarmline.tools.sandbox_local import LocalSandboxProvider
+from swarmline.tools.types import SandboxConfig
 
 sandbox = LocalSandboxProvider(SandboxConfig(
     root_path="/data/sandbox",
@@ -81,7 +81,7 @@ The agent maintains a structured task list. Operates **independently of Sandbox*
 ### Todo Usage
 
 ```python
-from cognitia.todo.inmemory_provider import InMemoryTodoProvider
+from swarmline.todo.inmemory_provider import InMemoryTodoProvider
 
 todo = InMemoryTodoProvider(user_id="user-1", topic_id="task-1", max_todos=100)
 ```
@@ -120,12 +120,12 @@ Structure is file-based with subfolders (2 levels deep).
 | Provider                       | Backend         | Extras                                     |
 | ------------------------------ | --------------- | ------------------------------------------ |
 | `FilesystemMemoryBankProvider` | Files           | --                                         |
-| `DatabaseMemoryBankProvider`   | Postgres/SQLite | `cognitia[postgres]` or `cognitia[sqlite]` |
+| `DatabaseMemoryBankProvider`   | Postgres/SQLite | `swarmline[postgres]` or `swarmline[sqlite]` |
 
 ### Configuration
 
 ```python
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.types import MemoryBankConfig
 
 config = MemoryBankConfig(
     enabled=True,
@@ -149,7 +149,7 @@ When `auto_load_on_turn=True`, the contents of `MEMORY.md` (first N lines) are a
 The library exports DDL statements for use in your application's migrations:
 
 ```python
-from cognitia.memory_bank.schema import get_memory_bank_ddl
+from swarmline.memory_bank.schema import get_memory_bank_ddl
 
 # For Postgres
 stmts = get_memory_bank_ddl(dialect="postgres")
@@ -175,9 +175,9 @@ The agent creates plans for complex tasks, executes them step by step, and track
 ### Programmatic Control
 
 ```python
-from cognitia.orchestration.manager import PlanManager
-from cognitia.orchestration.thin_planner import ThinPlannerMode
-from cognitia.orchestration.plan_store import InMemoryPlanStore
+from swarmline.orchestration.manager import PlanManager
+from swarmline.orchestration.thin_planner import ThinPlannerMode
+from swarmline.orchestration.plan_store import InMemoryPlanStore
 
 store = InMemoryPlanStore()
 planner = ThinPlannerMode(llm=llm_client, plan_store=store)
@@ -210,7 +210,7 @@ Thinking is a standalone tool with no external dependencies. Recommended to alwa
 ## Web -- Internet Access
 
 ```python
-from cognitia.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_httpx import HttpxWebProvider
 
 web = HttpxWebProvider(timeout=30)
 # Agent receives: web_fetch(url), web_search(query)
@@ -231,7 +231,7 @@ This consumes 5,000-7,000 tokens on schema alone and can confuse the model.
 `ToolSelector` picks tools by priority within a configurable budget:
 
 ```python
-from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
+from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
 config = ToolBudgetConfig(
     max_tools=20,
@@ -255,5 +255,5 @@ When the budget is exhausted, lower-priority groups are trimmed.
 
 `tool_budget_config` is applied during wiring:
 
-- At `CognitiaStack.create()` for capability tools;
+- At `SwarmlineStack.create()` for capability tools;
 - In `SessionFactory` for the final `active_tools` set before runtime execution.

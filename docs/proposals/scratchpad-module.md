@@ -22,7 +22,7 @@ Agents need ephemeral within-run working memory for intermediate state: research
 | **Manus** | File system: agent writes/reads files, sees descriptions in context |
 | **Claude Code** | TodoWrite/TodoRead + file system |
 | **OpenViking AGFS** | `write()`, `read()`, `ls()`, `grep()` on namespaced file system |
-| **Cognitia (current)** | No scratchpad — only persistent memory and todo |
+| **Swarmline (current)** | No scratchpad — only persistent memory and todo |
 
 ## Design
 
@@ -93,7 +93,7 @@ Agent sees entry keys + metadata. To read content, uses `scratch_read("research_
 ## Module Structure
 
 ```
-packages/cognitia/src/cognitia/scratchpad/
+packages/swarmline/src/swarmline/scratchpad/
   ├── __init__.py           # public API: create_scratchpad_tools, providers
   ├── types.py              # ScratchpadEntry, ScratchpadConfig
   ├── provider.py           # InMemoryScratchpadProvider
@@ -105,15 +105,15 @@ packages/cognitia/src/cognitia/scratchpad/
 
 ## MCP Server Integration
 
-Scratchpad tools exposed through Cognitia MCP server (headless mode):
+Scratchpad tools exposed through Swarmline MCP server (headless mode):
 
 ```python
-# In cognitia/mcp/_server.py, register scratchpad tools alongside memory/plan/team
+# In swarmline/mcp/_server.py, register scratchpad tools alongside memory/plan/team
 @mcp.tool()
-async def cognitia_scratch_write(key: str, content: str, tags: list[str] = []) -> dict: ...
+async def swarmline_scratch_write(key: str, content: str, tags: list[str] = []) -> dict: ...
 
 @mcp.tool()
-async def cognitia_scratch_read(key: str | None = None) -> dict: ...
+async def swarmline_scratch_read(key: str | None = None) -> dict: ...
 ```
 
 ## Implementation Plan
@@ -130,11 +130,11 @@ Total: ~8 hours
 
 ## Relationship to OpenViking
 
-Scratchpad is a **Cognitia-level abstraction** that can use OpenViking as a backend.
-This keeps Cognitia independent (no hard OV dependency) while leveraging OV when available:
+Scratchpad is a **Swarmline-level abstraction** that can use OpenViking as a backend.
+This keeps Swarmline independent (no hard OV dependency) while leveraging OV when available:
 
 ```
-Agent → Cognitia Scratchpad API → InMemoryProvider (default)
+Agent → Swarmline Scratchpad API → InMemoryProvider (default)
                                 → OpenVikingScratchpadProvider (when OV available)
                                 → DatabaseProvider (when DB available)
 ```

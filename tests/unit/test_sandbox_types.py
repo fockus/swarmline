@@ -12,7 +12,7 @@ class TestSandboxConfig:
 
     def test_default_values(self) -> None:
         """SandboxConfig imeet razumnye defolty."""
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         config = SandboxConfig(root_path="/tmp/sandbox", user_id="u1", topic_id="t1")
 
@@ -27,7 +27,7 @@ class TestSandboxConfig:
 
     def test_custom_values(self) -> None:
         """SandboxConfig prinimaet kastomnye values."""
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         config = SandboxConfig(
             root_path="/data",
@@ -48,7 +48,7 @@ class TestSandboxConfig:
 
     def test_frozen(self) -> None:
         """SandboxConfig not izmenyaem posle creatediya."""
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         config = SandboxConfig(root_path="/tmp", user_id="u", topic_id="t")
         with pytest.raises(AttributeError):
@@ -56,19 +56,19 @@ class TestSandboxConfig:
 
     def test_workspace_path(self) -> None:
         """workspace_path collects from root/user_id/topic_id/workspace."""
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         config = SandboxConfig(root_path="/data", user_id="u1", topic_id="t1")
         assert config.workspace_path == "/data/u1/t1/workspace"
 
     def test_invalid_user_id_rejected(self) -> None:
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         with pytest.raises(ValueError, match="Invalid user_id"):
             SandboxConfig(root_path="/data", user_id="../evil", topic_id="t1")
 
     def test_invalid_topic_id_rejected(self) -> None:
-        from cognitia.tools.types import SandboxConfig
+        from swarmline.tools.types import SandboxConfig
 
         with pytest.raises(ValueError, match="Invalid topic_id"):
             SandboxConfig(root_path="/data", user_id="u1", topic_id="../evil")
@@ -79,7 +79,7 @@ class TestExecutionResult:
 
     def test_successful_execution(self) -> None:
         """ExecutionResult for uspeshnoy commands."""
-        from cognitia.tools.types import ExecutionResult
+        from swarmline.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="hello\n", stderr="", exit_code=0, timed_out=False)
 
@@ -90,7 +90,7 @@ class TestExecutionResult:
 
     def test_failed_execution(self) -> None:
         """ExecutionResult for upavshey commands."""
-        from cognitia.tools.types import ExecutionResult
+        from swarmline.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="", stderr="not found", exit_code=1, timed_out=False)
 
@@ -99,7 +99,7 @@ class TestExecutionResult:
 
     def test_timed_out_execution(self) -> None:
         """ExecutionResult for commands with timeout."""
-        from cognitia.tools.types import ExecutionResult
+        from swarmline.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="partial", stderr="", exit_code=-1, timed_out=True)
 
@@ -107,7 +107,7 @@ class TestExecutionResult:
 
     def test_frozen(self) -> None:
         """ExecutionResult not izmenyaem."""
-        from cognitia.tools.types import ExecutionResult
+        from swarmline.tools.types import ExecutionResult
 
         result = ExecutionResult(stdout="", stderr="", exit_code=0, timed_out=False)
         with pytest.raises(AttributeError):
@@ -119,7 +119,7 @@ class TestSandboxViolation:
 
     def test_is_exception(self) -> None:
         """SandboxViolation nashould Exception."""
-        from cognitia.tools.types import SandboxViolation
+        from swarmline.tools.types import SandboxViolation
 
         exc = SandboxViolation("path traversal detected")
         assert isinstance(exc, Exception)
@@ -127,7 +127,7 @@ class TestSandboxViolation:
 
     def test_with_path(self) -> None:
         """SandboxViolation hranit path narusheniya."""
-        from cognitia.tools.types import SandboxViolation
+        from swarmline.tools.types import SandboxViolation
 
         exc = SandboxViolation("traversal", path="../../etc/passwd")
         assert exc.path == "../../etc/passwd"
@@ -138,7 +138,7 @@ class TestSandboxProviderProtocol:
 
     def test_runtime_checkable(self) -> None:
         """SandboxProvider pomechen @runtime_checkable - isinstance works."""
-        from cognitia.tools.protocols import SandboxProvider
+        from swarmline.tools.protocols import SandboxProvider
 
         class FakeSandbox:
             async def read_file(self, path: str) -> str:
@@ -160,7 +160,7 @@ class TestSandboxProviderProtocol:
 
     def test_incomplete_implementation_not_instance(self) -> None:
         """Obekt without vseh metodov NE prohodit isinstance check."""
-        from cognitia.tools.protocols import SandboxProvider
+        from swarmline.tools.protocols import SandboxProvider
 
         class IncompleteSandbox:
             async def read_file(self, path: str) -> str:
@@ -170,7 +170,7 @@ class TestSandboxProviderProtocol:
 
     def test_protocol_has_five_methods(self) -> None:
         """ISP: SandboxProvider imeet ≤5 metodov."""
-        from cognitia.tools.protocols import SandboxProvider
+        from swarmline.tools.protocols import SandboxProvider
 
         # Schitaem publichnye async-metody (not dunder, not private)
         methods = [
@@ -182,8 +182,8 @@ class TestSandboxProviderProtocol:
 
     def test_no_freedom_agent_imports(self) -> None:
         """CHistyy domain: nott importov from freedom_agent."""
-        import cognitia.tools.protocols as mod
-        import cognitia.tools.types as types_mod
+        import swarmline.tools.protocols as mod
+        import swarmline.tools.types as types_mod
 
         source_protocols = _get_source(mod)
         source_types = _get_source(types_mod)

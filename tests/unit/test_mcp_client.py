@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.runtime.thin.mcp_client import McpClient
+from swarmline.runtime.thin.mcp_client import McpClient
 
 
 class TestMcpClientCallTool:
@@ -33,7 +33,7 @@ class TestMcpClientCallTool:
                 _ = (args, kwargs)
                 return _Response()
 
-        monkeypatch.setattr("cognitia.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
 
         client = McpClient(timeout_seconds=1.0)
         result = await client.call_tool(
@@ -61,7 +61,7 @@ class TestMcpClientCallTool:
                 _ = (args, kwargs)
                 raise RuntimeError("network down")
 
-        monkeypatch.setattr("cognitia.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
 
         client = McpClient(timeout_seconds=1.0)
         result = await client.call_tool(
@@ -110,7 +110,7 @@ class TestMcpClientListTools:
                 _ = (args, kwargs)
                 return _Response()
 
-        monkeypatch.setattr("cognitia.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
 
         client = McpClient(timeout_seconds=1.0)
         tools = await client.list_tools("https://example.test/mcp")
@@ -145,7 +145,7 @@ class TestMcpClientListTools:
                 calls["count"] += 1
                 return _Response()
 
-        monkeypatch.setattr("cognitia.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
 
         client = McpClient(timeout_seconds=1.0, tools_cache_ttl_seconds=100.0)
         first = await client.list_tools("https://example.test/mcp")

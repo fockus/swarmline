@@ -7,15 +7,15 @@ No API keys required.
 
 import asyncio
 
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.middleware import (
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import (
     CostTracker,
     Middleware,
     SecurityGuard,
     ToolOutputCompressor,
     build_middleware_stack,
 )
-from cognitia.agent.result import Result
+from swarmline.agent.result import Result
 
 
 # --- Custom middleware ---

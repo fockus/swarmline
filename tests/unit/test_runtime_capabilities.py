@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.runtime.capabilities import (
+from swarmline.runtime.capabilities import (
     CapabilityRequirements,
     get_runtime_capabilities,
 )
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 
 class TestCapabilityRequirements:

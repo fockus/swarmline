@@ -9,7 +9,7 @@ Hooks intercept agent lifecycle events for security enforcement, logging, and cu
 Register callbacks for four event types:
 
 ```python
-from cognitia.hooks import HookRegistry
+from swarmline.hooks import HookRegistry
 
 registry = HookRegistry()
 
@@ -71,17 +71,17 @@ combined = security_hooks.merge(role_hooks)
 Convert `HookRegistry` to Claude Agent SDK `HookMatcher` format:
 
 ```python
-from cognitia.hooks import registry_to_sdk_hooks
+from swarmline.hooks import registry_to_sdk_hooks
 
 sdk_hooks = registry_to_sdk_hooks(registry)
 # Returns: dict[str, list[HookMatcher]] | None
 # Pass to ClaudeAgentOptions.hooks
 ```
 
-The bridge wraps cognitia callbacks (`(**kwargs) -> dict | None`) into SDK-compatible signatures (`(hook_input, tool_use_id, context) -> HookJSONOutput`). A `None` return from cognitia callbacks maps to `{"continue_": True}`.
+The bridge wraps swarmline callbacks (`(**kwargs) -> dict | None`) into SDK-compatible signatures (`(hook_input, tool_use_id, context) -> HookJSONOutput`). A `None` return from swarmline callbacks maps to `{"continue_": True}`.
 
 !!! note
-    Importing `registry_to_sdk_hooks` requires `claude_agent_sdk` as an optional dependency. Without it, `from cognitia.hooks import registry_to_sdk_hooks` raises `ImportError`.
+    Importing `registry_to_sdk_hooks` requires `claude_agent_sdk` as an optional dependency. Without it, `from swarmline.hooks import registry_to_sdk_hooks` raises `ImportError`.
 
 ---
 
@@ -94,7 +94,7 @@ Protects against cascading failures from flaky MCP servers. One breaker per `ser
 **State machine:** `CLOSED` (normal) &rarr; `OPEN` (blocking) &rarr; `HALF_OPEN` (probe) &rarr; `CLOSED`
 
 ```python
-from cognitia.resilience import CircuitBreaker, CircuitState
+from swarmline.resilience import CircuitBreaker, CircuitState
 
 cb = CircuitBreaker(failure_threshold=3, cooldown_seconds=30.0)
 
@@ -123,7 +123,7 @@ assert cb.state == CircuitState.CLOSED
 Manages per-server breakers with shared configuration:
 
 ```python
-from cognitia.resilience import CircuitBreakerRegistry
+from swarmline.resilience import CircuitBreakerRegistry
 
 registry = CircuitBreakerRegistry(failure_threshold=3, cooldown_seconds=60.0)
 
@@ -147,7 +147,7 @@ if breaker.allow_request():
 Manages concurrent agent sessions with TTL eviction and per-session locking:
 
 ```python
-from cognitia.session import InMemorySessionManager, SessionKey, SessionState
+from swarmline.session import InMemorySessionManager, SessionKey, SessionState
 
 manager = InMemorySessionManager(ttl_seconds=900.0)  # 15 min TTL
 
@@ -199,7 +199,7 @@ await manager.close_all()      # Close all sessions
 Restore session state after process restart from persistent storage:
 
 ```python
-from cognitia.session import DefaultSessionRehydrator
+from swarmline.session import DefaultSessionRehydrator
 
 rehydrator = DefaultSessionRehydrator(
     messages=message_store,     # MessageStore protocol
@@ -247,7 +247,7 @@ payload = await rehydrator.build_rehydration_payload(turn_context)
 Controls which tools an agent can invoke. Default-deny with explicit allowlists:
 
 ```python
-from cognitia.policy.tool_policy import DefaultToolPolicy, ToolPolicyInput
+from swarmline.policy.tool_policy import DefaultToolPolicy, ToolPolicyInput
 
 policy = DefaultToolPolicy(
     extra_denied={"dangerous_tool"},           # Additional deny-list
@@ -287,7 +287,7 @@ result = policy.can_use_tool("Bash", {}, state)
 Limits tool calls per turn to control cost and latency:
 
 ```python
-from cognitia.policy.tool_budget import ToolBudget
+from swarmline.policy.tool_budget import ToolBudget
 
 budget = ToolBudget(
     max_tool_calls=8,        # Total calls per turn
@@ -314,7 +314,7 @@ budget.reset()
 Selects which tools to include in the context window when 40+ tools would consume 5000-7000 tokens:
 
 ```python
-from cognitia.policy.tool_selector import ToolSelector, ToolBudgetConfig, ToolGroup
+from swarmline.policy.tool_selector import ToolSelector, ToolBudgetConfig, ToolGroup
 
 config = ToolBudgetConfig(
     max_tools=30,
@@ -357,7 +357,7 @@ selected = selector.select()  # Returns up to max_tools, by priority order
 Assembles the system prompt from layered context packs with token budget management and hot-reload:
 
 ```python
-from cognitia.context import DefaultContextBuilder, ContextInput, ContextBudget
+from swarmline.context import DefaultContextBuilder, ContextInput, ContextBudget
 
 builder = DefaultContextBuilder(prompts_dir="./prompts")
 
@@ -392,7 +392,7 @@ print(built.tool_budget)      # Remaining token budget for tools
 Controls token allocation per context pack:
 
 ```python
-from cognitia.context import ContextBudget
+from swarmline.context import ContextBudget
 
 budget = ContextBudget(
     total_tokens=8000,          # Total budget
@@ -433,7 +433,7 @@ budget = ContextBudget(
 Automatic role switching based on user message keywords:
 
 ```python
-from cognitia.routing import KeywordRoleRouter
+from swarmline.routing import KeywordRoleRouter
 
 router = KeywordRoleRouter(
     default_role="coach",
@@ -467,7 +467,7 @@ roles:
 ```
 
 ```python
-from cognitia.config import load_role_router_config
+from swarmline.config import load_role_router_config
 
 config = load_role_router_config("./prompts/role_router.yaml")
 router = KeywordRoleRouter(
@@ -483,7 +483,7 @@ router = KeywordRoleRouter(
 Structured JSON logging via structlog:
 
 ```python
-from cognitia.observability import AgentLogger, configure_logging
+from swarmline.observability import AgentLogger, configure_logging
 
 # Configure once at startup
 configure_logging(level="info", fmt="json")
@@ -510,7 +510,7 @@ Output format:
 Multi-provider model resolution with aliases:
 
 ```python
-from cognitia.runtime import ModelRegistry, get_registry
+from swarmline.runtime import ModelRegistry, get_registry
 
 registry = get_registry()
 
@@ -524,7 +524,7 @@ registry.get_provider("claude-sonnet-4-20250514")  # "anthropic"
 registry.get_provider("gpt-4o")                     # "openai"
 ```
 
-Models are defined in `cognitia/runtime/models.yaml` and support Anthropic, OpenAI, Google, and DeepSeek.
+Models are defined in `swarmline/runtime/models.yaml` and support Anthropic, OpenAI, Google, and DeepSeek.
 
 ### Resolution Priority
 
@@ -552,7 +552,7 @@ Models are defined in `cognitia/runtime/models.yaml` and support Anthropic, Open
 ### Registry API
 
 ```python
-from cognitia.runtime.model_registry import get_registry, reset_registry
+from swarmline.runtime.model_registry import get_registry, reset_registry
 
 registry = get_registry()  # singleton, loads models.yaml once
 
@@ -579,7 +579,7 @@ The registry does not support adding aliases at runtime. To add custom models or
 Cooperative cancellation for async agent runtime loops. Thread-safe.
 
 ```python
-from cognitia.runtime.cancellation import CancellationToken
+from swarmline.runtime.cancellation import CancellationToken
 
 token = CancellationToken()
 
@@ -607,7 +607,7 @@ Pass a `CancellationToken` to stop a running agent mid-stream:
 
 ```python
 import asyncio
-from cognitia.runtime.cancellation import CancellationToken
+from swarmline.runtime.cancellation import CancellationToken
 
 token = CancellationToken()
 
@@ -629,7 +629,7 @@ Runtime loops check `token.is_cancelled` between iterations and exit cleanly whe
 Register custom slash commands:
 
 ```python
-from cognitia.commands import CommandRegistry
+from swarmline.commands import CommandRegistry
 
 registry = CommandRegistry()
 

@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cognitia.runtime.ports.base import BaseRuntimePort
-from cognitia.runtime.ports.deepagents import DeepAgentsRuntimePort
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.ports.base import BaseRuntimePort
+from swarmline.runtime.ports.deepagents import DeepAgentsRuntimePort
+from swarmline.runtime.types import RuntimeConfig
 
 
 class TestNativeMemoryPassedToUpstream:
@@ -23,11 +23,11 @@ class TestNativeMemoryPassedToUpstream:
                 feature_mode="native_first",
                 allow_native_features=True,
             ),
-            memory_sources=["./AGENTS.md", "~/.cognitia/AGENTS.md"],
+            memory_sources=["./AGENTS.md", "~/.swarmline/AGENTS.md"],
         )
         assert port._config.native_config.get("memory") == [
             "./AGENTS.md",
-            "~/.cognitia/AGENTS.md",
+            "~/.swarmline/AGENTS.md",
         ]
 
     def test_no_memory_sources_no_native_key(self) -> None:

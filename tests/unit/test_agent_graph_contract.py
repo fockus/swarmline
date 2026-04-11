@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.graph_types import AgentNode, EdgeType
-from cognitia.multi_agent.registry_types import AgentStatus
-from cognitia.protocols.agent_graph import AgentGraphQuery, AgentGraphStore, AgentNodeUpdater
+from swarmline.multi_agent.graph_types import AgentNode, EdgeType
+from swarmline.multi_agent.registry_types import AgentStatus
+from swarmline.protocols.agent_graph import AgentGraphQuery, AgentGraphStore, AgentNodeUpdater
 
 
 # ---------------------------------------------------------------------------
@@ -16,14 +16,14 @@ from cognitia.protocols.agent_graph import AgentGraphQuery, AgentGraphStore, Age
 
 @pytest.fixture
 def inmemory_store():
-    from cognitia.multi_agent.graph_store import InMemoryAgentGraph
+    from swarmline.multi_agent.graph_store import InMemoryAgentGraph
 
     return InMemoryAgentGraph()
 
 
 @pytest.fixture
 def sqlite_store(tmp_path):
-    from cognitia.multi_agent.graph_store_sqlite import SqliteAgentGraph
+    from swarmline.multi_agent.graph_store_sqlite import SqliteAgentGraph
 
     return SqliteAgentGraph(str(tmp_path / "graph.db"))
 

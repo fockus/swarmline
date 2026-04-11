@@ -5,13 +5,13 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any
 
-from cognitia.runtime.ports.base import (
+from swarmline.runtime.ports.base import (
     BaseRuntimePort,
     convert_event,
 )
-from cognitia.runtime.ports.thin import ThinRuntimePort
-from cognitia.runtime.types import Message, RuntimeEvent
-from cognitia.agent.tool import tool
+from swarmline.runtime.ports.thin import ThinRuntimePort
+from swarmline.runtime.types import Message, RuntimeEvent
+from swarmline.agent.tool import tool
 
 
 # --- convert_event ---

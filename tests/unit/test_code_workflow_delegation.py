@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import pytest
 from _stubs import StubPlannerMode as PlannerMode
-from cognitia.orchestration.code_workflow_engine import (
+from swarmline.orchestration.code_workflow_engine import (
     CodeWorkflowEngine,
     WorkflowStatus,
 )
-from cognitia.orchestration.dod_state_machine import DoDStateMachine
-from cognitia.orchestration.generic_workflow_engine import GenericWorkflowEngine
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.dod_state_machine import DoDStateMachine
+from swarmline.orchestration.generic_workflow_engine import GenericWorkflowEngine
+from swarmline.orchestration.verification_types import (
     VerificationResult,
     VerificationStatus,
 )

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from cognitia.memory.types import MemoryMessage
+from swarmline.memory.types import MemoryMessage
 
 
 class TestTemplateSummaryGenerator:
@@ -11,7 +11,7 @@ class TestTemplateSummaryGenerator:
 
     def test_empty_messages_returns_empty(self) -> None:
         """Empty list soobshcheniy -> empty string."""
-        from cognitia.memory.summarizer import TemplateSummaryGenerator
+        from swarmline.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator()
         result = gen.summarize([])
@@ -19,7 +19,7 @@ class TestTemplateSummaryGenerator:
 
     def test_single_user_message(self) -> None:
         """Odno user-message -> kratkiy summary."""
-        from cognitia.memory.summarizer import TemplateSummaryGenerator
+        from swarmline.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator()
         messages = [MemoryMessage(role="user", content="Мой доход 120 000 рублей")]
@@ -29,7 +29,7 @@ class TestTemplateSummaryGenerator:
 
     def test_multi_turn_conversation(self) -> None:
         """Notskolko turn -> summary contains klyuchevye momenty."""
-        from cognitia.memory.summarizer import TemplateSummaryGenerator
+        from swarmline.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator()
         messages = [
@@ -44,7 +44,7 @@ class TestTemplateSummaryGenerator:
 
     def test_truncates_long_messages(self) -> None:
         """Dlinnye messages are truncated in summary."""
-        from cognitia.memory.summarizer import TemplateSummaryGenerator
+        from swarmline.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator(max_message_chars=50)
         messages = [
@@ -56,7 +56,7 @@ class TestTemplateSummaryGenerator:
 
     def test_respects_max_messages(self) -> None:
         """Considers tolko poslednie N soobshcheniy."""
-        from cognitia.memory.summarizer import TemplateSummaryGenerator
+        from swarmline.memory.summarizer import TemplateSummaryGenerator
 
         gen = TemplateSummaryGenerator(max_messages=2)
         messages = [

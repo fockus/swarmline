@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.orchestration.code_verifier import CommandResult
-from cognitia.orchestration.coding_standards import CodingStandardsConfig
-from cognitia.orchestration.tdd_code_verifier import TddCodeVerifier
-from cognitia.orchestration.types import PlanStep
-from cognitia.orchestration.verification_types import VerificationStatus
+from swarmline.orchestration.code_verifier import CommandResult
+from swarmline.orchestration.coding_standards import CodingStandardsConfig
+from swarmline.orchestration.tdd_code_verifier import TddCodeVerifier
+from swarmline.orchestration.types import PlanStep
+from swarmline.orchestration.verification_types import VerificationStatus
 
 
 class FakeRunner:

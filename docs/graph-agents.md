@@ -1,6 +1,6 @@
 # Agent Graph System
 
-Cognitia's Agent Graph System models **hierarchical multi-agent organizations** as directed graphs. Each agent occupies a node with a role, capabilities, and position in a chain of command. A root agent decomposes goals into subtasks, delegates them down the hierarchy, and collects results -- all with governance guardrails, DAG-based task scheduling, and inter-agent messaging.
+Swarmline's Agent Graph System models **hierarchical multi-agent organizations** as directed graphs. Each agent occupies a node with a role, capabilities, and position in a chain of command. A root agent decomposes goals into subtasks, delegates them down the hierarchy, and collects results -- all with governance guardrails, DAG-based task scheduling, and inter-agent messaging.
 
 ## Overview
 
@@ -15,7 +15,7 @@ The Agent Graph System is built around six primitives:
 | **Governance** | Capability-based permissions and global limits | `AgentCapabilities`, `GraphGovernanceConfig` |
 | **Graph Tools** | Agent-callable tools: hire, delegate, escalate | `create_graph_tools` factory |
 
-Each primitive has a `@runtime_checkable` protocol in `cognitia.protocols` and one or more implementations in `cognitia.multi_agent`.
+Each primitive has a `@runtime_checkable` protocol in `swarmline.protocols` and one or more implementations in `swarmline.multi_agent`.
 
 **When to use:** You need a structured multi-agent system with reporting lines, permission controls, and task hierarchies -- rather than flat agent-as-tool invocation. Typical use cases: autonomous software teams, research organizations, multi-step workflows with approval gates.
 
@@ -24,10 +24,10 @@ Each primitive has a `@runtime_checkable` protocol in `cognitia.protocols` and o
 Build a minimal two-agent graph and run a task:
 
 ```python
-from cognitia.multi_agent import InMemoryAgentGraph, InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
-from cognitia.multi_agent.graph_types import AgentCapabilities
+from swarmline.multi_agent import InMemoryAgentGraph, InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+from swarmline.multi_agent.graph_types import AgentCapabilities
 
 # 1. Create storage backends
 graph = InMemoryAgentGraph()
@@ -72,7 +72,7 @@ result = await orchestrator.wait_for_task(status.root_task_id, timeout=120.0)
 `AgentNode` is a frozen dataclass representing an agent in the graph:
 
 ```python
-from cognitia.multi_agent.graph_types import AgentNode, AgentCapabilities
+from swarmline.multi_agent.graph_types import AgentNode, AgentCapabilities
 
 node = AgentNode(
     id="eng1",
@@ -117,7 +117,7 @@ node = AgentNode(
 Per-agent permission flags configured on creation:
 
 ```python
-from cognitia.multi_agent.graph_types import AgentCapabilities
+from swarmline.multi_agent.graph_types import AgentCapabilities
 
 caps = AgentCapabilities(
     can_hire=True,           # can create new agent nodes
@@ -136,8 +136,8 @@ The `GraphBuilder` provides a fluent API for constructing agent hierarchies. It 
 ### Fluent API
 
 ```python
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_types import AgentCapabilities
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_types import AgentCapabilities
 
 builder = GraphBuilder(store)
 
@@ -231,7 +231,7 @@ Governance enforces **global limits** and **per-agent permissions** before graph
 Global limits for the entire graph:
 
 ```python
-from cognitia.multi_agent.graph_governance import GraphGovernanceConfig
+from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
 
 governance = GraphGovernanceConfig(
     max_agents=50,                # maximum total nodes in the graph
@@ -247,7 +247,7 @@ governance = GraphGovernanceConfig(
 Two enforcement functions validate operations before they execute:
 
 ```python
-from cognitia.multi_agent.graph_governance import (
+from swarmline.multi_agent.graph_governance import (
     check_hire_allowed,
     check_delegate_allowed,
     GovernanceError,
@@ -285,8 +285,8 @@ The `GraphTaskBoard` manages hierarchical tasks with parent-child relationships,
 A task in the hierarchical board:
 
 ```python
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.multi_agent.task_types import TaskStatus, TaskPriority
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent.task_types import TaskStatus, TaskPriority
 
 task = GraphTaskItem(
     id="task-001",
@@ -323,8 +323,8 @@ task = GraphTaskItem(
 ### Task Lifecycle
 
 ```python
-from cognitia.multi_agent import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
 
 board = InMemoryGraphTaskBoard()
 
@@ -339,7 +339,7 @@ claimed = await board.checkout_task("t1", "eng1")
 await board.complete_task("t1")
 
 # List with filters
-from cognitia.multi_agent.task_types import TaskStatus
+from swarmline.multi_agent.task_types import TaskStatus
 tasks = await board.list_tasks(status=TaskStatus.TODO, assignee_agent_id="eng1")
 ```
 
@@ -386,8 +386,8 @@ When a child task is completed, the parent's progress is automatically recalcula
 Map custom workflow stages to core `TaskStatus` values:
 
 ```python
-from cognitia.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
-from cognitia.multi_agent.task_types import TaskStatus
+from swarmline.multi_agent.graph_task_types import WorkflowConfig, WorkflowStage
+from swarmline.multi_agent.task_types import TaskStatus
 
 workflow = WorkflowConfig(
     name="software-development",
@@ -414,7 +414,7 @@ in_progress = workflow.stages_for_status(TaskStatus.IN_PROGRESS)
 Attach audit-trail comments to tasks:
 
 ```python
-from cognitia.multi_agent.graph_task_types import TaskComment
+from swarmline.multi_agent.graph_task_types import TaskComment
 
 await board.add_comment(TaskComment(
     id="c1", task_id="t1", author_agent_id="eng1",
@@ -443,8 +443,8 @@ Inter-agent messaging with three channel types: direct, broadcast, and escalatio
 ### InMemoryGraphCommunication
 
 ```python
-from cognitia.multi_agent.graph_communication import InMemoryGraphCommunication
-from cognitia.multi_agent.graph_comm_types import GraphMessage, ChannelType
+from swarmline.multi_agent.graph_communication import InMemoryGraphCommunication
+from swarmline.multi_agent.graph_comm_types import GraphMessage, ChannelType
 
 comm = InMemoryGraphCommunication(graph_query=graph)
 
@@ -499,7 +499,7 @@ The `GraphContextBuilder` enriches each agent's system prompt with its position 
 The structured context passed to the agent runner:
 
 ```python
-from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
 # Built automatically by the orchestrator, but can be constructed manually:
 ctx = AgentExecutionContext(
@@ -520,7 +520,7 @@ ctx = AgentExecutionContext(
 Tools, skills, and MCP servers are **inherited from ancestors**: an agent receives its own plus all ancestors' tools/skills/MCP servers (deduplicated). Runtime config uses **nearest-ancestor inheritance**: the first non-`None` config walking up the chain is used.
 
 ```python
-from cognitia.multi_agent.graph_context import GraphContextBuilder
+from swarmline.multi_agent.graph_context import GraphContextBuilder
 
 ctx_builder = GraphContextBuilder(
     graph_query=graph,
@@ -568,7 +568,7 @@ async def run_agent_legacy(
 The `create_graph_tools` factory produces tool definitions that agents can invoke to dynamically modify the organization graph, delegate work, or escalate issues.
 
 ```python
-from cognitia.multi_agent.graph_tools import create_graph_tools
+from swarmline.multi_agent.graph_tools import create_graph_tools
 
 tools = create_graph_tools(
     graph=graph,
@@ -642,7 +642,7 @@ Sends escalation messages to all ancestors in the chain of command via `GraphCom
 Zero-dependency, thread-safe via `asyncio.Lock`. Implements both `AgentGraphStore` and `AgentGraphQuery`:
 
 ```python
-from cognitia.multi_agent import InMemoryAgentGraph
+from swarmline.multi_agent import InMemoryAgentGraph
 
 graph = InMemoryAgentGraph()
 await graph.add_node(root_node)
@@ -669,7 +669,7 @@ snapshot = await graph.snapshot()
 File-based persistence using SQLite with recursive CTEs for efficient tree traversal. Uses `asyncio.to_thread()` for non-blocking I/O:
 
 ```python
-from cognitia.multi_agent.graph_store_sqlite import SqliteAgentGraph
+from swarmline.multi_agent.graph_store_sqlite import SqliteAgentGraph
 
 # File-based (persists across restarts)
 graph = SqliteAgentGraph(db_path="agents.db")
@@ -689,7 +689,7 @@ The SQLite backend uses `PRAGMA journal_mode=WAL` for concurrent read performanc
 Implements `GraphTaskBoard`, `GraphTaskScheduler`, `GraphTaskBlocker`, and `TaskCommentStore`:
 
 ```python
-from cognitia.multi_agent import InMemoryGraphTaskBoard
+from swarmline.multi_agent import InMemoryGraphTaskBoard
 
 board = InMemoryGraphTaskBoard()
 ```
@@ -699,7 +699,7 @@ board = InMemoryGraphTaskBoard()
 The `DefaultGraphOrchestrator` ties all components together into an execution engine:
 
 ```python
-from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
 
 orchestrator = DefaultGraphOrchestrator(
     graph=graph,
@@ -725,7 +725,7 @@ orchestrator = DefaultGraphOrchestrator(
 ### Run Status
 
 ```python
-from cognitia.multi_agent.graph_orchestrator_types import OrchestratorRunState
+from swarmline.multi_agent.graph_orchestrator_types import OrchestratorRunState
 
 status = await orchestrator.get_status(run_id)
 # status.state: PENDING | RUNNING | COMPLETED | FAILED | STOPPED
@@ -742,14 +742,14 @@ await orchestrator.stop(run_id)
 
 ## Protocols
 
-All graph components are defined as `@runtime_checkable` protocols in `cognitia.protocols`:
+All graph components are defined as `@runtime_checkable` protocols in `swarmline.protocols`:
 
 ### AgentGraphStore
 
 Mutation operations on the agent graph (5 methods):
 
 ```python
-from cognitia.protocols.agent_graph import AgentGraphStore
+from swarmline.protocols.agent_graph import AgentGraphStore
 
 @runtime_checkable
 class AgentGraphStore(Protocol):
@@ -765,7 +765,7 @@ class AgentGraphStore(Protocol):
 Read-only traversal of the agent graph (4 methods):
 
 ```python
-from cognitia.protocols.agent_graph import AgentGraphQuery
+from swarmline.protocols.agent_graph import AgentGraphQuery
 
 @runtime_checkable
 class AgentGraphQuery(Protocol):
@@ -780,7 +780,7 @@ class AgentGraphQuery(Protocol):
 Partial update without remove+add (1 method):
 
 ```python
-from cognitia.protocols.agent_graph import AgentNodeUpdater
+from swarmline.protocols.agent_graph import AgentNodeUpdater
 
 @runtime_checkable
 class AgentNodeUpdater(Protocol):
@@ -792,7 +792,7 @@ class AgentNodeUpdater(Protocol):
 Hierarchical task management with atomic checkout (5 methods):
 
 ```python
-from cognitia.protocols.graph_task import GraphTaskBoard
+from swarmline.protocols.graph_task import GraphTaskBoard
 
 @runtime_checkable
 class GraphTaskBoard(Protocol):
@@ -808,7 +808,7 @@ class GraphTaskBoard(Protocol):
 DAG-aware task scheduling (2 methods):
 
 ```python
-from cognitia.protocols.graph_task import GraphTaskScheduler
+from swarmline.protocols.graph_task import GraphTaskScheduler
 
 @runtime_checkable
 class GraphTaskScheduler(Protocol):
@@ -821,7 +821,7 @@ class GraphTaskScheduler(Protocol):
 Block/unblock tasks (2 methods):
 
 ```python
-from cognitia.protocols.graph_task import GraphTaskBlocker
+from swarmline.protocols.graph_task import GraphTaskBlocker
 
 @runtime_checkable
 class GraphTaskBlocker(Protocol):
@@ -834,7 +834,7 @@ class GraphTaskBlocker(Protocol):
 Persistent comment threads on tasks (3 methods):
 
 ```python
-from cognitia.protocols.graph_task import TaskCommentStore
+from swarmline.protocols.graph_task import TaskCommentStore
 
 @runtime_checkable
 class TaskCommentStore(Protocol):
@@ -848,7 +848,7 @@ class TaskCommentStore(Protocol):
 Inter-agent messaging (5 methods):
 
 ```python
-from cognitia.protocols.graph_comm import GraphCommunication
+from swarmline.protocols.graph_comm import GraphCommunication
 
 @runtime_checkable
 class GraphCommunication(Protocol):
@@ -864,7 +864,7 @@ class GraphCommunication(Protocol):
 Hierarchical execution engine (5 methods):
 
 ```python
-from cognitia.protocols.graph_orchestrator import GraphOrchestrator
+from swarmline.protocols.graph_orchestrator import GraphOrchestrator
 
 @runtime_checkable
 class GraphOrchestrator(Protocol):
@@ -880,7 +880,7 @@ class GraphOrchestrator(Protocol):
 Wait for task completion (1 method, separated from GraphOrchestrator for ISP compliance):
 
 ```python
-from cognitia.protocols.graph_orchestrator import GraphTaskWaiter
+from swarmline.protocols.graph_orchestrator import GraphTaskWaiter
 
 @runtime_checkable
 class GraphTaskWaiter(Protocol):
@@ -892,8 +892,8 @@ class GraphTaskWaiter(Protocol):
 To create a custom backend (e.g. PostgreSQL, Redis), implement the corresponding protocol. Use `isinstance()` checks at runtime thanks to `@runtime_checkable`:
 
 ```python
-from cognitia.protocols.agent_graph import AgentGraphStore, AgentGraphQuery
-from cognitia.multi_agent.graph_types import AgentNode, GraphSnapshot
+from swarmline.protocols.agent_graph import AgentGraphStore, AgentGraphQuery
+from swarmline.multi_agent.graph_types import AgentNode, GraphSnapshot
 
 class PostgresAgentGraph:
     """PostgreSQL-backed agent graph with CTE traversal."""

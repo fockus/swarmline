@@ -7,14 +7,14 @@ from typing import Any
 
 import pytest
 
-from cognitia.session.backends import (
+from swarmline.session.backends import (
     InMemorySessionBackend,
     MemoryScope,
     SqliteSessionBackend,
     SessionBackend,
     scoped_key,
 )
-from cognitia.session.types import SessionKey
+from swarmline.session.types import SessionKey
 
 
 # ---------------------------------------------------------------------------

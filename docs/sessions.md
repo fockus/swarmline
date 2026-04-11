@@ -5,7 +5,7 @@ Pluggable session state persistence with namespace isolation via `MemoryScope`.
 ## Quick Start
 
 ```python
-from cognitia.session.backends import SqliteSessionBackend, MemoryScope, scoped_key
+from swarmline.session.backends import SqliteSessionBackend, MemoryScope, scoped_key
 
 backend = SqliteSessionBackend(db_path="sessions.db")
 
@@ -51,7 +51,7 @@ class SessionBackend(Protocol):
 | `MemoryScope.SHARED` | `shared:` | Shared between specific agent groups |
 
 ```python
-from cognitia.session.backends import MemoryScope, scoped_key
+from swarmline.session.backends import MemoryScope, scoped_key
 
 global_key = scoped_key(MemoryScope.GLOBAL, "settings")     # "global:settings"
 agent_key = scoped_key(MemoryScope.AGENT, "session:123")     # "agent:session:123"
@@ -63,8 +63,8 @@ shared_key = scoped_key(MemoryScope.SHARED, "team-context")  # "shared:team-cont
 `InMemorySessionManager` accepts an optional `backend` argument for persistence:
 
 ```python
-from cognitia.session.manager import InMemorySessionManager
-from cognitia.session.backends import SqliteSessionBackend
+from swarmline.session.manager import InMemorySessionManager
+from swarmline.session.backends import SqliteSessionBackend
 
 backend = SqliteSessionBackend(db_path="sessions.db")
 manager = InMemorySessionManager(backend=backend)

@@ -7,12 +7,12 @@ No API keys required (uses mock runtime).
 import asyncio
 from collections.abc import AsyncIterator
 
-from cognitia.multi_agent.agent_tool import (
+from swarmline.multi_agent.agent_tool import (
     AgentToolResult,
     create_agent_tool_spec,
     execute_agent_tool,
 )
-from cognitia.runtime.types import Message, RuntimeEvent, ToolSpec
+from swarmline.runtime.types import Message, RuntimeEvent, ToolSpec
 
 
 # --- Mock runtime that simulates an expert agent ---

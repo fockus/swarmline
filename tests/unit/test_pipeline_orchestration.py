@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
-from cognitia.pipeline.pipeline import Pipeline
-from cognitia.pipeline.types import PhaseStatus, PipelinePhase
+from swarmline.pipeline.pipeline import Pipeline
+from swarmline.pipeline.types import PhaseStatus, PipelinePhase
 
 
 class TestPipelineOrchestrationFailureDetection:

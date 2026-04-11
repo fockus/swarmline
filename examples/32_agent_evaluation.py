@@ -13,10 +13,10 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
-from cognitia.eval.reporters import ConsoleReporter, JsonReporter
-from cognitia.eval.runner import EvalRunner
-from cognitia.eval.scorers import ContainsScorer, CostScorer, ExactMatchScorer, LatencyScorer
-from cognitia.eval.types import EvalCase
+from swarmline.eval.reporters import ConsoleReporter, JsonReporter
+from swarmline.eval.runner import EvalRunner
+from swarmline.eval.scorers import ContainsScorer, CostScorer, ExactMatchScorer, LatencyScorer
+from swarmline.eval.types import EvalCase
 
 
 def create_mock_agent() -> MagicMock:

@@ -1,14 +1,14 @@
 # Production Safety
 
-Cognitia provides four complementary safety mechanisms for production deployments: **cost budgets**, **guardrails**, **input filters**, and **retry/fallback policies**. All are opt-in via `RuntimeConfig` — disabled by default for zero overhead.
+Swarmline provides four complementary safety mechanisms for production deployments: **cost budgets**, **guardrails**, **input filters**, and **retry/fallback policies**. All are opt-in via `RuntimeConfig` — disabled by default for zero overhead.
 
 ## Cost Budget Tracking
 
 Track accumulated LLM costs and enforce spending limits.
 
 ```python
-from cognitia.runtime.cost import CostBudget
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.cost import CostBudget
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -49,7 +49,7 @@ config = RuntimeConfig(
 ### Programmatic Access
 
 ```python
-from cognitia.runtime.cost import CostTracker, CostBudget, load_pricing
+from swarmline.runtime.cost import CostTracker, CostBudget, load_pricing
 
 tracker = CostTracker(budget=budget, pricing=load_pricing())
 tracker.record("gpt-4o", input_tokens=1000, output_tokens=500)
@@ -65,7 +65,7 @@ tracker.reset()                  # zero all counters
 Override bundled pricing by passing a custom `dict[str, ModelPricing]` to `CostTracker`:
 
 ```python
-from cognitia.runtime.cost import CostTracker, CostBudget, ModelPricing
+from swarmline.runtime.cost import CostTracker, CostBudget, ModelPricing
 
 custom_pricing = {
     "my-fine-tuned-model": ModelPricing(input_per_1m=5.0, output_per_1m=20.0),
@@ -89,12 +89,12 @@ The `load_pricing()` function loads the bundled `pricing.json` via `importlib.re
 Pre- and post-LLM content checks. Input guardrails run before the LLM call; output guardrails run after. A failed guardrail emits an error event with `kind="guardrail_tripwire"`.
 
 ```python
-from cognitia.guardrails import (
+from swarmline.guardrails import (
     ContentLengthGuardrail,
     RegexGuardrail,
     CallerAllowlistGuardrail,
 )
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -124,7 +124,7 @@ config = RuntimeConfig(
 Implement the `Guardrail` protocol:
 
 ```python
-from cognitia.guardrails import GuardrailContext, GuardrailResult
+from swarmline.guardrails import GuardrailContext, GuardrailResult
 
 class ToxicityGuardrail:
     async def check(self, ctx: GuardrailContext, text: str) -> GuardrailResult:
@@ -146,8 +146,8 @@ class ToxicityGuardrail:
 Transform messages and system prompt before each LLM call. Filters are applied sequentially in list order.
 
 ```python
-from cognitia.input_filters import MaxTokensFilter, SystemPromptInjector
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -170,11 +170,11 @@ config = RuntimeConfig(
 
 ### InputFilter Protocol
 
-All filters implement the `InputFilter` protocol from `cognitia.input_filters`:
+All filters implement the `InputFilter` protocol from `swarmline.input_filters`:
 
 ```python
-from cognitia.input_filters import InputFilter
-from cognitia.runtime.types import Message
+from swarmline.input_filters import InputFilter
+from swarmline.runtime.types import Message
 
 class RedactFilter:
     async def filter(
@@ -193,8 +193,8 @@ Filters are applied sequentially in list order. Each filter receives the output 
 Automatic retry with exponential backoff when LLM calls fail.
 
 ```python
-from cognitia.retry import ExponentialBackoff
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.retry import ExponentialBackoff
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -218,7 +218,7 @@ delay = min(base_delay * 2^attempt, max_delay) * uniform(0.5, 1.5)
 Switch to a backup model when the primary fails:
 
 ```python
-from cognitia.retry import ModelFallbackChain
+from swarmline.retry import ModelFallbackChain
 
 chain = ModelFallbackChain(models=["gpt-4o", "claude-sonnet-4-20250514", "gemini-2.0-flash"])
 next_model = chain.next_model("gpt-4o")  # "claude-sonnet-4-20250514"
@@ -229,7 +229,7 @@ next_model = chain.next_model("gpt-4o")  # "claude-sonnet-4-20250514"
 Switch to an entirely different provider when the primary is down:
 
 ```python
-from cognitia.retry import ProviderFallback
+from swarmline.retry import ProviderFallback
 
 fb = ProviderFallback(fallback_model="openai:gpt-4o")
 # Use fb.fallback_model as the target when the primary provider returns errors
@@ -242,7 +242,7 @@ fb = ProviderFallback(fallback_model="openai:gpt-4o")
 All retry strategies implement the `RetryPolicy` protocol:
 
 ```python
-from cognitia.retry import RetryPolicy
+from swarmline.retry import RetryPolicy
 
 class MyRetryPolicy:
     def should_retry(self, error: Exception, attempt: int) -> tuple[bool, float]:

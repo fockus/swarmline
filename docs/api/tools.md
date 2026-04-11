@@ -4,8 +4,8 @@ Tool decorator and definitions for extending agent capabilities.
 
 ## @tool Decorator
 
-::: cognitia.agent.tool.tool
+::: swarmline.agent.tool.tool
 
 ## ToolDefinition
 
-::: cognitia.agent.tool.ToolDefinition
+::: swarmline.agent.tool.ToolDefinition

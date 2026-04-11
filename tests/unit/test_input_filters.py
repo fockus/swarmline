@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.input_filters import InputFilter, MaxTokensFilter, SystemPromptInjector
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.input_filters import InputFilter, MaxTokensFilter, SystemPromptInjector
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 # ---------------------------------------------------------------------------

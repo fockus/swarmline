@@ -5,7 +5,7 @@ Transform the `RuntimeEvent` stream into serializable `UIState` snapshots for fr
 ## Quick Start
 
 ```python
-from cognitia.ui.projection import ChatProjection, project_stream
+from swarmline.ui.projection import ChatProjection, project_stream
 
 projection = ChatProjection()
 
@@ -55,7 +55,7 @@ class UIMessage:
 ### Pattern 1: Streaming to Frontend
 
 ```python
-from cognitia.ui.projection import ChatProjection, project_stream
+from swarmline.ui.projection import ChatProjection, project_stream
 
 projection = ChatProjection()
 
@@ -132,8 +132,8 @@ restored = UIState.from_dict(payload)
 Implement the `EventProjection` protocol for custom UI representations:
 
 ```python
-from cognitia.ui.projection import EventProjection, UIState
-from cognitia.runtime.types import RuntimeEvent
+from swarmline.ui.projection import EventProjection, UIState
+from swarmline.runtime.types import RuntimeEvent
 
 class MinimalProjection:
     def __init__(self):

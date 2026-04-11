@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from cognitia.mcp._tools_code import exec_code
+from swarmline.mcp._tools_code import exec_code
 
 
 class TestExecCode:
@@ -54,7 +54,7 @@ class TestExecCode:
 
     @pytest.mark.asyncio
     async def test_exec_requires_trusted_mentions_host_execution(self) -> None:
-        with patch("cognitia.mcp._tools_code.logger") as mock_logger:
+        with patch("swarmline.mcp._tools_code.logger") as mock_logger:
             result = await exec_code("print('hello')")
         assert result["ok"] is False
         assert "host execution" in result["error"].lower()

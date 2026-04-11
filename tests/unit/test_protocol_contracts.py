@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator
 from typing import Any, get_type_hints
 
 import pytest
-from cognitia.protocols import (
+from swarmline.protocols import (
     ModelSelector,
     RoleSkillsProvider,
     RuntimePort,
@@ -167,7 +167,7 @@ class TestSummaryGeneratorContract:
 
     def test_is_runtime_checkable(self) -> None:
         """SummaryGenerator — @runtime_checkable."""
-        from cognitia.memory.types import MemoryMessage
+        from swarmline.memory.types import MemoryMessage
 
         class DummySummarizer:
             def summarize(self, messages: list[MemoryMessage]) -> str:
@@ -209,7 +209,7 @@ class TestModelSelectorContract:
 
     def test_model_policy_satisfies_contract(self) -> None:
         """ModelPolicy implements the ModelSelector Protocol."""
-        from cognitia.runtime.model_policy import ModelPolicy
+        from swarmline.runtime.model_policy import ModelPolicy
 
         policy = ModelPolicy()
         # Verify presence of both methods
@@ -230,13 +230,13 @@ class TestBaseRuntimePortContract:
     """Contract BaseRuntimePort: check that it satisfies RuntimePort."""
 
     def _make_config(self) -> Any:
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.types import RuntimeConfig
 
         return RuntimeConfig(runtime_name="thin")
 
     def test_satisfies_runtime_port_interface(self) -> None:
         """BaseRuntimePort implements all RuntimePort methods."""
-        from cognitia.runtime.ports.base import BaseRuntimePort
+        from swarmline.runtime.ports.base import BaseRuntimePort
 
         port = BaseRuntimePort(system_prompt="test", config=self._make_config())
         assert hasattr(port, "is_connected")
@@ -246,7 +246,7 @@ class TestBaseRuntimePortContract:
 
     def test_has_history_management(self) -> None:
         """BaseRuntimePort has a sliding window history."""
-        from cognitia.runtime.ports.base import BaseRuntimePort
+        from swarmline.runtime.ports.base import BaseRuntimePort
 
         port = BaseRuntimePort(
             system_prompt="test",
@@ -259,7 +259,7 @@ class TestBaseRuntimePortContract:
     @pytest.mark.asyncio
     async def test_connect_sets_is_connected(self) -> None:
         """connect() sets is_connected = True."""
-        from cognitia.runtime.ports.base import BaseRuntimePort
+        from swarmline.runtime.ports.base import BaseRuntimePort
 
         port = BaseRuntimePort(system_prompt="test", config=self._make_config())
         assert not port.is_connected
@@ -269,7 +269,7 @@ class TestBaseRuntimePortContract:
     @pytest.mark.asyncio
     async def test_disconnect_clears_state(self) -> None:
         """disconnect() resets is_connected and history."""
-        from cognitia.runtime.ports.base import BaseRuntimePort
+        from swarmline.runtime.ports.base import BaseRuntimePort
 
         port = BaseRuntimePort(system_prompt="test", config=self._make_config())
         await port.connect()
@@ -289,14 +289,14 @@ class TestThinRuntimePortContract:
 
     def test_is_subclass_of_base(self) -> None:
         """ThinRuntimePort inherits from BaseRuntimePort."""
-        from cognitia.runtime.ports.base import BaseRuntimePort
-        from cognitia.runtime.ports.thin import ThinRuntimePort
+        from swarmline.runtime.ports.base import BaseRuntimePort
+        from swarmline.runtime.ports.thin import ThinRuntimePort
 
         assert issubclass(ThinRuntimePort, BaseRuntimePort)
 
     def test_satisfies_runtime_port_interface(self) -> None:
         """ThinRuntimePort implements the RuntimePort interface."""
-        from cognitia.runtime.ports.thin import ThinRuntimePort
+        from swarmline.runtime.ports.thin import ThinRuntimePort
 
         port = ThinRuntimePort(system_prompt="test")
         assert hasattr(port, "is_connected")
@@ -315,8 +315,8 @@ class TestDeepAgentsRuntimePortContract:
 
     def test_is_subclass_of_base(self) -> None:
         """DeepAgentsRuntimePort inherits from BaseRuntimePort."""
-        from cognitia.runtime.ports.base import BaseRuntimePort
-        from cognitia.runtime.ports.deepagents import (
+        from swarmline.runtime.ports.base import BaseRuntimePort
+        from swarmline.runtime.ports.deepagents import (
             DeepAgentsRuntimePort,
         )
 
@@ -324,7 +324,7 @@ class TestDeepAgentsRuntimePortContract:
 
     def test_satisfies_runtime_port_interface(self) -> None:
         """DeepAgentsRuntimePort implements the RuntimePort interface."""
-        from cognitia.runtime.ports.deepagents import (
+        from swarmline.runtime.ports.deepagents import (
             DeepAgentsRuntimePort,
         )
 
@@ -336,7 +336,7 @@ class TestDeepAgentsRuntimePortContract:
 
     def test_accepts_tool_executors(self) -> None:
         """DeepAgentsRuntimePort accepts tool_executors."""
-        from cognitia.runtime.ports.deepagents import (
+        from swarmline.runtime.ports.deepagents import (
             DeepAgentsRuntimePort,
         )
 
@@ -360,7 +360,7 @@ class TestRoleSkillsLoaderContract:
 
     def test_satisfies_provider_interface(self, tmp_path: Any) -> None:
         """RoleSkillsLoader implements get_skills + get_local_tools."""
-        from cognitia.config.role_skills import YamlRoleSkillsLoader
+        from swarmline.config.role_skills import YamlRoleSkillsLoader
 
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text(
@@ -373,7 +373,7 @@ class TestRoleSkillsLoaderContract:
 
     def test_missing_role_returns_empty(self, tmp_path: Any) -> None:
         """For a not existing role returns empty list."""
-        from cognitia.config.role_skills import YamlRoleSkillsLoader
+        from swarmline.config.role_skills import YamlRoleSkillsLoader
 
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text("coach:\n  skills: []\n", encoding="utf-8")
@@ -383,7 +383,7 @@ class TestRoleSkillsLoaderContract:
 
     def test_has_list_roles(self, tmp_path: Any) -> None:
         """RoleSkillsLoader has list_roles() - a bonus method (not in Protocol)."""
-        from cognitia.config.role_skills import YamlRoleSkillsLoader
+        from swarmline.config.role_skills import YamlRoleSkillsLoader
 
         yaml_file = tmp_path / "role_skills.yaml"
         yaml_file.write_text(

@@ -7,12 +7,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 pytest.importorskip("deepagents", reason="deepagents не установлен")
-from cognitia.runtime.deepagents_native import (
+from swarmline.runtime.deepagents_native import (
     build_deepagents_graph,
     stream_deepagents_graph_events,
     validate_native_backend_config,
 )
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 
 class TestBuildDeepAgentsGraph:
@@ -24,11 +24,11 @@ class TestBuildDeepAgentsGraph:
 
         with (
             patch(
-                "cognitia.runtime.deepagents_native.build_deepagents_chat_model",
+                "swarmline.runtime.deepagents_native.build_deepagents_chat_model",
                 return_value="llm",
             ),
             patch(
-                "cognitia.runtime.deepagents_native.create_langchain_tool",
+                "swarmline.runtime.deepagents_native.create_langchain_tool",
                 side_effect=lambda spec, executor: f"tool:{spec.name}",
             ),
             patch("deepagents.create_deep_agent", return_value="graph") as mock_create,
@@ -69,11 +69,11 @@ class TestBuildDeepAgentsGraph:
 
         with (
             patch(
-                "cognitia.runtime.deepagents_native.build_deepagents_chat_model",
+                "swarmline.runtime.deepagents_native.build_deepagents_chat_model",
                 return_value="llm",
             ),
             patch(
-                "cognitia.runtime.deepagents_native.create_langchain_tool",
+                "swarmline.runtime.deepagents_native.create_langchain_tool",
                 side_effect=lambda spec, executor: (spec.name, executor),
             ) as mock_tool,
             patch("deepagents.create_deep_agent", return_value="graph") as mock_create,
@@ -123,11 +123,11 @@ class TestBuildDeepAgentsGraphUpstreamParams:
         """Helper: call build_deepagents_graph with mocks and return mock_create."""
         with (
             patch(
-                "cognitia.runtime.deepagents_native.build_deepagents_chat_model",
+                "swarmline.runtime.deepagents_native.build_deepagents_chat_model",
                 return_value="llm",
             ),
             patch(
-                "cognitia.runtime.deepagents_native.create_langchain_tool",
+                "swarmline.runtime.deepagents_native.create_langchain_tool",
                 side_effect=lambda spec, executor: f"tool:{spec.name}",
             ),
             patch("deepagents.create_deep_agent", return_value="graph") as mock_create,

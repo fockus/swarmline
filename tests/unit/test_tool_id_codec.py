@@ -3,7 +3,7 @@ with uchetom defisov/podcherkivaniy and prefiksov mcp__.
 """
 
 import pytest
-from cognitia.policy.tool_id_codec import DefaultToolIdCodec
+from swarmline.policy.tool_id_codec import DefaultToolIdCodec
 
 
 @pytest.fixture
