@@ -33,65 +33,32 @@ def _messages_from_payloads(payloads: Any) -> list[Message]:
     return [_message_from_payload(payload) for payload in payloads]
 
 
-class InMemorySessionManager:
-    """Session manager (in-memory, for the MVP).
-
-    - Stores active sessions in a dict
-    - Uses one asyncio.Lock per SessionKey for sequential processing
-    - TTL eviction: a session expires after ttl_seconds of inactivity
-    """
+class _AsyncSessionCore:
+    """Async session core with persistence, TTL, and runtime execution logic."""
 
     def __init__(
         self,
-        ttl_seconds: float = 900.0,
-        backend: SessionBackend | None = None,
+        *,
+        ttl_seconds: float,
+        backend: SessionBackend | None,
     ) -> None:
         self._sessions: dict[str, SessionState] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         self._ttl_seconds = ttl_seconds
         self._backend = backend
 
-    def _key_str(self, key: SessionKey) -> str:
+    def key_str(self, key: SessionKey) -> str:
         return str(key)
 
-    def _get_lock(self, key: SessionKey) -> asyncio.Lock:
+    def get_lock(self, key: SessionKey) -> asyncio.Lock:
         """Get or create a lock for the session."""
-        ks = self._key_str(key)
+        ks = self.key_str(key)
         if ks not in self._locks:
             self._locks[ks] = asyncio.Lock()
         return self._locks[ks]
 
     @staticmethod
-    def _run_awaitable_sync(awaitable: Awaitable[Any]) -> Any:
-        """Synchronously execute backend coroutine from sync manager APIs."""
-
-        async def _await_value() -> Any:
-            return await awaitable
-
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return asyncio.run(_await_value())
-
-        result: dict[str, Any] = {}
-        error: dict[str, BaseException] = {}
-
-        def runner() -> None:
-            try:
-                result["value"] = asyncio.run(_await_value())
-            except BaseException as exc:  # pragma: no cover - defensive bridge
-                error["error"] = exc
-
-        thread = threading.Thread(target=runner, daemon=True)
-        thread.start()
-        thread.join()
-
-        if "error" in error:
-            raise error["error"]
-        return result.get("value")
-
-    @staticmethod
-    def _serialize_state(state: SessionState) -> dict[str, Any]:
+    def serialize_state(state: SessionState) -> dict[str, Any]:
         """Persist only serializable session fields."""
         return {
             "key": {
@@ -117,7 +84,7 @@ class InMemorySessionManager:
         }
 
     @staticmethod
-    def _deserialize_state(payload: dict[str, Any]) -> SessionState:
+    def deserialize_state(payload: dict[str, Any]) -> SessionState:
         """Restore a serializable snapshot into a live SessionState shell."""
         key_payload = payload.get("key", {})
         return SessionState(
@@ -147,119 +114,71 @@ class InMemorySessionManager:
             pending_delegation=payload.get("pending_delegation"),
         )
 
-    def _load_snapshot_sync(self, key: SessionKey) -> SessionState | None:
-        """Load a session snapshot from the backend and cache it in memory."""
+    async def _load_snapshot(self, key: SessionKey) -> SessionState | None:
         if self._backend is None:
             return None
 
-        payload = self._run_awaitable_sync(self._backend.load(self._key_str(key)))
+        payload = await self._backend.load(self.key_str(key))
         if payload is None:
             return None
 
-        state = self._deserialize_state(payload)
+        state = self.deserialize_state(payload)
         state.is_rehydrated = True
-        self._sessions[self._key_str(state.key)] = state
+        self._sessions[self.key_str(state.key)] = state
         return state
-
-    async def _load_snapshot_async(self, key: SessionKey) -> SessionState | None:
-        """Async version: load a session snapshot from the backend."""
-        if self._backend is None:
-            return None
-
-        payload = await self._backend.load(self._key_str(key))
-        if payload is None:
-            return None
-
-        state = self._deserialize_state(payload)
-        state.is_rehydrated = True
-        self._sessions[self._key_str(state.key)] = state
-        return state
-
-    def _persist_state_sync(self, state: SessionState) -> None:
-        if self._backend is None:
-            return
-        self._run_awaitable_sync(
-            self._backend.save(self._key_str(state.key), self._serialize_state(state))
-        )
 
     async def _persist_state(self, state: SessionState) -> None:
         if self._backend is None:
             return
-        await self._backend.save(self._key_str(state.key), self._serialize_state(state))
-
-    def _delete_snapshot_sync(self, key: SessionKey) -> None:
-        if self._backend is None:
-            return
-        self._run_awaitable_sync(self._backend.delete(self._key_str(key)))
+        await self._backend.save(self.key_str(state.key), self.serialize_state(state))
 
     async def _delete_snapshot(self, key: SessionKey) -> None:
         if self._backend is None:
             return
-        await self._backend.delete(self._key_str(key))
+        await self._backend.delete(self.key_str(key))
 
-    def get(self, key: SessionKey) -> SessionState | None:
-        """Get an existing session. Returns None if TTL has expired.
-
-        Note: if a backend is configured, this uses a sync bridge that may
-        block the event loop. Prefer :meth:`aget` in async contexts.
-        """
-        ks = self._key_str(key)
-        state = self._sessions.get(ks)
-        if state is None:
-            state = self._load_snapshot_sync(key)
-            if state is None:
-                return None
+    async def _evict_if_expired(
+        self,
+        key: SessionKey,
+        state: SessionState,
+        *,
+        action_name: str,
+    ) -> SessionState | None:
+        ks = self.key_str(key)
         if (
             self._ttl_seconds > 0
             and (time.monotonic() - state.last_activity_at) > self._ttl_seconds
         ):
             logger.info(
-                "get[%s]: session expired (TTL=%.0fs), evicting", ks, self._ttl_seconds
-            )
-            self._sessions.pop(ks, None)
-            self._delete_snapshot_sync(key)
-            return None
-        return state
-
-    async def aget(self, key: SessionKey) -> SessionState | None:
-        """Async version of :meth:`get`. Awaits backend directly, never blocks."""
-        ks = self._key_str(key)
-        state = self._sessions.get(ks)
-        if state is None:
-            state = await self._load_snapshot_async(key)
-            if state is None:
-                return None
-        if (
-            self._ttl_seconds > 0
-            and (time.monotonic() - state.last_activity_at) > self._ttl_seconds
-        ):
-            logger.info(
-                "aget[%s]: session expired (TTL=%.0fs), evicting", ks, self._ttl_seconds
+                "%s[%s]: session expired (TTL=%.0fs), evicting",
+                action_name,
+                ks,
+                self._ttl_seconds,
             )
             self._sessions.pop(ks, None)
             await self._delete_snapshot(key)
             return None
         return state
 
-    def register(self, state: SessionState) -> None:
-        """Register a new session.
-
-        Note: if a backend is configured, this uses a sync bridge that may
-        block the event loop. Prefer :meth:`aregister` in async contexts.
-        """
-        state.last_activity_at = time.monotonic()
-        self._sessions[self._key_str(state.key)] = state
-        self._persist_state_sync(state)
+    async def aget(self, key: SessionKey) -> SessionState | None:
+        """Async version of get. Awaits backend directly, never blocks."""
+        ks = self.key_str(key)
+        state = self._sessions.get(ks)
+        if state is None:
+            state = await self._load_snapshot(key)
+            if state is None:
+                return None
+        return await self._evict_if_expired(key, state, action_name="aget")
 
     async def aregister(self, state: SessionState) -> None:
-        """Async version of :meth:`register`. Awaits backend directly, never blocks."""
+        """Register a session and persist it if a backend is configured."""
         state.last_activity_at = time.monotonic()
-        self._sessions[self._key_str(state.key)] = state
+        self._sessions[self.key_str(state.key)] = state
         await self._persist_state(state)
 
     async def close(self, key: SessionKey) -> None:
-        """Close the session and disconnect the SDK."""
-        ks = self._key_str(key)
+        """Close the session and disconnect the runtime/adapter."""
+        ks = self.key_str(key)
         state = self._sessions.pop(ks, None)
         if state:
             if state.runtime is not None:
@@ -291,8 +210,8 @@ class InMemorySessionManager:
         mode_hint: str | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
         """Execute a turn through AgentRuntime v1 (new contract)."""
-        ks = self._key_str(key)
-        lock = self._get_lock(key)
+        ks = self.key_str(key)
+        lock = self.get_lock(key)
         logger.info("run_turn[%s]: waiting for lock (locked=%s)", ks, lock.locked())
         async with lock:
             logger.info("run_turn[%s]: lock acquired", ks)
@@ -352,8 +271,8 @@ class InMemorySessionManager:
         logger.info("run_turn[%s]: lock released", ks)
 
     async def stream_reply(self, key: SessionKey, user_text: str) -> AsyncIterator[Any]:
-        """Legacy API: send a message and stream the response (RuntimePort/adapter path)."""
-        lock = self._get_lock(key)
+        """Legacy API: send a message and stream the response."""
+        lock = self.get_lock(key)
         async with lock:
             state = await self.aget(key)
             if not state:
@@ -440,7 +359,7 @@ class InMemorySessionManager:
                             return
                 except Exception as exc:
                     logger.exception(
-                        "stream_reply[%s]: runtime.run() failed", self._key_str(key)
+                        "stream_reply[%s]: runtime.run() failed", self.key_str(key)
                     )
                     yield StreamEvent(
                         type="error", text=f"Runtime execution failed: {exc}"
@@ -470,27 +389,12 @@ class InMemorySessionManager:
                 yield event
 
     def list_sessions(self) -> list[SessionKey]:
-        """List active sessions."""
-        return [s.key for s in self._sessions.values()]
-
-    def update_role(self, key: SessionKey, role_id: str, skill_ids: list[str]) -> bool:
-        """Update the session role and skills. Returns True if the session is found.
-
-        Note: if a backend is configured, this uses a sync bridge that may
-        block the event loop. Prefer :meth:`aupdate_role` in async contexts.
-        """
-        state = self.get(key)
-        if not state:
-            return False
-        state.role_id = role_id
-        state.active_skill_ids = skill_ids
-        self._persist_state_sync(state)
-        return True
+        return [state.key for state in self._sessions.values()]
 
     async def aupdate_role(
         self, key: SessionKey, role_id: str, skill_ids: list[str]
     ) -> bool:
-        """Async version of :meth:`update_role`. Awaits backend directly, never blocks."""
+        """Update the session role and skills."""
         state = await self.aget(key)
         if not state:
             return False
@@ -498,3 +402,135 @@ class InMemorySessionManager:
         state.active_skill_ids = skill_ids
         await self._persist_state(state)
         return True
+
+
+class InMemorySessionManager:
+    """Compatibility facade over the async session core.
+
+    Async methods delegate directly to the core. Sync methods keep the legacy
+    bridge for callers that still use the manager from synchronous code.
+    """
+
+    def __init__(
+        self,
+        ttl_seconds: float = 900.0,
+        backend: SessionBackend | None = None,
+    ) -> None:
+        self._core = _AsyncSessionCore(ttl_seconds=ttl_seconds, backend=backend)
+        # Keep legacy attributes for backward compatibility with internal tests.
+        self._sessions = self._core._sessions
+        self._locks = self._core._locks
+        self._ttl_seconds = ttl_seconds
+        self._backend = backend
+
+    def _key_str(self, key: SessionKey) -> str:
+        return self._core.key_str(key)
+
+    def _get_lock(self, key: SessionKey) -> asyncio.Lock:
+        return self._core.get_lock(key)
+
+    @staticmethod
+    def _run_awaitable_sync(awaitable: Awaitable[Any]) -> Any:
+        """Synchronously execute a coroutine from sync manager APIs."""
+
+        async def _await_value() -> Any:
+            return await awaitable
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(_await_value())
+
+        result: dict[str, Any] = {}
+        error: dict[str, BaseException] = {}
+
+        def runner() -> None:
+            try:
+                result["value"] = asyncio.run(_await_value())
+            except BaseException as exc:  # pragma: no cover - defensive bridge
+                error["error"] = exc
+
+        thread = threading.Thread(target=runner, daemon=True)
+        thread.start()
+        thread.join()
+
+        if "error" in error:
+            raise error["error"]
+        return result.get("value")
+
+    @staticmethod
+    def _serialize_state(state: SessionState) -> dict[str, Any]:
+        return _AsyncSessionCore.serialize_state(state)
+
+    @staticmethod
+    def _deserialize_state(payload: dict[str, Any]) -> SessionState:
+        return _AsyncSessionCore.deserialize_state(payload)
+
+    def get(self, key: SessionKey) -> SessionState | None:
+        """Get an existing session. Returns None if TTL has expired.
+
+        Note: if a backend is configured, this uses a sync bridge that may
+        block the event loop. Prefer :meth:`aget` in async contexts.
+        """
+        return self._run_awaitable_sync(self._core.aget(key))
+
+    async def aget(self, key: SessionKey) -> SessionState | None:
+        return await self._core.aget(key)
+
+    def register(self, state: SessionState) -> None:
+        """Register a new session.
+
+        Note: if a backend is configured, this uses a sync bridge that may
+        block the event loop. Prefer :meth:`aregister` in async contexts.
+        """
+        self._run_awaitable_sync(self._core.aregister(state))
+
+    async def aregister(self, state: SessionState) -> None:
+        await self._core.aregister(state)
+
+    async def close(self, key: SessionKey) -> None:
+        await self._core.close(key)
+
+    async def close_all(self) -> None:
+        await self._core.close_all()
+
+    async def run_turn(
+        self,
+        key: SessionKey,
+        *,
+        messages: list[Message],
+        system_prompt: str,
+        active_tools: list[ToolSpec],
+        mode_hint: str | None = None,
+    ) -> AsyncIterator[RuntimeEvent]:
+        async for event in self._core.run_turn(
+            key,
+            messages=messages,
+            system_prompt=system_prompt,
+            active_tools=active_tools,
+            mode_hint=mode_hint,
+        ):
+            yield event
+
+    async def stream_reply(self, key: SessionKey, user_text: str) -> AsyncIterator[Any]:
+        async for event in self._core.stream_reply(key, user_text):
+            yield event
+
+    def list_sessions(self) -> list[SessionKey]:
+        """List active sessions."""
+        return self._core.list_sessions()
+
+    def update_role(self, key: SessionKey, role_id: str, skill_ids: list[str]) -> bool:
+        """Update the session role and skills. Returns True if the session is found.
+
+        Note: if a backend is configured, this uses a sync bridge that may
+        block the event loop. Prefer :meth:`aupdate_role` in async contexts.
+        """
+        return self._run_awaitable_sync(
+            self._core.aupdate_role(key, role_id, skill_ids)
+        )
+
+    async def aupdate_role(
+        self, key: SessionKey, role_id: str, skill_ids: list[str]
+    ) -> bool:
+        return await self._core.aupdate_role(key, role_id, skill_ids)

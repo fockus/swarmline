@@ -1,8 +1,7 @@
-"""Code execution tool for Cognitia MCP server.
+"""Unsafe host code execution tool for the Cognitia MCP server.
 
-WARNING: Executes code in a subprocess on the host. This is intended for
-use within a trusted MCP environment where the caller is verified.
-Consider using a SandboxProvider (Docker, E2B) for untrusted code.
+This helper runs Python code in a subprocess on the host. It is not a sandbox
+and must only be exposed to explicitly trusted callers.
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ def _check_code_safety(code: str) -> str | None:
 async def exec_code(
     code: str, timeout_seconds: int = 30, *, trusted: bool = False
 ) -> dict[str, Any]:
-    """Execute Python code in a restricted subprocess and return stdout/stderr.
+    """Execute Python code on the host and return stdout/stderr.
 
     Parameters
     ----------
@@ -52,11 +51,10 @@ async def exec_code(
     timeout_seconds:
         Maximum execution time in seconds.
     trusted:
-        Must be ``True`` to allow execution. Host execution is not sandboxed,
-        so callers must explicitly opt in. Defaults to ``False`` (blocked).
+        Must be ``True`` to allow host execution. Defaults to ``False``.
 
     Safety measures:
-    - Trusted flag gate (must be explicitly enabled)
+    - Trusted flag gate (explicit opt-in required)
     - Dangerous pattern blocklist
     - Restricted environment (no inherited secrets)
     - Timeout enforcement
@@ -66,8 +64,8 @@ async def exec_code(
         return {
             "ok": False,
             "error": (
-                "Code execution requires trusted=True. "
-                "Host execution is not sandboxed."
+                "Host execution requires trusted=True. "
+                "This helper runs Python code on the host."
             ),
         }
 
@@ -136,5 +134,5 @@ async def exec_code(
                 },
             }
     except Exception as exc:
-        logger.warning("exec_code_failed", error=str(exc))
+        logger.warning("host_exec_failed", error=str(exc))
         return {"ok": False, "error": str(exc)}

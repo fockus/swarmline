@@ -90,7 +90,11 @@ class DeepAgentsPlannerMode:
 
     async def execute_all(self, plan: Plan) -> AsyncIterator[PlanStep]:
         """Complete all steps."""
-        plan = plan.start_execution() if plan.status == "approved" else plan
+        if plan.status != "approved":
+            msg = "Plan must be approved before execution"
+            raise ValueError(msg)
+
+        plan = plan.start_execution()
         await self._store.save(plan)
         execution_failed = False
         for step in plan.steps:

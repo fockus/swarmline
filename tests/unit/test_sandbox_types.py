@@ -23,6 +23,7 @@ class TestSandboxConfig:
         assert config.timeout_seconds == 30
         assert config.allowed_extensions is None
         assert config.denied_commands is None
+        assert config.allow_host_execution is False
 
     def test_custom_values(self) -> None:
         """SandboxConfig prinimaet kastomnye values."""
@@ -36,12 +37,14 @@ class TestSandboxConfig:
             timeout_seconds=5,
             allowed_extensions={".py", ".txt"},
             denied_commands={"rm", "sudo"},
+            allow_host_execution=True,
         )
 
         assert config.max_file_size_bytes == 1024
         assert config.timeout_seconds == 5
         assert config.allowed_extensions == {".py", ".txt"}
         assert config.denied_commands == {"rm", "sudo"}
+        assert config.allow_host_execution is True
 
     def test_frozen(self) -> None:
         """SandboxConfig not izmenyaem posle creatediya."""

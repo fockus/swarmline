@@ -465,7 +465,7 @@ class TestApprovalGate:
         result = await orch.collect_result("sub-1")
         assert result is not None
 
-    async def test_delegate_denied_by_gate(self, make_orchestrator, event_bus) -> None:
+    async def test_delegate_denied_by_gate(self, make_orchestrator, event_bus, task_board) -> None:
         """Delegation is rejected when approval gate denies."""
         gate = AsyncMock()
         gate.check = AsyncMock(return_value=False)
@@ -486,6 +486,10 @@ class TestApprovalGate:
         assert result is None
         calls = [c[0][0] for c in event_bus.emit.call_args_list]
         assert "graph.orchestrator.denied" in calls
+        assert "graph.orchestrator.delegated" not in calls
+
+        subtasks = await task_board.get_subtasks(status.root_task_id)
+        assert all(task.id != "sub-1" for task in subtasks)
 
 
 # ---------------------------------------------------------------------------

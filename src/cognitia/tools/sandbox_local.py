@@ -128,7 +128,17 @@ class LocalSandboxProvider:
             raise
 
     async def execute(self, command: str) -> ExecutionResult:
-        """Execute a shell command in the workspace."""
+        """Execute a host command in the workspace.
+
+        Host execution is disabled by default and requires an explicit opt-in
+        via ``SandboxConfig.allow_host_execution``.
+        """
+        if not self._config.allow_host_execution:
+            raise SandboxViolation(
+                "Host execution is disabled by default. "
+                "Set allow_host_execution=True to enable execute()."
+            )
+
         argv = self._parse_command(command)
         self._check_denied_command(argv, command)
 

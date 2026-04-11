@@ -17,6 +17,7 @@ def sandbox_config(tmp_path) -> SandboxConfig:
         user_id="u1",
         topic_id="t1",
         timeout_seconds=5,
+        allow_host_execution=True,
     )
 
 

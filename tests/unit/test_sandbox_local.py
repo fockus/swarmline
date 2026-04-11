@@ -17,6 +17,7 @@ def sandbox_config(tmp_path: object) -> SandboxConfig:
         max_file_size_bytes=1024,  # 1KB for testov
         timeout_seconds=5,
         denied_commands=frozenset({"rm", "sudo"}),
+        allow_host_execution=True,
     )
 
 
@@ -127,6 +128,17 @@ class TestLocalSandboxExecute:
         assert result.exit_code == 0
         assert result.timed_out is False
 
+    async def test_execute_without_host_opt_in_blocks(self, tmp_path) -> None:
+        """Host execution без opt-in must fail fast."""
+        from cognitia.tools.sandbox_local import LocalSandboxProvider
+
+        provider = LocalSandboxProvider(
+            SandboxConfig(root_path=str(tmp_path), user_id="u", topic_id="t")
+        )
+
+        with pytest.raises(SandboxViolation, match="allow_host_execution=True"):
+            await provider.execute("echo hello")
+
     async def test_execute_failing_command(self, sandbox) -> None:
         """Command with notnulevym exit code."""
         result = await sandbox.execute("false")
@@ -160,6 +172,7 @@ class TestLocalSandboxExecute:
             user_id="u",
             topic_id="t",
             timeout_seconds=1,  # 1 sekunda
+            allow_host_execution=True,
         )
         from cognitia.tools.sandbox_local import LocalSandboxProvider
 

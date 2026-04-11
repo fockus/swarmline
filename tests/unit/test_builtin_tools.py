@@ -17,6 +17,7 @@ def sandbox_config(tmp_path) -> SandboxConfig:
         topic_id="t1",
         max_file_size_bytes=1024,
         timeout_seconds=5,
+        allow_host_execution=True,
     )
 
 

@@ -27,6 +27,7 @@ class SandboxConfig:
     timeout_seconds: int = 30
     allowed_extensions: frozenset[str] | None = None
     denied_commands: frozenset[str] | None = None
+    allow_host_execution: bool = False
 
     @property
     def workspace_path(self) -> str:

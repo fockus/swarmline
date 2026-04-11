@@ -5,7 +5,7 @@ Entry points:
     python -m cognitia.mcp -> main()
 
 Modes:
-    headless (default): memory, plans, team, code execution (0 LLM calls)
+    headless (default): memory, plans, team (0 LLM calls)
     full: + agent creation/querying (needs API key)
     auto: detects API keys -> full if found, else headless
 """
@@ -46,7 +46,7 @@ from cognitia.mcp._tools_team import (
 logger = structlog.get_logger(__name__)
 
 
-def create_server(*, mode: str = "auto") -> Any:
+def create_server(*, mode: str = "auto", enable_host_exec: bool = False) -> Any:
     """Create and configure the Cognitia MCP server.
 
     Returns a FastMCP instance with all tools registered.
@@ -204,14 +204,16 @@ def create_server(*, mode: str = "auto") -> Any:
         """List tasks with optional filters."""
         return await team_list_tasks(session, status, priority, assignee_agent_id)
 
-    # --- Code execution (headless) ---
+    # --- Code execution (host exec, opt-in only) ---
 
-    @mcp.tool()
-    async def cognitia_exec_code(
-        code: str, timeout_seconds: int = 30
-    ) -> dict[str, Any]:
-        """Execute Python code in a subprocess with timeout."""
-        return await exec_code(code, timeout_seconds, trusted=True)
+    if enable_host_exec:
+
+        @mcp.tool()
+        async def cognitia_exec_code(
+            code: str, timeout_seconds: int = 30
+        ) -> dict[str, Any]:
+            """Execute Python code on the host in a subprocess."""
+            return await exec_code(code, timeout_seconds, trusted=True)
 
     # --- Agent tools (full mode only) ---
 
@@ -254,7 +256,13 @@ def create_server(*, mode: str = "auto") -> Any:
     logger.info(
         "mcp_server_created",
         mode=resolved,
-        tools_count="20" if resolved == "full" else "17",
+        tools_count="21"
+        if resolved == "full" and enable_host_exec
+        else "20"
+        if resolved == "full"
+        else "18"
+        if enable_host_exec
+        else "17",
     )
     return mcp
 

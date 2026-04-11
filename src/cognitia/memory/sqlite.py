@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
@@ -10,6 +9,16 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from cognitia.memory._shared import (
+    build_goal_state,
+    build_phase_state,
+    build_session_state,
+    json_dumps_or_none,
+    json_load_or_empty_list,
+    json_load_or_none,
+    json_load_value,
+    merge_scoped_facts,
+)
 from cognitia.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
 
 _USER_ID_SUB = "(SELECT id FROM users WHERE external_id = :user_id)"
@@ -150,7 +159,7 @@ class SQLiteMemoryProvider:
         topic_id: str | None = None,
         source: str = "user",
     ) -> None:
-        json_value = json.dumps(value)
+        json_value = _json_or_none(value)
         async with self._session(commit=True) as session:
             if topic_id is not None:
                 await session.execute(
@@ -348,14 +357,14 @@ class SQLiteMemoryProvider:
             row = result.fetchone()
             if not row:
                 return None
-            return GoalState(
-                goal_id=str(row.topic_id),
-                title=str(row.title),
-                target_amount=(int(row.target_amount) if row.target_amount is not None else None),
-                current_amount=int(row.current_amount or 0),
-                phase=str(row.phase or ""),
-                plan=_load_json_or_none(row.plan),
-                is_main=bool(row.is_main),
+            return build_goal_state(
+                goal_id=row.topic_id,
+                title=row.title,
+                target_amount=row.target_amount,
+                current_amount=row.current_amount,
+                phase=row.phase,
+                plan=row.plan,
+                is_main=row.is_main,
             )
 
     # --- Session state ---
@@ -397,7 +406,7 @@ class SQLiteMemoryProvider:
                     "user_id": user_id,
                     "topic_id": topic_id,
                     "role_id": role_id,
-                    "skill_ids": json.dumps(active_skill_ids),
+                    "skill_ids": _json_or_none(active_skill_ids),
                     "prompt_hash": prompt_hash,
                     "delegated_from": delegated_from,
                     "delegation_turn_count": delegation_turn_count,
@@ -423,16 +432,16 @@ class SQLiteMemoryProvider:
             row = result.fetchone()
             if not row:
                 return None
-            return {
-                "role_id": str(row.role_id),
-                "active_skill_ids": _load_json_or_empty_list(row.active_skill_ids),
-                "title": row.title,
-                "prompt_hash": str(row.prompt_hash or ""),
-                "delegated_from": row.delegated_from,
-                "delegation_turn_count": row.delegation_turn_count or 0,
-                "pending_delegation": row.pending_delegation,
-                "delegation_summary": row.delegation_summary,
-            }
+            return build_session_state(
+                role_id=row.role_id,
+                active_skill_ids=row.active_skill_ids,
+                title=row.title,
+                prompt_hash=row.prompt_hash,
+                delegated_from=row.delegated_from,
+                delegation_turn_count=row.delegation_turn_count,
+                pending_delegation=row.pending_delegation,
+                delegation_summary=row.delegation_summary,
+            )
 
     # --- Profile ---
 
@@ -479,11 +488,7 @@ class SQLiteMemoryProvider:
             row = result.fetchone()
             if not row:
                 return None
-            return PhaseState(
-                user_id=user_id,
-                phase=str(row.phase or ""),
-                notes=str(row.notes or ""),
-            )
+            return build_phase_state(user_id=user_id, phase=row.phase, notes=row.notes)
 
     # --- Tool events ---
 
@@ -512,45 +517,20 @@ class SQLiteMemoryProvider:
 
 
 def _json_or_none(value: Any) -> str | None:
-    if value is None:
-        return None
-    return json.dumps(value)
+    return json_dumps_or_none(value)
 
 
 def _load_json_or_none(raw: Any) -> Any | None:
-    if raw in (None, ""):
-        return None
-    if isinstance(raw, dict | list):
-        return raw
-    try:
-        return json.loads(str(raw))
-    except (TypeError, json.JSONDecodeError):
-        return None
+    return json_load_or_none(raw)
 
 
 def _load_json_or_empty_list(raw: Any) -> list[str]:
-    parsed = _load_json_or_none(raw)
-    if isinstance(parsed, list):
-        return [str(item) for item in parsed]
-    return []
+    return json_load_or_empty_list(raw)
 
 
 def _load_json_value(raw: Any) -> Any:
-    if raw is None:
-        return None
-    if isinstance(raw, dict | list | int | float | bool):
-        return raw
-    try:
-        return json.loads(str(raw))
-    except (TypeError, json.JSONDecodeError):
-        return raw
+    return json_load_value(raw)
 
 
 def _merge_scoped_sqlite_facts(rows: Sequence[Any]) -> dict[str, Any]:
-    """Merge global + topic rows so topic-scoped values override global ones."""
-    merged: dict[str, Any] = {}
-    global_rows = [row for row in rows if getattr(row, "topic_id", None) is None]
-    topic_rows = [row for row in rows if getattr(row, "topic_id", None) is not None]
-    for row in global_rows + topic_rows:
-        merged[str(row.key)] = _load_json_value(row.value)
-    return merged
+    return merge_scoped_facts(rows)

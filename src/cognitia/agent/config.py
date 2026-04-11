@@ -5,15 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from cognitia.runtime.capabilities import (
-    VALID_FEATURE_MODES,
-    CapabilityRequirements,
-)
-
 if TYPE_CHECKING:
     from cognitia.agent.middleware import Middleware
     from cognitia.agent.tool import ToolDefinition
     from cognitia.hooks.registry import HookRegistry
+    from cognitia.runtime.capabilities import CapabilityRequirements
 
 
 @dataclass(frozen=True)
@@ -78,33 +74,12 @@ class AgentConfig:
     native_config: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        from cognitia.runtime.registry import get_valid_runtime_names, resolve_runtime_capabilities
-
         if not self.system_prompt or not self.system_prompt.strip():
             raise ValueError("system_prompt must not be empty")
-        valid_names = get_valid_runtime_names()
-        if self.runtime not in valid_names:
-            raise ValueError(
-                f"Unknown runtime: '{self.runtime}'. "
-                f"Allowed: {', '.join(sorted(valid_names))}"
-            )
-        if self.feature_mode not in VALID_FEATURE_MODES:
-            raise ValueError(
-                f"Unknown feature_mode: '{self.feature_mode}'. "
-                f"Allowed: {', '.join(sorted(VALID_FEATURE_MODES))}"
-            )
-        if self.require_capabilities is not None:
-            caps = resolve_runtime_capabilities(self.runtime)
-            missing = caps.missing(self.require_capabilities)
-            if missing:
-                raise ValueError(
-                    f"Runtime '{self.runtime}' does not support required capabilities: "
-                    f"{', '.join(missing)}"
-                )
 
     @property
     def resolved_model(self) -> str:
-        """Resolve the model alias to its full name."""
-        from cognitia.runtime.types import resolve_model_name
+        """Compatibility wrapper for model alias resolution."""
+        from cognitia.runtime.factory import RuntimeFactory
 
-        return resolve_model_name(self.model)
+        return RuntimeFactory().resolve_agent_model(self)

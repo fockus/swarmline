@@ -54,12 +54,12 @@ def _make_health_handler() -> Any:
     return health
 
 
-def _make_info_handler() -> Any:
+def _make_info_handler(endpoints: list[str]) -> Any:
     async def info(request: Request) -> Response:
         return JSONResponse({
             "name": "cognitia",
             "version": _VERSION,
-            "endpoints": ["/v1/query", "/v1/stream", "/v1/health", "/v1/info"],
+            "endpoints": endpoints,
         })
     return info
 
@@ -103,14 +103,20 @@ def create_app(
     agent: Any,
     *,
     auth_token: str | None = None,
+    allow_unauthenticated_query: bool = False,
     cors_origins: list[str] | None = None,
 ) -> Starlette:
     """Create a Starlette ASGI app serving the given agent."""
+    query_enabled = auth_token is not None or allow_unauthenticated_query
+
     routes = [
         Route("/v1/health", _make_health_handler(), methods=["GET"]),
-        Route("/v1/info", _make_info_handler(), methods=["GET"]),
-        Route("/v1/query", _make_query_handler(agent), methods=["POST"]),
     ]
+    endpoints = ["/v1/stream", "/v1/health", "/v1/info"]
+    if query_enabled:
+        routes.append(Route("/v1/query", _make_query_handler(agent), methods=["POST"]))
+        endpoints.insert(0, "/v1/query")
+    routes.insert(1, Route("/v1/info", _make_info_handler(endpoints), methods=["GET"]))
 
     middleware: list[Middleware] = []
     if auth_token:

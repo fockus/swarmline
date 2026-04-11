@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from cognitia.agent.config import AgentConfig
+from cognitia.runtime.factory import RuntimeFactory
 from cognitia.runtime.types import RuntimeConfig, ToolSpec
 
 _PORTABLE_MCP_RUNTIMES = frozenset({"thin", "deepagents"})
@@ -27,9 +28,12 @@ def build_portable_runtime_plan(
     session_id: str | None = None,
 ) -> PortableRuntimePlan:
     """Build RuntimeConfig/create kwargs for portable entrypoints."""
+    factory = RuntimeFactory()
+    factory.validate_agent_config(agent_config)
+
     runtime_config = RuntimeConfig(
         runtime_name=runtime_name,
-        model=agent_config.resolved_model,
+        model=factory.resolve_agent_model(agent_config),
         output_format=agent_config.output_format,
         output_type=agent_config.output_type,
         feature_mode=agent_config.feature_mode,

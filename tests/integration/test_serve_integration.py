@@ -38,7 +38,7 @@ class TestServeIntegration:
 
     async def test_query_via_httpx(self) -> None:
         agent = _mock_agent({"What is 2+2?": "4"})
-        app = create_app(agent)
+        app = create_app(agent, allow_unauthenticated_query=True)
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -47,6 +47,15 @@ class TestServeIntegration:
             data = resp.json()
             assert data["text"] == "4"
             assert data["ok"] is True
+
+    async def test_query_closed_by_default(self) -> None:
+        agent = _mock_agent()
+        app = create_app(agent)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/v1/query", json={"prompt": "hi"})
+            assert resp.status_code == 404
 
     async def test_auth_flow(self) -> None:
         agent = _mock_agent()
@@ -72,7 +81,7 @@ class TestServeIntegration:
 
     async def test_multiple_queries(self) -> None:
         agent = _mock_agent({"q1": "a1", "q2": "a2"})
-        app = create_app(agent)
+        app = create_app(agent, allow_unauthenticated_query=True)
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:

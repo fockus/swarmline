@@ -150,6 +150,22 @@ class DefaultGraphOrchestrator:
 
     async def delegate(self, request: DelegationRequest) -> None:
         """Delegate a task to an agent. Creates subtask and launches execution."""
+        # Find run for this delegation
+        run = self._find_run_for_task(request.parent_task_id)
+
+        # Check approval gate
+        if self._gate is not None:
+            approved = await self._gate.check(
+                "delegate",
+                {"agent_id": request.agent_id, "goal": request.goal},
+            )
+            if not approved:
+                await self._emit("graph.orchestrator.denied", {
+                    "task_id": request.task_id,
+                    "agent_id": request.agent_id,
+                })
+                return
+
         # Create subtask on the board and checkout immediately
         await self._task_board.create_task(GraphTaskItem(
             id=request.task_id,
@@ -166,36 +182,11 @@ class DefaultGraphOrchestrator:
             "goal": request.goal,
         })
 
-        # Find run for this delegation
-        run = self._find_run_for_task(request.parent_task_id)
-
-        # Record execution
-        execution = AgentExecution(
-            agent_id=request.agent_id,
-            task_id=request.task_id,
-        )
         if run:
-            run.executions.append(execution)
-
-        # Check approval gate
-        if self._gate is not None:
-            approved = await self._gate.check(
-                "delegate",
-                {"agent_id": request.agent_id, "goal": request.goal},
-            )
-            if not approved:
-                await self._emit("graph.orchestrator.denied", {
-                    "task_id": request.task_id,
-                    "agent_id": request.agent_id,
-                })
-                if run:
-                    idx = self._find_execution_index(run, request.task_id)
-                    if idx is not None:
-                        run.executions[idx] = replace(
-                            run.executions[idx], state=AgentRunState.FAILED,
-                            error="Denied by approval gate",
-                        )
-                return
+            run.executions.append(AgentExecution(
+                agent_id=request.agent_id,
+                task_id=request.task_id,
+            ))
 
         # Launch async execution
         max_retries = request.max_retries if request.max_retries is not None else self._max_retries

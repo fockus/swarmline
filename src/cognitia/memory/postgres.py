@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
@@ -10,6 +9,15 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from cognitia.memory._shared import (
+    build_goal_state,
+    build_phase_state,
+    build_session_state,
+    json_dumps_or_none,
+    json_load_or_none,
+    json_load_value,
+    merge_scoped_facts,
+)
 from cognitia.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
 
 # Subquery for resolving the internal user id by external_id (DRY)
@@ -98,7 +106,11 @@ class PostgresMemoryProvider:
             rows = result.fetchall()
         # Reverse - from oldest to newest
         return [
-            MemoryMessage(role=r.role, content=r.content, tool_calls=r.tool_calls)
+            MemoryMessage(
+                role=str(r.role),
+                content=str(r.content),
+                tool_calls=_load_json_or_none(r.tool_calls),
+            )
             for r in reversed(rows)
         ]
 
@@ -115,7 +127,7 @@ class PostgresMemoryProvider:
                 {"user_id": user_id, "topic_id": topic_id},
             )
             row = result.fetchone()
-            return row.cnt if row else 0
+            return int(row.cnt) if row else 0
 
     async def delete_messages_before(self, user_id: str, topic_id: str, keep_last: int = 10) -> int:
         """Delete old messages, keeping the last keep_last."""
@@ -156,7 +168,7 @@ class PostgresMemoryProvider:
         - topic_id IS NOT NULL -> ON CONFLICT on uq_facts_user_topic_key
         - topic_id IS NULL -> ON CONFLICT on uq_facts_user_global_key
         """
-        json_value = json.dumps(value)
+        json_value = _json_or_none(value)
         async with self._session(commit=True) as session:
             if topic_id is not None:
                 # Topic-scoped fact
@@ -236,7 +248,7 @@ class PostgresMemoryProvider:
                 )
             rows = result.fetchall()
         if not topic_id:
-            return {r.key: r.value for r in rows}
+            return {str(r.key): _load_json_value(r.value) for r in rows}
         return _merge_scoped_postgres_facts(rows)
 
     # --- Summaries (SummaryStore) ---
@@ -336,7 +348,7 @@ class PostgresMemoryProvider:
                     "current_amount": goal.current_amount,
                     "phase": goal.phase,
                     "is_main": goal.is_main,
-                    "plan": json.dumps(goal.plan) if goal.plan else None,
+                    "plan": _json_or_none(goal.plan),
                 },
             )
 
@@ -360,7 +372,7 @@ class PostgresMemoryProvider:
             row = result.fetchone()
             if not row:
                 return None
-            return GoalState(
+            return build_goal_state(
                 goal_id=row.topic_id,
                 title=row.title,
                 target_amount=row.target_amount,
@@ -410,7 +422,7 @@ class PostgresMemoryProvider:
                     "user_id": user_id,
                     "topic_id": topic_id,
                     "role_id": role_id,
-                    "skill_ids": json.dumps(active_skill_ids),
+                    "skill_ids": _json_or_none(active_skill_ids),
                     "prompt_hash": prompt_hash,
                     "delegated_from": delegated_from,
                     "delegation_turn_count": delegation_turn_count,
@@ -437,16 +449,16 @@ class PostgresMemoryProvider:
             row = result.fetchone()
             if not row:
                 return None
-            return {
-                "role_id": row.role_id,
-                "active_skill_ids": row.active_skill_ids or [],
-                "title": row.title,
-                "prompt_hash": row.prompt_hash,
-                "delegated_from": row.delegated_from,
-                "delegation_turn_count": row.delegation_turn_count or 0,
-                "pending_delegation": row.pending_delegation,
-                "delegation_summary": row.delegation_summary,
-            }
+            return build_session_state(
+                role_id=row.role_id,
+                active_skill_ids=row.active_skill_ids,
+                title=row.title,
+                prompt_hash=row.prompt_hash,
+                delegated_from=row.delegated_from,
+                delegation_turn_count=row.delegation_turn_count,
+                pending_delegation=row.pending_delegation,
+                delegation_summary=row.delegation_summary,
+            )
 
     # --- Profile (UserStore) ---
 
@@ -495,11 +507,7 @@ class PostgresMemoryProvider:
             row = result.fetchone()
             if not row:
                 return None
-            return PhaseState(
-                user_id=user_id,
-                phase=row.phase,
-                notes=row.notes or "",
-            )
+            return build_phase_state(user_id=user_id, phase=row.phase, notes=row.notes)
 
     # --- Tool events (§9.1) ---
 
@@ -531,17 +539,16 @@ class PostgresMemoryProvider:
 
 
 def _json_or_none(value: Any) -> str | None:
-    """Serialize a value to a JSON string or return None."""
-    if value is None:
-        return None
-    return json.dumps(value)
+    return json_dumps_or_none(value)
+
+
+def _load_json_or_none(raw: Any) -> Any | None:
+    return json_load_or_none(raw)
+
+
+def _load_json_value(raw: Any) -> Any:
+    return json_load_value(raw)
 
 
 def _merge_scoped_postgres_facts(rows: Sequence[Any]) -> dict[str, Any]:
-    """Merge global + topic rows so topic-scoped values override global ones."""
-    merged: dict[str, Any] = {}
-    global_rows = [row for row in rows if getattr(row, "topic_id", None) is None]
-    topic_rows = [row for row in rows if getattr(row, "topic_id", None) is not None]
-    for row in global_rows + topic_rows:
-        merged[row.key] = row.value
-    return merged
+    return merge_scoped_facts(rows)

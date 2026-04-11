@@ -125,6 +125,79 @@ class TestSSRFDnsResolution:
                 assert call_kwargs.kwargs.get("follow_redirects") is False or \
                     (len(call_kwargs.args) == 0 and call_kwargs[1].get("follow_redirects") is False)
 
+    async def test_fetch_binds_request_to_resolved_public_ip(self) -> None:
+        """Resolved public IP must be used for the connect path to avoid DNS rebinding."""
+        from cognitia.tools.web_httpx import HttpxWebProvider
+
+        provider = HttpxWebProvider(timeout=5)
+        fake_addrs = [(2, 1, 6, "", ("93.184.216.34", 0))]
+
+        mock_response = MagicMock()
+        mock_response.is_redirect = False
+        mock_response.text = "<html><body>OK</body></html>"
+        mock_response.raise_for_status = MagicMock()
+
+        sent_requests: list[Any] = []
+
+        with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+            with patch("httpx.AsyncClient") as mock_client_cls:
+                mock_client = AsyncMock()
+                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+                mock_client.__aexit__ = AsyncMock(return_value=False)
+                mock_client.build_request = MagicMock(side_effect=(
+                    lambda method, url, **kwargs: {"method": method, "url": url, **kwargs}
+                ))
+
+                async def _send(request):
+                    sent_requests.append(request)
+                    return mock_response
+
+                mock_client.send.side_effect = _send
+                mock_client_cls.return_value = mock_client
+
+                result = await provider.fetch("https://example.com/page")
+
+        assert "OK" in result
+        assert len(sent_requests) == 1
+        sent_request = sent_requests[0]
+        assert sent_request["url"].startswith("https://93.184.216.34")
+        assert sent_request["headers"]["host"] == "example.com"
+        assert sent_request["extensions"]["sni_hostname"] == "example.com"
+
+    async def test_fetch_blocks_private_redirect_hop(self) -> None:
+        """Every redirect hop must be revalidated before issuing the next request."""
+        from cognitia.tools.web_httpx import HttpxWebProvider
+
+        provider = HttpxWebProvider(timeout=5)
+        addrs = {
+            "example.com": [(2, 1, 6, "", ("93.184.216.34", 0))],
+            "metadata.internal": [(2, 1, 6, "", ("169.254.169.254", 0))],
+        }
+
+        redirect_response = MagicMock()
+        redirect_response.is_redirect = True
+        redirect_response.headers = {"location": "http://metadata.internal/secret"}
+        redirect_response.raise_for_status = MagicMock()
+
+        with patch(
+            "cognitia.tools.web_httpx.socket.getaddrinfo",
+            side_effect=lambda host, *_args, **_kwargs: addrs[host],
+        ):
+            with patch("httpx.AsyncClient") as mock_client_cls:
+                mock_client = AsyncMock()
+                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+                mock_client.__aexit__ = AsyncMock(return_value=False)
+                mock_client.build_request = MagicMock(side_effect=(
+                    lambda method, url, **kwargs: {"method": method, "url": url, **kwargs}
+                ))
+                mock_client.send = AsyncMock(return_value=redirect_response)
+                mock_client_cls.return_value = mock_client
+
+                result = await provider.fetch("http://example.com/start")
+
+        assert "URL blocked" in result
+        assert mock_client.send.await_count == 1
+
 
 # ---------------------------------------------------------------------------
 # Fix 2: Workspace path injection

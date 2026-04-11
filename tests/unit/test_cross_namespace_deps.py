@@ -48,6 +48,9 @@ class TestCrossNamespaceResolverBasics:
 
 
 class TestCrossNamespaceDependencies:
+    async def _complete(self, board: InMemoryGraphTaskBoard, task_id: str) -> None:
+        await board.checkout_task(task_id, "agent")
+        await board.complete_task(task_id)
 
     async def test_get_blocked_by_cross_namespace(self, boards, resolver) -> None:
         # task_b in goal-b is a dependency
@@ -67,7 +70,7 @@ class TestCrossNamespaceDependencies:
     async def test_are_deps_met_true_after_dep_completed(self, boards, resolver) -> None:
         await boards["goal-b"].create_task(_task("dep-b"))
         await boards["goal-a"].create_task(_task("t1", dependencies=("dep-b",)))
-        await boards["goal-b"].complete_task("dep-b")
+        await self._complete(boards["goal-b"], "dep-b")
         met = await resolver.are_dependencies_met("t1", namespace="goal-a")
         assert met is True
 
@@ -77,7 +80,7 @@ class TestCrossNamespaceDependencies:
         met = await resolver.are_dependencies_met("t1", namespace="goal-a")
         assert met is False
 
-        await boards["goal-a"].complete_task("dep-a")
+        await self._complete(boards["goal-a"], "dep-a")
         met = await resolver.are_dependencies_met("t1", namespace="goal-a")
         assert met is True
 
@@ -91,11 +94,11 @@ class TestCrossNamespaceDependencies:
         assert await resolver.are_dependencies_met("t1", namespace="goal-a") is False
 
         # Complete local dep only
-        await boards["goal-a"].complete_task("local-dep")
+        await self._complete(boards["goal-a"], "local-dep")
         assert await resolver.are_dependencies_met("t1", namespace="goal-a") is False
 
         # Complete cross dep too
-        await boards["goal-b"].complete_task("cross-dep")
+        await self._complete(boards["goal-b"], "cross-dep")
         assert await resolver.are_dependencies_met("t1", namespace="goal-a") is True
 
     async def test_task_with_no_deps_is_met(self, boards, resolver) -> None:

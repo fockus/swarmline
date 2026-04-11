@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any
 
 from cognitia.runtime.capabilities import (
+    VALID_FEATURE_MODES,
     CapabilityRequirements,
     RuntimeCapabilities,
 )
@@ -18,6 +19,7 @@ from cognitia.runtime.types import (
 )
 
 if TYPE_CHECKING:
+    from cognitia.agent.config import AgentConfig
     from cognitia.runtime.registry import RuntimeRegistry
 
 
@@ -109,6 +111,39 @@ class RuntimeFactory:
                 "missing": list(missing),
             },
         )
+
+    def validate_agent_config(self, config: AgentConfig) -> None:
+        """Validate AgentConfig at the runtime/bootstrap boundary."""
+        from cognitia.runtime.registry import get_valid_runtime_names
+
+        valid_names = get_valid_runtime_names()
+        if config.runtime not in valid_names:
+            raise ValueError(
+                f"Unknown runtime: '{config.runtime}'. "
+                f"Allowed: {', '.join(sorted(valid_names))}"
+            )
+        if config.feature_mode not in VALID_FEATURE_MODES:
+            raise ValueError(
+                f"Unknown feature_mode: '{config.feature_mode}'. "
+                f"Allowed: {', '.join(sorted(VALID_FEATURE_MODES))}"
+            )
+        if config.require_capabilities is None:
+            return
+
+        caps = self.get_capabilities(runtime_override=config.runtime)
+        missing = caps.missing(config.require_capabilities)
+        if missing:
+            raise ValueError(
+                f"Runtime '{config.runtime}' does not support required capabilities: "
+                f"{', '.join(missing)}"
+            )
+
+    def resolve_agent_model(self, config: AgentConfig | str) -> str:
+        """Resolve AgentConfig.model or a raw alias to a concrete model name."""
+        from cognitia.runtime.types import resolve_model_name
+
+        model = config.model if hasattr(config, "model") else config
+        return resolve_model_name(model)
 
     def create(
         self,

@@ -9,6 +9,11 @@ from typing import Any, TypeVar
 
 from cognitia.agent.config import AgentConfig
 from cognitia.agent.result import Result
+from cognitia.agent.runtime_dispatch import (
+    dispatch_runtime,
+    run_portable_runtime,
+    stream_claude_one_shot,
+)
 from cognitia.runtime.types import Message
 
 T = TypeVar("T")
@@ -26,6 +31,9 @@ class Agent:
     """
 
     def __init__(self, config: AgentConfig) -> None:
+        from cognitia.runtime.factory import RuntimeFactory
+
+        RuntimeFactory().validate_agent_config(config)
         self._config = config
         self._runtime: Any = None
 
@@ -43,6 +51,9 @@ class Agent:
         return factory.get_capabilities(config)
 
     async def query(self, prompt: str) -> Result:
+        return await self._query_with_config(prompt, self._config)
+
+    async def _query_with_config(self, prompt: str, config: AgentConfig) -> Result:
         """One-shot request -> Result.
 
         1. Apply middleware.before_query chain
@@ -53,12 +64,17 @@ class Agent:
         # 1. Middleware before_query
         effective_prompt = await apply_before_query(
             prompt,
-            self._config.middleware,
-            self._config,
+            config.middleware,
+            config,
         )
 
         # 2. Execute + collect
-        collected = await collect_stream_result(self._execute_stream(effective_prompt))
+        stream = (
+            self._execute_stream(effective_prompt)
+            if config is self._config
+            else self._execute_stream(effective_prompt, config)
+        )
+        collected = await collect_stream_result(stream)
         result_payload = dict(collected)
         new_messages = result_payload.pop("new_messages", None)
 
@@ -66,7 +82,7 @@ class Agent:
         result = Result(**result_payload)
 
         # 4. Middleware after_result
-        for mw in self._config.middleware:
+        for mw in config.middleware:
             result = await mw.after_result(result)
 
         if new_messages is not None:
@@ -117,13 +133,7 @@ class Agent:
                 overrides["output_format"] = schema_builder()
         config = replace(self._config, **overrides)
 
-        # Swap config temporarily
-        original_config = self._config
-        self._config = config
-        try:
-            result = await self.query(prompt)
-        finally:
-            self._config = original_config
+        result = await self._query_with_config(prompt, config)
 
         if result.structured_output is not None:
             return result.structured_output  # type: ignore[return-value]
@@ -134,17 +144,26 @@ class Agent:
         )
 
     async def stream(self, prompt: str) -> AsyncIterator[Any]:
+        async for event in self._stream_with_config(prompt, self._config):
+            yield event
+
+    async def _stream_with_config(self, prompt: str, config: AgentConfig) -> AsyncIterator[Any]:
         """Streaming request -> AsyncIterator[StreamEvent].
 
         Middleware before_query applies, after_result does not (streaming).
         """
         effective_prompt = await apply_before_query(
             prompt,
-            self._config.middleware,
-            self._config,
+            config.middleware,
+            config,
         )
 
-        async for event in self._execute_stream(effective_prompt):
+        stream = (
+            self._execute_stream(effective_prompt)
+            if config is self._config
+            else self._execute_stream(effective_prompt, config)
+        )
+        async for event in stream:
             yield event
 
     def conversation(self, session_id: str | None = None) -> Any:
@@ -170,110 +189,79 @@ class Agent:
     # Internal: runtime dispatch
     # -----------------------------------------------------------------------
 
-    async def _execute_stream(self, prompt: str) -> AsyncIterator[Any]:
+    async def _execute_stream(
+        self, prompt: str, config: AgentConfig | None = None
+    ) -> AsyncIterator[Any]:
         """Execute the prompt via the selected runtime.
 
         Routing:
         - claude_sdk → RuntimeAdapter + ClaudeOptionsBuilder (warm subprocess)
         - thin/deepagents → RuntimeFactory → AgentRuntime.run()
         """
-        runtime_name = self._config.runtime
-
-        if runtime_name == "claude_sdk":
-            async for event in self._execute_claude_sdk(prompt):
-                yield event
-        else:
-            async for event in self._execute_agent_runtime(prompt, runtime_name):
-                yield event
-
-    async def _execute_claude_sdk(self, prompt: str) -> AsyncIterator[Any]:
-        """Execute via Claude Agent SDK (one-shot streaming query)."""
-        from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks
-        from cognitia.runtime.sdk_query import stream_one_shot_query
-
-        # Build MCP servers from tools
-        mcp_servers = dict(self._config.mcp_servers)
-        if self._config.tools:
-            sdk_server = self._build_tools_mcp_server()
-            mcp_servers["__agent_tools__"] = sdk_server
-
-        merged_hooks = merge_hooks(self._config.hooks, self._config.middleware)
-        sdk_hooks = registry_to_sdk_hooks(merged_hooks) if merged_hooks else None
-
-        try:
-            async for event in stream_one_shot_query(
+        effective_config = config or self._config
+        async for event in dispatch_runtime(
+            effective_config.runtime,
+            lambda: self._execute_claude_sdk(prompt, effective_config),
+            lambda runtime_name: self._execute_agent_runtime(
                 prompt,
-                system_prompt=self._config.system_prompt,
-                model=self._config.resolved_model,
-                permission_mode=self._config.permission_mode,
-                cwd=self._config.cwd,
-                output_format=self._config.output_format,
-                max_turns=self._config.max_turns,
-                mcp_servers=mcp_servers if mcp_servers else None,
-                hooks=sdk_hooks,
-                max_budget_usd=self._config.max_budget_usd,
-                fallback_model=self._config.fallback_model,
-                betas=list(self._config.betas) if self._config.betas else None,
-                env=dict(self._config.env) if self._config.env else None,
-                setting_sources=(
-                    list(self._config.setting_sources) if self._config.setting_sources else None
-                ),
-                include_partial_messages=bool(
-                    self._config.native_config.get("include_partial_messages")
-                ),
-            ):
-                yield event
-        except Exception as exc:
-            from cognitia.runtime.adapter import StreamEvent
+                runtime_name,
+                effective_config,
+            ),
+        ):
+            yield event
 
-            logger.exception("Agent._execute_claude_sdk error")
-            yield StreamEvent(type="error", text=str(exc))
+    async def _execute_claude_sdk(
+        self, prompt: str, config: AgentConfig | None = None
+    ) -> AsyncIterator[Any]:
+        """Execute via Claude Agent SDK (one-shot streaming query)."""
+        effective_config = config or self._config
+        async for event in stream_claude_one_shot(prompt, effective_config):
+            yield event
 
-    async def _execute_agent_runtime(self, prompt: str, runtime_name: str) -> AsyncIterator[Any]:
+    async def _execute_agent_runtime(
+        self,
+        prompt: str,
+        runtime_name: str,
+        config: AgentConfig | None = None,
+    ) -> AsyncIterator[Any]:
         """Execute via AgentRuntime (thin/deepagents)."""
-        from cognitia.agent.runtime_wiring import build_portable_runtime_plan
-        from cognitia.runtime.factory import RuntimeFactory
         from cognitia.runtime.types import Message
 
-        runtime_plan = build_portable_runtime_plan(self._config, runtime_name)
-        factory = RuntimeFactory()
-        runtime = factory.create(
-            config=runtime_plan.config,
-            **runtime_plan.create_kwargs,
-        )
+        effective_config = config or self._config
+        async for event in run_portable_runtime(
+            agent_config=effective_config,
+            runtime_name=runtime_name,
+            messages=[Message(role="user", content=prompt)],
+            system_prompt=effective_config.system_prompt,
+            event_adapter=_RuntimeEventAdapter,
+            error_factory=lambda exc: _ErrorEvent(str(exc)),
+            logger=logger,
+            error_context="Agent._execute_agent_runtime",
+        ):
+            yield event
 
-        messages = [Message(role="user", content=prompt)]
-
-        try:
-            async for event in runtime.run(
-                messages=messages,
-                system_prompt=self._config.system_prompt,
-                active_tools=runtime_plan.active_tools,
-            ):
-                # Convert RuntimeEvent -> StreamEvent-like
-                yield _RuntimeEventAdapter(event)
-        except Exception as exc:
-            logger.exception("Agent._execute_agent_runtime error")
-            yield _ErrorEvent(str(exc))
-        finally:
-            await runtime.cleanup()
-
-    def _build_tools_mcp_server(self) -> Any:
+    def _build_tools_mcp_server(self, config: AgentConfig | None = None) -> Any:
         """Create an in-process MCP server from @tool definitions."""
-        return build_tools_mcp_server(self._config.tools)
+        effective_config = config or self._config
+        return build_tools_mcp_server(effective_config.tools)
 
-    def _build_runtime_config(self, runtime_name: str) -> Any:
+    def _build_runtime_config(self, runtime_name: str, config: AgentConfig | None = None) -> Any:
         """Build RuntimeConfig from AgentConfig for the portable/native runtime path."""
         from cognitia.runtime.types import RuntimeConfig
+        from cognitia.runtime.factory import RuntimeFactory
+
+        effective_config = config or self._config
+        factory = RuntimeFactory()
+        factory.validate_agent_config(effective_config)
 
         return RuntimeConfig(
             runtime_name=runtime_name,
-            model=self._config.resolved_model,
-            output_format=self._config.output_format,
-            feature_mode=self._config.feature_mode,
-            required_capabilities=self._config.require_capabilities,
-            allow_native_features=self._config.allow_native_features,
-            native_config=dict(self._config.native_config),
+            model=factory.resolve_agent_model(effective_config),
+            output_format=effective_config.output_format,
+            feature_mode=effective_config.feature_mode,
+            required_capabilities=effective_config.require_capabilities,
+            allow_native_features=effective_config.allow_native_features,
+            native_config=dict(effective_config.native_config),
         )
 
     def _merge_hooks(self) -> Any:

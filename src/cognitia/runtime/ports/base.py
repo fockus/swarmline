@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
 
+from cognitia.runtime.ports._helpers import (
+    append_to_history,
+    build_system_prompt,
+    maybe_summarize,
+    should_compact,
+    stream_runtime_reply,
+)
 from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent
-
-logger = logging.getLogger(__name__)
 
 HISTORY_MAX = 20
 """Максимальное количество сообщений в in-memory истории runtime-адаптеров."""
@@ -87,7 +91,6 @@ def convert_event(event: RuntimeEvent) -> StreamEvent | None:
         )
 
     if event.type == "final":
-
         return None
 
     return None
@@ -95,11 +98,6 @@ def convert_event(event: RuntimeEvent) -> StreamEvent | None:
 
 CompactionTrigger = tuple[str, int]
 """Trigger для compaction: ('messages', N) или ('tokens', N)."""
-
-
-def _estimate_tokens(messages: list[Message]) -> int:
-    """Estimate tokens."""
-    return sum(len(msg.content) for msg in messages) // 4
 
 
 _ARG_TRUNCATION_MAX = 2000
@@ -162,58 +160,29 @@ class BaseRuntimePort:
 
     def _append_to_history(self, role: str, content: str) -> None:
         """Append to history."""
-        self._history.append(Message(role=role, content=content))
-        if len(self._history) > self._history_max:
-            self._history = self._history[-self._history_max :]
+        append_to_history(self._history, self._history_max, role, content)
 
     def _should_compact(self) -> bool:
         """Check trigger for compaction."""
-        trigger_type, threshold = self._compaction_trigger
-        if trigger_type == "tokens":
-            return _estimate_tokens(self._history) >= threshold
-        if trigger_type == "messages":
-            return len(self._history) >= threshold
-        msg = f"Unknown compaction trigger type: {trigger_type!r}. Allowed: 'tokens', 'messages'"
-        raise ValueError(msg)
+        return should_compact(self._history, self._compaction_trigger)
 
     async def _maybe_summarize(self) -> None:
         """Maybe summarize."""
-        if not self._summarizer or not self._should_compact():
-            return
-
-        from cognitia.memory.types import MemoryMessage
-
-
-        raw = [{"role": msg.role, "content": msg.content} for msg in self._history]
-        truncated = truncate_long_args(raw)
-
-
-        mem_messages = [MemoryMessage(role=m["role"], content=m["content"]) for m in truncated]
-
-        try:
-            if hasattr(self._summarizer, "asummarize"):
-                self._rolling_summary = await self._summarizer.asummarize(mem_messages)
-            else:
-                self._rolling_summary = self._summarizer.summarize(mem_messages)
-        except Exception:
-            logger.warning("Ошибка auto-summarization", exc_info=True)
+        summary = await maybe_summarize(
+            self._history,
+            self._summarizer,
+            self._compaction_trigger,
+        )
+        if summary is not None:
+            self._rolling_summary = summary
 
     def _build_system_prompt(self) -> str:
         """Build system prompt."""
-        from cognitia.runtime.portable_memory import inject_memory_into_prompt, load_agents_md
-
-        prompt = self._system_prompt
-
-        # Inject memory from AGENTS.md
-        if self._memory_sources:
-            memory_content = load_agents_md(self._memory_sources)
-            prompt = inject_memory_into_prompt(prompt, memory_content)
-
-        # Add rolling summary
-        if self._rolling_summary:
-            prompt = f"{prompt}\n\n## Краткое содержание предыдущего диалога\n{self._rolling_summary}"
-
-        return prompt
+        return build_system_prompt(
+            self._system_prompt,
+            self._rolling_summary,
+            self._memory_sources,
+        )
 
     async def _run_runtime(
         self,
@@ -231,67 +200,12 @@ class BaseRuntimePort:
             return
 
         self._append_to_history("user", user_text)
-
-
         await self._maybe_summarize()
-
-        full_text = ""
-        final_text = ""
-        final_data: dict[str, Any] | None = None
-        saw_terminal_event = False
-
-        try:
-            async for event in self._run_runtime(
-                messages=list(self._history),
-                system_prompt=self._build_system_prompt(),
-            ):
-
-                if event.type == "final":
-                    final_data = event.data
-                    final_text = str(event.data.get("text", ""))
-                    saw_terminal_event = True
-                    continue
-
-                if event.type == "error":
-                    stream_event = convert_event(event)
-                    if stream_event:
-                        yield stream_event
-                    saw_terminal_event = True
-                    return
-
-                stream_event = convert_event(event)
-                if stream_event:
-                    if stream_event.type == "text_delta":
-                        full_text += stream_event.text
-                    yield stream_event
-
-        except Exception as e:
-            error_msg = f"Ошибка runtime: {type(e).__name__}: {e}"
-            logger.error(error_msg, exc_info=True)
-            yield StreamEvent(type="error", text=error_msg)
-            return
-
-        if not saw_terminal_event:
-            yield StreamEvent(
-                type="error",
-                text="runtime stream ended without final RuntimeEvent",
-            )
-            return
-
-
-        if not full_text and final_text:
-            full_text = final_text
-            yield StreamEvent(type="text_delta", text=full_text)
-
-        if full_text:
-            self._append_to_history("assistant", full_text)
-
-        done_event = StreamEvent(type="done", text=full_text, is_final=True)
-        if final_data is not None:
-            done_event.session_id = final_data.get("session_id")
-            done_event.total_cost_usd = final_data.get("total_cost_usd")
-            done_event.usage = final_data.get("usage")
-            done_event.structured_output = final_data.get("structured_output")
-            done_event.native_metadata = final_data.get("native_metadata")
-
-        yield done_event
+        async for event in stream_runtime_reply(
+            messages=list(self._history),
+            system_prompt=self._build_system_prompt(),
+            run_runtime=self._run_runtime,
+            convert_event_fn=convert_event,
+            append_assistant=lambda text: self._append_to_history("assistant", text),
+        ):
+            yield event

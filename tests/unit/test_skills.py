@@ -155,6 +155,34 @@ tools:
         loader = YamlSkillLoader(tmp_path / "nonexistent")
         assert loader.load_all() == []
 
+    def test_symlinked_skill_yaml_is_rejected(self, tmp_path: Path) -> None:
+        """skill.yaml symlink must not be read even inside project_root."""
+        target = tmp_path / "outside.yaml"
+        target.write_text('id: outside\ntitle: Outside', encoding="utf-8")
+
+        skill_dir = tmp_path / "evil"
+        skill_dir.mkdir()
+        (skill_dir / "skill.yaml").symlink_to(target)
+        (skill_dir / "INSTRUCTION.md").write_text("ignored", encoding="utf-8")
+
+        loader = YamlSkillLoader(tmp_path)
+        assert loader.load_all() == []
+
+    def test_symlinked_skill_md_is_rejected(self, tmp_path: Path) -> None:
+        """SKILL.md symlink must not be read even inside project_root."""
+        target = tmp_path / "outside.md"
+        target.write_text(
+            "---\nname: outside\ndescription: bad\n---\n# outside",
+            encoding="utf-8",
+        )
+
+        skill_dir = tmp_path / "evil"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").symlink_to(target)
+
+        loader = YamlSkillLoader(tmp_path)
+        assert loader.load_all() == []
+
 
 class TestSkillRegistry:
     """Tests reestra skilov."""

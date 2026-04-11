@@ -33,6 +33,15 @@ def client():
     return TestClient(app), agent
 
 
+@pytest.fixture
+def open_query_client():
+    from starlette.testclient import TestClient
+
+    agent = _mock_agent()
+    app = create_app(agent, allow_unauthenticated_query=True)
+    return TestClient(app), agent
+
+
 # ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
@@ -70,6 +79,11 @@ class TestInfo:
         data = tc.get("/v1/info").json()
         assert "version" in data
 
+    def test_info_excludes_query_when_closed(self, client) -> None:
+        tc, _ = client
+        data = tc.get("/v1/info").json()
+        assert "/v1/query" not in data["endpoints"]
+
 
 # ---------------------------------------------------------------------------
 # Query
@@ -78,26 +92,31 @@ class TestInfo:
 
 class TestQuery:
 
-    def test_query_success(self, client) -> None:
-        tc, agent = client
+    def test_query_closed_by_default(self, client) -> None:
+        tc, _ = client
+        resp = tc.post("/v1/query", json={"prompt": "Hello"})
+        assert resp.status_code == 404
+
+    def test_query_success(self, open_query_client) -> None:
+        tc, agent = open_query_client
         resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 200
         data = resp.json()
         assert data["text"] == "Hello!"
         assert data["ok"] is True
 
-    def test_query_calls_agent(self, client) -> None:
-        tc, agent = client
+    def test_query_calls_agent(self, open_query_client) -> None:
+        tc, agent = open_query_client
         tc.post("/v1/query", json={"prompt": "test prompt"})
         agent.query.assert_called_once_with("test prompt")
 
-    def test_query_missing_prompt(self, client) -> None:
-        tc, _ = client
+    def test_query_missing_prompt(self, open_query_client) -> None:
+        tc, _ = open_query_client
         resp = tc.post("/v1/query", json={})
         assert resp.status_code == 400
 
-    def test_query_empty_prompt(self, client) -> None:
-        tc, _ = client
+    def test_query_empty_prompt(self, open_query_client) -> None:
+        tc, _ = open_query_client
         resp = tc.post("/v1/query", json={"prompt": ""})
         assert resp.status_code == 400
 
@@ -105,7 +124,7 @@ class TestQuery:
         from starlette.testclient import TestClient
 
         agent = _mock_agent(error="LLM timeout")
-        tc = TestClient(create_app(agent))
+        tc = TestClient(create_app(agent, allow_unauthenticated_query=True))
         resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 200  # HTTP 200, error in body
         data = resp.json()
@@ -117,7 +136,7 @@ class TestQuery:
 
         agent = MagicMock()
         agent.query = AsyncMock(side_effect=RuntimeError("boom"))
-        tc = TestClient(create_app(agent))
+        tc = TestClient(create_app(agent, allow_unauthenticated_query=True))
         resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 500
         assert "boom" in resp.json()["error"]

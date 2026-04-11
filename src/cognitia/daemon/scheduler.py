@@ -55,6 +55,7 @@ class Scheduler:
         self._tasks: dict[str, _Task] = {}
         self._paused = False
         self._tick_interval = tick_interval
+        self._max_concurrent = max_concurrent
         self._pending_asyncio_tasks: set[asyncio.Task[None]] = set()
         # max_concurrent=0 means unlimited (no semaphore).
         self._semaphore: asyncio.Semaphore | None = (
@@ -175,6 +176,8 @@ class Scheduler:
         for name, task in list(self._tasks.items()):
             if not task.active:
                 continue
+            if self._max_concurrent > 0 and len(self._pending_asyncio_tasks) >= self._max_concurrent:
+                break
             if task.next_run <= now:
                 # Fire task and track reference
                 at = asyncio.create_task(self._run_task(task))
@@ -196,16 +199,8 @@ class Scheduler:
             self._tasks.pop(name, None)
 
     async def _run_task(self, task: _Task) -> None:
-        """Run a task, logging exceptions.
-
-        If a concurrency semaphore is configured (max_concurrent > 0),
-        the task waits to acquire a slot before executing.
-        """
-        if self._semaphore is not None:
-            async with self._semaphore:
-                await self._run_task_inner(task)
-        else:
-            await self._run_task_inner(task)
+        """Run a task, logging exceptions."""
+        await self._run_task_inner(task)
 
     async def _run_task_inner(self, task: _Task) -> None:
         """Execute the task coroutine, logging exceptions."""

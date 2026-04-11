@@ -107,7 +107,11 @@ class ThinPlannerMode:
 
     async def execute_all(self, plan: Plan) -> AsyncIterator[PlanStep]:
         """Execute all steps sequentially and stop on failure."""
-        plan = plan.start_execution() if plan.status == "approved" else plan
+        if plan.status != "approved":
+            msg = "Plan must be approved before execution"
+            raise ValueError(msg)
+
+        plan = plan.start_execution()
         await self._store.save(plan)
         execution_failed = False
 

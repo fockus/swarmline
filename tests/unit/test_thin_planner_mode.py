@@ -177,6 +177,20 @@ class TestThinPlannerExecuteAll:
         assert results[0].status == "completed"
         assert results[1].status == "failed"
 
+    async def test_execute_all_rejects_unapproved_plan(self, planner, mock_llm, plan_store) -> None:
+        """Draft plan must fail before any execution side effects."""
+        plan = await planner.generate_plan("g", "c")
+        mock_llm.generate.reset_mock()
+
+        with pytest.raises(ValueError, match="approved"):
+            async for _step in planner.execute_all(plan):
+                pass
+
+        loaded = await plan_store.load(plan.id)
+        assert loaded is not None
+        assert loaded.status == "draft"
+        mock_llm.generate.assert_not_called()
+
 
 class TestThinPlannerReplan:
     """replan: peregenotrirovat plan."""

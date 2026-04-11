@@ -140,6 +140,7 @@ class PostgresGraphTaskBoard:
 
     async def create_task(self, task: GraphTaskItem) -> None:
         async with self._session(commit=True) as session:
+            await self._validate_parent_link(session, task)
             await session.execute(
                 text(
                     "INSERT INTO graph_tasks (id, parent_task_id, namespace, data) "
@@ -149,6 +150,36 @@ class PostgresGraphTaskBoard:
                  "namespace": self._namespace,
                  "data": json.dumps(self._serialize_task(task))},
             )
+
+    async def _load_task_row(self, session: AsyncSession, task_id: str) -> GraphTaskItem | None:
+        """Load a task row within the current namespace, if present."""
+        where = self._ns_where("WHERE id = :id")
+        row = (await session.execute(
+            text(f"SELECT data FROM graph_tasks {where}"),
+            self._ns_params({"id": task_id}),
+        )).fetchone()
+        if not row:
+            return None
+        return self._deserialize_task(row[0])
+
+    async def _validate_parent_link(self, session: AsyncSession, task: GraphTaskItem) -> None:
+        """Reject self-parenting and parent cycles before storing a task."""
+        parent_id = task.parent_task_id
+        if parent_id is None:
+            return
+        if parent_id == task.id:
+            raise ValueError("Task cannot be its own parent")
+
+        visited: set[str] = {task.id}
+        current_id: str | None = parent_id
+        while current_id is not None:
+            if current_id in visited:
+                raise ValueError("Cycle detected in parent_task_id chain")
+            visited.add(current_id)
+            current = await self._load_task_row(session, current_id)
+            if current is None:
+                return
+            current_id = current.parent_task_id
 
     async def checkout_task(self, task_id: str, agent_id: str) -> GraphTaskItem | None:
         async with self._session(commit=True) as session:
@@ -184,6 +215,8 @@ class PostgresGraphTaskBoard:
             if not row:
                 return False
             task = self._deserialize_task(row[0])
+            if task.status != TaskStatus.IN_PROGRESS:
+                return False
             updated = replace(
                 task,
                 status=TaskStatus.DONE,
@@ -365,10 +398,16 @@ class PostgresGraphTaskBoard:
             task = self._deserialize_task(row[0])
             if not task.dependencies:
                 return []
-            rows = (await session.execute(
-                text("SELECT data FROM graph_tasks WHERE id = ANY(:ids)"),
-                {"ids": list(task.dependencies)},
-            )).fetchall()
+            if self._namespace:
+                rows = (await session.execute(
+                    text("SELECT data FROM graph_tasks WHERE id = ANY(:ids) AND namespace = :ns"),
+                    {"ids": list(task.dependencies), "ns": self._namespace},
+                )).fetchall()
+            else:
+                rows = (await session.execute(
+                    text("SELECT data FROM graph_tasks WHERE id = ANY(:ids)"),
+                    {"ids": list(task.dependencies)},
+                )).fetchall()
             blockers: list[GraphTaskItem] = []
             for r in rows:
                 t = self._deserialize_task(r[0])
@@ -380,6 +419,8 @@ class PostgresGraphTaskBoard:
 
     async def add_comment(self, comment: TaskComment) -> None:
         async with self._session(commit=True) as session:
+            if await self._load_task_row(session, comment.task_id) is None:
+                raise ValueError("Task not found in namespace")
             await session.execute(
                 text(
                     "INSERT INTO graph_task_comments (id, task_id, data) "
@@ -391,46 +432,94 @@ class PostgresGraphTaskBoard:
 
     async def get_comments(self, task_id: str) -> list[TaskComment]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("SELECT data FROM graph_task_comments WHERE task_id = :id ORDER BY created_at"),
-                {"id": task_id},
-            )).fetchall()
+            if self._namespace:
+                rows = (await session.execute(
+                    text("""
+                        SELECT c.data
+                        FROM graph_task_comments c
+                        JOIN graph_tasks t ON t.id = c.task_id
+                        WHERE c.task_id = :id AND t.namespace = :ns
+                        ORDER BY c.created_at
+                    """),
+                    {"id": task_id, "ns": self._namespace},
+                )).fetchall()
+            else:
+                rows = (await session.execute(
+                    text("SELECT data FROM graph_task_comments WHERE task_id = :id ORDER BY created_at"),
+                    {"id": task_id},
+                )).fetchall()
             return [self._deserialize_comment(r[0]) for r in rows]
 
     async def get_thread(self, task_id: str) -> list[TaskComment]:
         """Get all comments for a task and its subtasks (recursive)."""
         async with self._session() as session:
-            rows = (await session.execute(
-                text("""
-                    WITH RECURSIVE sub(id) AS (
-                        SELECT id FROM graph_tasks WHERE id = :id
-                        UNION ALL
-                        SELECT t.id FROM graph_tasks t JOIN sub s ON t.parent_task_id = s.id
-                    )
-                    SELECT c.data FROM graph_task_comments c
-                    WHERE c.task_id IN (SELECT id FROM sub)
-                    ORDER BY c.created_at
-                """),
-                {"id": task_id},
-            )).fetchall()
+            if self._namespace:
+                rows = (await session.execute(
+                    text("""
+                        WITH RECURSIVE sub(id) AS (
+                            SELECT id FROM graph_tasks WHERE id = :id AND namespace = :ns
+                            UNION ALL
+                            SELECT t.id
+                            FROM graph_tasks t
+                            JOIN sub s ON t.parent_task_id = s.id
+                            WHERE t.namespace = :ns
+                        )
+                        SELECT c.data FROM graph_task_comments c
+                        WHERE c.task_id IN (SELECT id FROM sub)
+                        ORDER BY c.created_at
+                    """),
+                    {"id": task_id, "ns": self._namespace},
+                )).fetchall()
+            else:
+                rows = (await session.execute(
+                    text("""
+                        WITH RECURSIVE sub(id) AS (
+                            SELECT id FROM graph_tasks WHERE id = :id
+                            UNION ALL
+                            SELECT t.id FROM graph_tasks t JOIN sub s ON t.parent_task_id = s.id
+                        )
+                        SELECT c.data FROM graph_task_comments c
+                        WHERE c.task_id IN (SELECT id FROM sub)
+                        ORDER BY c.created_at
+                    """),
+                    {"id": task_id},
+                )).fetchall()
             return [self._deserialize_comment(r[0]) for r in rows]
 
     # --- GoalAncestry ---
 
     async def get_goal_ancestry(self, task_id: str) -> GoalAncestry | None:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("""
-                    WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
-                        SELECT id, parent_task_id, data FROM graph_tasks WHERE id = :id
-                        UNION ALL
-                        SELECT t.id, t.parent_task_id, t.data
-                        FROM graph_tasks t JOIN ancestry a ON t.id = a.parent_task_id
-                    )
-                    SELECT data FROM ancestry
-                """),
-                {"id": task_id},
-            )).fetchall()
+            if self._namespace:
+                rows = (await session.execute(
+                    text("""
+                        WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
+                            SELECT id, parent_task_id, data
+                            FROM graph_tasks
+                            WHERE id = :id AND namespace = :ns
+                            UNION ALL
+                            SELECT t.id, t.parent_task_id, t.data
+                            FROM graph_tasks t
+                            JOIN ancestry a ON t.id = a.parent_task_id
+                            WHERE t.namespace = :ns
+                        )
+                        SELECT data FROM ancestry
+                    """),
+                    {"id": task_id, "ns": self._namespace},
+                )).fetchall()
+            else:
+                rows = (await session.execute(
+                    text("""
+                        WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
+                            SELECT id, parent_task_id, data FROM graph_tasks WHERE id = :id
+                            UNION ALL
+                            SELECT t.id, t.parent_task_id, t.data
+                            FROM graph_tasks t JOIN ancestry a ON t.id = a.parent_task_id
+                        )
+                        SELECT data FROM ancestry
+                    """),
+                    {"id": task_id},
+                )).fetchall()
         if not rows:
             return None
         tasks = [self._deserialize_task(r[0]) for r in rows]
@@ -449,18 +538,38 @@ class PostgresGraphTaskBoard:
         Always recurses to grandparent since progress changes even with partial completion.
         """
         # Lock all children to prevent concurrent propagation race
-        rows = (await session.execute(
-            text("SELECT data FROM graph_tasks WHERE parent_task_id = :id FOR UPDATE"),
-            {"id": parent_id},
-        )).fetchall()
+        if self._namespace:
+            rows = (await session.execute(
+                text("""
+                    SELECT data FROM graph_tasks
+                    WHERE parent_task_id = :id AND namespace = :ns
+                    FOR UPDATE
+                """),
+                {"id": parent_id, "ns": self._namespace},
+            )).fetchall()
+        else:
+            rows = (await session.execute(
+                text("SELECT data FROM graph_tasks WHERE parent_task_id = :id FOR UPDATE"),
+                {"id": parent_id},
+            )).fetchall()
         if not rows:
             return
         children = [self._deserialize_task(r[0]) for r in rows]
         progress = sum(c.progress for c in children) / len(children)
-        parent_row = (await session.execute(
-            text("SELECT data FROM graph_tasks WHERE id = :id FOR UPDATE"),
-            {"id": parent_id},
-        )).fetchone()
+        if self._namespace:
+            parent_row = (await session.execute(
+                text("""
+                    SELECT data FROM graph_tasks
+                    WHERE id = :id AND namespace = :ns
+                    FOR UPDATE
+                """),
+                {"id": parent_id, "ns": self._namespace},
+            )).fetchone()
+        else:
+            parent_row = (await session.execute(
+                text("SELECT data FROM graph_tasks WHERE id = :id FOR UPDATE"),
+                {"id": parent_id},
+            )).fetchone()
         if not parent_row:
             return
         parent = self._deserialize_task(parent_row[0])

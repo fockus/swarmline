@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 
 import pytest
+from cognitia.agent import Agent
 from cognitia.agent.config import AgentConfig
 from cognitia.runtime.capabilities import CapabilityRequirements, RuntimeCapabilities
 
@@ -102,7 +103,7 @@ class TestAgentConfigImmutable:
 
 
 class TestAgentConfigValidation:
-    """Validation pri createdii."""
+    """DTO-level validation pri createdii."""
 
     def test_empty_system_prompt_raises(self) -> None:
         """Empty system_prompt -> ValueError."""
@@ -114,27 +115,27 @@ class TestAgentConfigValidation:
         with pytest.raises(ValueError, match="system_prompt"):
             AgentConfig(system_prompt="   ")
 
-    def test_invalid_runtime_raises(self) -> None:
-        """Notizvestnyy runtime -> ValueError."""
-        with pytest.raises(ValueError, match="runtime"):
-            AgentConfig(system_prompt="test", runtime="unknown_runtime")
+    def test_invalid_runtime_is_allowed_at_dto_layer(self) -> None:
+        """Runtime validation now happens at runtime/bootstrap boundary."""
+        cfg = AgentConfig(system_prompt="test", runtime="unknown_runtime")
+        assert cfg.runtime == "unknown_runtime"
 
-    def test_invalid_feature_mode_raises(self) -> None:
-        """Notizvestnyy feature_mode -> ValueError."""
-        with pytest.raises(ValueError, match="feature_mode"):
-            AgentConfig(system_prompt="test", feature_mode="invalid_mode")
+    def test_invalid_feature_mode_is_allowed_at_dto_layer(self) -> None:
+        """feature_mode validation now happens at runtime/bootstrap boundary."""
+        cfg = AgentConfig(system_prompt="test", feature_mode="invalid_mode")
+        assert cfg.feature_mode == "invalid_mode"
 
-    def test_runtime_requirements_fail_fast(self) -> None:
-        """Trebovanie full tier for thin -> ValueError on konfige."""
-        with pytest.raises(ValueError, match="thin"):
-            AgentConfig(
-                system_prompt="test",
-                runtime="thin",
-                require_capabilities=CapabilityRequirements(tier="full"),
-            )
+    def test_runtime_requirements_allowed_at_dto_layer(self) -> None:
+        """Capability negotiation moves to runtime/bootstrap boundary."""
+        cfg = AgentConfig(
+            system_prompt="test",
+            runtime="thin",
+            require_capabilities=CapabilityRequirements(tier="full"),
+        )
+        assert cfg.require_capabilities == CapabilityRequirements(tier="full")
 
     def test_custom_runtime_from_registry_is_accepted(self) -> None:
-        """Registry-registered runtime prohodit validatsiyu AgentConfig."""
+        """DTO stores custom runtime names without needing constructor validation."""
         from cognitia.runtime.registry import get_default_registry
 
         registry = get_default_registry()
@@ -147,6 +148,46 @@ class TestAgentConfigValidation:
                 require_capabilities=CapabilityRequirements(tier="light"),
             )
             assert cfg.runtime == "custom_agent_rt"
+        finally:
+            registry.unregister("custom_agent_rt")
+
+
+class TestAgentRuntimeBoundaryValidation:
+    """Runtime/bootstrap boundary must fail fast on invalid AgentConfig."""
+
+    def test_agent_rejects_invalid_runtime(self) -> None:
+        with pytest.raises(ValueError, match="runtime"):
+            Agent(AgentConfig(system_prompt="test", runtime="unknown_runtime"))
+
+    def test_agent_rejects_invalid_feature_mode(self) -> None:
+        with pytest.raises(ValueError, match="feature_mode"):
+            Agent(AgentConfig(system_prompt="test", feature_mode="invalid_mode"))
+
+    def test_agent_rejects_missing_capabilities(self) -> None:
+        with pytest.raises(ValueError, match="thin"):
+            Agent(
+                AgentConfig(
+                    system_prompt="test",
+                    runtime="thin",
+                    require_capabilities=CapabilityRequirements(tier="full"),
+                )
+            )
+
+    def test_agent_accepts_registry_registered_runtime(self) -> None:
+        from cognitia.runtime.registry import get_default_registry
+
+        registry = get_default_registry()
+        caps = RuntimeCapabilities(runtime_name="custom_agent_rt", tier="light")
+        registry.register("custom_agent_rt", lambda config, **kwargs: object(), capabilities=caps)
+        try:
+            agent = Agent(
+                AgentConfig(
+                    system_prompt="test",
+                    runtime="custom_agent_rt",
+                    require_capabilities=CapabilityRequirements(tier="light"),
+                )
+            )
+            assert agent.config.runtime == "custom_agent_rt"
         finally:
             registry.unregister("custom_agent_rt")
 

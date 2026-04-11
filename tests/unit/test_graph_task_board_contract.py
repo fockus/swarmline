@@ -111,6 +111,18 @@ class TestCRUD:
         assert tasks[0].id == "t1"
 
 
+class TestHierarchyValidation:
+
+    async def test_self_parent_rejected(self, board) -> None:
+        with pytest.raises(ValueError, match="own parent"):
+            await board.create_task(_task("t1", "Task", parent_id="t1"))
+
+    async def test_cycle_rejected_on_create(self, board) -> None:
+        await board.create_task(_task("a", "A", parent_id="b"))
+        with pytest.raises(ValueError, match="Cycle"):
+            await board.create_task(_task("b", "B", parent_id="a"))
+
+
 # ---------------------------------------------------------------------------
 # Atomic checkout
 # ---------------------------------------------------------------------------
@@ -156,6 +168,12 @@ class TestAtomicCheckout:
 
 
 class TestStatusPropagation:
+
+    async def test_complete_requires_in_progress(self, board) -> None:
+        await board.create_task(_task("t1", "Task"))
+        assert await board.complete_task("t1") is False
+        task = next(t for t in await board.list_tasks() if t.id == "t1")
+        assert task.status == TaskStatus.TODO
 
     async def test_complete_sets_done(self, board) -> None:
         await board.create_task(_task("t1", "Task"))
@@ -455,6 +473,7 @@ class TestBlocked:
 
     async def test_block_done_task_rejected(self, board) -> None:
         await board.create_task(_task("t1", "Test"))
+        await board.checkout_task("t1", "agent1")
         await board.complete_task("t1")
         result = await board.block_task("t1", "reason")
         assert result is False
@@ -508,6 +527,7 @@ class TestProgress:
 
     async def test_completed_leaf_has_full_progress(self, board) -> None:
         await board.create_task(_task("t1", "Leaf"))
+        await board.checkout_task("t1", "agent1")
         await board.complete_task("t1")
         tasks = await board.list_tasks()
         assert tasks[0].progress == 1.0
@@ -516,6 +536,7 @@ class TestProgress:
         await board.create_task(_task("parent", "Parent"))
         await board.create_task(_task("c1", "Child 1", parent_id="parent"))
         await board.create_task(_task("c2", "Child 2", parent_id="parent"))
+        await board.checkout_task("c1", "agent1")
         await board.complete_task("c1")
         tasks = await board.list_tasks()
         parent = next(t for t in tasks if t.id == "parent")
@@ -526,6 +547,8 @@ class TestProgress:
         await board.create_task(_task("parent", "Parent"))
         await board.create_task(_task("c1", "Child 1", parent_id="parent"))
         await board.create_task(_task("c2", "Child 2", parent_id="parent"))
+        await board.checkout_task("c1", "agent1")
+        await board.checkout_task("c2", "agent2")
         await board.complete_task("c1")
         await board.complete_task("c2")
         tasks = await board.list_tasks()
@@ -538,6 +561,7 @@ class TestProgress:
         await board.create_task(_task("p", "Parent", parent_id="gp"))
         await board.create_task(_task("c1", "Child 1", parent_id="p"))
         await board.create_task(_task("c2", "Child 2", parent_id="p"))
+        await board.checkout_task("c1", "agent1")
         await board.complete_task("c1")
         tasks = await board.list_tasks()
         parent = next(t for t in tasks if t.id == "p")
@@ -550,6 +574,8 @@ class TestProgress:
         await board.create_task(_task("c1", "C1", parent_id="parent"))
         await board.create_task(_task("c2", "C2", parent_id="parent"))
         await board.create_task(_task("c3", "C3", parent_id="parent"))
+        await board.checkout_task("c1", "agent1")
+        await board.checkout_task("c2", "agent2")
         await board.complete_task("c1")
         await board.complete_task("c2")
         tasks = await board.list_tasks()
@@ -563,6 +589,8 @@ class TestProgress:
         await board.create_task(_task("c1", "C1", parent_id="parent"))
         await board.create_task(_task("c2", "C2", parent_id="parent"))
         await board.create_task(_task("c3", "C3", parent_id="parent"))
+        await board.checkout_task("c1", "agent1")
+        await board.checkout_task("c2", "agent2")
         await board.complete_task("c1")
         await board.complete_task("c2")
         # c3 stays TODO with progress 0.0
@@ -577,6 +605,8 @@ class TestProgress:
         await board.create_task(_task("c1", "C1", parent_id="parent"))
         await board.create_task(_task("c2", "C2", parent_id="parent"))
         await board.create_task(_task("c3", "C3", parent_id="parent"))
+        await board.checkout_task("c1", "agent1")
+        await board.checkout_task("c2", "agent2")
         await board.complete_task("c1")
         await board.complete_task("c2")
         await board.block_task("c3", "Waiting for input")

@@ -237,3 +237,30 @@ class TestSchedulerRespectsMaxConcurrent:
         sched = Scheduler(max_concurrent=3)
         # Should not raise, and should store the value
         assert sched._semaphore is not None
+
+    async def test_scheduler_does_not_accumulate_unbounded_pending_launches(self) -> None:
+        """Pending asyncio tasks must stay bounded by max_concurrent."""
+        started = asyncio.Event()
+        release = asyncio.Event()
+
+        async def blocked_task() -> None:
+            started.set()
+            await release.wait()
+
+        sched = Scheduler(tick_interval=0.01, max_concurrent=2)
+        for i in range(5):
+            sched.every(0.0 + 0.01, blocked_task, name=f"task-{i}")
+
+        stop = asyncio.Event()
+
+        async def _stop_soon() -> None:
+            await started.wait()
+            await asyncio.sleep(0.05)
+            stop.set()
+            release.set()
+
+        stopper = asyncio.create_task(_stop_soon())
+        await sched.run_until(stop)
+        await stopper
+
+        assert len(sched._pending_asyncio_tasks) == 0

@@ -34,6 +34,7 @@ class InMemoryGraphTaskBoard:
 
     async def create_task(self, task: GraphTaskItem) -> None:
         async with self._lock:
+            self._validate_parent_link(task)
             self._tasks[task.id] = task
 
     async def checkout_task(self, task_id: str, agent_id: str) -> GraphTaskItem | None:
@@ -58,6 +59,8 @@ class InMemoryGraphTaskBoard:
         async with self._lock:
             task = self._tasks.get(task_id)
             if task is None:
+                return False
+            if task.status != TaskStatus.IN_PROGRESS:
                 return False
             self._tasks[task_id] = replace(
                 task, status=TaskStatus.DONE, completed_at=time.time(), progress=1.0,
@@ -216,10 +219,34 @@ class InMemoryGraphTaskBoard:
 
     # --- Internal ---
 
-    def _propagate_parent(self, parent_id: str | None) -> None:
+    def _validate_parent_link(self, task: GraphTaskItem) -> None:
+        """Reject self-parenting and parent cycles before storing a task."""
+        parent_id = task.parent_task_id
+        if parent_id is None:
+            return
+        if parent_id == task.id:
+            raise ValueError("Task cannot be its own parent")
+
+        visited: set[str] = {task.id}
+        current_id: str | None = parent_id
+        while current_id is not None:
+            if current_id in visited:
+                raise ValueError("Cycle detected in parent_task_id chain")
+            visited.add(current_id)
+            current = self._tasks.get(current_id)
+            if current is None:
+                return
+            current_id = current.parent_task_id
+
+    def _propagate_parent(self, parent_id: str | None, visited: set[str] | None = None) -> None:
         """Recalculate parent progress from children and auto-complete if all DONE (recursive)."""
         if parent_id is None:
             return
+        if visited is None:
+            visited = set()
+        if parent_id in visited:
+            return
+        visited.add(parent_id)
         parent = self._tasks.get(parent_id)
         if parent is None:
             return
@@ -234,14 +261,18 @@ class InMemoryGraphTaskBoard:
         else:
             self._tasks[parent_id] = replace(parent, progress=progress)
         # Always recurse — progress changes even with partial completion
-        self._propagate_parent(parent.parent_task_id)
+        self._propagate_parent(parent.parent_task_id, visited)
 
     def _collect_subtree_task_ids(self, task_id: str) -> set[str]:
         """BFS to collect task_id and all descendant task IDs."""
         result: set[str] = {task_id}
         queue = [task_id]
+        visited: set[str] = set()
         while queue:
             tid = queue.pop(0)
+            if tid in visited:
+                continue
+            visited.add(tid)
             for t in self._tasks.values():
                 if t.parent_task_id == tid and t.id not in result:
                     result.add(t.id)

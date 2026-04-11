@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock
 
+import pytest
+
 
 def _plan_json(goal: str = "test") -> str:
     return json.dumps(
@@ -108,6 +110,27 @@ class TestDeepAgentsPlannerGenerate:
 
         assert new_plan.id != plan.id
         assert new_plan.status == "draft"
+
+    async def test_execute_all_rejects_unapproved_plan(self) -> None:
+        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from cognitia.orchestration.plan_store import InMemoryPlanStore
+
+        store = InMemoryPlanStore()
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = _plan_json()
+
+        planner = DeepAgentsPlannerMode(llm=mock_llm, plan_store=store)
+        plan = await planner.generate_plan("g", "c")
+        mock_llm.generate.reset_mock()
+
+        with pytest.raises(ValueError, match="approved"):
+            async for _step in planner.execute_all(plan):
+                pass
+
+        loaded = await store.load(plan.id)
+        assert loaded is not None
+        assert loaded.status == "draft"
+        mock_llm.generate.assert_not_called()
 
     def test_has_all_protocol_methods(self) -> None:
         """DeepAgentsPlannerMode imeet vse metody PlannerMode."""

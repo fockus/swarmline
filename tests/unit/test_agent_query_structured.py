@@ -6,6 +6,7 @@ instead of raw text, with automatic retry on validation errors.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 from unittest.mock import patch
 
@@ -62,13 +63,13 @@ class TestQueryStructuredSuccess:
         agent = _make_agent()
         sentiment = Sentiment(label="positive", score=0.95, reasoning="Great!")
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             return Result(
                 text='{"label": "positive", "score": 0.95, "reasoning": "Great!"}',
                 structured_output=sentiment,
             )
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             result = await agent.query_structured("Analyze this", Sentiment)
 
         assert isinstance(result, Sentiment)
@@ -80,10 +81,10 @@ class TestQueryStructuredSuccess:
         agent = _make_agent()
         model = SimpleModel(name="Alice", age=30)
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             return Result(text='{"name": "Alice", "age": 30}', structured_output=model)
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             result = await agent.query_structured("Get user", SimpleModel)
 
         assert isinstance(result, SimpleModel)
@@ -95,14 +96,14 @@ class TestQueryStructuredSuccess:
         agent = _make_agent()
         captured_prompts: list[str] = []
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             captured_prompts.append(prompt)
             return Result(
                 text='{"name": "Bob", "age": 25}',
                 structured_output=SimpleModel(name="Bob", age=25),
             )
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             await agent.query_structured("Find Bob", SimpleModel)
 
         assert captured_prompts == ["Find Bob"]
@@ -120,10 +121,10 @@ class TestQueryStructuredError:
         """When Result.structured_output is None, raises StructuredOutputError."""
         agent = _make_agent()
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             return Result(text="Not JSON at all", structured_output=None)
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             with pytest.raises(StructuredOutputError, match="Failed to parse"):
                 await agent.query_structured("Analyze this", Sentiment)
 
@@ -131,10 +132,10 @@ class TestQueryStructuredError:
         """StructuredOutputError message includes raw text excerpt."""
         agent = _make_agent()
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             return Result(text="This is not valid JSON", structured_output=None)
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             with pytest.raises(StructuredOutputError, match="This is not valid JSON"):
                 await agent.query_structured("Test", Sentiment)
 
@@ -142,10 +143,10 @@ class TestQueryStructuredError:
         """StructuredOutputError mentions the expected type name."""
         agent = _make_agent()
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             return Result(text="bad", structured_output=None)
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             with pytest.raises(StructuredOutputError, match="Sentiment"):
                 await agent.query_structured("Test", Sentiment)
 
@@ -159,18 +160,18 @@ class TestQueryStructuredConfigPropagation:
     """query_structured() correctly sets output_type on the temporary config."""
 
     async def test_sets_output_type_on_config(self) -> None:
-        """Temporary config has output_type set to the requested Pydantic model."""
+        """Per-call config has output_type set to the requested Pydantic model."""
         agent = _make_agent()
         captured_configs: list[AgentConfig] = []
 
-        async def _spy_query(prompt: str) -> Result:
-            captured_configs.append(agent._config)
+        async def _spy_query(prompt: str, config: AgentConfig) -> Result:
+            captured_configs.append(config)
             return Result(
                 text='{"name": "X", "age": 1}',
                 structured_output=SimpleModel(name="X", age=1),
             )
 
-        with patch.object(agent, "query", side_effect=_spy_query):
+        with patch.object(agent, "_query_with_config", side_effect=_spy_query):
             await agent.query_structured("Test", SimpleModel)
 
         assert len(captured_configs) == 1
@@ -181,14 +182,14 @@ class TestQueryStructuredConfigPropagation:
         agent = _make_agent()
         captured_configs: list[AgentConfig] = []
 
-        async def _spy_query(prompt: str) -> Result:
-            captured_configs.append(agent._config)
+        async def _spy_query(prompt: str, config: AgentConfig) -> Result:
+            captured_configs.append(config)
             return Result(
                 text='{"name": "X", "age": 1}',
                 structured_output=SimpleModel(name="X", age=1),
             )
 
-        with patch.object(agent, "query", side_effect=_spy_query):
+        with patch.object(agent, "_query_with_config", side_effect=_spy_query):
             await agent.query_structured("Test", SimpleModel)
 
         config = captured_configs[0]
@@ -200,13 +201,13 @@ class TestQueryStructuredConfigPropagation:
         agent = _make_agent()
         original_config = agent._config
 
-        async def _fake_query(prompt: str) -> Result:
+        async def _fake_query(prompt: str, config: AgentConfig) -> Result:
             return Result(
                 text='{"name": "X", "age": 1}',
                 structured_output=SimpleModel(name="X", age=1),
             )
 
-        with patch.object(agent, "query", side_effect=_fake_query):
+        with patch.object(agent, "_query_with_config", side_effect=_fake_query):
             await agent.query_structured("Test", SimpleModel)
 
         assert agent._config is original_config
@@ -217,10 +218,10 @@ class TestQueryStructuredConfigPropagation:
         agent = _make_agent()
         original_config = agent._config
 
-        async def _failing_query(prompt: str) -> Result:
+        async def _failing_query(prompt: str, config: AgentConfig) -> Result:
             return Result(text="bad", structured_output=None)
 
-        with patch.object(agent, "query", side_effect=_failing_query):
+        with patch.object(agent, "_query_with_config", side_effect=_failing_query):
             with pytest.raises(StructuredOutputError):
                 await agent.query_structured("Test", Sentiment)
 
@@ -231,16 +232,50 @@ class TestQueryStructuredConfigPropagation:
         custom_format = {"type": "object", "properties": {"x": {"type": "string"}}}
         agent = _make_agent(output_format=custom_format)
 
-        async def _spy_query(prompt: str) -> Result:
+        async def _spy_query(prompt: str, config: AgentConfig) -> Result:
             # The config should keep the original output_format
-            assert agent._config.output_format == custom_format
+            assert config.output_format == custom_format
             return Result(
                 text='{"name": "X", "age": 1}',
                 structured_output=SimpleModel(name="X", age=1),
             )
 
-        with patch.object(agent, "query", side_effect=_spy_query):
+        with patch.object(agent, "_query_with_config", side_effect=_spy_query):
             await agent.query_structured("Test", SimpleModel)
+
+    async def test_concurrent_calls_use_isolated_configs(self) -> None:
+        """Concurrent structured requests must not race through shared Agent._config."""
+        agent = _make_agent()
+        seen_output_types: list[type[Any]] = []
+        release = asyncio.Event()
+
+        class OtherModel(BaseModel):
+            flag: bool
+
+        async def _spy_query(prompt: str, config: AgentConfig) -> Result:
+            seen_output_types.append(config.output_type)
+            if len(seen_output_types) == 2:
+                release.set()
+            await release.wait()
+            if config.output_type is SimpleModel:
+                return Result(
+                    text='{"name":"A","age":1}',
+                    structured_output=SimpleModel(name="A", age=1),
+                )
+            return Result(
+                text='{"flag": true}',
+                structured_output=OtherModel(flag=True),
+            )
+
+        with patch.object(agent, "_query_with_config", side_effect=_spy_query):
+            simple_task = asyncio.create_task(agent.query_structured("simple", SimpleModel))
+            other_task = asyncio.create_task(agent.query_structured("other", OtherModel))
+            simple_result, other_result = await asyncio.gather(simple_task, other_task)
+
+        assert set(seen_output_types) == {SimpleModel, OtherModel}
+        assert simple_result.name == "A"
+        assert other_result.flag is True
+        assert agent.config.output_type is None
 
 
 # ---------------------------------------------------------------------------

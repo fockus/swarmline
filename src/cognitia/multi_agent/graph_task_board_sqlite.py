@@ -126,11 +126,40 @@ class SqliteGraphTaskBoard:
 
     def _create_sync(self, task: GraphTaskItem) -> None:
         with self._lock:
+            self._validate_parent_link_sync(task)
             self._conn.execute(
                 "INSERT INTO graph_tasks (id, parent_task_id, namespace, data) VALUES (?, ?, ?, ?)",
                 (task.id, task.parent_task_id, self._namespace, self._ser(task)),
             )
             self._conn.commit()
+
+    def _load_task_sync(self, task_id: str) -> GraphTaskItem | None:
+        params: list[Any] = [task_id]
+        query = self._ns_filter("SELECT data FROM graph_tasks WHERE id = ?", params)
+        cur = self._conn.execute(query, params)
+        row = cur.fetchone()
+        if not row:
+            return None
+        return self._deser(row[0])
+
+    def _validate_parent_link_sync(self, task: GraphTaskItem) -> None:
+        """Reject self-parenting and parent cycles before storing a task."""
+        parent_id = task.parent_task_id
+        if parent_id is None:
+            return
+        if parent_id == task.id:
+            raise ValueError("Task cannot be its own parent")
+
+        visited: set[str] = {task.id}
+        current_id: str | None = parent_id
+        while current_id is not None:
+            if current_id in visited:
+                raise ValueError("Cycle detected in parent_task_id chain")
+            visited.add(current_id)
+            current = self._load_task_sync(current_id)
+            if current is None:
+                return
+            current_id = current.parent_task_id
 
     def _ns_filter(self, base_query: str, params: list[Any]) -> str:
         """Append namespace filter to query when namespace is set."""
@@ -183,6 +212,9 @@ class SqliteGraphTaskBoard:
                     self._conn.commit()
                     return False
                 task = self._deser(row[0])
+                if task.status != TaskStatus.IN_PROGRESS:
+                    self._conn.commit()
+                    return False
                 updated = replace(
                     task,
                     status=TaskStatus.DONE,
@@ -306,14 +338,16 @@ class SqliteGraphTaskBoard:
 
         Must be called within an active transaction. Always recurses to grandparent.
         """
-        cur = self._conn.execute(
-            "SELECT data FROM graph_tasks WHERE parent_task_id = ?", (parent_id,)
-        )
+        params: list[Any] = [parent_id]
+        query = self._ns_filter("SELECT data FROM graph_tasks WHERE parent_task_id = ?", params)
+        cur = self._conn.execute(query, params)
         children = [self._deser(r[0]) for r in cur.fetchall()]
         if not children:
             return
         progress = sum(c.progress for c in children) / len(children)
-        cur2 = self._conn.execute("SELECT data FROM graph_tasks WHERE id = ?", (parent_id,))
+        params2: list[Any] = [parent_id]
+        query2 = self._ns_filter("SELECT data FROM graph_tasks WHERE id = ?", params2)
+        cur2 = self._conn.execute(query2, params2)
         row = cur2.fetchone()
         if not row:
             return
@@ -355,6 +389,8 @@ class SqliteGraphTaskBoard:
 
     def _add_comment_sync(self, comment: TaskComment) -> None:
         with self._lock:
+            if self._load_task_sync(comment.task_id) is None:
+                raise ValueError("Task not found in namespace")
             data = json.dumps({
                 "id": comment.id, "task_id": comment.task_id,
                 "author_agent_id": comment.author_agent_id,
@@ -368,26 +404,56 @@ class SqliteGraphTaskBoard:
 
     def _get_comments_sync(self, task_id: str) -> list[TaskComment]:
         with self._lock:
-            cur = self._conn.execute(
-                "SELECT data FROM graph_task_comments WHERE task_id = ? ORDER BY created_at",
-                (task_id,),
-            )
+            if self._namespace:
+                cur = self._conn.execute(
+                    """
+                    SELECT c.data
+                    FROM graph_task_comments c
+                    JOIN graph_tasks t ON t.id = c.task_id
+                    WHERE c.task_id = ? AND t.namespace = ?
+                    ORDER BY c.created_at
+                    """,
+                    (task_id, self._namespace),
+                )
+            else:
+                cur = self._conn.execute(
+                    "SELECT data FROM graph_task_comments WHERE task_id = ? ORDER BY created_at",
+                    (task_id,),
+                )
             return [TaskComment(**json.loads(r[0])) for r in cur.fetchall()]
 
     def _goal_ancestry_sync(self, task_id: str) -> GoalAncestry | None:
         with self._lock:
-            cur = self._conn.execute(
-                """
-                WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
-                    SELECT id, parent_task_id, data FROM graph_tasks WHERE id = ?
-                    UNION ALL
-                    SELECT t.id, t.parent_task_id, t.data
-                    FROM graph_tasks t JOIN ancestry a ON t.id = a.parent_task_id
+            if self._namespace:
+                cur = self._conn.execute(
+                    """
+                    WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
+                        SELECT id, parent_task_id, data
+                        FROM graph_tasks
+                        WHERE id = ? AND namespace = ?
+                        UNION ALL
+                        SELECT t.id, t.parent_task_id, t.data
+                        FROM graph_tasks t
+                        JOIN ancestry a ON t.id = a.parent_task_id
+                        WHERE t.namespace = ?
+                    )
+                    SELECT data FROM ancestry
+                    """,
+                    (task_id, self._namespace, self._namespace),
                 )
-                SELECT data FROM ancestry
-                """,
-                (task_id,),
-            )
+            else:
+                cur = self._conn.execute(
+                    """
+                    WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
+                        SELECT id, parent_task_id, data FROM graph_tasks WHERE id = ?
+                        UNION ALL
+                        SELECT t.id, t.parent_task_id, t.data
+                        FROM graph_tasks t JOIN ancestry a ON t.id = a.parent_task_id
+                    )
+                    SELECT data FROM ancestry
+                    """,
+                    (task_id,),
+                )
             rows = cur.fetchall()
         if not rows:
             return None
@@ -440,10 +506,12 @@ class SqliteGraphTaskBoard:
             if not task.dependencies:
                 return []
             placeholders = ",".join("?" * len(task.dependencies))
-            cur2 = self._conn.execute(
-                f"SELECT data FROM graph_tasks WHERE id IN ({placeholders})",
-                list(task.dependencies),
-            )
+            dep_params: list[Any] = list(task.dependencies)
+            dep_query = f"SELECT data FROM graph_tasks WHERE id IN ({placeholders})"
+            if self._namespace:
+                dep_query += " AND namespace = ?"
+                dep_params.append(self._namespace)
+            cur2 = self._conn.execute(dep_query, dep_params)
             blockers: list[GraphTaskItem] = []
             for r in cur2.fetchall():
                 t = self._deser(r[0])
@@ -486,17 +554,33 @@ class SqliteGraphTaskBoard:
     def _get_thread_sync(self, task_id: str) -> list[TaskComment]:
         with self._lock:
             # Collect subtree task IDs via recursive CTE
-            cur = self._conn.execute(
-                """
-                WITH RECURSIVE sub(id) AS (
-                    SELECT id FROM graph_tasks WHERE id = ?
-                    UNION ALL
-                    SELECT t.id FROM graph_tasks t JOIN sub s ON t.parent_task_id = s.id
+            if self._namespace:
+                cur = self._conn.execute(
+                    """
+                    WITH RECURSIVE sub(id) AS (
+                        SELECT id FROM graph_tasks WHERE id = ? AND namespace = ?
+                        UNION ALL
+                        SELECT t.id
+                        FROM graph_tasks t
+                        JOIN sub s ON t.parent_task_id = s.id
+                        WHERE t.namespace = ?
+                    )
+                    SELECT id FROM sub
+                    """,
+                    (task_id, self._namespace, self._namespace),
                 )
-                SELECT id FROM sub
-                """,
-                (task_id,),
-            )
+            else:
+                cur = self._conn.execute(
+                    """
+                    WITH RECURSIVE sub(id) AS (
+                        SELECT id FROM graph_tasks WHERE id = ?
+                        UNION ALL
+                        SELECT t.id FROM graph_tasks t JOIN sub s ON t.parent_task_id = s.id
+                    )
+                    SELECT id FROM sub
+                    """,
+                    (task_id,),
+                )
             task_ids = [r[0] for r in cur.fetchall()]
             if not task_ids:
                 return []

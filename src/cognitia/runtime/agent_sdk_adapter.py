@@ -42,7 +42,10 @@ class AgentSDKAdapter:
     ) -> AgentHandle:
         """Spawn a Claude agent via Agent SDK."""
         try:
-            from claude_code_sdk import Agent, AgentOptions  # type: ignore[import-untyped]  # noqa: F401
+            from claude_code_sdk import (  # type: ignore[import-not-found,import-untyped]  # noqa: F401
+                Agent,
+                AgentOptions,
+            )
         except ImportError:
             raise RuntimeError(
                 "claude-agent-sdk not installed. Run: pip install cognitia[claude]"
@@ -79,7 +82,10 @@ class AgentSDKAdapter:
         self._statuses[handle.id] = AgentHandleStatus.RUNNING
 
         try:
-            from claude_code_sdk import Agent, AgentOptions  # type: ignore[import-untyped]
+            from claude_code_sdk import (  # type: ignore[import-not-found,import-untyped]
+                Agent,
+                AgentOptions,
+            )
 
             agent = Agent(
                 model=session["model"],

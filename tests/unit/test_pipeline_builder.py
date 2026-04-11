@@ -21,9 +21,20 @@ _SIMPLE_GRAPH = {
     "id": "root",
     "name": "Root Agent",
     "role": "orchestrator",
+    "lifecycle": "supervised",
     "children": [
-        {"id": "worker1", "name": "Worker 1", "role": "worker"},
-        {"id": "worker2", "name": "Worker 2", "role": "worker"},
+        {
+            "id": "worker1",
+            "name": "Worker 1",
+            "role": "worker",
+            "lifecycle": "supervised",
+        },
+        {
+            "id": "worker2",
+            "name": "Worker 2",
+            "role": "worker",
+            "lifecycle": "supervised",
+        },
     ],
 }
 

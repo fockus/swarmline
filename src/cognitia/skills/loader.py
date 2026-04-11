@@ -150,9 +150,35 @@ class YamlSkillLoader:
         """MCP servers loaded from .claude/settings.json."""
         return self._settings_mcp
 
+    def _resolve_project_file(self, path: Path, *, event: str) -> Path | None:
+        """Resolve an existing file under project_root and reject symlinks."""
+        try:
+            if path.is_symlink():
+                _log.warning(event, path=str(path), reason="symlink")
+                return None
+            resolved = path.resolve(strict=True)
+        except OSError as exc:
+            _log.warning(event, path=str(path), reason=str(exc))
+            return None
+
+        if not resolved.is_relative_to(self._project_root.resolve()):
+            _log.warning(
+                event,
+                path=str(path),
+                resolved=str(resolved),
+                project_root=str(self._project_root),
+                reason="outside_project_root",
+            )
+            return None
+        return resolved
+
     def _load_from_yaml(self, skill_dir: Path, yaml_file: Path) -> LoadedSkill | None:
         """Load a skill from Cognitia native format (skill.yaml + INSTRUCTION.md)."""
-        with open(yaml_file, encoding="utf-8") as f:
+        yaml_path = self._resolve_project_file(yaml_file, event="skill_yaml_unsafe")
+        if yaml_path is None:
+            return None
+
+        with open(yaml_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         if not data:
@@ -199,7 +225,12 @@ class YamlSkillLoader:
 
         instruction_md = ""
         if instruction_path.exists():
-            instruction_md = instruction_path.read_text(encoding="utf-8")
+            safe_instruction_path = self._resolve_project_file(
+                instruction_path,
+                event="skill_instruction_unsafe",
+            )
+            if safe_instruction_path is not None:
+                instruction_md = safe_instruction_path.read_text(encoding="utf-8")
         else:
             _log.info(
                 "skill_no_instruction",
@@ -244,7 +275,11 @@ class YamlSkillLoader:
 
             # Markdown body = instruction_md
         """
-        raw = skill_md_file.read_text(encoding="utf-8")
+        safe_skill_md = self._resolve_project_file(skill_md_file, event="skill_md_unsafe")
+        if safe_skill_md is None:
+            return None
+
+        raw = safe_skill_md.read_text(encoding="utf-8")
         match = _FRONTMATTER_RE.match(raw)
         if not match:
             _log.warning(

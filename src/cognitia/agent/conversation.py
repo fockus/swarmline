@@ -5,9 +5,14 @@ from __future__ import annotations
 import logging
 import uuid
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from cognitia.agent.result import Result
+from cognitia.agent.runtime_dispatch import (
+    create_claude_conversation_adapter,
+    dispatch_runtime,
+    run_portable_runtime,
+)
 from cognitia.runtime.types import Message
 
 if TYPE_CHECKING:
@@ -145,14 +150,12 @@ class Conversation:
 
     async def _execute(self, prompt: str) -> AsyncIterator[Any]:
         """Route execution by runtime."""
-        runtime_name = self._agent.config.runtime
-
-        if runtime_name == "claude_sdk":
-            async for event in self._execute_claude_sdk(prompt):
-                yield event
-        else:
-            async for event in self._execute_agent_runtime(prompt, runtime_name):
-                yield event
+        async for event in dispatch_runtime(
+            self._agent.config.runtime,
+            lambda: self._execute_claude_sdk(prompt),
+            lambda runtime_name: self._execute_agent_runtime(prompt, runtime_name),
+        ):
+            yield event
 
     async def _execute_claude_sdk(self, prompt: str) -> AsyncIterator[Any]:
         """Multi-turn via Claude SDK (warm subprocess)."""
@@ -166,91 +169,22 @@ class Conversation:
     async def _execute_agent_runtime(self, prompt: str, runtime_name: str) -> AsyncIterator[Any]:
         """Multi-turn via AgentRuntime (accumulated messages)."""
         from cognitia.agent.agent import _ErrorEvent, _RuntimeEventAdapter
-        from cognitia.agent.runtime_wiring import build_portable_runtime_plan
-        from cognitia.runtime.factory import RuntimeFactory
-
-        runtime_plan = build_portable_runtime_plan(
-            self._agent.config,
-            runtime_name,
+        async for event in run_portable_runtime(
+            agent_config=self._agent.config,
+            runtime_name=runtime_name,
+            messages=list(self._history),
+            system_prompt=self._agent.config.system_prompt,
             session_id=self._session_id,
-        )
-        factory = RuntimeFactory()
-        runtime: Any | None = None
-
-        try:
-            runtime = factory.create(
-                config=runtime_plan.config,
-                **runtime_plan.create_kwargs,
-            )
-            async for event in runtime.run(
-                messages=list(self._history),
-                system_prompt=self._agent.config.system_prompt,
-                active_tools=runtime_plan.active_tools,
-            ):
-                yield _RuntimeEventAdapter(event)
-        except Exception as exc:
-            logger.exception("Conversation._execute_agent_runtime error")
-            yield _ErrorEvent(str(exc))
-        finally:
-            if runtime is not None:
-                await runtime.cleanup()
+            event_adapter=_RuntimeEventAdapter,
+            error_factory=lambda exc: _ErrorEvent(str(exc)),
+            logger=logger,
+            error_context="Conversation._execute_agent_runtime",
+        ):
+            yield event
 
     async def _create_adapter(self) -> Any:
         """Create and connect a RuntimeAdapter for claude_sdk."""
-        from cognitia.agent.agent import merge_hooks
-        from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks
-        from cognitia.runtime.adapter import RuntimeAdapter
-        from cognitia.runtime.options_builder import ClaudeOptionsBuilder
-
-        config = self._agent.config
-
-        # Merge hooks from middleware + config
-        merged_hooks = merge_hooks(config.hooks, config.middleware)
-
-        # Build options
-        builder = ClaudeOptionsBuilder(
-            cwd=config.cwd,
-            override_model=config.resolved_model,
-        )
-
-        sdk_mcp_servers = {}
-
-        if config.tools:
-            from cognitia.agent.agent import build_tools_mcp_server
-
-            sdk_mcp_servers["__agent_tools__"] = build_tools_mcp_server(config.tools)
-
-        sdk_hooks = None
-        if merged_hooks:
-            sdk_hooks = registry_to_sdk_hooks(merged_hooks)
-
-        opts = builder.build(
-            role_id="agent",
-            system_prompt=config.system_prompt,
-            mcp_servers=config.mcp_servers or None,
-            sdk_mcp_servers=sdk_mcp_servers if sdk_mcp_servers else None,
-            hooks=sdk_hooks,
-            output_format=config.output_format,
-            continue_conversation=True,
-            max_turns=config.max_turns,
-            permission_mode=cast(Any, config.permission_mode),
-            setting_sources=cast(
-                Any,
-                list(config.setting_sources) if config.setting_sources else None,
-            ),
-            betas=cast(Any, list(config.betas) if config.betas else None),
-            max_budget_usd=config.max_budget_usd,
-            thinking=config.thinking,
-            max_thinking_tokens=config.max_thinking_tokens,
-            fallback_model=config.fallback_model,
-            sandbox=cast(Any, config.sandbox),
-            env=dict(config.env) if config.env else None,
-            include_partial_messages=bool(config.native_config.get("include_partial_messages")),
-        )
-
-        adapter = RuntimeAdapter(opts)
-        await adapter.connect()
-        return adapter
+        return await create_claude_conversation_adapter(self._agent.config)
 
     def _merge_hooks(self) -> Any:
         """Merge hooks from config.hooks + middleware.get_hooks()."""

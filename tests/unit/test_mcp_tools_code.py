@@ -51,6 +51,13 @@ class TestExecCode:
         assert result["data"]["returncode"] == 0
 
     @pytest.mark.asyncio
+    async def test_exec_requires_trusted_mentions_host_execution(self) -> None:
+        result = await exec_code("print('hello')")
+        assert result["ok"] is False
+        assert "host execution" in result["error"].lower()
+        assert "trusted" in result["error"].lower()
+
+    @pytest.mark.asyncio
     async def test_exec_stderr_captured(self) -> None:
         result = await exec_code("import sys; print('err', file=sys.stderr)", trusted=True)
         assert result["ok"] is True

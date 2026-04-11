@@ -51,8 +51,16 @@ class TestCheckout:
 
 class TestComplete:
 
+    async def test_complete_requires_in_progress(self, board) -> None:
+        await board.create_task(GraphTaskItem(id="t1", title="Task"))
+        ok = await board.complete_task("t1")
+        assert ok is False
+        tasks = await board.list_tasks()
+        assert tasks[0].status == TaskStatus.TODO
+
     async def test_complete_sets_done(self, board) -> None:
         await board.create_task(GraphTaskItem(id="t1", title="Task"))
+        await board.checkout_task("t1", "agent-a")
         ok = await board.complete_task("t1")
         assert ok is True
         tasks = await board.list_tasks()
@@ -62,11 +70,25 @@ class TestComplete:
         await board.create_task(GraphTaskItem(id="root", title="Root"))
         await board.create_task(GraphTaskItem(id="s1", title="S1", parent_task_id="root"))
         await board.create_task(GraphTaskItem(id="s2", title="S2", parent_task_id="root"))
+        await board.checkout_task("s1", "agent-a")
+        await board.checkout_task("s2", "agent-b")
         await board.complete_task("s1")
         await board.complete_task("s2")
         tasks = await board.list_tasks()
         root = next(t for t in tasks if t.id == "root")
         assert root.status == TaskStatus.DONE
+
+
+class TestHierarchyValidation:
+
+    async def test_self_parent_rejected(self, board) -> None:
+        with pytest.raises(ValueError, match="own parent"):
+            await board.create_task(GraphTaskItem(id="t1", title="Task", parent_task_id="t1"))
+
+    async def test_cycle_rejected_on_create(self, board) -> None:
+        await board.create_task(GraphTaskItem(id="a", title="A", parent_task_id="b"))
+        with pytest.raises(ValueError, match="Cycle"):
+            await board.create_task(GraphTaskItem(id="b", title="B", parent_task_id="a"))
 
 
 class TestComments:
@@ -84,6 +106,52 @@ class TestComments:
         await board.add_comment(TaskComment(id="c2", task_id="t1", author_agent_id="a2", content="B"))
         thread = await board.get_thread("t1")
         assert len(thread) == 2
+
+
+class TestNamespaceIsolation:
+
+    async def test_recursive_helpers_do_not_cross_namespace(self, tmp_path) -> None:
+        db_path = tmp_path / "graph-task-board.sqlite3"
+        board_a = SqliteGraphTaskBoard(str(db_path), namespace="goal-a")
+        board_b = SqliteGraphTaskBoard(str(db_path), namespace="goal-b")
+
+        await board_a.create_task(GraphTaskItem(id="root", title="Root", goal_id="goal-a"))
+        await board_a.add_comment(
+            TaskComment(id="c-root", task_id="root", author_agent_id="a1", content="Root note")
+        )
+
+        await board_b.create_task(
+            GraphTaskItem(
+                id="child",
+                title="Child",
+                parent_task_id="root",
+                goal_id="goal-b",
+                dependencies=("root",),
+            )
+        )
+        await board_b.add_comment(
+            TaskComment(id="c-child", task_id="child", author_agent_id="a2", content="Child note")
+        )
+
+        assert await board_a.get_subtasks("root") == []
+        assert await board_b.get_comments("root") == []
+
+        thread = await board_a.get_thread("root")
+        assert [comment.id for comment in thread] == ["c-root"]
+
+        ancestry = await board_b.get_goal_ancestry("child")
+        assert ancestry is not None
+        assert ancestry.root_goal_id == "goal-b"
+        assert ancestry.chain == ("child",)
+
+        assert await board_b.get_blocked_by("child") == []
+
+        await board_b.checkout_task("child", "agent-b")
+        assert await board_b.complete_task("child") is True
+
+        root = next(task for task in await board_a.list_tasks() if task.id == "root")
+        assert root.status == TaskStatus.TODO
+        assert root.progress == 0.0
 
 
 class TestGoalAncestry:
