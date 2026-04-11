@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-04-11
+
+### Changed
+
+- Documented the secure-by-default release posture for the `v1.4.0` stabilization tranche:
+  - `enable_host_exec=False` for MCP host execution
+  - `allow_host_execution=False` for `LocalSandboxProvider`
+  - `allow_unauthenticated_query=False` for `/v1/query`
+- Added explicit migration recipes for enabling MCP host exec, enabling sandbox host execution, and intentionally opening `/v1/query`
+- Aligned README, capabilities, getting-started, configuration, and memory-bank notes with the current release truth
+
+### Release readiness
+
+- `v1.4.0` is release-doc ready: the remaining work is packaging/version publication, not further product design
+
 ## [1.3.0] - 2026-03-30
 
 ### Changed
@@ -375,7 +390,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/cognitia/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/fockus/cognitia/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/fockus/cognitia/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/fockus/cognitia/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/fockus/cognitia/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/fockus/cognitia/compare/v1.0.0...v1.1.0

@@ -11,9 +11,13 @@ import os
 import shlex
 from pathlib import Path
 
+import structlog
+
+from cognitia.observability.security import log_security_decision
 from cognitia.tools.types import ExecutionResult, SandboxConfig, SandboxViolation
 
 _DENYLIST_WRAPPERS = frozenset({"sh", "bash", "zsh", "ksh", "dash", "fish", "env"})
+_log = structlog.get_logger(component="sandbox_local")
 
 
 class LocalSandboxProvider:
@@ -134,6 +138,13 @@ class LocalSandboxProvider:
         via ``SandboxConfig.allow_host_execution``.
         """
         if not self._config.allow_host_execution:
+            log_security_decision(
+                _log,
+                component="sandbox_local",
+                event_name="security.host_execution_denied",
+                reason="host_execution_disabled",
+                target="execute",
+            )
             raise SandboxViolation(
                 "Host execution is disabled by default. "
                 "Set allow_host_execution=True to enable execute()."

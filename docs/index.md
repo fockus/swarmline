@@ -108,7 +108,7 @@ print(result.text)</code></pre>
           <h3>Guardrails without ceremony</h3>
         </div>
         <p>
-          Add default-deny tool policy, security middleware, cost budgets, sandboxed execution,
+          Add default-deny tool policy, security middleware, cost budgets, isolated file tooling with opt-in host execution,
           and explicit runtime contracts without inventing a second framework around your app.
         </p>
       </article>

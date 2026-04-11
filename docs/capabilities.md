@@ -6,7 +6,7 @@ Cognitia provides 6 independent capabilities. Each is enabled with a separate to
 
 | Capability | Status | Notes |
 | ---------- | ------ | ----- |
-| Sandbox | ready | Local/Docker/E2B with timeout, denied commands, path isolation |
+| Sandbox | ready | Local/Docker/E2B with timeout, denied commands, path isolation; host execution is opt-in |
 | Web | partial | HTTPX provider implements basic fetch/search MVP |
 | Todo | ready | InMemory/Filesystem/Database (Postgres + SQLite) |
 | Memory Bank | ready | Filesystem + Database backend, auto-loads `MEMORY.md` |
@@ -28,14 +28,14 @@ Cognitia provides 6 independent capabilities. Each is enabled with a separate to
 
 ## Sandbox -- File and Code Isolation
 
-The agent reads/writes files and executes commands only within an isolated workspace.
+The agent reads/writes files within an isolated workspace. Local host command execution is not enabled by default; opt in only for trusted operators.
 Each user + topic combination gets a separate namespace: `{root_path}/{user_id}/{topic_id}/workspace/`.
 
 ### Sandbox Providers
 
 | Provider | Use case | Extras |
 | -------- | -------- | ------ |
-| `LocalSandboxProvider` | Development, testing | -- |
+| `LocalSandboxProvider` | Development, testing; host execution opt-in | -- |
 | `E2BSandboxProvider` | Production (cloud) | `cognitia[e2b]` |
 | `DockerSandboxProvider` | Production (self-hosted) | `cognitia[docker]` |
 
@@ -59,6 +59,7 @@ sandbox = LocalSandboxProvider(SandboxConfig(
 
 - Path traversal (`../`) is blocked via `Path.is_relative_to()`
 - Absolute paths are rejected
+- Host execution is disabled by default (`allow_host_execution=False`)
 - Denied commands: configurable blocklist of prohibited shell commands
 - Timeout: commands are killed after `timeout_seconds`
 - Size limit: files exceeding `max_file_size_bytes` are rejected

@@ -104,7 +104,7 @@ class MyCustomScorer:
         )
 ```
 
-## Compare (v1.2.0)
+## Compare
 
 Compare two eval runs to track regressions and improvements:
 
@@ -142,7 +142,7 @@ print(comparison.format_summary())
 | `delta` | Score difference (target - base) |
 | `score_deltas` | Per-scorer delta dict |
 
-## History (v1.2.0)
+## History
 
 Persist eval reports to JSON for tracking over time:
 

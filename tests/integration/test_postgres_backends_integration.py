@@ -34,7 +34,7 @@ def postgres_dsn() -> str:
     return dsn
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def session_factory(postgres_dsn: str) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     engine = create_async_engine(postgres_dsn, future=True)
     async with engine.begin() as conn:

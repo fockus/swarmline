@@ -5,6 +5,8 @@ All tests use real subprocess execution (no mocks).
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 
 from cognitia.mcp._tools_code import exec_code
@@ -52,10 +54,25 @@ class TestExecCode:
 
     @pytest.mark.asyncio
     async def test_exec_requires_trusted_mentions_host_execution(self) -> None:
-        result = await exec_code("print('hello')")
+        with patch("cognitia.mcp._tools_code.logger") as mock_logger:
+            result = await exec_code("print('hello')")
         assert result["ok"] is False
         assert "host execution" in result["error"].lower()
         assert "trusted" in result["error"].lower()
+        mock_logger.warning.assert_called_once_with(
+            "security_decision",
+            event_name="security.host_execution_denied",
+            component="mcp._tools_code",
+            decision="deny",
+            reason="trusted_flag_required",
+            target="exec_code",
+        )
+
+    @pytest.mark.asyncio
+    async def test_exec_trusted_does_not_block_code_by_string_pattern(self) -> None:
+        result = await exec_code("print('subprocess.run(')", trusted=True)
+        assert result["ok"] is True
+        assert result["data"]["stdout"] == "subprocess.run("
 
     @pytest.mark.asyncio
     async def test_exec_stderr_captured(self) -> None:

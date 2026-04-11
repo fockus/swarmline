@@ -2,18 +2,25 @@
 
 ## Текущий фокус
 
-**v1.2.0 Release** (2026-03-30) — все фичи реализованы, тесты green, release ready.
+**v1.4.0 Stabilization Tranche** (2026-04-11) — secure-by-default defaults задокументированы, structured security observability добавлена, validation gate полностью пройден, release candidate готов на `main`.
 
-Включает: Graph Agents (6 фаз + Config A1-A5 + governance), Knowledge Bank (B1-B4), Pipeline Engine, Daemon, Evaluation Framework (13.1-13.2), Memory Enhancements (14.1-14.3), HTTP API (15.1), HITL (15.2), Plugin Registry (15.3), Benchmarks (15.4), Paperclip components, 30+ security fixes.
+Включает: audit hardening, secure-by-default docs, migration recipes, changelog sync, memory-bank sync, security decision logging, Postgres/live validation.
 
-3909 тестов pass, ruff clean.
+Full validation gate завершён: offline `pytest -q`, explicit `integration`, disposable Postgres harness, live suite, repo-wide `ruff`, repo-wide `mypy`.
 
 ## Версии
 
-- cognitia: 1.2.0 (released 2026-03-30)
+- cognitia: 1.4.0 (release candidate prepared on main)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
 
 ## Roadmap
+
+**Завершено (v1.4.0 stabilization tranche)**:
+- ✅ Secure-by-default release posture documented (`enable_host_exec=False`, `allow_host_execution=False`, `allow_unauthenticated_query=False`)
+- ✅ Migration guide / changelog / README / capabilities / getting-started / configuration synchronized
+- ✅ Structured `security_decision` logging for host-exec deny, HTTP query deny, network-target deny
+- ✅ Validation matrix completed: offline + integration + Postgres + live
+- ✅ Memory Bank aligned with current repository truth
 
 **Завершено (v0.1.0 → v0.5.0)**:
 1. ✅ Phase 0C: Shared ProviderResolver
@@ -71,7 +78,10 @@
 
 ## Тесты
 
-- 3909 passed, 5 deselected, 0 failed
+- Offline suite: `4223 passed, 3 skipped, 5 deselected`
+- Explicit integration: `31 passed, 5 skipped`
+- Live suite: `5 passed`
+- Postgres integration harness: `3 passed`
 - Source files: ~220 .py files
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests
@@ -81,6 +91,10 @@
 
 ## Verification Notes
 
+- Full offline `pytest -q` green after stabilization + release hardening (`4223 passed, 3 skipped, 5 deselected`)
+- Explicit integration gate green (`31 passed, 5 skipped`)
+- Disposable Postgres integration harness green (`3 passed`)
+- Live gate green after installing optional `ddgs` test dependency (`5 passed`)
 - Full offline `pytest -q` green after OpenRouter live examples/runtime follow-up (`2524 passed, 11 skipped, 5 deselected`)
 - Full offline `pytest -q` green after unified release-risk remediation + follow-up hardening (`2397 passed, 16 skipped, 5 deselected`)
 - Representative targeted regressions green: Batch 1/2 (`205 passed`), merge-point portable/session pack (`110 passed`), orchestration/workflow/storage pack (`66 passed`)

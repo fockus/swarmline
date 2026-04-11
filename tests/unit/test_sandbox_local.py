@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from cognitia.tools.types import SandboxConfig, SandboxViolation
 
@@ -136,8 +138,18 @@ class TestLocalSandboxExecute:
             SandboxConfig(root_path=str(tmp_path), user_id="u", topic_id="t")
         )
 
-        with pytest.raises(SandboxViolation, match="allow_host_execution=True"):
-            await provider.execute("echo hello")
+        with patch("cognitia.tools.sandbox_local._log") as mock_log:
+            with pytest.raises(SandboxViolation, match="allow_host_execution=True"):
+                await provider.execute("echo hello")
+
+        mock_log.warning.assert_called_once_with(
+            "security_decision",
+            event_name="security.host_execution_denied",
+            component="sandbox_local",
+            decision="deny",
+            reason="host_execution_disabled",
+            target="execute",
+        )
 
     async def test_execute_failing_command(self, sandbox) -> None:
         """Command with notnulevym exit code."""

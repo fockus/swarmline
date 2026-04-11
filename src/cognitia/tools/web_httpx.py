@@ -14,6 +14,7 @@ from urllib.parse import urljoin, urlparse
 
 import structlog
 
+from cognitia.observability.security import log_security_decision
 from cognitia.tools.web_protocols import SearchResult, WebFetchProvider, WebSearchProvider
 
 try:
@@ -22,6 +23,18 @@ except ImportError:
     trafilatura = None  # type: ignore[assignment]
 
 _log = structlog.get_logger(component="web_httpx")
+
+
+def _log_network_target_denied(url: str, reason: str) -> None:
+    parsed = urlparse(url)
+    log_security_decision(
+        _log,
+        component="web_httpx",
+        event_name="security.network_target_denied",
+        reason=reason,
+        target=parsed.hostname or "",
+        url=url,
+    )
 
 
 def _is_ip(hostname: str) -> bool:
@@ -196,7 +209,7 @@ class HttpxWebProvider:
         # SSRF protection — block private IPs and cloud metadata
         rejection = self._validate_url(url)
         if rejection:
-            _log.warning("ssrf_blocked", url=url[:200], reason=rejection)
+            _log_network_target_denied(url, rejection)
             return f"URL blocked: {rejection}"
 
         if self._fetch_provider is not None:
@@ -213,13 +226,13 @@ class HttpxWebProvider:
                 for _redirect_hop in range(6):
                     rejection = self._validate_url(current_url)
                     if rejection:
-                        _log.warning("ssrf_blocked", url=current_url[:200], reason=rejection)
+                        _log_network_target_denied(current_url, rejection)
                         return f"URL blocked: {rejection}"
 
                     try:
                         safe_url, headers, extensions = _build_safe_request_target(current_url)
                     except ValueError as exc:
-                        _log.warning("ssrf_blocked", url=current_url[:200], reason=str(exc))
+                        _log_network_target_denied(current_url, str(exc))
                         return f"URL blocked: {exc}"
 
                     request = client.build_request(

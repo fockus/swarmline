@@ -5,7 +5,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/swarmline.svg)](https://pypi.org/project/swarmline/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-3200%2B%20passed-brightgreen.svg)](https://github.com/fockus/swarmline)
+[![Tests](https://img.shields.io/badge/tests-4200%2B%20passed-brightgreen.svg)](https://github.com/fockus/swarmline)
 [![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://swarmline.readthedocs.io/)
 
 > Provider-agnostic, pluggable runtimes (Anthropic, OpenAI, Google, DeepSeek), persistent memory, agent graphs with governance, knowledge banks, pipeline execution, and Clean Architecture.
@@ -30,7 +30,7 @@ Swarmline covers the full spectrum: **simple single-agent assistants** that you 
 **For both:**
 - 4 pluggable runtimes — `thin`, `claude_sdk`, `deepagents`, `cli` — same business code
 - Clean Architecture with 20+ ISP-compliant protocols — swap any component without touching the rest
-- Default-secure — deny-all tool policy, sandboxed execution, input validation
+- Default-secure — deny-all tool policy, host execution is opt-in, input validation
 
 ### Key Differentiators
 
@@ -239,7 +239,7 @@ result = await pipeline.run()
 | **14 ISP Protocols** | Every interface has ≤5 methods. Depend on abstractions, swap implementations freely |
 | **Multi-provider Models** | Anthropic, OpenAI, Google, DeepSeek — alias resolution (`"sonnet"` → `claude-sonnet-4-20250514`) |
 
-### Multi-Agent & Orchestration (v1.2.0)
+### Multi-Agent & Orchestration
 
 | Feature | Description |
 |---------|-------------|
@@ -498,7 +498,7 @@ stack = CognitiaStack.create(
     project_root=".",
     runtime_config=RuntimeConfig(runtime_name="thin"),
     # Toggle capabilities independently:
-    sandbox_provider=LocalSandboxProvider(sandbox_config),  # file I/O, bash
+    sandbox_provider=LocalSandboxProvider(sandbox_config),  # file I/O, bash (host execution opt-in)
     web_provider=HttpxWebProvider(),                        # web search/fetch
     todo_provider=InMemoryTodoProvider(user_id="u1", topic_id="t1"),
     thinking_enabled=True,                                  # chain-of-thought
@@ -621,7 +621,7 @@ Legend: ✅ Built-in  ⚠️ Partial/manual  ❌ Not available  CP = Checkpointe
 - [Capabilities](docs/capabilities.md) — sandbox, web, todo, memory bank, planning, thinking
 - [Configuration](docs/configuration.md) — CognitiaStack, RuntimeConfig, environment variables
 
-### Multi-Agent (v1.2.0)
+### Multi-Agent
 - [Agent Graph System](docs/graph-agents.md) — hierarchical multi-agent with governance, task boards, communication
 - [Knowledge Bank](docs/knowledge-bank.md) — universal structured knowledge storage
 - [Multi-Agent Coordination](docs/multi-agent.md) — agent-as-tool, task queues, agent registry

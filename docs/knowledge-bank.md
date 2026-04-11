@@ -2,7 +2,7 @@
 
 Knowledge Bank is Cognitia's **domain-agnostic structured knowledge layer** built on top of [Memory Bank](memory-bank.md). While Memory Bank provides raw file-based storage (`read_file`, `write_file`), Knowledge Bank adds typed documents with YAML frontmatter, full-text search, checklists, progress tracking, and episode-to-knowledge consolidation.
 
-Introduced in v1.2.0, Knowledge Bank works with any domain -- research, business, education, engineering -- without code-development specifics.
+Knowledge Bank was introduced in v1.2.0 and works with any domain -- research, business, education, engineering -- without code-development specifics.
 
 ## Quick Start
 

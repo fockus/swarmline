@@ -1,5 +1,13 @@
 # Checklist
 
+## v1.4.0 stabilization tranche
+
+- ✅ README/docs/configuration/docs/getting-started/docs/migration-guide/CHANGELOG synchronized with secure-by-default defaults
+- ✅ Structured security decision logging added for deny-paths (host exec, `/v1/query`, network target)
+- ✅ Validation matrix completed: offline `pytest -q`, repo-wide `ruff`, repo-wide `mypy`, explicit `integration`, disposable Postgres harness, `live`
+- ✅ Memory Bank updated to reflect current repo truth and release posture
+- ✅ Targeted stale-wording checks completed on user-facing docs and release notes
+
 ## Интеграция upstream middleware deepagents + multi-provider
 
 - ✅ Phase 0C: Shared ProviderResolver (provider_resolver.py) — 24 теста

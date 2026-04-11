@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -94,8 +95,18 @@ class TestQuery:
 
     def test_query_closed_by_default(self, client) -> None:
         tc, _ = client
-        resp = tc.post("/v1/query", json={"prompt": "Hello"})
+        with patch("cognitia.serve.app._log") as mock_log:
+            resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 404
+        mock_log.warning.assert_called_once_with(
+            "security_decision",
+            event_name="security.http_query_denied",
+            component="serve",
+            decision="deny",
+            reason="query_disabled",
+            route="/v1/query",
+            target="query",
+        )
 
     def test_query_success(self, open_query_client) -> None:
         tc, agent = open_query_client
@@ -159,8 +170,18 @@ class TestAuth:
 
         agent = _mock_agent()
         tc = TestClient(create_app(agent, auth_token="secret-123"))
-        resp = tc.post("/v1/query", json={"prompt": "hi"})
+        with patch("cognitia.serve.app._log") as mock_log:
+            resp = tc.post("/v1/query", json={"prompt": "hi"})
         assert resp.status_code == 401
+        mock_log.warning.assert_called_once_with(
+            "security_decision",
+            event_name="security.http_query_denied",
+            component="serve",
+            decision="deny",
+            reason="missing_or_invalid_bearer_token",
+            route="/v1/query",
+            target="query",
+        )
 
     def test_auth_accepts_valid_token(self) -> None:
         from starlette.testclient import TestClient

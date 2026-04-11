@@ -1,17 +1,15 @@
 # Plan
 
 ## Текущий приоритет
-**Phase 9 MVP + Phase 10A — ЗАВЕРШЕНЫ** (все 22 этапа + 2 раунда code review).
-Master Plan v3.2 → `plans/2026-03-18_masterplan_v3.md`
+**v1.4.0 Release Candidate** — validation gate completed on `main`; next step is external publish/tag workflow.
 
 ## Активный план
 
-**P1/P2 Audit Gaps** → `plans/2026-03-30_bugfix_p1-p2-audit-gaps.md`
-6 этапов: P1 correctness (task state + per-call config) → P2 concurrency → P2 security → P3 bounds
+**Release publication** — tag/publish `v1.4.0` and announce the secure-by-default tranche.
 
 ## Следующий шаг
 
-**Master Plan v4** → `plans/2026-03-29_masterplan_v4.md`
+**Next engineering tranche** → performance/load hardening after `v1.4.0` publication.
 
 ### Iteration 1 (highest ROI):
 1. QW-1/2/3: py.typed, badges, deprecation cleanup

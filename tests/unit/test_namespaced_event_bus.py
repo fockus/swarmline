@@ -1,8 +1,6 @@
 """Tests for NamespacedEventBus — pattern-matching event routing (COG-06)."""
 
 from __future__ import annotations
-
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

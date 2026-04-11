@@ -1,6 +1,6 @@
 # Pipeline Engine
 
-Multi-phase execution engine for Cognitia agent graphs with quality gates, budget tracking, and circuit breakers. Introduced in v1.2.0.
+Multi-phase execution engine for Cognitia agent graphs with quality gates, budget tracking, and circuit breakers. This subsystem was introduced in v1.2.0.
 
 ## Overview
 

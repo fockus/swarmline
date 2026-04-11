@@ -257,7 +257,7 @@ otel.detach()    # unsubscribes, ends any orphaned spans
 
 ---
 
-## Activity Log (v1.2.0)
+## Activity Log
 
 Persistent structured audit trail for agent actions. Tracks who did what to which entity with timestamps and metadata. Useful for compliance, debugging, and understanding agent behavior.
 

@@ -168,7 +168,7 @@ If the LLM returns a response shorter than 50 characters or raises an exception,
 
 ## Episodic Memory
 
-*New in v1.2.0.* Episodic memory stores structured records of past agent interactions -- what happened, which tools were used, what decisions were made, and whether the outcome was successful. The agent can later recall relevant episodes to inform future behavior.
+*Introduced in v1.2.0.* Episodic memory stores structured records of past agent interactions -- what happened, which tools were used, what decisions were made, and whether the outcome was successful. The agent can later recall relevant episodes to inform future behavior.
 
 ### Episode Data Model
 
@@ -267,7 +267,7 @@ PostgreSQL requires the `episodes` table. Schema is available as `POSTGRES_EPISO
 
 ## Procedural Memory
 
-*New in v1.2.0.* Procedural memory stores learned tool sequences -- multi-step patterns that the agent has used to accomplish tasks. When a similar task appears, the agent can recall proven procedures and apply them, improving over time through reinforcement.
+*Introduced in v1.2.0.* Procedural memory stores learned tool sequences -- multi-step patterns that the agent has used to accomplish tasks. When a similar task appears, the agent can recall proven procedures and apply them, improving over time through reinforcement.
 
 ### Data Model
 
@@ -391,7 +391,7 @@ Procedural memory improves over time. Each `record_outcome` call updates the pro
 
 ## Memory Consolidation
 
-*New in v1.2.0.* The consolidation pipeline bridges episodic memory and long-term knowledge. It scans recent episodes, extracts recurring patterns, and stores them as facts -- turning raw experience into reusable knowledge.
+*Introduced in v1.2.0.* The consolidation pipeline bridges episodic memory and long-term knowledge. It scans recent episodes, extracts recurring patterns, and stores them as facts -- turning raw experience into reusable knowledge.
 
 ### How It Works
 

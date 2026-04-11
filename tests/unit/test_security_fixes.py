@@ -106,15 +106,19 @@ class TestSSRFDnsResolution:
         fake_addrs = [(2, 1, 6, "", ("93.184.216.34", 0))]
         with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             mock_response = MagicMock()
+            mock_response.is_redirect = False
             mock_response.status_code = 200
             mock_response.text = "<html><body>OK</body></html>"
             mock_response.raise_for_status = MagicMock()
 
             with patch("httpx.AsyncClient") as mock_client_cls:
-                mock_client = AsyncMock()
-                mock_client.get.return_value = mock_response
+                mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
+                mock_client.build_request = MagicMock(side_effect=(
+                    lambda method, url, **kwargs: {"method": method, "url": url, **kwargs}
+                ))
+                mock_client.send = AsyncMock(return_value=mock_response)
                 mock_client_cls.return_value = mock_client
 
                 await provider.fetch("http://example.com/page")
@@ -141,7 +145,7 @@ class TestSSRFDnsResolution:
 
         with patch("cognitia.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
             with patch("httpx.AsyncClient") as mock_client_cls:
-                mock_client = AsyncMock()
+                mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
                 mock_client.build_request = MagicMock(side_effect=(
@@ -184,7 +188,7 @@ class TestSSRFDnsResolution:
             side_effect=lambda host, *_args, **_kwargs: addrs[host],
         ):
             with patch("httpx.AsyncClient") as mock_client_cls:
-                mock_client = AsyncMock()
+                mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
                 mock_client.build_request = MagicMock(side_effect=(
@@ -197,6 +201,26 @@ class TestSSRFDnsResolution:
 
         assert "URL blocked" in result
         assert mock_client.send.await_count == 1
+
+    async def test_fetch_logs_security_decision_for_blocked_target(self) -> None:
+        """Blocked targets must emit a structured security decision log."""
+        from cognitia.tools.web_httpx import HttpxWebProvider
+
+        provider = HttpxWebProvider(timeout=5)
+
+        with patch("cognitia.tools.web_httpx._log") as mock_log:
+            result = await provider.fetch("http://localhost:8080/admin")
+
+        assert "URL blocked" in result
+        mock_log.warning.assert_called_once_with(
+            "security_decision",
+            event_name="security.network_target_denied",
+            component="web_httpx",
+            decision="deny",
+            reason="Blocked host: localhost",
+            target="localhost",
+            url="http://localhost:8080/admin",
+        )
 
 
 # ---------------------------------------------------------------------------

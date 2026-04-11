@@ -420,3 +420,22 @@
 - Restored `AGENTS.public.md`, `CLAUDE.md`, and `RULES.md` from `/tmp/cognitia-switch-backup-20260411-165845/` into the repository root after explicit user approval.
 - Pre-restore comparison result: `AGENTS.public.md` was byte-identical to current `AGENTS.md`; `CLAUDE.md` and `RULES.md` remained intentionally absent from `main` until the user requested their return.
 - Verification: compared file presence/content before restore and confirmed working tree contains only the three restored files plus this `progress.md` update; no code/runtime paths changed, so no test run was required for this documentation/instructions-only restoration.
+[2026-04-11] Stabilization tranche docs/release sync completed on the owned docs/memory-bank surface.
+- Updated `README.md`, `docs/capabilities.md`, `docs/getting-started.md`, `docs/configuration.md`, `docs/migration-guide.md`, and `CHANGELOG.md` to document secure-by-default defaults and the `v1.4.0` release posture.
+- Documented the three explicit upgrade recipes required by the tranche: MCP host exec opt-in, `LocalSandboxProvider` host execution opt-in, and intentional `/v1/query` exposure.
+- Synced `.memory-bank/STATUS.md`, `.memory-bank/plan.md`, and `.memory-bank/checklist.md` to current repo truth and the stabilization tranche.
+- Verification performed on the owned docs only: targeted `rg` searches for `enable_host_exec`, `allow_host_execution`, `allow_unauthenticated_query`, `LocalSandboxProvider`, `sandboxed execution`, and `/v1/query` to ensure stale wording was removed or replaced where required.
+- No source code or tests were touched in this tranche.
+[2026-04-11] Stabilization tranche implementation completed across observability, release packaging, and validation.
+- Added `src/cognitia/observability/security.py` and wired consistent `security_decision` logs into the deny-paths for `LocalSandboxProvider.execute()`, `exec_code(trusted=False)`, `HttpxWebProvider.fetch()` blocked targets, and `cognitia serve` query denial paths (`query_disabled` vs `missing_or_invalid_bearer_token`).
+- Removed the legacy string-pattern blocklist from `src/cognitia/mcp/_tools_code.py`; the helper is now documented and tested as explicit unsafe host execution behind the trusted gate, not as a pseudo-sandbox.
+- Updated release truth to `v1.4.0`: `pyproject.toml`, `src/cognitia/serve/app.py`, `CHANGELOG.md`, user-facing docs, and `.memory-bank/*` are now aligned.
+- Fixed the Postgres integration harness loop-scope issue by dropping the async `session_factory` fixture from module scope to per-test scope in `tests/integration/test_postgres_backends_integration.py`.
+- Removed two repo-wide `ruff` blockers from tests (`tests/unit/test_execution_context.py`, `tests/unit/test_namespaced_event_bus.py`) while running the validation matrix.
+- Validation performed:
+  - `pytest -q` → `4223 passed, 3 skipped, 5 deselected`
+  - `pytest -m integration -q` → `31 passed, 5 skipped, 4195 deselected`
+  - disposable Postgres harness via Docker + `COGNITIA_TEST_POSTGRES_DSN=... pytest tests/integration/test_postgres_backends_integration.py -q` → `3 passed`
+  - `python -m pip install ddgs` for the optional live search dependency, then `pytest -m live -q -rs` → `5 passed`
+  - `ruff check src/ tests/` → green
+  - `mypy src/cognitia/` → `Success: no issues found in 347 source files`

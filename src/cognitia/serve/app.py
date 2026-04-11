@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import structlog
 import time
 from typing import Any
 
@@ -11,8 +12,10 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
+from cognitia.observability.security import log_security_decision
 
-_VERSION = "1.1.0"
+_VERSION = "1.4.0"
+_log = structlog.get_logger(component="serve")
 
 
 # ---------------------------------------------------------------------------
@@ -34,12 +37,42 @@ class _BearerAuthMiddleware:
             headers = dict(scope.get("headers", []))
             auth = headers.get(b"authorization", b"").decode()
             if auth != f"Bearer {self.token}":
+                log_security_decision(
+                    _log,
+                    component="serve",
+                    event_name="security.http_query_denied",
+                    reason="missing_or_invalid_bearer_token",
+                    route=scope["path"],
+                    target="query",
+                )
                 response = JSONResponse(
                     {"error": "Unauthorized", "ok": False},
                     status_code=401,
                 )
                 await response(scope, receive, send)
                 return
+        await self.app(scope, receive, send)
+
+
+class _QueryClosedMiddleware:
+    """Log closed query endpoint attempts while preserving a 404 response."""
+
+    def __init__(self, app: Any) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
+        if scope["type"] == "http" and scope["path"] == "/v1/query":
+            log_security_decision(
+                _log,
+                component="serve",
+                event_name="security.http_query_denied",
+                reason="query_disabled",
+                route=scope["path"],
+                target="query",
+            )
+            response = Response(status_code=404)
+            await response(scope, receive, send)
+            return
         await self.app(scope, receive, send)
 
 
@@ -119,6 +152,8 @@ def create_app(
     routes.insert(1, Route("/v1/info", _make_info_handler(endpoints), methods=["GET"]))
 
     middleware: list[Middleware] = []
+    if not query_enabled:
+        middleware.append(Middleware(_QueryClosedMiddleware))
     if auth_token:
         middleware.append(Middleware(_BearerAuthMiddleware, token=auth_token))
 

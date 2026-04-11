@@ -54,6 +54,18 @@ stack.model_policy          # ModelPolicy (role-based model escalation)
 stack.runtime_config        # RuntimeConfig
 ```
 
+## Security Defaults
+
+The current release family is secure by default at the relevant boundary:
+
+| Surface | Default | Explicit opt-in |
+| ------- | ------- | --------------- |
+| MCP host execution | closed (`enable_host_exec=False`) | set `enable_host_exec=True` only for trusted operators |
+| `LocalSandboxProvider` host execution | closed (`allow_host_execution=False`) | set `allow_host_execution=True` only for trusted hosts |
+| HTTP `/v1/query` without auth | closed (`allow_unauthenticated_query=False`) | require auth or turn on unauthenticated access intentionally |
+
+`LocalSandboxProvider` is a file and command capability for isolated environments; keep host execution off unless you explicitly trust the boundary.
+
 ---
 
 ## AgentConfig
@@ -240,6 +252,7 @@ config = SandboxConfig(
     timeout_seconds=30,
     allowed_extensions=frozenset({".py", ".txt", ".md", ".json"}),
     denied_commands=frozenset({"rm", "sudo", "kill", "chmod"}),
+    allow_host_execution=False,              # opt-in only
 )
 ```
 

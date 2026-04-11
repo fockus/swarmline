@@ -1,9 +1,70 @@
-# Migration Guide: v0.5.0 to v1.0.0
+# Migration Guide
 
-This guide covers all breaking changes, new features, deprecations, and the
-step-by-step upgrade path from Cognitia 0.5.0 to 1.0.0-core.
+This guide has two parts:
+
+- `v1.3.0 → v1.4.0`: secure-by-default stabilization and release sync.
+- `v0.5.0 → v1.0.0`: legacy runtime/API migration notes kept for older installs.
 
 ---
+
+## v1.3.0 → v1.4.0 (secure-by-default stabilization)
+
+This release tightens the defaults around host execution and unauthenticated HTTP access.
+Keep the defaults closed unless you explicitly trust the operator boundary.
+
+### Defaults that changed
+
+- `enable_host_exec=False` for MCP server startup
+- `allow_host_execution=False` for `LocalSandboxProvider`
+- `allow_unauthenticated_query=False` for `/v1/query`
+- `LocalSandboxProvider` is an isolated file and command surface; keep host execution closed unless the calling context is trusted
+
+### Upgrade recipe 1: MCP host exec
+
+If you previously depended on the `cognitia_exec_code` tool, leave host execution closed by default and open it only for trusted operators:
+
+```python
+server = create_server(
+    ...,
+    enable_host_exec=True,
+)
+```
+
+Use the explicit opt-in only in trusted environments. Keep the default `False` for all public or shared deployments.
+
+### Upgrade recipe 2: LocalSandboxProvider host exec
+
+If you relied on local command execution inside the sandbox, make the opt-in explicit:
+
+```python
+sandbox = LocalSandboxProvider(SandboxConfig(
+    root_path="/data/sandbox",
+    user_id="user-42",
+    topic_id="project-7",
+    allow_host_execution=True,
+))
+```
+
+Treat `LocalSandboxProvider` as an isolated file and command surface. Only enable host execution when the calling context is trusted and the filesystem/network boundary is controlled.
+
+### Upgrade recipe 3: Open `/v1/query` intentionally
+
+If you need the HTTP query endpoint to accept unauthenticated traffic, make that a deliberate choice at the serve boundary:
+
+```python
+app = create_app(
+    ...,
+    allow_unauthenticated_query=True,
+)
+```
+
+Prefer authenticated access whenever possible. If you intentionally open the route, keep it behind a network boundary, document the operator intent, and monitor access separately.
+
+---
+
+## Legacy: v0.5.0 to v1.0.0
+
+This legacy section covers the original core migration from Cognitia 0.5.0 to 1.0.0-core.
 
 ## 1. Breaking Changes
 

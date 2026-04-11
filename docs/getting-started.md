@@ -137,6 +137,16 @@ export OPENAI_BASE_URL=https://openrouter.ai/api/v1
 
 If you use the high-level `AgentConfig` facade, portable runtimes (`thin`, `deepagents`) currently read credentials from process environment. `AgentConfig.env` is primarily for `claude_sdk`.
 
+## Security Defaults
+
+Current releases are secure by default:
+
+- `enable_host_exec=False` for MCP server startup
+- `allow_host_execution=False` for `LocalSandboxProvider`
+- `allow_unauthenticated_query=False` for `cognitia serve`
+
+Enable any of these only when you intentionally trust the operator boundary and have compensating controls in place.
+
 ## Step-by-Step Guide
 
 ### 1. Custom Tools
@@ -399,6 +409,7 @@ sandbox = LocalSandboxProvider(SandboxConfig(
     topic_id="project-1",
     timeout_seconds=30,
     denied_commands=frozenset({"rm", "sudo"}),
+    allow_host_execution=False,  # host execution remains opt-in
 ))
 
 memory = FilesystemMemoryBankProvider(

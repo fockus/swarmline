@@ -13,30 +13,9 @@ from typing import Any
 
 import structlog
 
+from cognitia.observability.security import log_security_decision
+
 logger = structlog.get_logger(__name__)
-
-# Blocklist of dangerous patterns in code
-_DANGEROUS_PATTERNS = (
-    "import shutil",
-    "shutil.rmtree",
-    "os.remove",
-    "os.unlink",
-    "os.rmdir",
-    "os.system(",
-    "subprocess.call(",
-    "subprocess.run(",
-    "subprocess.Popen(",
-    "__import__('subprocess')",
-    "__import__('shutil')",
-)
-
-
-def _check_code_safety(code: str) -> str | None:
-    """Return a rejection reason if code contains dangerous patterns, else None."""
-    for pattern in _DANGEROUS_PATTERNS:
-        if pattern in code:
-            return f"Blocked dangerous pattern: {pattern}"
-    return None
 
 
 async def exec_code(
@@ -53,14 +32,18 @@ async def exec_code(
     trusted:
         Must be ``True`` to allow host execution. Defaults to ``False``.
 
-    Safety measures:
-    - Trusted flag gate (explicit opt-in required)
-    - Dangerous pattern blocklist
-    - Restricted environment (no inherited secrets)
-    - Timeout enforcement
-    - Temporary working directory
+    This helper is intentionally unsafe host execution even when enabled.
+    The only built-in controls are the explicit trusted gate, restricted
+    environment, timeout enforcement, and temporary working directory.
     """
     if not trusted:
+        log_security_decision(
+            logger,
+            component="mcp._tools_code",
+            event_name="security.host_execution_denied",
+            reason="trusted_flag_required",
+            target="exec_code",
+        )
         return {
             "ok": False,
             "error": (
@@ -68,11 +51,6 @@ async def exec_code(
                 "This helper runs Python code on the host."
             ),
         }
-
-    # Check for dangerous patterns
-    rejection = _check_code_safety(code)
-    if rejection:
-        return {"ok": False, "error": rejection}
 
     # Restricted environment — inherit PATH (for pyenv etc.) but strip secrets
     _secret_prefixes = ("AWS_", "AZURE_", "GCP_", "OPENAI_", "ANTHROPIC_", "API_KEY", "SECRET", "TOKEN", "PASSWORD")
