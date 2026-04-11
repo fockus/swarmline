@@ -73,6 +73,9 @@ ThinRuntime должен обеспечивать безопасное и пол
 | Hook order: PreToolUse → Policy → Execute → PostToolUse | Policy проверяет после hook modify — hooks могут изменить args, policy проверяет результат | — Pending |
 | SubagentTool max_depth enforcement | Защита от бесконечной рекурсии. max_depth=3 default | — Pending |
 | Commands intercept перед LLM | /command → immediate response, не передаётся в LLM | — Pending |
+| Hook error handling: fail-open | Баг в hook не должен парализовать агента — log + allow | — Pending |
+| Subagent system_prompt из tool args | LLM контролирует prompt субагента, default "You are a helpful assistant" | — Pending |
+| Native tools: Anthropic first | Снижение risk — один провайдер → проверить → добавить остальные | — Pending |
 
 ## Evolution
 
