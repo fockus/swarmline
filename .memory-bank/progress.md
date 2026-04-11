@@ -416,3 +416,7 @@
 - Preserved private compatibility aliases inside each provider (`_json_or_none`, `_load_json_or_none`, `_load_json_value`, scoped merge helpers) so existing tests and internal seams do not break.
 - Added focused unit coverage in `tests/unit/test_memory_shared.py` for the shared normalization and merge policy.
 - Verification: `pytest -q tests/unit/test_memory_shared.py tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → `50 passed`; `ruff check src/cognitia/memory/_shared.py src/cognitia/memory/sqlite.py src/cognitia/memory/postgres.py tests/unit/test_memory_shared.py tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → green; `mypy src/cognitia/memory/_shared.py src/cognitia/memory/sqlite.py src/cognitia/memory/postgres.py` → green.
+[2026-04-11] Restored repository instruction files into `main` after user-approved comparison.
+- Restored `AGENTS.public.md`, `CLAUDE.md`, and `RULES.md` from `/tmp/cognitia-switch-backup-20260411-165845/` into the repository root after explicit user approval.
+- Pre-restore comparison result: `AGENTS.public.md` was byte-identical to current `AGENTS.md`; `CLAUDE.md` and `RULES.md` remained intentionally absent from `main` until the user requested their return.
+- Verification: compared file presence/content before restore and confirmed working tree contains only the three restored files plus this `progress.md` update; no code/runtime paths changed, so no test run was required for this documentation/instructions-only restoration.
