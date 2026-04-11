@@ -1,7 +1,7 @@
 """Tests for runtime types - Message, ToolSpec, RuntimeEvent, RuntimeErrorData, RuntimeConfig, resolve_model_name."""
 
 import pytest
-from cognitia.runtime.types import (
+from swarmline.runtime.types import (
     DEFAULT_MODEL,
     RUNTIME_ERROR_KINDS,
     RUNTIME_EVENT_TYPES,
@@ -61,7 +61,7 @@ class TestMessage:
 
     def test_from_memory_message(self) -> None:
         """Conversion from MemoryMessage (backward compat)."""
-        from cognitia.memory.types import MemoryMessage
+        from swarmline.memory.types import MemoryMessage
 
         mm = MemoryMessage(role="assistant", content="Ответ", tool_calls=[{"t": 1}])
         msg = Message.from_memory_message(mm)
@@ -416,7 +416,7 @@ class TestResolveModelName:
 
     def test_valid_model_names_via_registry(self) -> None:
         """ModelRegistry.valid_models contains models vseh provayderov."""
-        from cognitia.runtime.model_registry import get_registry
+        from swarmline.runtime.model_registry import get_registry
 
         valid = get_registry().valid_models
         assert "claude-sonnet-4-20250514" in valid

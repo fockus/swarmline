@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.mcp._session import HeadlessModeError, StatefulSession, resolve_mode
+from swarmline.mcp._session import HeadlessModeError, StatefulSession, resolve_mode
 
 
 class TestStatefulSessionInit:
@@ -61,7 +61,7 @@ class TestAgentLifecycle:
     @pytest.mark.asyncio
     async def test_create_agent_returns_id(self) -> None:
         session = StatefulSession(mode="full")
-        with patch("cognitia.agent.Agent") as mock_cls:
+        with patch("swarmline.agent.Agent") as mock_cls:
             mock_cls.return_value = MagicMock()
             agent_id = await session.create_agent(system_prompt="You are a helper")
             assert agent_id.startswith("agent-")
@@ -70,7 +70,7 @@ class TestAgentLifecycle:
     @pytest.mark.asyncio
     async def test_list_agents_after_create(self) -> None:
         session = StatefulSession(mode="full")
-        with patch("cognitia.agent.Agent"):
+        with patch("swarmline.agent.Agent"):
             await session.create_agent(system_prompt="test", model="sonnet")
             agents = session.list_agents()
             assert len(agents) == 1
@@ -83,7 +83,7 @@ class TestAgentLifecycle:
         mock_result = MagicMock(ok=True, text="Hello!")
         mock_agent.query = AsyncMock(return_value=mock_result)
 
-        with patch("cognitia.agent.Agent", return_value=mock_agent):
+        with patch("swarmline.agent.Agent", return_value=mock_agent):
             agent_id = await session.create_agent(system_prompt="test")
             result = await session.query_agent(agent_id, "hi")
             assert result.text == "Hello!"
@@ -104,7 +104,7 @@ class TestCleanup:
         mock_agent = AsyncMock()
         mock_agent.cleanup = AsyncMock()
 
-        with patch("cognitia.agent.Agent", return_value=mock_agent):
+        with patch("swarmline.agent.Agent", return_value=mock_agent):
             await session.create_agent(system_prompt="test")
             assert len(session.list_agents()) == 1
 
@@ -118,7 +118,7 @@ class TestCleanup:
         mock_agent = AsyncMock()
         mock_agent.cleanup = AsyncMock(side_effect=RuntimeError("cleanup failed"))
 
-        with patch("cognitia.agent.Agent", return_value=mock_agent):
+        with patch("swarmline.agent.Agent", return_value=mock_agent):
             await session.create_agent(system_prompt="test")
             await session.cleanup()  # should not raise
             assert len(session.list_agents()) == 0

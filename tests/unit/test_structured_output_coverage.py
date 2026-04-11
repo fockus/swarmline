@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from cognitia.runtime.structured_output import (
+from swarmline.runtime.structured_output import (
     append_structured_output_instruction,
     extract_structured_output,
     normalize_output_schema,

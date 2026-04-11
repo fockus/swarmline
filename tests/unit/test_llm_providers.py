@@ -8,16 +8,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.runtime.thin.llm_providers import (
+from swarmline.runtime.thin.llm_providers import (
     AnthropicAdapter,
     GoogleAdapter,
     LlmAdapter,
     OpenAICompatAdapter,
     create_llm_adapter,
 )
-from cognitia.runtime.thin.errors import ThinLlmError
-from cognitia.runtime.provider_resolver import ResolvedProvider
-from cognitia.runtime.types import RuntimeErrorData
+from swarmline.runtime.thin.errors import ThinLlmError
+from swarmline.runtime.provider_resolver import ResolvedProvider
+from swarmline.runtime.types import RuntimeErrorData
 
 
 async def _collect_stream(stream: AsyncIterator[str]) -> list[str]:
@@ -57,7 +57,7 @@ def _make_mock_google_package(genai_module: MagicMock) -> types.ModuleType:
 
 @pytest.fixture(autouse=True)
 def _clear_adapter_cache() -> None:
-    from cognitia.runtime.thin.llm_providers import _adapter_cache
+    from swarmline.runtime.thin.llm_providers import _adapter_cache
 
     _adapter_cache.clear()
     yield
@@ -333,19 +333,19 @@ class TestMissingPackageErrors:
 
     def test_missing_anthropic_package(self) -> None:
         with patch.dict("sys.modules", {"anthropic": None}):
-            with pytest.raises(ThinLlmError, match=r"cognitia\[thin\]") as exc:
+            with pytest.raises(ThinLlmError, match=r"swarmline\[thin\]") as exc:
                 AnthropicAdapter(model="claude-sonnet-4-20250514")
         assert exc.value.error.kind == "dependency_missing"
 
     def test_missing_openai_package(self) -> None:
         with patch.dict("sys.modules", {"openai": None}):
-            with pytest.raises(ThinLlmError, match=r"cognitia\[thin\]") as exc:
+            with pytest.raises(ThinLlmError, match=r"swarmline\[thin\]") as exc:
                 OpenAICompatAdapter(model="gpt-4o")
         assert exc.value.error.kind == "dependency_missing"
 
     def test_missing_google_package(self) -> None:
         with patch.dict("sys.modules", {"google.genai": None, "google": None}):
-            with pytest.raises(ThinLlmError, match=r"cognitia\[thin\]") as exc:
+            with pytest.raises(ThinLlmError, match=r"swarmline\[thin\]") as exc:
                 GoogleAdapter(model="gemini-2.5-pro")
         assert exc.value.error.kind == "dependency_missing"
 
@@ -360,7 +360,7 @@ class TestAdapterCaching:
 
     def test_same_provider_returns_cached(self) -> None:
         """Odin and tot zhe ResolvedProvider -> tot zhe adapter."""
-        from cognitia.runtime.thin.llm_providers import get_cached_adapter
+        from swarmline.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
         with patch.dict("sys.modules", {"anthropic": _make_mock_anthropic_module()}):
@@ -370,7 +370,7 @@ class TestAdapterCaching:
 
     def test_different_model_returns_new(self) -> None:
         """Raznye model_id -> raznye adaptery."""
-        from cognitia.runtime.thin.llm_providers import get_cached_adapter
+        from swarmline.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
         r2 = ResolvedProvider("claude-opus-4-20250514", "anthropic", "anthropic", None)
@@ -381,7 +381,7 @@ class TestAdapterCaching:
 
     def test_different_base_url_returns_new(self) -> None:
         """Raznye base_url -> raznye adaptery."""
-        from cognitia.runtime.thin.llm_providers import get_cached_adapter
+        from swarmline.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("gpt-4o", "openai", "openai_compat", None)
         r2 = ResolvedProvider("gpt-4o", "openai", "openai_compat", "https://proxy.com/v1")
@@ -397,12 +397,12 @@ class TestDefaultLlmCallDispatch:
     @pytest.mark.asyncio
     async def test_anthropic_model_dispatches_to_adapter(self) -> None:
         """Anthropic model -> AnthropicAdapter.call()."""
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514")
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter"
+            "swarmline.runtime.thin.llm_client.get_cached_adapter"
         ) as mock_factory:
             mock_adapter = AsyncMock()
             mock_adapter.call = AsyncMock(return_value="response")
@@ -420,12 +420,12 @@ class TestDefaultLlmCallDispatch:
     @pytest.mark.asyncio
     async def test_openai_model_dispatches_correctly(self) -> None:
         """OpenAI model cherez prefix -> OpenAICompatAdapter."""
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin", model="openai:gpt-4o")
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter"
+            "swarmline.runtime.thin.llm_client.get_cached_adapter"
         ) as mock_factory:
             mock_adapter = AsyncMock()
             mock_adapter.call = AsyncMock(return_value="gpt response")
@@ -441,8 +441,8 @@ class TestDefaultLlmCallDispatch:
     @pytest.mark.asyncio
     async def test_base_url_passed_to_resolver(self) -> None:
         """config.base_url peredaetsya in resolve_provider()."""
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(
             runtime_name="thin",
@@ -450,9 +450,9 @@ class TestDefaultLlmCallDispatch:
             base_url="https://proxy.example.com/v1",
         )
         with patch(
-            "cognitia.runtime.thin.llm_client.resolve_provider"
+            "swarmline.runtime.thin.llm_client.resolve_provider"
         ) as mock_resolve, patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter"
+            "swarmline.runtime.thin.llm_client.get_cached_adapter"
         ) as mock_factory:
             mock_resolve.return_value = ResolvedProvider(
                 "gpt-4o", "openai", "openai_compat", "https://proxy.example.com/v1"
@@ -473,12 +473,12 @@ class TestDefaultLlmCallDispatch:
     @pytest.mark.asyncio
     async def test_adapter_error_raises_typed_runtime_crash(self) -> None:
         """Error adaptera -> ThinLlmError(kind=runtime_crash)."""
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514")
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter"
+            "swarmline.runtime.thin.llm_client.get_cached_adapter"
         ) as mock_factory:
             mock_adapter = AsyncMock()
             mock_adapter.call = AsyncMock(side_effect=Exception("API Error"))
@@ -665,8 +665,8 @@ class TestDefaultLlmCallStreaming:
 
     @pytest.mark.asyncio
     async def test_stream_true_returns_async_iterator(self) -> None:
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514")
 
@@ -675,7 +675,7 @@ class TestDefaultLlmCallStreaming:
             yield "chunk2"
 
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter"
+            "swarmline.runtime.thin.llm_client.get_cached_adapter"
         ) as mock_factory:
             mock_adapter = MagicMock()
             mock_adapter.stream = MagicMock(return_value=_fake_stream())
@@ -694,12 +694,12 @@ class TestDefaultLlmCallStreaming:
 
     @pytest.mark.asyncio
     async def test_stream_false_returns_string(self) -> None:
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514")
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter"
+            "swarmline.runtime.thin.llm_client.get_cached_adapter"
         ) as mock_factory:
             mock_adapter = AsyncMock()
             mock_adapter.call = AsyncMock(return_value="response")
@@ -715,19 +715,19 @@ class TestDefaultLlmCallStreaming:
 
     @pytest.mark.asyncio
     async def test_stream_init_failure_raises_typed_error(self) -> None:
-        from cognitia.runtime.thin.llm_client import default_llm_call
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
 
         config = RuntimeConfig(runtime_name="thin", model="google:gemini-2.5-pro")
         thin_error = ThinLlmError(
             RuntimeErrorData(
                 kind="dependency_missing",
-                message="google-genai SDK не установлен. Установите: pip install cognitia[thin]",
+                message="google-genai SDK не установлен. Установите: pip install swarmline[thin]",
                 recoverable=False,
             )
         )
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter",
+            "swarmline.runtime.thin.llm_client.get_cached_adapter",
             side_effect=thin_error,
         ):
             with pytest.raises(ThinLlmError, match="google-genai SDK"):
@@ -745,7 +745,7 @@ class TestTryStreamLlmCallWithAdapter:
     @pytest.mark.asyncio
     async def test_try_stream_uses_adapter_stream(self) -> None:
         """try_stream_llm_call should use adapter-based streaming."""
-        from cognitia.runtime.thin.llm_client import try_stream_llm_call
+        from swarmline.runtime.thin.llm_client import try_stream_llm_call
 
         async def _fake_stream():
             yield "chunk1"
@@ -766,12 +766,12 @@ class TestTryStreamLlmCallWithAdapter:
     @pytest.mark.asyncio
     async def test_try_stream_propagates_typed_thin_error(self) -> None:
         """ThinLlmError not should maskirovatsya kak uspeshnyy stream."""
-        from cognitia.runtime.thin.llm_client import try_stream_llm_call
+        from swarmline.runtime.thin.llm_client import try_stream_llm_call
 
         thin_error = ThinLlmError(
             RuntimeErrorData(
                 kind="dependency_missing",
-                message="openai SDK не установлен. Установите: pip install cognitia[thin]",
+                message="openai SDK не установлен. Установите: pip install swarmline[thin]",
                 recoverable=False,
             )
         )

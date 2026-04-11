@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from cognitia.runtime.claude_code import ClaudeCodeRuntime
-from cognitia.runtime.types import Message, RuntimeEvent
+from swarmline.runtime.claude_code import ClaudeCodeRuntime
+from swarmline.runtime.types import Message, RuntimeEvent
 
 # ---------------------------------------------------------------------------
-# Fake StreamEvent (sovmestim with cognitia.runtime.adapter.StreamEvent)
+# Fake StreamEvent (sovmestim with swarmline.runtime.adapter.StreamEvent)
 # ---------------------------------------------------------------------------
 
 

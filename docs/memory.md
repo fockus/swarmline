@@ -1,6 +1,6 @@
 # Memory Providers
 
-Cognitia provides 3 interchangeable memory providers behind a unified protocol interface.
+Swarmline provides 3 interchangeable memory providers behind a unified protocol interface.
 
 ## Protocols
 
@@ -24,7 +24,7 @@ All three providers implement all 8 protocols.
 Zero-dependency, great for tests and development:
 
 ```python
-from cognitia.memory import InMemoryMemoryProvider
+from swarmline.memory import InMemoryMemoryProvider
 
 memory = InMemoryMemoryProvider()
 
@@ -50,7 +50,7 @@ Production-ready with SQLAlchemy async:
 
 ```python
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from cognitia.memory import PostgresMemoryProvider
+from swarmline.memory import PostgresMemoryProvider
 
 engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
 session_factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -58,7 +58,7 @@ session_factory = async_sessionmaker(engine, expire_on_commit=False)
 memory = PostgresMemoryProvider(session_factory)
 ```
 
-Requires `pip install cognitia[postgres]`.
+Requires `pip install swarmline[postgres]`.
 
 ### Schema
 
@@ -78,13 +78,13 @@ Tables are managed by the application (via Alembic or raw SQL). Required tables:
 Lightweight persistence without a database server:
 
 ```python
-from cognitia.memory import SQLiteMemoryProvider
+from swarmline.memory import SQLiteMemoryProvider
 
 memory = SQLiteMemoryProvider(db_path="./agent.db")
 # Tables are created automatically on first use
 ```
 
-Requires `pip install cognitia[sqlite]`.
+Requires `pip install swarmline[sqlite]`.
 
 ## Choosing a Provider
 
@@ -112,7 +112,7 @@ async def save_user_fact(store: FactStore, user_id: str):
 
 ## Data Types
 
-The memory module uses these core data types (`cognitia.memory.types`):
+The memory module uses these core data types (`swarmline.memory.types`):
 
 | Type | Fields | Purpose |
 |------|--------|---------|
@@ -124,15 +124,15 @@ The memory module uses these core data types (`cognitia.memory.types`):
 
 ## Summarization
 
-Cognitia includes two summarizers for managing conversation history.
+Swarmline includes two summarizers for managing conversation history.
 
 ### TemplateSummaryGenerator
 
 Zero-dependency, formats recent messages as a bullet list:
 
 ```python
-from cognitia.memory.summarizer import TemplateSummaryGenerator
-from cognitia.memory.types import MemoryMessage
+from swarmline.memory.summarizer import TemplateSummaryGenerator
+from swarmline.memory.types import MemoryMessage
 
 summarizer = TemplateSummaryGenerator(max_messages=20, max_message_chars=200)
 
@@ -149,7 +149,7 @@ summary = summarizer.summarize(messages)
 Uses an LLM call for richer summaries with automatic fallback to `TemplateSummaryGenerator` on error:
 
 ```python
-from cognitia.memory.llm_summarizer import LlmSummaryGenerator
+from swarmline.memory.llm_summarizer import LlmSummaryGenerator
 
 async def my_llm_call(prompt: str, text: str) -> str:
     # Your LLM integration here
@@ -172,7 +172,7 @@ If the LLM returns a response shorter than 50 characters or raises an exception,
 
 ### Episode Data Model
 
-Each episode is a frozen dataclass (`cognitia.memory.episodic_types.Episode`):
+Each episode is a frozen dataclass (`swarmline.memory.episodic_types.Episode`):
 
 | Field | Type | Purpose |
 |-------|------|---------|
@@ -211,8 +211,8 @@ The `EpisodicMemory` protocol defines 5 methods (ISP-compliant):
 **Store and recall episodes (InMemory):**
 
 ```python
-from cognitia.memory.episodic_types import Episode
-from cognitia.memory.episodic import InMemoryEpisodicMemory
+from swarmline.memory.episodic_types import Episode
+from swarmline.memory.episodic import InMemoryEpisodicMemory
 
 memory = InMemoryEpisodicMemory()
 
@@ -241,7 +241,7 @@ deployments = await memory.recall_by_tag("deployment")
 **SQLite backend with FTS5 search:**
 
 ```python
-from cognitia.memory.episodic_sqlite import SqliteEpisodicMemory
+from swarmline.memory.episodic_sqlite import SqliteEpisodicMemory
 
 memory = SqliteEpisodicMemory(db_path="./episodes.db")
 # Tables and FTS5 index are created automatically on first use
@@ -254,7 +254,7 @@ results = await memory.recall("deploy staging")  # Uses FTS5 full-text search
 
 ```python
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from cognitia.memory.episodic_postgres import PostgresEpisodicMemory
+from swarmline.memory.episodic_postgres import PostgresEpisodicMemory
 
 engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
 session_factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -320,8 +320,8 @@ The `ProceduralMemory` protocol defines 5 methods (ISP-compliant):
 **Define and store a procedure:**
 
 ```python
-from cognitia.memory.procedural_types import Procedure, ProcedureStep
-from cognitia.memory.procedural import InMemoryProceduralMemory
+from swarmline.memory.procedural_types import Procedure, ProcedureStep
+from swarmline.memory.procedural import InMemoryProceduralMemory
 
 memory = InMemoryProceduralMemory()
 
@@ -367,7 +367,7 @@ print(f"Success rate: {proc.success_rate:.0%}")  # "Success rate: 100%"
 **SQLite backend with FTS5:**
 
 ```python
-from cognitia.memory.procedural_sqlite import SqliteProceduralMemory
+from swarmline.memory.procedural_sqlite import SqliteProceduralMemory
 
 memory = SqliteProceduralMemory(db_path="./procedures.db")
 # Tables and FTS5 index created automatically
@@ -379,7 +379,7 @@ suggestions = await memory.suggest("deploy staging")
 **PostgreSQL backend:**
 
 ```python
-from cognitia.memory.procedural_postgres import PostgresProceduralMemory
+from swarmline.memory.procedural_postgres import PostgresProceduralMemory
 
 memory = PostgresProceduralMemory(session_factory)
 # Requires the `procedures` table — schema available as POSTGRES_PROCEDURAL_SCHEMA
@@ -428,9 +428,9 @@ class FactExtractor(Protocol):
 **Basic consolidation (keyword-based):**
 
 ```python
-from cognitia.memory.episodic import InMemoryEpisodicMemory
-from cognitia.memory.episodic_types import Episode
-from cognitia.memory.consolidation import ConsolidationPipeline
+from swarmline.memory.episodic import InMemoryEpisodicMemory
+from swarmline.memory.episodic_types import Episode
+from swarmline.memory.consolidation import ConsolidationPipeline
 
 episodic = InMemoryEpisodicMemory()
 
@@ -472,7 +472,7 @@ result = await pipeline.consolidate()
 **With a custom LLM-powered extractor:**
 
 ```python
-from cognitia.memory.consolidation import FactExtractor
+from swarmline.memory.consolidation import FactExtractor
 
 class LlmFactExtractor:
     """Extract facts using an LLM for richer semantic understanding."""

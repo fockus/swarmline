@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from cognitia.rag import Document, RagInputFilter, SimpleRetriever
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent
+from swarmline.rag import Document, RagInputFilter, SimpleRetriever
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 
 
 class TestRagInputFilterEndToEnd:

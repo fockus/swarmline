@@ -17,8 +17,8 @@ import dataclasses
 
 import pytest
 
-from cognitia.rag import Document, RagInputFilter, Retriever, SimpleRetriever
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.rag import Document, RagInputFilter, Retriever, SimpleRetriever
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ class TestRagInputFilter:
         assert result_prompt == "original"
 
     async def test_is_input_filter_compliant(self) -> None:
-        from cognitia.input_filters import InputFilter
+        from swarmline.input_filters import InputFilter
 
         retriever = SimpleRetriever(documents=[])
         rag_filter = RagInputFilter(retriever=retriever)

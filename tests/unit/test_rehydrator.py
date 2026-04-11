@@ -4,9 +4,9 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.memory.types import GoalState, MemoryMessage, PhaseState
-from cognitia.session.rehydrator import DefaultSessionRehydrator
-from cognitia.types import TurnContext
+from swarmline.memory.types import GoalState, MemoryMessage, PhaseState
+from swarmline.session.rehydrator import DefaultSessionRehydrator
+from swarmline.types import TurnContext
 
 
 def _make_ctx(**kwargs) -> TurnContext:

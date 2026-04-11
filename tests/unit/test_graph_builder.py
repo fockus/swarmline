@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
 
 
 # ---------------------------------------------------------------------------

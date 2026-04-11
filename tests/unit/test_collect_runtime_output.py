@@ -6,7 +6,7 @@ D10: Extracted from thin_subagent, deepagents_subagent, workflow_executor event 
 from __future__ import annotations
 
 import pytest
-from cognitia.runtime.types import RuntimeEvent
+from swarmline.runtime.types import RuntimeEvent
 
 
 async def _async_iter(events: list[RuntimeEvent]):
@@ -19,7 +19,7 @@ class TestCollectRuntimeOutput:
 
     @pytest.mark.asyncio
     async def test_collect_from_final_event(self) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
 
         events = [
             RuntimeEvent.final(text="Final result", new_messages=[]),
@@ -31,7 +31,7 @@ class TestCollectRuntimeOutput:
     async def test_collect_from_assistant_deltas_without_terminal_raises_runtime_error(
         self,
     ) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
 
         events = [
             RuntimeEvent(type="assistant_delta", data={"text": "Hello "}),
@@ -42,7 +42,7 @@ class TestCollectRuntimeOutput:
 
     @pytest.mark.asyncio
     async def test_final_overrides_deltas(self) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
 
         events = [
             RuntimeEvent(type="assistant_delta", data={"text": "partial"}),
@@ -53,8 +53,8 @@ class TestCollectRuntimeOutput:
 
     @pytest.mark.asyncio
     async def test_error_event_raises_runtime_error(self) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
-        from cognitia.runtime.types import RuntimeErrorData
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.runtime.types import RuntimeErrorData
 
         events = [
             RuntimeEvent.error(
@@ -66,14 +66,14 @@ class TestCollectRuntimeOutput:
 
     @pytest.mark.asyncio
     async def test_empty_events_return_empty_string(self) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
 
         with pytest.raises(RuntimeError, match="final RuntimeEvent"):
             await collect_runtime_output(_async_iter([]))
 
     @pytest.mark.asyncio
     async def test_delta_without_terminal_event_raises_runtime_error(self) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
 
         events = [
             RuntimeEvent(type="assistant_delta", data={"text": "partial"}),
@@ -84,8 +84,8 @@ class TestCollectRuntimeOutput:
 
     @pytest.mark.asyncio
     async def test_custom_error_message_prefix(self) -> None:
-        from cognitia.orchestration.runtime_helpers import collect_runtime_output
-        from cognitia.runtime.types import RuntimeErrorData
+        from swarmline.orchestration.runtime_helpers import collect_runtime_output
+        from swarmline.runtime.types import RuntimeErrorData
 
         events = [
             RuntimeEvent.error(

@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 
-from cognitia.observability.event_bus import EventBus, InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, NoopTracer, Tracer, TracingSubscriber
+from swarmline.observability.event_bus import EventBus, InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, NoopTracer, Tracer, TracingSubscriber
 
 
 # ---------------------------------------------------------------------------
@@ -221,14 +221,14 @@ class TestRuntimeConfigEventBusFields:
     """RuntimeConfig accepts event_bus and tracer fields."""
 
     def test_runtime_config_default_event_bus_none(self) -> None:
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.types import RuntimeConfig
 
         cfg = RuntimeConfig(runtime_name="thin")
         assert cfg.event_bus is None
         assert cfg.tracer is None
 
     def test_runtime_config_with_event_bus(self) -> None:
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.types import RuntimeConfig
 
         bus = InMemoryEventBus()
         tracer = NoopTracer()

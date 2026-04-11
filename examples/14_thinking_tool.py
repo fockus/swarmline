@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.tools.thinking import create_thinking_tool
+from swarmline.tools.thinking import create_thinking_tool
 
 
 async def main() -> None:

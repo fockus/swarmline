@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from cognitia.runtime.model_registry import ModelRegistry, get_registry, reset_registry
+from swarmline.runtime.model_registry import ModelRegistry, get_registry, reset_registry
 
 # ---------------------------------------------------------------------------
 # Fixture: temp config

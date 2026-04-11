@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.hooks.registry import HookRegistry
+from swarmline.hooks.registry import HookRegistry
 
 
 async def audit_pre_tool(event: dict) -> dict:

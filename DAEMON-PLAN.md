@@ -1,4 +1,4 @@
-# Cognitia Daemon Module — Plan
+# Swarmline Daemon Module — Plan
 
 > Для поддержки 24/7 autonomous mode в Code Factory v2.
 > Daemon = отдельный Python процесс, переживает restart Claude Code.
@@ -10,7 +10,7 @@ Code Factory v2 имеет 3 уровня heartbeat:
 - Level 2: persist + resume через SQLite state (между сессиями)
 - **Level 3: External daemon** (этот план) — 24/7, как systemd service
 
-## Что УЖЕ есть в Cognitia (переиспользуем)
+## Что УЖЕ есть в Swarmline (переиспользуем)
 
 | Компонент | Файл | Что делает |
 |-----------|------|------------|
@@ -28,17 +28,17 @@ Code Factory v2 имеет 3 уровня heartbeat:
 
 ## Что НУЖНО добавить
 
-### Новый модуль: `cognitia/daemon/`
+### Новый модуль: `swarmline/daemon/`
 
 ```
-src/cognitia/daemon/
+src/swarmline/daemon/
 ├── __init__.py
 ├── runner.py          # Main daemon loop (asyncio.run + signal handling)
 ├── scheduler.py       # Cron-like asyncio scheduler (periodic tasks)
 ├── health.py          # Health check (HTTP endpoint or Unix socket)
 ├── pid.py             # PID file management (prevent double-start)
 ├── config.py          # DaemonConfig dataclass
-└── cli_entry.py       # CLI entry point: cognitia-daemon command
+└── cli_entry.py       # CLI entry point: swarmline-daemon command
 ```
 
 ### runner.py — DaemonRunner
@@ -75,14 +75,14 @@ class DaemonRunner:
         self._setup_signals()
 
         try:
-            # Init Cognitia components
+            # Init Swarmline components
             graph = SqliteAgentGraph(db_path=self.config.agent_db_path)
             task_board = SqliteGraphTaskBoard(db_path=self.config.agent_db_path)
             comm = SqliteGraphCommunication(graph_query=graph, db_path=self.config.agent_db_path)
             event_bus = InMemoryEventBus()
 
-            # Init factory pipeline (import from cognitia[factory])
-            from cognitia.factory.pipeline import SprintPipeline
+            # Init factory pipeline (import from swarmline[factory])
+            from swarmline.factory.pipeline import SprintPipeline
             pipeline = SprintPipeline(graph=graph, task_board=task_board, ...)
 
             # Schedule periodic tasks
@@ -184,8 +184,8 @@ class DaemonConfig:
     # Paths
     factory_db_path: str = "factory.db"
     agent_db_path: str = "factory_agents.db"
-    pid_path: str = "~/.cognitia/factory-daemon.pid"
-    log_path: str = "~/.cognitia/factory-daemon.log"
+    pid_path: str = "~/.swarmline/factory-daemon.pid"
+    log_path: str = "~/.swarmline/factory-daemon.log"
 
     # Scheduling
     health_check_interval: int = 900     # 15 min
@@ -212,22 +212,22 @@ class DaemonConfig:
 ### cli_entry.py — CLI Entry Point
 
 ```python
-"""CLI entry point for cognitia-daemon.
+"""CLI entry point for swarmline-daemon.
 
 Usage:
-    cognitia-daemon start --config factory-daemon.yaml
-    cognitia-daemon stop
-    cognitia-daemon status
-    cognitia-daemon pause
-    cognitia-daemon resume
+    swarmline-daemon start --config factory-daemon.yaml
+    swarmline-daemon stop
+    swarmline-daemon status
+    swarmline-daemon pause
+    swarmline-daemon resume
 
 Registered as console_script in pyproject.toml:
     [project.scripts]
-    cognitia-daemon = "cognitia.daemon.cli_entry:main"
+    swarmline-daemon = "swarmline.daemon.cli_entry:main"
 """
 
 def main():
-    parser = argparse.ArgumentParser(description="Cognitia Factory Daemon")
+    parser = argparse.ArgumentParser(description="Swarmline Factory Daemon")
     subparsers = parser.add_subparsers()
 
     # start: launch daemon (foreground or background with --daemon flag)
@@ -250,15 +250,15 @@ def main():
 
 ```toml
 [project.optional-dependencies]
-factory = ["cognitia[factory]"]
+factory = ["swarmline[factory]"]
 daemon = [
-    "cognitia[factory]",
+    "swarmline[factory]",
     "aiohttp>=3.9",           # health endpoint
     "structlog>=24.0",        # structured logging
 ]
 
 [project.scripts]
-cognitia-daemon = "cognitia.daemon.cli_entry:main"
+swarmline-daemon = "swarmline.daemon.cli_entry:main"
 ```
 
 ## Integration с Code Factory v2
@@ -276,7 +276,7 @@ Level 2 (between sessions):
   /factory:resume → read state → continue
 
 Level 3 (daemon):
-  cognitia-daemon start --config factory-daemon.yaml
+  swarmline-daemon start --config factory-daemon.yaml
       │
       ├── DaemonRunner.run()
       │   ├── CliAgentRuntime (claude subprocess)
@@ -303,12 +303,12 @@ Level 3 (daemon):
 - [ ] `daemon/pid.py`: PID file management (acquire, release, is_running)
 - [ ] `daemon/config.py`: DaemonConfig dataclass с defaults
 - [ ] `daemon/cli_entry.py`: CLI (start, stop, status, pause, resume)
-- [ ] pyproject.toml: `cognitia[daemon]` extra, console_script entry point
+- [ ] pyproject.toml: `swarmline[daemon]` extra, console_script entry point
 - [ ] Integration test: start daemon → create sprint → daemon runs it → stop daemon → state preserved
 - [ ] Integration test: daemon + Claude Code simultaneous access to same factory.db (WAL)
 - [ ] Unit tests: scheduler timing, PID lock, signal handling, health endpoint
 
-## Зависимости от Cognitia (уже есть, НЕ нужно менять)
+## Зависимости от Swarmline (уже есть, НЕ нужно менять)
 
 - CliAgentRuntime → запуск claude агентов
 - Pipeline + PipelineRunner → execution
@@ -318,7 +318,7 @@ Level 3 (daemon):
 - SessionManager → session lifecycle
 - SandboxProvider → safe execution (optional)
 
-## Зависимости от Factory (cognitia[factory])
+## Зависимости от Factory (swarmline[factory])
 
 - SprintPipeline → sprint execution
 - MetaSupervisor → system health

@@ -1,6 +1,6 @@
 """Tests for HookRegistry - registratsiya and receiving hookov sobytiy."""
 
-from cognitia.hooks.registry import HookEntry, HookRegistry
+from swarmline.hooks.registry import HookEntry, HookRegistry
 
 
 async def _dummy_hook(**kwargs):  # type: ignore[no-untyped-def]

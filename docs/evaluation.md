@@ -1,14 +1,14 @@
 # Agent Evaluation
 
-Cognitia includes a built-in evaluation framework for measuring agent quality across multiple dimensions.
+Swarmline includes a built-in evaluation framework for measuring agent quality across multiple dimensions.
 
 ## Quick Start
 
 ```python
-from cognitia.eval.runner import EvalRunner
-from cognitia.eval.scorers import ContainsScorer, ExactMatchScorer
-from cognitia.eval.reporters import ConsoleReporter
-from cognitia.eval.types import EvalCase
+from swarmline.eval.runner import EvalRunner
+from swarmline.eval.scorers import ContainsScorer, ExactMatchScorer
+from swarmline.eval.reporters import ConsoleReporter
+from swarmline.eval.types import EvalCase
 
 suite = [
     EvalCase(id="geo-1", input="Capital of France?", expected="Paris"),
@@ -72,14 +72,14 @@ report.scorer_stats("contains")  # {"mean": 0.85, "min": 0.0, "max": 1.0, "p50":
 ### Console
 
 ```python
-from cognitia.eval.reporters import ConsoleReporter
+from swarmline.eval.reporters import ConsoleReporter
 print(ConsoleReporter().format(report))
 ```
 
 ### JSON (for CI/CD)
 
 ```python
-from cognitia.eval.reporters import JsonReporter
+from swarmline.eval.reporters import JsonReporter
 json_str = JsonReporter(indent=2).format(report)
 ```
 
@@ -88,7 +88,7 @@ json_str = JsonReporter(indent=2).format(report)
 Implement the `Scorer` protocol:
 
 ```python
-from cognitia.eval.types import EvalCase, Scorer, ScorerResult
+from swarmline.eval.types import EvalCase, Scorer, ScorerResult
 
 class MyCustomScorer:
     @property
@@ -109,7 +109,7 @@ class MyCustomScorer:
 Compare two eval runs to track regressions and improvements:
 
 ```python
-from cognitia.eval.compare import EvalComparator
+from swarmline.eval.compare import EvalComparator
 
 comparison = EvalComparator.compare(baseline_report, new_report, threshold=0.05)
 
@@ -147,7 +147,7 @@ print(comparison.format_summary())
 Persist eval reports to JSON for tracking over time:
 
 ```python
-from cognitia.eval.history import EvalHistory
+from swarmline.eval.history import EvalHistory
 
 # Save
 EvalHistory.save(
@@ -176,4 +176,4 @@ if comparison.regressed > 0:
 
 ## Example
 
-See [`examples/32_agent_evaluation.py`](https://github.com/fockus/cognitia/blob/main/examples/32_agent_evaluation.py) for a complete runnable example.
+See [`examples/32_agent_evaluation.py`](https://github.com/fockus/swarmline/blob/main/examples/32_agent_evaluation.py) for a complete runnable example.

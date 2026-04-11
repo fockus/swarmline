@@ -12,9 +12,9 @@ from __future__ import annotations
 import asyncio
 import time
 
-from cognitia.eval.runner import EvalRunner
-from cognitia.eval.scorers import ExactMatchScorer, ContainsScorer
-from cognitia.eval.types import EvalCase
+from swarmline.eval.runner import EvalRunner
+from swarmline.eval.scorers import ExactMatchScorer, ContainsScorer
+from swarmline.eval.types import EvalCase
 from unittest.mock import AsyncMock, MagicMock
 
 
@@ -51,7 +51,7 @@ async def bench_eval_runner(n_cases: int = 100) -> float:
 
 
 async def main() -> None:
-    print("Cognitia Framework Benchmark")
+    print("Swarmline Framework Benchmark")
     print("=" * 50)
 
     eval_ops = await bench_eval_runner(100)

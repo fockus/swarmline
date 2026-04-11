@@ -9,7 +9,7 @@ pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не устан
 
 pytestmark = pytest.mark.requires_claude_sdk
 
-from cognitia.runtime.sdk_query import one_shot_query, stream_one_shot_query  # noqa: E402
+from swarmline.runtime.sdk_query import one_shot_query, stream_one_shot_query  # noqa: E402
 
 
 def _make_sdk_text_block(text: str = "Ответ") -> MagicMock:
@@ -125,7 +125,7 @@ def _make_sdk_tool_result_block(content: Any = "4") -> MagicMock:
 
 
 class TestOneShotQuery:
-    """one_shot_query - obertka nad SDK query() with cognitia tipami."""
+    """one_shot_query - obertka nad SDK query() with swarmline tipami."""
 
     @pytest.mark.asyncio
     async def test_basic_query_returns_text(self) -> None:
@@ -135,7 +135,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("42")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             result = await one_shot_query("What is 6*7?")
 
         assert result.text == "42"
@@ -148,7 +148,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
             yield _make_sdk_result_msg(session_id="sess-xyz")
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             result = await one_shot_query("test")
 
         assert result.session_id == "sess-xyz"
@@ -161,7 +161,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
             yield _make_sdk_result_msg(cost=0.05)
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             result = await one_shot_query("test")
 
         assert result.total_cost_usd == 0.05
@@ -175,7 +175,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("42")])
             yield _make_sdk_result_msg(structured_output=struct)
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             result = await one_shot_query("test")
 
         assert result.structured_output == struct
@@ -190,7 +190,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             await one_shot_query("test", system_prompt="Be concise")
 
         assert captured_options["options"].system_prompt == "Be concise"
@@ -205,7 +205,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             await one_shot_query("test", model="opus")
 
         assert captured_options["options"].model == "opus"
@@ -221,7 +221,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             await one_shot_query("test", hooks=hooks)
 
         assert captured_options["options"].hooks == hooks
@@ -236,7 +236,7 @@ class TestOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             await one_shot_query(
                 "test",
                 max_budget_usd=5.0,
@@ -260,7 +260,7 @@ class TestOneShotQuery:
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("partial")])
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             with pytest.raises(RuntimeError, match="final ResultMessage"):
                 await one_shot_query("test")
 
@@ -275,7 +275,7 @@ class TestStreamOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("World")])
             yield _make_sdk_result_msg(session_id="sess-xyz", cost=0.5)
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query("hi"):
                 events.append(event)
@@ -293,7 +293,7 @@ class TestStreamOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("42")])
             yield _make_sdk_result_msg(structured_output={"answer": 42})
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query("test"):
                 events.append(event)
@@ -313,7 +313,7 @@ class TestStreamOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("final")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query("test"):
                 events.append(event)
@@ -342,7 +342,7 @@ class TestStreamOneShotQuery:
             yield _make_sdk_assistant_msg([_make_sdk_text_block("Hello")])
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query(
                 "test",
@@ -364,7 +364,7 @@ class TestStreamOneShotQuery:
             yield _make_sdk_task_notification_msg("Research complete")
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query("status test"):
                 events.append(event)
@@ -385,7 +385,7 @@ class TestStreamOneShotQuery:
             )
             yield _make_sdk_result_msg()
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query("tool test"):
                 events.append(event)
@@ -406,7 +406,7 @@ class TestStreamOneShotQuery:
         async def fake_query(**kwargs):
             yield _make_sdk_assistant_msg([_make_sdk_text_block("partial")])
 
-        with patch("cognitia.runtime.sdk_query._sdk_query", side_effect=fake_query):
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
             events = []
             async for event in stream_one_shot_query("missing final"):
                 events.append(event)

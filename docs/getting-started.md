@@ -5,63 +5,63 @@
 ### Core (protocols, types, in-memory providers)
 
 ```bash
-pip install cognitia
+pip install swarmline
 ```
 
 ### With a runtime
 
 ```bash
-pip install cognitia[thin]          # Built-in lightweight multi-provider runtime
-pip install cognitia[claude]        # Claude Agent SDK runtime (subprocess + MCP)
-pip install cognitia[deepagents]    # DeepAgents runtime baseline (native graph + Anthropic path)
+pip install swarmline[thin]          # Built-in lightweight multi-provider runtime
+pip install swarmline[claude]        # Claude Agent SDK runtime (subprocess + MCP)
+pip install swarmline[deepagents]    # DeepAgents runtime baseline (native graph + Anthropic path)
 ```
 
-`cognitia[thin]` bundles the Anthropic, OpenAI-compatible, and Google SDK paths used by ThinRuntime.
+`swarmline[thin]` bundles the Anthropic, OpenAI-compatible, and Google SDK paths used by ThinRuntime.
 
 DeepAgents provider overrides are installed separately:
 
 ```bash
-pip install cognitia[deepagents] langchain-openai openai
-pip install cognitia[deepagents] langchain-google-genai
+pip install swarmline[deepagents] langchain-openai openai
+pip install swarmline[deepagents] langchain-google-genai
 ```
 
 ### With storage
 
 ```bash
-pip install cognitia[postgres]      # PostgreSQL memory provider
-pip install cognitia[sqlite]        # SQLite memory provider
+pip install swarmline[postgres]      # PostgreSQL memory provider
+pip install swarmline[sqlite]        # SQLite memory provider
 ```
 
 ### With web tools
 
 ```bash
-pip install cognitia[web]           # Base web fetch (httpx)
-pip install cognitia[web-duckduckgo] # DuckDuckGo search (no API key)
-pip install cognitia[web-tavily]    # Tavily AI search
-pip install cognitia[web-jina]      # Jina Reader (URL → markdown)
-pip install cognitia[web-crawl4ai]  # Crawl4AI (Playwright-based)
+pip install swarmline[web]           # Base web fetch (httpx)
+pip install swarmline[web-duckduckgo] # DuckDuckGo search (no API key)
+pip install swarmline[web-tavily]    # Tavily AI search
+pip install swarmline[web-jina]      # Jina Reader (URL → markdown)
+pip install swarmline[web-crawl4ai]  # Crawl4AI (Playwright-based)
 ```
 
 ### With sandbox
 
 ```bash
-pip install cognitia[e2b]           # E2B cloud sandbox
-pip install cognitia[docker]        # Docker sandbox
+pip install swarmline[e2b]           # E2B cloud sandbox
+pip install swarmline[docker]        # Docker sandbox
 ```
 
 ### Everything (for development)
 
 ```bash
-pip install cognitia[all,dev]
+pip install swarmline[all,dev]
 ```
 
-## Quick Start: `cognitia init` (recommended)
+## Quick Start: `swarmline init` (recommended)
 
 The fastest way to start a new project — scaffold a full agent in 10 seconds:
 
 ```bash
-pip install cognitia[cli]
-cognitia init my-agent
+pip install swarmline[cli]
+swarmline init my-agent
 cd my-agent
 cp .env.example .env   # add your ANTHROPIC_API_KEY
 pip install -e .
@@ -71,11 +71,11 @@ python agent.py "Hello!"
 Options:
 
 ```bash
-cognitia init my-agent                    # minimal (thin runtime, in-memory)
-cognitia init my-agent --runtime claude   # Claude Agent SDK
-cognitia init my-agent --memory sqlite    # persistent SQLite memory
-cognitia init my-agent --full             # all features + Docker setup
-cognitia init my-agent --output ./projects  # custom output directory
+swarmline init my-agent                    # minimal (thin runtime, in-memory)
+swarmline init my-agent --runtime claude   # Claude Agent SDK
+swarmline init my-agent --memory sqlite    # persistent SQLite memory
+swarmline init my-agent --full             # all features + Docker setup
+swarmline init my-agent --output ./projects  # custom output directory
 ```
 
 Generated structure:
@@ -99,7 +99,7 @@ my-agent/
 The fastest way to get started without scaffolding — 3 lines of code:
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(AgentConfig(system_prompt="You are a helpful assistant.", runtime="thin"))
 result = await agent.query("What is the capital of France?")
@@ -143,7 +143,7 @@ Current releases are secure by default:
 
 - `enable_host_exec=False` for MCP server startup
 - `allow_host_execution=False` for `LocalSandboxProvider`
-- `allow_unauthenticated_query=False` for `cognitia serve`
+- `allow_unauthenticated_query=False` for `swarmline serve`
 
 Enable any of these only when you intentionally trust the operator boundary and have compensating controls in place.
 
@@ -151,10 +151,10 @@ Enable any of these only when you intentionally trust the operator boundary and 
 
 ### 1. Custom Tools
 
-Define tools as async Python functions. Cognitia auto-infers JSON Schema from type hints:
+Define tools as async Python functions. Swarmline auto-infers JSON Schema from type hints:
 
 ```python
-from cognitia import Agent, AgentConfig, tool
+from swarmline import Agent, AgentConfig, tool
 
 @tool(name="weather", description="Get current weather for a city")
 async def get_weather(city: str, units: str = "celsius") -> str:
@@ -216,7 +216,7 @@ class UserInfo(BaseModel):
     name: str
     age: int
 
-from cognitia.runtime.structured_output import extract_pydantic_schema
+from swarmline.runtime.structured_output import extract_pydantic_schema
 
 agent = Agent(AgentConfig(
     system_prompt="Extract user info from text.",
@@ -237,7 +237,7 @@ See [Structured Output](structured-output.md) for nested models, retry logic, an
 Intercept requests and responses for cost tracking, security, logging:
 
 ```python
-from cognitia.agent import CostTracker, SecurityGuard
+from swarmline.agent import CostTracker, SecurityGuard
 
 tracker = CostTracker(budget_usd=5.0)
 guard = SecurityGuard(block_patterns=["password", "secret", "api_key"])
@@ -258,7 +258,7 @@ If a turn pushes the cumulative spend above the configured budget,
 You can write custom middleware by extending the `Middleware` base class:
 
 ```python
-from cognitia.agent import Middleware
+from swarmline.agent import Middleware
 
 class LoggingMiddleware(Middleware):
     async def before_query(self, prompt: str, config) -> str:
@@ -288,7 +288,7 @@ agent = Agent(AgentConfig(system_prompt="...", runtime="deepagents"))
 Or via environment variable:
 
 ```bash
-export COGNITIA_RUNTIME=thin
+export SWARMLINE_RUNTIME=thin
 ```
 
 ### 6.1 DeepAgents: portable first
@@ -311,7 +311,7 @@ Feature modes:
 - `hybrid` — portable core + DeepAgents native built-ins/store seams
 - `native_first` — prefer DeepAgents native built-ins and graph behavior
 
-Practical note: the baseline `cognitia[deepagents]` extra is Anthropic-ready. For OpenAI or Google provider paths, install the provider bridge package separately. If you enable native built-ins, also pass an explicit `native_config["backend"]`; Cognitia now fails fast instead of silently falling back to DeepAgents `StateBackend`. For tool-heavy Gemini built-ins, prefer `portable` mode unless you are explicitly testing native provider behavior.
+Practical note: the baseline `swarmline[deepagents]` extra is Anthropic-ready. For OpenAI or Google provider paths, install the provider bridge package separately. If you enable native built-ins, also pass an explicit `native_config["backend"]`; Swarmline now fails fast instead of silently falling back to DeepAgents `StateBackend`. For tool-heavy Gemini built-ins, prefer `portable` mode unless you are explicitly testing native provider behavior.
 
 ### 7. Model Selection
 
@@ -351,9 +351,9 @@ finally:
     await agent.cleanup()
 ```
 
-## Advanced: CognitiaStack
+## Advanced: SwarmlineStack
 
-For production applications that need memory, sandbox, web tools, planning, and MCP skills — use `CognitiaStack`:
+For production applications that need memory, sandbox, web tools, planning, and MCP skills — use `SwarmlineStack`:
 
 ### Project Structure
 
@@ -377,11 +377,11 @@ your_app/
 
 ```python
 from pathlib import Path
-from cognitia.bootstrap.stack import CognitiaStack
-from cognitia.runtime.types import RuntimeConfig
-from cognitia.todo.inmemory_provider import InMemoryTodoProvider
+from swarmline.bootstrap.stack import SwarmlineStack
+from swarmline.runtime.types import RuntimeConfig
+from swarmline.todo.inmemory_provider import InMemoryTodoProvider
 
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     prompts_dir=Path("prompts"),
     skills_dir=Path("skills"),
     project_root=Path("."),
@@ -394,14 +394,14 @@ stack = CognitiaStack.create(
 ### Full-Featured Stack
 
 ```python
-from cognitia.bootstrap.stack import CognitiaStack
-from cognitia.runtime.types import RuntimeConfig
-from cognitia.tools.sandbox_local import LocalSandboxProvider
-from cognitia.tools.types import SandboxConfig
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.bootstrap.stack import SwarmlineStack
+from swarmline.runtime.types import RuntimeConfig
+from swarmline.tools.sandbox_local import LocalSandboxProvider
+from swarmline.tools.types import SandboxConfig
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
 
 sandbox = LocalSandboxProvider(SandboxConfig(
     root_path="/data/sandbox",
@@ -418,7 +418,7 @@ memory = FilesystemMemoryBankProvider(
     topic_id="project-1",
 )
 
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     prompts_dir=Path("prompts"),
     skills_dir=Path("skills"),
     project_root=Path("."),
@@ -435,7 +435,7 @@ stack = CognitiaStack.create(
 ### Running the Stack
 
 ```python
-from cognitia.runtime.types import Message
+from swarmline.runtime.types import Message
 
 # Create runtime
 runtime = stack.runtime_factory.create(
@@ -469,7 +469,7 @@ async for event in runtime.run(
 Track LLM spending and enforce limits using the middleware API:
 
 ```python
-from cognitia.agent import Agent, AgentConfig, CostTracker
+from swarmline.agent import Agent, AgentConfig, CostTracker
 
 tracker = CostTracker(budget_usd=5.0)
 
@@ -490,7 +490,7 @@ For lower-level control, see `CostBudget` and `CostTracker` in [Production Safet
 Pre- and post-LLM content checks via `RuntimeConfig`:
 
 ```python
-from cognitia.guardrails import ContentLengthGuardrail, RegexGuardrail
+from swarmline.guardrails import ContentLengthGuardrail, RegexGuardrail
 
 # Guardrails are applied at the RuntimeConfig level
 length_guard = ContentLengthGuardrail(max_length=8000)
@@ -506,7 +506,7 @@ print(result.passed)  # True if within limits
 Persist session state across restarts:
 
 ```python
-from cognitia.session.backends import SqliteSessionBackend, MemoryScope, scoped_key
+from swarmline.session.backends import SqliteSessionBackend, MemoryScope, scoped_key
 
 backend = SqliteSessionBackend(db_path="sessions.db")
 key = scoped_key(MemoryScope.AGENT, "user:42:session:abc")
@@ -520,8 +520,8 @@ See [Sessions](sessions.md) for `InMemorySessionBackend`, custom backends, and `
 Event bus and tracing for runtime instrumentation:
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
 
 bus = InMemoryEventBus()
 tracer = ConsoleTracer()
@@ -542,8 +542,8 @@ See [Observability](observability.md) for custom tracers and event subscriptions
 Convert `RuntimeEvent` streams into UI-friendly state for frontends:
 
 ```python
-from cognitia.ui.projection import ChatProjection, project_stream
-from cognitia.runtime.types import RuntimeEvent
+from swarmline.ui.projection import ChatProjection, project_stream
+from swarmline.runtime.types import RuntimeEvent
 
 projection = ChatProjection()
 
@@ -565,8 +565,8 @@ See [UI Projection](ui-projection.md) for custom projections and `UIState.to_dic
 Inject relevant documents into LLM context using `RagInputFilter`:
 
 ```python
-from cognitia.rag import Document, SimpleRetriever, RagInputFilter
-from cognitia.runtime.types import Message
+from swarmline.rag import Document, SimpleRetriever, RagInputFilter
+from swarmline.runtime.types import Message
 
 docs = [
     Document(content="Paris is the capital of France."),
@@ -599,7 +599,7 @@ See [RAG](rag.md) for custom retrievers (Pinecone, pgvector) and filter chain in
 - [Memory Providers](memory.md) — InMemory, PostgreSQL, SQLite: 8 protocols, summarization
 - [Tools & Skills](tools-and-skills.md) — @tool decorator, MCP skills (YAML), tool policy
 - [Web Tools](web-tools.md) — search providers (DuckDuckGo, Brave, Tavily, SearXNG), fetch providers
-- [Configuration](configuration.md) — CognitiaStack, RuntimeConfig, ToolPolicy, environment variables
+- [Configuration](configuration.md) — SwarmlineStack, RuntimeConfig, ToolPolicy, environment variables
 - [Orchestration](orchestration.md) — planning mode, subagents, team mode, agent-as-tool, task queues, workflow graphs
 - [Structured Output](structured-output.md) — Pydantic validation, retry on failure, nested models
 - [Production Safety](production-safety.md) — cost budgets, guardrails, input filters, retry/fallback

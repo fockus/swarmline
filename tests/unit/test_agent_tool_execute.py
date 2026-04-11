@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any, AsyncIterator
 
-from cognitia.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
-from cognitia.multi_agent.types import AgentToolResult
-from cognitia.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
+from swarmline.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
+from swarmline.multi_agent.types import AgentToolResult
+from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
 
 
 # ---------------------------------------------------------------------------
@@ -211,11 +211,11 @@ class TestCreateAgentToolSpec:
         assert spec.is_local is True
 
     def test_create_agent_tool_spec_importable_from_multi_agent(self) -> None:
-        from cognitia.multi_agent import create_agent_tool_spec as imported_fn
+        from swarmline.multi_agent import create_agent_tool_spec as imported_fn
 
         assert imported_fn is create_agent_tool_spec
 
     def test_execute_agent_tool_importable_from_multi_agent(self) -> None:
-        from cognitia.multi_agent import execute_agent_tool as imported_fn
+        from swarmline.multi_agent import execute_agent_tool as imported_fn
 
         assert imported_fn is execute_agent_tool

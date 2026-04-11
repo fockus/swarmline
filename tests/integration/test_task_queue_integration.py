@@ -10,8 +10,8 @@ import asyncio
 
 import pytest
 
-from cognitia.multi_agent.task_queue import InMemoryTaskQueue, SqliteTaskQueue
-from cognitia.multi_agent.task_types import (
+from swarmline.multi_agent.task_queue import InMemoryTaskQueue, SqliteTaskQueue
+from swarmline.multi_agent.task_types import (
     TaskFilter,
     TaskItem,
     TaskPriority,

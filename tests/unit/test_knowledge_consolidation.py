@@ -6,8 +6,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from cognitia.memory_bank.knowledge_consolidation import KnowledgeConsolidator
-from cognitia.memory_bank.knowledge_types import KnowledgeEntry
+from swarmline.memory_bank.knowledge_consolidation import KnowledgeConsolidator
+from swarmline.memory_bank.knowledge_types import KnowledgeEntry
 
 
 @dataclass(frozen=True)

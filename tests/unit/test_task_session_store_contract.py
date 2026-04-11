@@ -7,12 +7,12 @@ import time
 
 import pytest
 
-from cognitia.session.task_session_store import (
+from swarmline.session.task_session_store import (
     InMemoryTaskSessionStore,
     SqliteTaskSessionStore,
     TaskSessionStore,
 )
-from cognitia.session.task_session_types import TaskSessionParams
+from swarmline.session.task_session_types import TaskSessionParams
 
 
 # ---------------------------------------------------------------------------

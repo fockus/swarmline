@@ -6,7 +6,7 @@ import pytest
 
 pytest.importorskip("langgraph", reason="langgraph не установлен")
 
-from cognitia.runtime.deepagents_memory import (
+from swarmline.runtime.deepagents_memory import (
     build_native_invocation,
     build_native_state_notice,
     validate_native_state_config,
@@ -25,7 +25,7 @@ def test_validate_resume_requires_checkpointer() -> None:
 
 
 def test_build_native_invocation_uses_latest_message_with_thread_state() -> None:
-    """Pri native thread state not replay'im ves Cognitia history in graph input."""
+    """Pri native thread state not replay'im ves Swarmline history in graph input."""
     messages = [
         HumanMessage(content="old question"),
         AIMessage(content="old answer"),
@@ -83,7 +83,7 @@ def test_build_native_invocation_replays_full_history_when_only_store_is_configu
 
     assert payload == {"messages": messages}
     assert run_config == {"configurable": {"thread_id": "thread-3"}}
-    assert native_metadata["history_source"] == "cognitia_history"
+    assert native_metadata["history_source"] == "swarmline_history"
     assert native_metadata["uses_store"] is True
     assert native_metadata["uses_checkpointer"] is False
 

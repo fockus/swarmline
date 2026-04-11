@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in Cognitia
+about: Report a bug in Swarmline
 title: "[BUG] "
 labels: bug
 assignees: ''
@@ -12,7 +12,7 @@ A clear description of what the bug is.
 
 ## Steps to Reproduce
 
-1. Install cognitia with `pip install cognitia[thin]`
+1. Install swarmline with `pip install swarmline[thin]`
 2. Create agent with config...
 3. Run `agent.query("...")`
 4. See error
@@ -27,11 +27,11 @@ What actually happened. Include the full error traceback if applicable.
 
 ## Environment
 
-- **Cognitia version**: (e.g., 1.1.0)
+- **Swarmline version**: (e.g., 1.1.0)
 - **Python version**: (e.g., 3.11.5)
 - **OS**: (e.g., macOS 14, Ubuntu 22.04)
 - **Runtime**: (e.g., thin, claude, deepagents)
-- **Extras installed**: (e.g., `cognitia[thin,sqlite]`)
+- **Extras installed**: (e.g., `swarmline[thin,sqlite]`)
 
 ## Minimal Reproducible Example
 

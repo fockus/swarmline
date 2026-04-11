@@ -6,12 +6,12 @@ import time
 
 import pytest
 
-from cognitia.pipeline.budget_store import (
+from swarmline.pipeline.budget_store import (
     InMemoryPersistentBudgetStore,
     PersistentBudgetStore,
     SqlitePersistentBudgetStore,
 )
-from cognitia.pipeline.budget_types import (
+from swarmline.pipeline.budget_types import (
     BudgetScope,
     BudgetScopeType,
     BudgetThreshold,
@@ -77,7 +77,7 @@ class TestRecordAndUsage:
         old_ts = time.time() - 60 * 60 * 24 * 45  # 45 days ago
 
         if isinstance(store, InMemoryPersistentBudgetStore):
-            from cognitia.pipeline.budget_types import CostEvent
+            from swarmline.pipeline.budget_types import CostEvent
             import uuid
 
             store._costs.append(CostEvent(

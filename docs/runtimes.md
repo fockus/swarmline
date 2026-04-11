@@ -1,6 +1,6 @@
 # Runtimes
 
-Cognitia supports four runtimes. All implement the same `AgentRuntime` Protocol, so you can switch between them without changing business logic.
+Swarmline supports four runtimes. All implement the same `AgentRuntime` Protocol, so you can switch between them without changing business logic.
 
 For API keys, provider environment variables, and `base_url` patterns, see the canonical reference:
 
@@ -16,7 +16,7 @@ For API keys, provider environment variables, and `base_url` patterns, see the c
 | **Planning** | Native plan mode | ThinPlannerMode | Depends on wrapped CLI | DeepAgentsPlannerMode |
 | **Subagents** | Native Task tool | asyncio.Task | No portable guarantee | Native `task` / LangGraph |
 | **Team mode** | ClaudeTeamOrchestrator | (backlog) | No portable guarantee | DeepAgentsTeamOrchestrator |
-| **Extras** | `cognitia[claude]` | `cognitia[thin]` | N/A | `cognitia[deepagents]` |
+| **Extras** | `swarmline[claude]` | `swarmline[thin]` | N/A | `swarmline[deepagents]` |
 | **Offline** | No | Yes (via local/proxy `base_url`) | Depends on wrapped CLI | Depends on provider/local endpoint; not guaranteed |
 
 ## Portable Matrix (current coverage)
@@ -36,7 +36,7 @@ For API keys, provider environment variables, and `base_url` patterns, see the c
 Wraps the Claude Agent SDK subprocess. Provides native support for MCP, tools, and subagents.
 
 ```python
-from cognitia.runtime import RuntimeConfig
+from swarmline.runtime import RuntimeConfig
 
 config = RuntimeConfig(runtime_name="claude_sdk", model="claude-sonnet-4-20250514")
 ```
@@ -49,7 +49,7 @@ config = RuntimeConfig(runtime_name="claude_sdk", model="claude-sonnet-4-2025051
 
 ### Claude SDK -- how it works
 
-- The SDK manages a subprocess; Cognitia normalizes events into `RuntimeEvent`
+- The SDK manages a subprocess; Swarmline normalizes events into `RuntimeEvent`
 - `permission_mode` is configurable; default is `bypassPermissions`
 - `allowed_system_tools` whitelist enables native Read/Write for sandbox operations
 
@@ -59,10 +59,10 @@ Tier: **full**. Supports: `mcp`, `resume`, `interrupt`.
 
 ## ThinRuntime
 
-Cognitia's own lightweight agent loop. Direct API calls without subprocess overhead.
+Swarmline's own lightweight agent loop. Direct API calls without subprocess overhead.
 
 ```python
-from cognitia.runtime import RuntimeConfig
+from swarmline.runtime import RuntimeConfig
 
 config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514")
 ```
@@ -83,7 +83,7 @@ ThinRuntime automatically selects a mode based on keyword heuristics, or you can
 
 ### ThinRuntime -- how it works
 
-- `cognitia[thin]` extra includes Anthropic, OpenAI-compatible, and Google SDK paths
+- `swarmline[thin]` extra includes Anthropic, OpenAI-compatible, and Google SDK paths
 - Built-in MCP client (STDIO transport)
 - `ToolExecutor` handles local/builtin tool invocation
 - Streaming via `async for event in runtime.run(...)`
@@ -99,7 +99,7 @@ Tier: **light**. Supports: `mcp`, `provider_override`.
 Integration via native DeepAgents graph path with a portable facade on top.
 
 ```python
-from cognitia.runtime import RuntimeConfig
+from swarmline.runtime import RuntimeConfig
 
 config = RuntimeConfig(runtime_name="deepagents", model="claude-sonnet-4-20250514")
 ```
@@ -120,7 +120,7 @@ The `feature_mode` parameter controls the balance between portability and native
 
 ### DeepAgents -- how it works
 
-- Baseline extra `cognitia[deepagents]` covers the runtime + Anthropic-ready provider path
+- Baseline extra `swarmline[deepagents]` covers the runtime + Anthropic-ready provider path
 - OpenAI and Google provider paths require separate bridge packages
 - Native metadata and resume surface are exposed to the application explicitly
 - Native built-ins require an explicit `native_config["backend"]`
@@ -134,8 +134,8 @@ Tier: **full**. Supports: `resume`, `native_subagents`, `builtin_todo`, `provide
 Subprocess-based runtime for external CLI agents. Runs an external process, feeds it prompt via stdin, and parses NDJSON output from stdout into a `RuntimeEvent` stream.
 
 ```python
-from cognitia.runtime import RuntimeConfig
-from cognitia.runtime.cli import CliConfig
+from swarmline.runtime import RuntimeConfig
+from swarmline.runtime.cli import CliConfig
 
 cli_config = CliConfig(
     command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"],
@@ -148,7 +148,7 @@ config = RuntimeConfig(runtime_name="cli")
 
 ### CLI -- when to use
 
-- Wrapping an external CLI agent (e.g., Claude CLI) as a Cognitia runtime
+- Wrapping an external CLI agent (e.g., Claude CLI) as a Swarmline runtime
 - You need a lightweight subprocess bridge without full SDK integration
 
 ### CLI -- how it works
@@ -167,7 +167,7 @@ Tier: **light**. No additional capability flags.
 Runtime selection is configuration-driven -- business code stays the same:
 
 ```python
-from cognitia.runtime import RuntimeConfig
+from swarmline.runtime import RuntimeConfig
 
 # Development: ThinRuntime (fast, no subprocess)
 config = RuntimeConfig(runtime_name="thin")
@@ -182,7 +182,7 @@ config = RuntimeConfig(runtime_name="deepagents")
 config = RuntimeConfig(runtime_name="cli")
 ```
 
-Resolution priority: `runtime_override` > `RuntimeConfig.runtime_name` > `COGNITIA_RUNTIME` env var > default (`claude_sdk`).
+Resolution priority: `runtime_override` > `RuntimeConfig.runtime_name` > `SWARMLINE_RUNTIME` env var > default (`claude_sdk`).
 
 ## AgentRuntime Protocol
 
@@ -232,7 +232,7 @@ Key design principle: the runtime **does not own state**. It receives `messages`
 You can declare required capabilities at configuration time. If the selected runtime does not support them, a `ValueError` is raised immediately:
 
 ```python
-from cognitia.runtime import RuntimeConfig, CapabilityRequirements
+from swarmline.runtime import RuntimeConfig, CapabilityRequirements
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -251,7 +251,7 @@ Available capability flags: `mcp`, `resume`, `interrupt`, `native_permissions`, 
 Register a custom runtime via `RuntimeRegistry`:
 
 ```python
-from cognitia.runtime import RuntimeRegistry, get_default_registry, RuntimeCapabilities
+from swarmline.runtime import RuntimeRegistry, get_default_registry, RuntimeCapabilities
 
 def my_factory(config, **kwargs):
     return MyCustomRuntime(config)
@@ -268,4 +268,4 @@ registry.register(
 )
 ```
 
-Third-party runtimes can also be registered via entry points (group `cognitia.runtimes`).
+Third-party runtimes can also be registered via entry points (group `swarmline.runtimes`).

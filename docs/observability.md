@@ -7,8 +7,8 @@ Lightweight event bus and structured tracing for runtime instrumentation.
 A pub-sub event bus for internal runtime events. Subscribers (tracing, metrics, UI) receive events without coupling to the runtime.
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.runtime.types import RuntimeConfig
 
 bus = InMemoryEventBus()
 
@@ -51,9 +51,9 @@ class EventBus(Protocol):
 Span-based structured tracing via the `Tracer` protocol. `TracingSubscriber` bridges EventBus events to Tracer spans automatically.
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
+from swarmline.runtime.types import RuntimeConfig
 
 bus = InMemoryEventBus()
 tracer = ConsoleTracer()
@@ -94,7 +94,7 @@ from opentelemetry import trace
 
 class OTelTracer:
     def __init__(self):
-        self._tracer = trace.get_tracer("cognitia")
+        self._tracer = trace.get_tracer("swarmline")
         self._spans = {}
 
     def start_span(self, name, attrs=None):
@@ -127,12 +127,12 @@ subscriber.detach()   # removes all subscriptions
 
 ## Combining with Other Features
 
-Event bus integrates naturally with other Cognitia features:
+Event bus integrates naturally with other Swarmline features:
 
 ```python
-from cognitia.runtime.cost import CostBudget
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber
+from swarmline.runtime.cost import CostBudget
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
 
 bus = InMemoryEventBus()
 tracer = ConsoleTracer()
@@ -156,7 +156,7 @@ config = RuntimeConfig(
 ### Installation
 
 ```bash
-pip install cognitia[otel]
+pip install swarmline[otel]
 ```
 
 This installs `opentelemetry-api` and `opentelemetry-sdk`.
@@ -167,9 +167,9 @@ This installs `opentelemetry-api` and `opentelemetry-sdk`.
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
 
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.otel_exporter import OTelExporter
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.otel_exporter import OTelExporter
+from swarmline.runtime.types import RuntimeConfig
 
 bus = InMemoryEventBus()
 provider = TracerProvider()
@@ -189,7 +189,7 @@ otel.detach()
 |-----------|------|---------|-------------|
 | `bus` | `EventBus` | *(required)* | EventBus instance to subscribe to |
 | `tracer_provider` | `TracerProvider` | global provider | OTel TracerProvider for span creation |
-| `service_name` | `str` | `"cognitia"` | Value for `gen_ai.system` on every span |
+| `service_name` | `str` | `"swarmline"` | Value for `gen_ai.system` on every span |
 | `runtime_name` | `str \| None` | `None` | Runtime identifier (e.g. `"thin"`, `"claude_code"`) |
 | `session_id` | `str \| None` | `None` | Session ID for correlating spans across turns |
 
@@ -226,9 +226,9 @@ processor = SimpleSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317
 `OTelExporter` and `TracingSubscriber` can both subscribe to the same EventBus simultaneously. They operate independently -- events are delivered to all subscribers with no interference:
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber
-from cognitia.observability.otel_exporter import OTelExporter
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
+from swarmline.observability.otel_exporter import OTelExporter
 
 bus = InMemoryEventBus()
 
@@ -264,7 +264,7 @@ Persistent structured audit trail for agent actions. Tracks who did what to whic
 ### Domain Types
 
 ```python
-from cognitia.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
+from swarmline.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
 
 # Create an audit entry
 entry = ActivityEntry(
@@ -291,7 +291,7 @@ recent_agent_actions = ActivityFilter(
 3-method ISP-compliant protocol:
 
 ```python
-from cognitia.observability.activity_log import ActivityLog
+from swarmline.observability.activity_log import ActivityLog
 
 class ActivityLog(Protocol):
     async def log(self, entry: ActivityEntry) -> None: ...
@@ -304,7 +304,7 @@ class ActivityLog(Protocol):
 **InMemoryActivityLog** -- zero-dependency, thread-safe:
 
 ```python
-from cognitia.observability.activity_log import InMemoryActivityLog
+from swarmline.observability.activity_log import InMemoryActivityLog
 
 log = InMemoryActivityLog()
 await log.log(entry)
@@ -314,7 +314,7 @@ entries = await log.query(ActivityFilter(actor_type=ActorType.AGENT))
 **SqliteActivityLog** -- persistent:
 
 ```python
-from cognitia.observability.activity_log import SqliteActivityLog
+from swarmline.observability.activity_log import SqliteActivityLog
 
 log = SqliteActivityLog(db_path="activity.db")
 await log.log(entry)
@@ -325,9 +325,9 @@ await log.log(entry)
 Auto-bridges EventBus events to ActivityLog entries. Subscribes to graph and pipeline lifecycle events:
 
 ```python
-from cognitia.observability.activity_subscriber import ActivityLogSubscriber
-from cognitia.observability.activity_log import InMemoryActivityLog
-from cognitia.observability.event_bus import InMemoryEventBus
+from swarmline.observability.activity_subscriber import ActivityLogSubscriber
+from swarmline.observability.activity_log import InMemoryActivityLog
+from swarmline.observability.event_bus import InMemoryEventBus
 
 bus = InMemoryEventBus()
 activity_log = InMemoryActivityLog()

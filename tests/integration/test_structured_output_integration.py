@@ -8,8 +8,8 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 class WeatherReport(BaseModel):

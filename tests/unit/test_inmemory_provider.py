@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.memory.inmemory import InMemoryMemoryProvider
-from cognitia.memory.types import GoalState, ToolEvent
+from swarmline.memory.inmemory import InMemoryMemoryProvider
+from swarmline.memory.types import GoalState, ToolEvent
 
 
 @pytest.fixture

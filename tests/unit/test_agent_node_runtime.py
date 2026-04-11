@@ -6,8 +6,8 @@ import dataclasses
 
 import pytest
 
-from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode
-from cognitia.multi_agent.registry_types import AgentStatus
+from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode
+from swarmline.multi_agent.registry_types import AgentStatus
 
 
 class TestAgentNodeRuntimeDefaults:

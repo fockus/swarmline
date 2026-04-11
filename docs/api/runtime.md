@@ -4,24 +4,24 @@ Runtime types, events, and registry for pluggable execution engines.
 
 ## RuntimeEvent
 
-::: cognitia.runtime.types.RuntimeEvent
+::: swarmline.runtime.types.RuntimeEvent
 
 ## RuntimeConfig
 
-::: cognitia.runtime.types.RuntimeConfig
+::: swarmline.runtime.types.RuntimeConfig
 
 ## AgentRuntime
 
-::: cognitia.runtime.base.AgentRuntime
+::: swarmline.runtime.base.AgentRuntime
 
 ## RuntimeRegistry
 
-::: cognitia.runtime.registry.RuntimeRegistry
+::: swarmline.runtime.registry.RuntimeRegistry
 
 ## CostBudget
 
-::: cognitia.runtime.cost.CostBudget
+::: swarmline.runtime.cost.CostBudget
 
 ## CostTracker
 
-::: cognitia.runtime.cost.CostTracker
+::: swarmline.runtime.cost.CostTracker

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.eval.types import EvalCase, EvalReport, EvalResult, Scorer, ScorerResult
+from swarmline.eval.types import EvalCase, EvalReport, EvalResult, Scorer, ScorerResult
 
 
 # ---------------------------------------------------------------------------

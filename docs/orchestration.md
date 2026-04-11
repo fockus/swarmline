@@ -32,7 +32,7 @@ TeamManager (app API)
 ### TeamOrchestrator Protocol
 
 ```python
-from cognitia.orchestration.team_protocol import TeamOrchestrator, ResumableTeamOrchestrator
+from swarmline.orchestration.team_protocol import TeamOrchestrator, ResumableTeamOrchestrator
 
 class TeamOrchestrator(Protocol):
     """ISP-compliant: exactly 5 methods."""
@@ -50,11 +50,11 @@ class ResumableTeamOrchestrator(Protocol):
 ### Creating a Team
 
 ```python
-from cognitia.orchestration.team_manager import TeamManager
-from cognitia.orchestration.claude_team import ClaudeTeamOrchestrator
-from cognitia.orchestration.claude_subagent import ClaudeSubagentOrchestrator
-from cognitia.orchestration.team_types import TeamConfig
-from cognitia.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.team_manager import TeamManager
+from swarmline.orchestration.claude_team import ClaudeTeamOrchestrator
+from swarmline.orchestration.claude_subagent import ClaudeSubagentOrchestrator
+from swarmline.orchestration.team_types import TeamConfig
+from swarmline.orchestration.subagent_types import SubagentSpec
 
 # 1. Build orchestrator stack
 subagent_orch = ClaudeSubagentOrchestrator(max_concurrent=4)
@@ -94,7 +94,7 @@ await manager.stop_team(team_id)
 Workers exchange messages through an in-memory `MessageBus`. Each team gets its own bus instance.
 
 ```python
-from cognitia.orchestration.team_types import TeamMessage
+from swarmline.orchestration.team_types import TeamMessage
 from datetime import datetime, timezone
 
 # Lead → Worker
@@ -144,7 +144,7 @@ PlanManager (app API)
 ### PlannerMode Protocol
 
 ```python
-from cognitia.orchestration.protocols import PlannerMode
+from swarmline.orchestration.protocols import PlannerMode
 
 class PlannerMode(Protocol):
     """ISP-compliant: exactly 5 methods."""
@@ -174,7 +174,7 @@ draft ──→ approved ──→ executing ──→ completed
 Each step can carry Definition of Done criteria that the verification pipeline checks:
 
 ```python
-from cognitia.orchestration.types import PlanStep
+from swarmline.orchestration.types import PlanStep
 
 step = PlanStep(
     id="step-1",
@@ -193,9 +193,9 @@ print(completed.verification_log)  # detailed check results
 ### Creating Plans via LLM
 
 ```python
-from cognitia.orchestration.manager import PlanManager
-from cognitia.orchestration.thin_planner import ThinPlannerMode
-from cognitia.orchestration.plan_store import InMemoryPlanStore
+from swarmline.orchestration.manager import PlanManager
+from swarmline.orchestration.thin_planner import ThinPlannerMode
+from swarmline.orchestration.plan_store import InMemoryPlanStore
 
 # Wire up
 store = InMemoryPlanStore()
@@ -221,7 +221,7 @@ async for step in manager.execute_plan(plan.id):
 When planning tools are enabled, the agent receives three tools:
 
 ```python
-from cognitia.orchestration.plan_tools import create_plan_tools
+from swarmline.orchestration.plan_tools import create_plan_tools
 
 tools, executors = create_plan_tools(manager, user_id="u1", topic_id="t1")
 # tools: {"plan_create": ToolSpec, "plan_status": ToolSpec, "plan_execute": ToolSpec}
@@ -234,7 +234,7 @@ tools, executors = create_plan_tools(manager, user_id="u1", topic_id="t1")
 ### PlanStore Protocol
 
 ```python
-from cognitia.orchestration.protocols import PlanStore
+from swarmline.orchestration.protocols import PlanStore
 
 class PlanStore(Protocol):
     """Multi-tenant plan persistence. ISP: 4 methods."""
@@ -273,7 +273,7 @@ WorkflowPipeline Protocol (generic pipeline contract)
 Declarative configuration — all flags OFF by default for safety:
 
 ```python
-from cognitia.orchestration.coding_standards import (
+from swarmline.orchestration.coding_standards import (
     CodingStandardsConfig,
     WorkflowAutomationConfig,
     AutonomousLoopConfig,
@@ -357,7 +357,7 @@ pipeline = CodePipelineConfig(
 ### CodeVerifier Protocol
 
 ```python
-from cognitia.orchestration.code_verifier import CodeVerifier, CommandRunner, CommandResult
+from swarmline.orchestration.code_verifier import CodeVerifier, CommandRunner, CommandResult
 
 class CommandRunner(Protocol):
     """Shell command execution abstraction."""
@@ -377,7 +377,7 @@ class CodeVerifier(Protocol):
 Implements `CodeVerifier` with TDD awareness — disabled checks auto-skip:
 
 ```python
-from cognitia.orchestration.tdd_code_verifier import TddCodeVerifier
+from swarmline.orchestration.tdd_code_verifier import TddCodeVerifier
 
 verifier = TddCodeVerifier(
     config=CodingStandardsConfig.strict(),
@@ -400,7 +400,7 @@ assert result.status == VerificationStatus.SKIP
 ### Verification Types
 
 ```python
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.verification_types import (
     VerificationStatus,  # PASS | FAIL | SKIP
     CheckDetail,         # name, status, message
     VerificationResult,  # status, checks[], summary
@@ -417,7 +417,7 @@ for check in result.checks:
 Runs a verification loop: check criteria → report failures → retry (up to `max_loops`):
 
 ```python
-from cognitia.orchestration.dod_state_machine import DoDStateMachine, DoDStatus
+from swarmline.orchestration.dod_state_machine import DoDStateMachine, DoDStatus
 
 dod = DoDStateMachine(max_loops=3)
 
@@ -448,7 +448,7 @@ PENDING ──→ VERIFYING ──→ PASSED
 Full pipeline: plan → execute → verify DoD:
 
 ```python
-from cognitia.orchestration.code_workflow_engine import CodeWorkflowEngine, WorkflowStatus
+from swarmline.orchestration.code_workflow_engine import CodeWorkflowEngine, WorkflowStatus
 
 engine = CodeWorkflowEngine(
     verifier=verifier,
@@ -472,7 +472,7 @@ print(result.dod_log)     # detailed verification log
 Generic pipeline contract for custom implementations:
 
 ```python
-from cognitia.orchestration.workflow_pipeline import WorkflowPipeline
+from swarmline.orchestration.workflow_pipeline import WorkflowPipeline
 
 class WorkflowPipeline(Protocol):
     """5-stage pipeline: research → plan → execute → review → verify."""
@@ -486,10 +486,10 @@ class WorkflowPipeline(Protocol):
 ### End-to-End Example
 
 ```python
-from cognitia.orchestration.coding_standards import CodingStandardsConfig, CodePipelineConfig
-from cognitia.orchestration.tdd_code_verifier import TddCodeVerifier
-from cognitia.orchestration.dod_state_machine import DoDStateMachine
-from cognitia.orchestration.code_workflow_engine import CodeWorkflowEngine
+from swarmline.orchestration.coding_standards import CodingStandardsConfig, CodePipelineConfig
+from swarmline.orchestration.tdd_code_verifier import TddCodeVerifier
+from swarmline.orchestration.dod_state_machine import DoDStateMachine
+from swarmline.orchestration.code_workflow_engine import CodeWorkflowEngine
 
 # 1. Configure standards
 config = CodePipelineConfig.production()
@@ -530,7 +530,7 @@ SubagentOrchestrator Protocol
 ### SubagentOrchestrator Protocol
 
 ```python
-from cognitia.orchestration.subagent_protocol import SubagentOrchestrator
+from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
 class SubagentOrchestrator(Protocol):
     """ISP-compliant: exactly 5 methods. @runtime_checkable."""
@@ -552,8 +552,8 @@ pending ──→ running ──→ completed
 ### Usage
 
 ```python
-from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
-from cognitia.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
+from swarmline.orchestration.subagent_types import SubagentSpec
 
 orch = ThinSubagentOrchestrator(max_concurrent=4)
 
@@ -588,8 +588,8 @@ active = await orch.list_active()
 In-memory inter-agent communication system. Each team gets its own bus instance.
 
 ```python
-from cognitia.orchestration.message_bus import MessageBus
-from cognitia.orchestration.team_types import TeamMessage
+from swarmline.orchestration.message_bus import MessageBus
+from swarmline.orchestration.team_types import TeamMessage
 
 bus = MessageBus()
 

@@ -6,12 +6,12 @@ import json
 
 import pytest
 
-from cognitia.memory_bank.knowledge_inmemory import (
+from swarmline.memory_bank.knowledge_inmemory import (
     InMemoryKnowledgeSearcher,
     InMemoryKnowledgeStore,
 )
-from cognitia.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
-from cognitia.memory_bank.tools import create_knowledge_tools
+from swarmline.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
+from swarmline.memory_bank.tools import create_knowledge_tools
 
 
 @pytest.fixture()

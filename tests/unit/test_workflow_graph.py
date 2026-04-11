@@ -37,7 +37,7 @@ class TestWorkflowLinearExecution:
     """A->B->C runs sequentially."""
 
     async def test_workflow_linear_execution(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         wf = WorkflowGraph("linear-test")
         wf.add_node("a", await _tag_node("A"))
@@ -55,7 +55,7 @@ class TestWorkflowConditionalBranch:
     """condition True → Path A, False → Path B."""
 
     async def test_workflow_conditional_branch(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         wf = WorkflowGraph("conditional-test")
         wf.add_node("check", _identity_node)
@@ -80,7 +80,7 @@ class TestWorkflowLoopWithMax:
     """fail → loop back, max 3 iterations."""
 
     async def test_workflow_loop_with_max(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         wf = WorkflowGraph("loop-test")
         wf.add_node("work", _increment_node)
@@ -101,7 +101,7 @@ class TestWorkflowParallelNodes:
     """A,B,C in parallel -> D."""
 
     async def test_workflow_parallel_nodes(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         async def mark_a(state: dict) -> dict:
             state["a_done"] = True
@@ -134,7 +134,7 @@ class TestWorkflowCheckpointResume:
     """crash → resume from checkpoint."""
 
     async def test_workflow_checkpoint_resume(self) -> None:
-        from cognitia.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
+        from swarmline.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
 
         checkpoint = InMemoryCheckpoint()
         call_count = 0
@@ -171,7 +171,7 @@ class TestWorkflowCheckpointResume:
         assert call_count == 0 or result.get("count") is not None
 
     async def test_workflow_resume_replays_checkpointed_node_instead_of_skipping_it(self) -> None:
-        from cognitia.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
+        from swarmline.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
 
         checkpoint = InMemoryCheckpoint()
         step2_calls = 0
@@ -209,7 +209,7 @@ class TestWorkflowCheckpointResume:
         assert step2_calls == 2
 
     async def test_workflow_checkpoint_resume_replays_checkpointed_node(self) -> None:
-        from cognitia.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
+        from swarmline.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
 
         checkpoint = InMemoryCheckpoint()
         call_counts = {"a": 0, "b": 0, "c": 0}
@@ -263,7 +263,7 @@ class TestWorkflowInterruptHITL:
     """pause at node → resume with input."""
 
     async def test_workflow_interrupt_hitl(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph, WorkflowInterrupt
+        from swarmline.orchestration.workflow_graph import WorkflowGraph, WorkflowInterrupt
 
         wf = WorkflowGraph("interrupt-test")
         wf.add_node("prepare", await _tag_node("PREPARE"))
@@ -291,7 +291,7 @@ class TestWorkflowSubgraph:
     """nested workflow as node."""
 
     async def test_workflow_subgraph(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         # Inner workflow
         inner = WorkflowGraph("inner")
@@ -318,7 +318,7 @@ class TestWorkflowToMermaid:
     """graph → Mermaid markdown."""
 
     async def test_workflow_to_mermaid(self) -> None:
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         wf = WorkflowGraph("mermaid-test")
         wf.add_node("research", _identity_node)

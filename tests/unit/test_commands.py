@@ -1,7 +1,7 @@
 """Tests for CommandRegistry."""
 
 import pytest
-from cognitia.commands import CommandRegistry
+from swarmline.commands import CommandRegistry
 
 
 @pytest.fixture

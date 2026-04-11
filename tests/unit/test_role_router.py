@@ -4,7 +4,7 @@
 3. Fallback on default role"""
 
 import pytest
-from cognitia.routing.role_router import KeywordRoleRouter
+from swarmline.routing.role_router import KeywordRoleRouter
 
 
 @pytest.fixture

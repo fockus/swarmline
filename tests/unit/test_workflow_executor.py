@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from cognitia.agent.tool import tool
-from cognitia.orchestration.workflow_graph import WorkflowGraph
+from swarmline.agent.tool import tool
+from swarmline.orchestration.workflow_graph import WorkflowGraph
 
 
 class TestWorkflowThinExecutor:
@@ -14,7 +14,7 @@ class TestWorkflowThinExecutor:
 
     async def test_workflow_thin_executor_executes_linear_graph(self) -> None:
         """ThinRuntimeExecutor executes linotynyy graf - vse nodes vyzyvayutsya."""
-        from cognitia.orchestration.workflow_executor import ThinRuntimeExecutor
+        from swarmline.orchestration.workflow_executor import ThinRuntimeExecutor
 
         async def step1(state: dict[str, Any]) -> dict[str, Any]:
             state.setdefault("execution_order", []).append("STEP1")
@@ -37,7 +37,7 @@ class TestWorkflowThinExecutor:
 
     async def test_workflow_thin_executor_propagates_state(self) -> None:
         """ThinRuntimeExecutor passes state mezhdu nodes - dannye not teryayutsya."""
-        from cognitia.orchestration.workflow_executor import ThinRuntimeExecutor
+        from swarmline.orchestration.workflow_executor import ThinRuntimeExecutor
 
         async def producer(state: dict[str, Any]) -> dict[str, Any]:
             state["payload"] = {"key": "value", "count": 42}
@@ -64,7 +64,7 @@ class TestWorkflowThinExecutor:
         """ThinWorkflowExecutor.run_node executes ThinRuntime per-node cherez llm_call."""
         import json
 
-        from cognitia.orchestration.workflow_executor import ThinWorkflowExecutor
+        from swarmline.orchestration.workflow_executor import ThinWorkflowExecutor
 
         llm_calls: list[str] = []
 
@@ -103,9 +103,9 @@ class TestWorkflowThinExecutor:
         """Local tools popadayut in active_tools for runtime advertising."""
         import json
 
-        import cognitia.orchestration.workflow_executor as workflow_executor_module
-        from cognitia.orchestration.workflow_executor import ThinWorkflowExecutor
-        from cognitia.runtime.types import RuntimeEvent, ToolSpec
+        import swarmline.orchestration.workflow_executor as workflow_executor_module
+        from swarmline.orchestration.workflow_executor import ThinWorkflowExecutor
+        from swarmline.runtime.types import RuntimeEvent, ToolSpec
 
         captured_active_tools: list[ToolSpec] = []
 
@@ -163,7 +163,7 @@ class TestWorkflowLangGraphCompile:
 
     def test_workflow_langgraph_compile_raises_import_error_if_not_installed(self) -> None:
         """compile_to_langgraph raises ImportError if langgraph not ustanovlen."""
-        from cognitia.orchestration.workflow_langgraph import compile_to_langgraph
+        from swarmline.orchestration.workflow_langgraph import compile_to_langgraph
 
         async def noop(state: dict[str, Any]) -> dict[str, Any]:
             return state
@@ -184,7 +184,7 @@ class TestWorkflowLangGraphCompile:
 
     def test_workflow_langgraph_spec_has_correct_structure(self) -> None:
         """compile_to_langgraph_spec returns dict with nodes, edges, entry."""
-        from cognitia.orchestration.workflow_executor import compile_to_langgraph_spec
+        from swarmline.orchestration.workflow_executor import compile_to_langgraph_spec
 
         async def node_fn(state: dict[str, Any]) -> dict[str, Any]:
             return state
@@ -203,7 +203,7 @@ class TestWorkflowLangGraphCompile:
         assert ("start", "end") in spec["edges"]
 
     def test_workflow_langgraph_spec_preserves_parallel_groups(self) -> None:
-        from cognitia.orchestration.workflow_executor import compile_to_langgraph_spec
+        from swarmline.orchestration.workflow_executor import compile_to_langgraph_spec
 
         async def node_fn(state: dict[str, Any]) -> dict[str, Any]:
             return state
@@ -234,7 +234,7 @@ class TestWorkflowMixedRuntimes:
 
     async def test_workflow_mixed_runtimes_records_runtime_per_node(self) -> None:
         """MixedRuntimeExecutor zapisyvaet __runtime_executions__ in state for observability."""
-        from cognitia.orchestration.workflow_executor import MixedRuntimeExecutor
+        from swarmline.orchestration.workflow_executor import MixedRuntimeExecutor
 
         async def thin_node(state: dict[str, Any]) -> dict[str, Any]:
             state["thin_done"] = True
@@ -267,7 +267,7 @@ class TestWorkflowMixedRuntimes:
 
     async def test_workflow_mixed_runtimes_unmapped_node_uses_thin_fallback(self) -> None:
         """Node without mapping gets thin metadata, no execution stays direct."""
-        from cognitia.orchestration.workflow_executor import MixedRuntimeExecutor
+        from swarmline.orchestration.workflow_executor import MixedRuntimeExecutor
 
         async def unmapped_node(state: dict[str, Any]) -> dict[str, Any]:
             state["unmapped_done"] = True

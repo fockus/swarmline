@@ -10,14 +10,14 @@ from datetime import UTC, datetime
 
 import pytest
 
-from cognitia.orchestration.plan_store import (
+from swarmline.orchestration.plan_store import (
     InMemoryPlanStore,
     _dict_to_step,
     _plan_to_row,
     _row_to_plan,
     _step_to_dict,
 )
-from cognitia.orchestration.types import Plan, PlanStep
+from swarmline.orchestration.types import Plan, PlanStep
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ async def plan_store(request: pytest.FixtureRequest, tmp_path):
         from sqlalchemy import text
         from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-        from cognitia.orchestration.plan_store import SQLITE_PLAN_SCHEMA, SQLitePlanStore
+        from swarmline.orchestration.plan_store import SQLITE_PLAN_SCHEMA, SQLitePlanStore
 
         db_path = tmp_path / "test_plans.db"
         engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
@@ -257,7 +257,7 @@ class TestPlanStoreContract:
 
     async def test_isinstance_protocol(self, plan_store) -> None:
         """Store implements PlanStore protocol."""
-        from cognitia.orchestration.protocols import PlanStore
+        from swarmline.orchestration.protocols import PlanStore
 
         assert isinstance(plan_store, PlanStore)
 

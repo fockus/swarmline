@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.mcp._session import StatefulSession
-from cognitia.mcp._tools_memory import (
+from swarmline.mcp._session import StatefulSession
+from swarmline.mcp._tools_memory import (
     memory_get_facts,
     memory_save_summary,
     memory_upsert_fact,
 )
-from cognitia.mcp._tools_team import (
+from swarmline.mcp._tools_team import (
     team_claim_task,
     team_create_task,
     team_list_agents,

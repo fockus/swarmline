@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sync stable main to public repo (github.com/fockus/cognitia)
+# Sync stable main to public repo (github.com/fockus/swarmline)
 #
 # Usage: ./scripts/sync-public.sh [--tags] [--dry-run]
 #
@@ -46,6 +46,9 @@ PRIVATE_PATHS=(
     "RULES.md"
     "AGENTS.md"
     "AGENTS.public.md"
+    ".specs"
+    ".planning"
+    ".factory"
 )
 
 TEMP_BRANCH="_sync_public_temp"
@@ -72,9 +75,10 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 # Check public remote exists
-if ! git remote get-url public &>/dev/null; then
-    echo -e "${RED}Error: 'public' remote not configured.${NC}"
-    echo "Run: git remote add public https://github.com/fockus/cognitia.git"
+PUBLIC_REMOTE="${SWARMLINE_PUBLIC_REMOTE:-public}"
+if ! git remote get-url "$PUBLIC_REMOTE" &>/dev/null; then
+    echo -e "${RED}Error: '$PUBLIC_REMOTE' remote not configured.${NC}"
+    echo "Run: git remote add $PUBLIC_REMOTE https://github.com/fockus/swarmline.git"
     exit 1
 fi
 
@@ -121,7 +125,7 @@ if [ "$DRY_RUN" = true ]; then
     echo "  git push public ${TEMP_BRANCH}:main --force"
 else
     echo -e "${YELLOW}Pushing to public (filtered main)...${NC}"
-    git push public "${TEMP_BRANCH}:main" --force
+    git push "$PUBLIC_REMOTE" "${TEMP_BRANCH}:main" --force
 fi
 
 # Push tags if requested
@@ -130,14 +134,14 @@ if [ "$PUSH_TAGS" = true ]; then
         echo -e "${YELLOW}[DRY RUN] Would push tags to public...${NC}"
     else
         echo -e "${YELLOW}Pushing tags to public...${NC}"
-        git push public --tags
+        git push "$PUBLIC_REMOTE" --tags
     fi
 fi
 
 # Cleanup happens via trap
 
 echo -e "${GREEN}Synced to public repo.${NC}"
-echo "  Public:   $(git remote get-url public)"
+echo "  Public:   $(git remote get-url "$PUBLIC_REMOTE")"
 echo "  Branch:   main"
 echo "  Commit:   $(git log --oneline -1 main)"
 echo "  Excluded: ${REMOVED[*]:-none}"

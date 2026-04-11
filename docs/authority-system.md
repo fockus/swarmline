@@ -11,10 +11,10 @@ Two complementary systems govern agent permissions:
 
 ## AgentCapabilities
 
-Defined in `cognitia.multi_agent.graph_types`. Controls graph-level permissions for each agent node.
+Defined in `swarmline.multi_agent.graph_types`. Controls graph-level permissions for each agent node.
 
 ```python
-from cognitia.multi_agent.graph_types import AgentCapabilities
+from swarmline.multi_agent.graph_types import AgentCapabilities
 
 caps = AgentCapabilities(
     can_hire=True,            # Can this agent add new agents to the graph?
@@ -29,10 +29,10 @@ caps = AgentCapabilities(
 
 ## AgentAuthority
 
-Defined in `cognitia.protocols.host_adapter`. Simplified version for `HostAdapter.spawn_agent()`.
+Defined in `swarmline.protocols.host_adapter`. Simplified version for `HostAdapter.spawn_agent()`.
 
 ```python
-from cognitia.protocols.host_adapter import AgentAuthority
+from swarmline.protocols.host_adapter import AgentAuthority
 
 authority = AgentAuthority(
     can_spawn=False,               # Can the spawned agent create sub-agents?
@@ -44,7 +44,7 @@ authority = AgentAuthority(
 
 ## Governance Checks
 
-Three governance functions in `cognitia.multi_agent.graph_governance` enforce authority rules:
+Three governance functions in `swarmline.multi_agent.graph_governance` enforce authority rules:
 
 ### `check_hire_allowed(config, parent_node, graph_query) -> str | None`
 
@@ -75,8 +75,8 @@ Empty parent tuple means "all allowed" (no restriction).
 ## Example: Org Chart with Authority Levels
 
 ```python
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_types import AgentCapabilities, LifecycleMode
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_types import AgentCapabilities, LifecycleMode
 
 graph = (
     GraphBuilder()

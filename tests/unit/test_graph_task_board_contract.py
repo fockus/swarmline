@@ -6,9 +6,9 @@ import asyncio
 
 import pytest
 
-from cognitia.multi_agent.graph_task_types import GraphTaskItem, TaskComment
-from cognitia.multi_agent.task_types import TaskStatus
-from cognitia.protocols.graph_task import GraphTaskBlocker, GraphTaskBoard, GraphTaskScheduler, TaskCommentStore
+from swarmline.multi_agent.graph_task_types import GraphTaskItem, TaskComment
+from swarmline.multi_agent.task_types import TaskStatus
+from swarmline.protocols.graph_task import GraphTaskBlocker, GraphTaskBoard, GraphTaskScheduler, TaskCommentStore
 
 
 # ---------------------------------------------------------------------------
@@ -18,7 +18,7 @@ from cognitia.protocols.graph_task import GraphTaskBlocker, GraphTaskBoard, Grap
 
 @pytest.fixture
 def board():
-    from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+    from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
 
     return InMemoryGraphTaskBoard()
 

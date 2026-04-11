@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from cognitia.runtime.capabilities import RuntimeCapabilities
-from cognitia.runtime.types import RuntimeConfig, RuntimeEvent
+from swarmline.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.types import RuntimeConfig, RuntimeEvent
 
 
 # ---------------------------------------------------------------------------
@@ -57,8 +57,8 @@ class TestRegisterCustomRuntimeFullFlow:
     @pytest.mark.asyncio
     async def test_register_create_run_events(self) -> None:
         """Full lifecycle: register -> factory.create -> run -> get events."""
-        from cognitia.runtime.factory import RuntimeFactory
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.factory import RuntimeFactory
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         registry.register("custom_int", _custom_factory, capabilities=_CUSTOM_CAPS)
@@ -99,8 +99,8 @@ class TestFactoryBackwardCompatAllRuntimes:
 
     def test_all_builtins_creatable(self) -> None:
         """claude_sdk, deepagents, thin all create without crash via default registry."""
-        from cognitia.runtime.factory import RuntimeFactory
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.factory import RuntimeFactory
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         factory = RuntimeFactory(registry=registry)
@@ -116,7 +116,7 @@ class TestValidRuntimeNamesDynamic:
 
     def test_custom_name_in_valid_set_after_register(self) -> None:
         """Dynamic get_valid_runtime_names() includes custom registered runtimes."""
-        from cognitia.runtime.registry import get_default_registry, get_valid_runtime_names
+        from swarmline.runtime.registry import get_default_registry, get_valid_runtime_names
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="dyn_test", tier="light")

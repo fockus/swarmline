@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 
 import pytest
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 
 class MockLLM:

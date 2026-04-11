@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from cognitia.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
+from swarmline.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
 
 
 # ---------------------------------------------------------------------------
@@ -17,11 +17,11 @@ from cognitia.observability.activity_types import ActivityEntry, ActivityFilter,
 @pytest.fixture(params=["inmemory", "sqlite"])
 def log(request, tmp_path):
     if request.param == "inmemory":
-        from cognitia.observability.activity_log import InMemoryActivityLog
+        from swarmline.observability.activity_log import InMemoryActivityLog
 
         return InMemoryActivityLog()
     else:
-        from cognitia.observability.activity_log import SqliteActivityLog
+        from swarmline.observability.activity_log import SqliteActivityLog
 
         return SqliteActivityLog(str(tmp_path / "test.db"))
 
@@ -61,7 +61,7 @@ def _entry(
 class TestProtocolShape:
 
     def test_protocol_shape(self, log) -> None:
-        from cognitia.observability.activity_log import ActivityLog
+        from swarmline.observability.activity_log import ActivityLog
 
         assert isinstance(log, ActivityLog)
 
@@ -243,7 +243,7 @@ class TestEviction:
 
     async def test_activity_log_evicts_when_over_max_inmemory(self) -> None:
         """InMemoryActivityLog with max_entries=5: append 7, verify only 5 remain."""
-        from cognitia.observability.activity_log import InMemoryActivityLog
+        from swarmline.observability.activity_log import InMemoryActivityLog
 
         log = InMemoryActivityLog(max_entries=5)
         for i in range(7):
@@ -258,7 +258,7 @@ class TestEviction:
 
     async def test_activity_log_evicts_when_over_max_sqlite(self, tmp_path) -> None:
         """SqliteActivityLog with max_entries=5: append 7, verify only 5 remain."""
-        from cognitia.observability.activity_log import SqliteActivityLog
+        from swarmline.observability.activity_log import SqliteActivityLog
 
         log = SqliteActivityLog(str(tmp_path / "evict.db"), max_entries=5)
         for i in range(7):
@@ -274,7 +274,7 @@ class TestEviction:
 
     async def test_activity_log_no_eviction_when_under_max(self) -> None:
         """When entries < max_entries, nothing is evicted."""
-        from cognitia.observability.activity_log import InMemoryActivityLog
+        from swarmline.observability.activity_log import InMemoryActivityLog
 
         log = InMemoryActivityLog(max_entries=10)
         for i in range(5):
@@ -285,7 +285,7 @@ class TestEviction:
 
     async def test_sqlite_count_uses_sql_count(self, tmp_path) -> None:
         """SqliteActivityLog.count() returns correct result (should use SQL COUNT)."""
-        from cognitia.observability.activity_log import SqliteActivityLog
+        from swarmline.observability.activity_log import SqliteActivityLog
 
         log = SqliteActivityLog(str(tmp_path / "count.db"))
         for i in range(20):

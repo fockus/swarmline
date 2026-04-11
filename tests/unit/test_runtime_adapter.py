@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
-from cognitia.runtime.adapter import RuntimeAdapter, StreamEvent
+from swarmline.runtime.adapter import RuntimeAdapter, StreamEvent
 
 pytestmark = pytest.mark.requires_claude_sdk
 
@@ -28,7 +28,7 @@ pytestmark = pytest.mark.requires_claude_sdk
 
 def _make_text_block(text: str = "Привет!") -> MagicMock:
     """Mock TextBlock."""
-    from cognitia.runtime.adapter import TextBlock
+    from swarmline.runtime.adapter import TextBlock
 
     block = MagicMock(spec=TextBlock)
     block.text = text
@@ -41,7 +41,7 @@ def _make_tool_use_block(
     tool_use_id: str = "tool-1",
 ) -> MagicMock:
     """Mock ToolUseBlock."""
-    from cognitia.runtime.adapter import ToolUseBlock
+    from swarmline.runtime.adapter import ToolUseBlock
 
     block = MagicMock(spec=ToolUseBlock)
     block.name = name
@@ -57,7 +57,7 @@ def _make_tool_result_block(
     is_error: bool = False,
 ) -> MagicMock:
     """Mock ToolResultBlock."""
-    from cognitia.runtime.adapter import ToolResultBlock
+    from swarmline.runtime.adapter import ToolResultBlock
 
     block = MagicMock(spec=ToolResultBlock)
     block.content = content
@@ -68,7 +68,7 @@ def _make_tool_result_block(
 
 def _make_thinking_block(thinking: str = "Let me think...", signature: str = "sig") -> MagicMock:
     """Mock ThinkingBlock."""
-    from cognitia.runtime.adapter import ThinkingBlock
+    from swarmline.runtime.adapter import ThinkingBlock
 
     block = MagicMock(spec=ThinkingBlock)
     block.thinking = thinking
@@ -78,7 +78,7 @@ def _make_thinking_block(thinking: str = "Let me think...", signature: str = "si
 
 def _make_assistant_msg(blocks: list) -> MagicMock:
     """Mock AssistantMessage with given content blocks."""
-    from cognitia.runtime.adapter import AssistantMessage
+    from swarmline.runtime.adapter import AssistantMessage
 
     msg = MagicMock(spec=AssistantMessage)
     msg.content = blocks
@@ -143,7 +143,7 @@ def _make_task_notification_msg(
 
 def _make_result_msg() -> MagicMock:
     """Mock ResultMessage (final result of the turn)."""
-    from cognitia.runtime.adapter import ResultMessage
+    from swarmline.runtime.adapter import ResultMessage
 
     msg = MagicMock(spec=ResultMessage)
     msg.content = "final summary"
@@ -217,7 +217,7 @@ class TestRuntimeAdapterLifecycle:
         mock_options = MagicMock()
         mock_options.stderr = None
         with (
-            patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient,
+            patch("swarmline.runtime.adapter.ClaudeSDKClient") as MockClient,
             patch("dataclasses.replace", return_value=mock_options),
         ):
             mock_instance = AsyncMock()
@@ -236,7 +236,7 @@ class TestRuntimeAdapterLifecycle:
         mock_options.stderr = None
 
         with (
-            patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient,
+            patch("swarmline.runtime.adapter.ClaudeSDKClient") as MockClient,
             patch("dataclasses.replace", return_value=mock_options) as mock_replace,
         ):
             mock_instance = AsyncMock()
@@ -257,7 +257,7 @@ class TestRuntimeAdapterLifecycle:
         mock_options = MagicMock()
         mock_options.stderr = custom_cb
 
-        with patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient:
+        with patch("swarmline.runtime.adapter.ClaudeSDKClient") as MockClient:
             mock_instance = AsyncMock()
             MockClient.return_value = mock_instance
 
@@ -271,7 +271,7 @@ class TestRuntimeAdapterLifecycle:
     async def test_disconnect(self) -> None:
         """disconnect closes client."""
         mock_options = MagicMock()
-        with patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient:
+        with patch("swarmline.runtime.adapter.ClaudeSDKClient") as MockClient:
             mock_instance = AsyncMock()
             MockClient.return_value = mock_instance
 
@@ -304,7 +304,7 @@ class TestReconnect:
         mock_client_old = AsyncMock()
         adapter, _ = _make_adapter_with_client(mock_client_old)
 
-        with patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient:
+        with patch("swarmline.runtime.adapter.ClaudeSDKClient") as MockClient:
             mock_client_new = AsyncMock()
             MockClient.return_value = mock_client_new
 
@@ -323,7 +323,7 @@ class TestReconnect:
         mock_client_old.disconnect.side_effect = RuntimeError("already dead")
         adapter, _ = _make_adapter_with_client(mock_client_old)
 
-        with patch("cognitia.runtime.adapter.ClaudeSDKClient") as MockClient:
+        with patch("swarmline.runtime.adapter.ClaudeSDKClient") as MockClient:
             mock_client_new = AsyncMock()
             MockClient.return_value = mock_client_new
 
@@ -818,7 +818,7 @@ def _make_result_msg_with_metrics(
     num_turns: int = 3,
 ) -> MagicMock:
     """Mock ResultMessage with metrics."""
-    from cognitia.runtime.adapter import ResultMessage
+    from swarmline.runtime.adapter import ResultMessage
 
     msg = MagicMock(spec=ResultMessage)
     msg.session_id = session_id

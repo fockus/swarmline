@@ -7,8 +7,8 @@ from datetime import UTC, datetime
 
 class TestTeamConfig:
     def test_create(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentSpec
-        from cognitia.orchestration.team_types import TeamConfig
+        from swarmline.orchestration.subagent_types import SubagentSpec
+        from swarmline.orchestration.team_types import TeamConfig
 
         config = TeamConfig(
             lead_prompt="Ты тимлид",
@@ -20,7 +20,7 @@ class TestTeamConfig:
 
 class TestTeamMessage:
     def test_create(self) -> None:
-        from cognitia.orchestration.team_types import TeamMessage
+        from swarmline.orchestration.team_types import TeamMessage
 
         msg = TeamMessage(
             from_agent="lead",
@@ -33,7 +33,7 @@ class TestTeamMessage:
 
 class TestTeamStatus:
     def test_default(self) -> None:
-        from cognitia.orchestration.team_types import TeamStatus
+        from swarmline.orchestration.team_types import TeamStatus
 
         s = TeamStatus(team_id="t1")
         assert s.state == "idle"
@@ -43,7 +43,7 @@ class TestTeamStatus:
 
 class TestTeamOrchestratorProtocol:
     def test_runtime_checkable(self) -> None:
-        from cognitia.orchestration.team_protocol import TeamOrchestrator
+        from swarmline.orchestration.team_protocol import TeamOrchestrator
 
         class FakeTeam:
             async def start(self, config, task):
@@ -64,7 +64,7 @@ class TestTeamOrchestratorProtocol:
         assert isinstance(FakeTeam(), TeamOrchestrator)
 
     def test_isp_max_5(self) -> None:
-        from cognitia.orchestration.team_protocol import TeamOrchestrator
+        from swarmline.orchestration.team_protocol import TeamOrchestrator
 
         methods = [
             n
@@ -74,7 +74,7 @@ class TestTeamOrchestratorProtocol:
         assert len(methods) <= 5
 
     def test_resumable_extension_protocol(self) -> None:
-        from cognitia.orchestration.team_protocol import ResumableTeamOrchestrator
+        from swarmline.orchestration.team_protocol import ResumableTeamOrchestrator
 
         class FakeResumableTeam:
             async def start(self, config, task):

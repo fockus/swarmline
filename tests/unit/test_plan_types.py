@@ -16,7 +16,7 @@ class TestPlanStep:
     """Validation PlanStep dataclass."""
 
     def test_create_step(self) -> None:
-        from cognitia.orchestration.types import PlanStep
+        from swarmline.orchestration.types import PlanStep
 
         step = PlanStep(id="s1", description="Найти вклады")
         assert step.id == "s1"
@@ -25,7 +25,7 @@ class TestPlanStep:
         assert step.substeps == []
 
     def test_step_complete(self) -> None:
-        from cognitia.orchestration.types import PlanStep
+        from swarmline.orchestration.types import PlanStep
 
         step = PlanStep(id="s1", description="task")
         updated = step.complete("Найдено 5 вкладов")
@@ -35,7 +35,7 @@ class TestPlanStep:
         assert step.status == "pending"
 
     def test_step_fail(self) -> None:
-        from cognitia.orchestration.types import PlanStep
+        from swarmline.orchestration.types import PlanStep
 
         step = PlanStep(id="s1", description="task")
         updated = step.fail("API недоступен")
@@ -43,14 +43,14 @@ class TestPlanStep:
         assert updated.result == "API недоступен"
 
     def test_step_skip(self) -> None:
-        from cognitia.orchestration.types import PlanStep
+        from swarmline.orchestration.types import PlanStep
 
         step = PlanStep(id="s1", description="task")
         updated = step.skip("Не требуется")
         assert updated.status == "skipped"
 
     def test_step_start(self) -> None:
-        from cognitia.orchestration.types import PlanStep
+        from swarmline.orchestration.types import PlanStep
 
         step = PlanStep(id="s1", description="task")
         updated = step.start()
@@ -61,7 +61,7 @@ class TestPlan:
     """Validation Plan dataclass and state machine."""
 
     def test_create_plan(self) -> None:
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1",
@@ -76,7 +76,7 @@ class TestPlan:
 
     def test_approve_by_user(self) -> None:
         """draft → approved (by user)."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -87,7 +87,7 @@ class TestPlan:
 
     def test_approve_by_system(self) -> None:
         """draft → approved (by system = programmatic)."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -98,7 +98,7 @@ class TestPlan:
 
     def test_approve_by_agent(self) -> None:
         """draft → approved (by agent = auto-approve)."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -108,7 +108,7 @@ class TestPlan:
 
     def test_start_execution(self) -> None:
         """approved → executing."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -119,7 +119,7 @@ class TestPlan:
 
     def test_complete_plan(self) -> None:
         """executing → completed."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -130,7 +130,7 @@ class TestPlan:
 
     def test_cancel_plan(self) -> None:
         """Lyuboy status -> cancelled."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -142,7 +142,7 @@ class TestPlan:
 
     def test_approve_non_draft_raises(self) -> None:
         """approved → approve → ValueError."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -153,7 +153,7 @@ class TestPlan:
 
     def test_start_non_approved_raises(self) -> None:
         """draft → start_execution → ValueError."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -163,7 +163,7 @@ class TestPlan:
 
     def test_complete_non_executing_raises(self) -> None:
         """approved → mark_completed → ValueError."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
@@ -174,7 +174,7 @@ class TestPlan:
 
     def test_update_step(self) -> None:
         """Update konkretnyy step in planot."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1",
@@ -189,7 +189,7 @@ class TestPlan:
 
     def test_update_step_not_found(self) -> None:
         """Obnovlenie notsushchestvuyushchego stepa -> ValueError."""
-        from cognitia.orchestration.types import Plan, PlanStep
+        from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
             id="p1", goal="g", steps=[PlanStep(id="s1", description="a")], created_at=_now()
@@ -203,7 +203,7 @@ class TestPlanStoreProtocol:
     """Contractnye tests for PlanStore Protocol."""
 
     def test_runtime_checkable(self) -> None:
-        from cognitia.orchestration.protocols import PlanStore
+        from swarmline.orchestration.protocols import PlanStore
 
         class FakeStore:
             async def save(self, plan) -> None:
@@ -221,7 +221,7 @@ class TestPlanStoreProtocol:
         assert isinstance(FakeStore(), PlanStore)
 
     def test_incomplete_not_instance(self) -> None:
-        from cognitia.orchestration.protocols import PlanStore
+        from swarmline.orchestration.protocols import PlanStore
 
         class Incomplete:
             async def save(self, plan) -> None:
@@ -230,7 +230,7 @@ class TestPlanStoreProtocol:
         assert not isinstance(Incomplete(), PlanStore)
 
     def test_protocol_max_methods(self) -> None:
-        from cognitia.orchestration.protocols import PlanStore
+        from swarmline.orchestration.protocols import PlanStore
 
         methods = [
             n
@@ -242,8 +242,8 @@ class TestPlanStoreProtocol:
     def test_no_freedom_imports(self) -> None:
         import inspect
 
-        import cognitia.orchestration.protocols as p
-        import cognitia.orchestration.types as t
+        import swarmline.orchestration.protocols as p
+        import swarmline.orchestration.types as t
 
         assert "freedom_agent" not in inspect.getsource(t)
         assert "freedom_agent" not in inspect.getsource(p)

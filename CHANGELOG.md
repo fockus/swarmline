@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Branding**: Cognitia renamed to Swarmline across README and documentation
+- **Branding**: Swarmline renamed to Swarmline across README and documentation
 
 ### Fixed
 
@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Episodic Memory with InMemory + SQLite (Phase 14.1)
   - Procedural Memory — learned tool sequences (Phase 14.2)
   - Consolidation Pipeline — episodes to knowledge (Phase 14.3)
-- **HTTP API** (`cognitia serve`) — Phase 15.1
+- **HTTP API** (`swarmline serve`) — Phase 15.1
 - **Human-in-the-Loop** approval patterns — Phase 15.2
 - **Plugin Registry** + Benchmarks — Phases 15.3-15.4
 - **Paperclip-inspired Components**
@@ -105,34 +105,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Code Agent Integration** (`cognitia.mcp`, `cognitia.cli`) — Phase 16
-  - MCP Server (`cognitia-mcp`): 20 typed tools via FastMCP STDIO — memory (6), plans (5), team (5), agent (3), code (1)
+- **Code Agent Integration** (`swarmline.mcp`, `swarmline.cli`) — Phase 16
+  - MCP Server (`swarmline-mcp`): 20 typed tools via FastMCP STDIO — memory (6), plans (5), team (5), agent (3), code (1)
   - Headless Runtime: 0 LLM mode for external code agents (Claude Code, Codex CLI, OpenCode)
   - Stateful Session: auto-detect mode from env vars, holds all InMemory providers
-  - CLI Client (`cognitia`): Click-based CLI with 6 command groups — memory, plan, team, agent, run, mcp-serve
+  - CLI Client (`swarmline`): Click-based CLI with 6 command groups — memory, plan, team, agent, run, mcp-serve
   - Claude Code Skill: `SKILL.md` + 10 reference patterns for seamless integration
   - Integration configs: claude-code, codex, opencode ready-made configurations
   - 7 E2E use case tests: research swarm, persistent memory, review pipeline, resumable plans, meta-agent, cross-tool, learning agent
-- **OpenTelemetry Exporter** (`cognitia.observability.otel`) — Phase 11.1
-  - `OTelExporter`: bridges Cognitia EventBus to OpenTelemetry spans
+- **OpenTelemetry Exporter** (`swarmline.observability.otel`) — Phase 11.1
+  - `OTelExporter`: bridges Swarmline EventBus to OpenTelemetry spans
   - Auto-creates spans for LLM calls, tool executions, agent queries
   - Configurable via `OTelConfig(service_name, endpoint, headers, insecure)`
   - Lazy import — only requires `opentelemetry-api` + `opentelemetry-sdk` when used
-  - New optional: `cognitia[otel]`
-- **Structured Output at Agent Level** (`cognitia.agent`) — Phase 11.2
+  - New optional: `swarmline[otel]`
+- **Structured Output at Agent Level** (`swarmline.agent`) — Phase 11.2
   - `Agent.query_structured(prompt, output_type: type[T]) -> T` — type-safe Pydantic output
   - Auto-generates JSON Schema from Pydantic model, runs through runtime retry loop
   - `StructuredOutputError` raised when parsing fails after all retries
   - Zero changes to ThinRuntime (already supported `output_type`)
-- **A2A Protocol Support** (`cognitia.a2a`) — Phase 11.3
+- **A2A Protocol Support** (`swarmline.a2a`) — Phase 11.3
   - Full Agent-to-Agent protocol: JSON-RPC 2.0 over HTTP + SSE streaming
-  - `CognitiaA2AAdapter`: pure adapter pattern, wraps any Agent as A2A service (0 core changes)
+  - `SwarmlineA2AAdapter`: pure adapter pattern, wraps any Agent as A2A service (0 core changes)
   - `A2AServer`: Starlette ASGI server with `/.well-known/agent.json` discovery
   - `A2AClient`: httpx-based client with `discover()`, `send_task()`, `stream_task()`
   - Domain types: `Task`, `AgentCard`, `AgentSkill`, `TaskStatus`, `Message`, `Artifact`
-  - New optional: `cognitia[a2a]` (starlette + httpx)
-- **`cognitia init` CLI Scaffolding** — Phase 12.1
-  - `cognitia init my-agent` scaffolds a production-ready agent project in seconds
+  - New optional: `swarmline[a2a]` (starlette + httpx)
+- **`swarmline init` CLI Scaffolding** — Phase 12.1
+  - `swarmline init my-agent` scaffolds a production-ready agent project in seconds
   - Flags: `--runtime` (thin/claude/deepagents), `--memory` (inmemory/sqlite), `--full`, `--output`, `--force`
   - Generates: `agent.py`, `config.yaml`, `tests/`, `.env.example`, `pyproject.toml`, `README.md`
   - Full mode adds: `Dockerfile`, `docker-compose.yml`, `skills/`
@@ -140,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `docs/getting-started.md` updated with `cognitia init` quick start as primary onboarding path
+- `docs/getting-started.md` updated with `swarmline init` quick start as primary onboarding path
 - `docs/examples.md` expanded with examples 29 (structured output) and 30 (A2A agent)
 - `pyproject.toml` extras: added `otel`, `a2a`, `mcp`, `cli`, `code-agent` bundles
 
@@ -148,61 +148,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Structured Output** (`cognitia.runtime`) — Phase 6A
+- **Structured Output** (`swarmline.runtime`) — Phase 6A
   - `output_type` in `RuntimeConfig` — auto-extracts JSON Schema from Pydantic models
   - `validate_structured_output`, `try_resolve_structured_output`, `extract_structured_output` helpers
   - Retry on validation failure with configurable `max_model_retries`
-- **Tool Decorator Enhancements** (`cognitia.agent.tool`) — Phase 6B
+- **Tool Decorator Enhancements** (`swarmline.agent.tool`) — Phase 6B
   - `@tool` decorator: auto JSON Schema inference from type hints
   - Docstring parsing for parameter descriptions
   - `ToolDefinition.to_tool_spec()` bridge for runtime compatibility
-- **Runtime Registry** (`cognitia.runtime.registry`) — Phase 6C
+- **Runtime Registry** (`swarmline.runtime.registry`) — Phase 6C
   - `RuntimeRegistry`: thread-safe extensible registry with plugin discovery via entry points
-- **Cancellation** (`cognitia.runtime`) — Phase 6D
+- **Cancellation** (`swarmline.runtime`) — Phase 6D
   - `CancellationToken`: cooperative cancellation with callbacks
-- **Runtime Events** (`cognitia.runtime.types`) — Phase 6D
+- **Runtime Events** (`swarmline.runtime.types`) — Phase 6D
   - Typed `RuntimeEvent` accessors: `.text`, `.tool_name`, `.structured_output`, `.is_final`, `.is_error`
   - Static factory methods: `RuntimeEvent.assistant_delta()`, `.final()`, `.error()`, etc.
 - **Runtime Context Manager** — `AgentRuntime` context manager (`async with runtime as r:`) — Phase 6D
 - **Protocols ISP Split** — `protocols.py` split into `protocols/memory.py`, `session.py`, `routing.py`, `tools.py`, `runtime.py` — Phase 6D
-- **Cost Budget Tracking** (`cognitia.runtime.cost`) — Phase 7A
+- **Cost Budget Tracking** (`swarmline.runtime.cost`) — Phase 7A
   - `CostBudget` and `CostTracker` for per-session budget enforcement
   - Bundled `pricing.json` with pricing data for major models
   - Budget enforcement in ThinRuntime with `action_on_exceed` ("error"/"warn")
-- **Guardrails** (`cognitia.guardrails`) — Phase 7B
+- **Guardrails** (`swarmline.guardrails`) — Phase 7B
   - `Guardrail` Protocol, `InputGuardrail`/`OutputGuardrail` marker protocols
   - Built-in guardrails: `ContentLengthGuardrail`, `RegexGuardrail`, `CallerAllowlistGuardrail`
   - Parallel guardrail execution via `asyncio.gather`
-- **Input Filters** (`cognitia.filters`) — Phase 7C
+- **Input Filters** (`swarmline.filters`) — Phase 7C
   - `InputFilter` Protocol for pre-processing user input
   - `MaxTokensFilter` for token budget enforcement
   - `SystemPromptInjector` for dynamic system prompt augmentation
-- **Retry and Fallback** (`cognitia.resilience`) — Phase 7D
+- **Retry and Fallback** (`swarmline.resilience`) — Phase 7D
   - `RetryPolicy` Protocol, `ExponentialBackoff` with jitter
   - `ModelFallbackChain` and `ProviderFallback` data objects for multi-model resilience
-- **Session Backends** (`cognitia.session.backends`) — Phase 8A
+- **Session Backends** (`swarmline.session.backends`) — Phase 8A
   - `SessionBackend` Protocol for pluggable session persistence
   - `InMemorySessionBackend` for development and testing
   - `SqliteSessionBackend` with `asyncio.to_thread()` for non-blocking I/O
-- **Memory Scopes** (`cognitia.memory.scopes`) — Phase 8A
+- **Memory Scopes** (`swarmline.memory.scopes`) — Phase 8A
   - `MemoryScope` enum (`GLOBAL`/`AGENT`/`SHARED`) with `scoped_key()` namespace isolation
-- **Event Bus** (`cognitia.observability.event_bus`) — Phase 8B
+- **Event Bus** (`swarmline.observability.event_bus`) — Phase 8B
   - `EventBus` Protocol with fire-and-forget pub-sub
   - `InMemoryEventBus` implementation with topic-based subscription
-- **Tracing** (`cognitia.observability.tracing`) — Phase 8B
+- **Tracing** (`swarmline.observability.tracing`) — Phase 8B
   - `Tracer` Protocol, `NoopTracer`, `ConsoleTracer` (structlog-based)
   - `TracingSubscriber` bridge connecting EventBus to Tracer
   - ThinRuntime emits `llm_call_start/end`, `tool_call_start/end` events via EventBus
-- **UI Projection** (`cognitia.ui.projection`) — Phase 8C
+- **UI Projection** (`swarmline.ui.projection`) — Phase 8C
   - `EventProjection` Protocol, `ChatProjection` implementation
   - `project_stream` async generator for real-time UI updates
   - UI blocks: `TextBlock`, `ToolCallBlock`, `ToolResultBlock`, `ErrorBlock`
   - `UIState.to_dict()`/`from_dict()` serialization for frontend transport
-- **RAG** (`cognitia.rag`) — Phase 8D
+- **RAG** (`swarmline.rag`) — Phase 8D
   - `Retriever` Protocol, `Document` frozen dataclass
   - `SimpleRetriever` (word-overlap scoring for development and testing)
   - `RagInputFilter` implementing `InputFilter` — auto-wraps via `RuntimeConfig.retriever`
-- **Multi-Agent Coordination** (`cognitia.multi_agent`) — Phase 9 MVP
+- **Multi-Agent Coordination** (`swarmline.multi_agent`) — Phase 9 MVP
   - `AgentTool` Protocol — expose any runtime as a callable tool for other agents
   - `create_agent_tool_spec()` / `execute_agent_tool()` — agent-as-tool utility functions
   - `AgentToolResult` frozen dataclass with success/output/error/metrics
@@ -210,7 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `TaskItem`, `TaskStatus`, `TaskPriority`, `TaskFilter` domain types
   - `AgentRegistry` Protocol (5 methods, ISP-compliant) with `InMemoryAgentRegistry`
   - `AgentRecord`, `AgentStatus`, `AgentFilter` domain types
-- **CLI Agent Runtime** (`cognitia.runtime.cli`) — Phase 10A
+- **CLI Agent Runtime** (`swarmline.runtime.cli`) — Phase 10A
   - `CliAgentRuntime` — subprocess-based runtime for external CLI agents (Claude Code, custom)
   - `NdjsonParser` Protocol with `ClaudeNdjsonParser` and `GenericNdjsonParser`
   - `CliConfig` frozen dataclass (command, timeout, max_output_bytes, env)
@@ -236,61 +236,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory/registry hardening (Wave 2 Phase 6)
 
 ### Deprecated
-- `RuntimePort` protocol — use `AgentRuntime` from `cognitia.runtime.base`
+- `RuntimePort` protocol — use `AgentRuntime` from `swarmline.runtime.base`
 
 ## [0.5.0] - 2026-03-16
 
 ### Added
-- **ThinRuntime Built-in Tools** (`cognitia.runtime.thin.builtin_tools`)
+- **ThinRuntime Built-in Tools** (`swarmline.runtime.thin.builtin_tools`)
   - 9 tools: `read_file`, `write_file`, `edit_file`, `ls`, `glob`, `grep`, `execute`, `write_todos`, `task`
   - `feature_mode` filtering (portable/hybrid/native_first)
   - DeepAgents-compatible aliases (Read→read_file, Bash→execute, etc.)
   - `merge_tools_with_builtins()` — user tools override built-ins by name
-- **Token-Level Streaming** (`cognitia.runtime.thin.stream_parser`)
+- **Token-Level Streaming** (`swarmline.runtime.thin.stream_parser`)
   - `IncrementalEnvelopeParser` — stateful incremental JSON brace-tracking parser
   - `StreamParser` — high-level streaming parser with ActionEnvelope extraction
   - React + Conversational + Planner modes all stream per-token via `_try_stream_llm_call()`
   - Fallback to non-streaming on parse error
-- **ThinTeamOrchestrator** (`cognitia.orchestration.thin_team`)
+- **ThinTeamOrchestrator** (`swarmline.orchestration.thin_team`)
   - Full `TeamOrchestrator` + `ResumableTeamOrchestrator` protocol implementation
   - Lead delegation: `_compose_worker_task()` personalizes task per worker
   - MessageBus per-team with auto-registered `send_message` tool
   - pause/resume via cancel + re-spawn
-- **ThinSubagent Full Implementation** (`cognitia.orchestration.thin_subagent`)
+- **ThinSubagent Full Implementation** (`swarmline.orchestration.thin_subagent`)
   - `_create_runtime()` creates per-worker `_ThinWorkerRuntime` with ThinRuntime
   - `register_tool()` public method for tool injection (replaces private access)
   - Supports `llm_call`, `local_tools`, `mcp_servers`, `runtime_config` via constructor
-- **MessageBus Tools** (`cognitia.orchestration.message_tools`)
+- **MessageBus Tools** (`swarmline.orchestration.message_tools`)
   - `SEND_MESSAGE_TOOL_SPEC` — ToolSpec with JSON Schema (to_agent, content)
   - `create_send_message_tool()` — factory for send/broadcast executor
   - `send_message_tool_spec()` — accessor function
-- **McpBridge** (`cognitia.runtime.mcp_bridge`)
+- **McpBridge** (`swarmline.runtime.mcp_bridge`)
   - Library-level MCP facade (runtime-agnostic, works with thin + deepagents)
   - `discover_tools()` / `discover_all_tools()` — tool names prefixed as `mcp__{server}__{tool}`
   - `create_tool_executor()` — async callable factory for LangChain integration
   - Caching delegated to McpClient TTL (300s)
-- **DeepAgents MCP Integration** (`cognitia.runtime.deepagents`)
+- **DeepAgents MCP Integration** (`swarmline.runtime.deepagents`)
   - `mcp_servers` parameter in `__init__()` — creates `McpBridge` automatically
   - MCP tools injected into `selected_tools` with executor wiring
   - Graceful degradation with `logging.warning` on discovery failure
-- **WorkflowGraph** (`cognitia.orchestration.workflow_graph`)
+- **WorkflowGraph** (`swarmline.orchestration.workflow_graph`)
   - Declarative graph execution: linear, conditional branching, loop with max, parallel, subgraph, interrupt/resume
   - `InMemoryCheckpoint` for state persistence
   - `to_mermaid()` — graph visualization export
-- **Workflow Executors** (`cognitia.orchestration.workflow_executor`)
+- **Workflow Executors** (`swarmline.orchestration.workflow_executor`)
   - `ThinWorkflowExecutor` — LLM per-node via ThinRuntime
   - `MixedRuntimeExecutor` — route nodes to different runtimes via `node_interceptor`
   - `compile_to_langgraph()` — LangGraph StateGraph compiler for deepagents
-- **GenericWorkflowEngine** (`cognitia.orchestration.generic_workflow_engine`)
+- **GenericWorkflowEngine** (`swarmline.orchestration.generic_workflow_engine`)
   - Pluggable `ExecutorPort` + `VerifierPort` protocols
   - Retry/verify loop with configurable `max_retries`
-- **CommandRegistry v2** (`cognitia.commands`)
+- **CommandRegistry v2** (`swarmline.commands`)
   - `CommandDef` with typed `parameters` (JSON Schema), `description`, `category`
   - `to_tool_definitions()` — commands available as LLM tools
   - `execute_validated()` — JSON Schema parameter validation before execute
   - YAML auto-discovery via `loader.py` (`load_commands_from_yaml`, `auto_discover_commands`)
   - Backward compatible with string-based API
-- **JSON Utilities** (`cognitia.runtime.thin.json_utils`)
+- **JSON Utilities** (`swarmline.runtime.thin.json_utils`)
   - `find_json_object_boundaries()` — shared brace-tracking parser (DRY extraction)
 
 ### Changed
@@ -304,7 +304,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-03-15
 
 ### Added
-- **Code Verification Pipeline** (`cognitia.orchestration`)
+- **Code Verification Pipeline** (`swarmline.orchestration`)
   - `CodeVerifier` Protocol — ISP-compliant (5 methods: verify_contracts, verify_tests_substantive, verify_tests_before_code, verify_linters, verify_coverage)
   - `TddCodeVerifier` — implementation respecting `CodingStandardsConfig` (disabled checks auto-SKIP)
   - `CommandRunner` Protocol + `CommandResult` — sandbox-agnostic command execution
@@ -312,15 +312,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `CodeWorkflowEngine` — structured code pipeline: plan → execute → verify_dod → loop
   - `WorkflowPipeline` Protocol — generic research → plan → execute → review → verify
   - `WorkflowResult` — structured pipeline result
-- **Verification Types** (`cognitia.orchestration.verification_types`)
+- **Verification Types** (`swarmline.orchestration.verification_types`)
   - `VerificationStatus` (PASS/FAIL/SKIP), `CheckDetail`, `VerificationResult` with `.passed` property
-- **Coding Standards Configs** (`cognitia.orchestration.coding_standards`)
+- **Coding Standards Configs** (`swarmline.orchestration.coding_standards`)
   - `CodingStandardsConfig` — TDD, SOLID, DRY, KISS, Clean Arch flags with factory methods: `strict()`, `minimal()`, `off()`
   - `WorkflowAutomationConfig` — `full()`, `light()`, `off()` factories
   - `AutonomousLoopConfig` — `strict()`, `light()` factories
   - `CodePipelineConfig` — aggregate with `production()`, `development()` presets
   - `TeamAgentsConfig` — team role configuration
-- **ToolOutputCompressor Middleware** (`cognitia.agent.middleware`)
+- **ToolOutputCompressor Middleware** (`swarmline.agent.middleware`)
   - Content-type aware compression: JSON (truncate arrays), HTML (strip tags), Text (head+tail)
   - Integrates with `HookRegistry` via `on_post_tool_use` callback
   - Configurable `max_result_chars` (default 10000)
@@ -338,12 +338,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0b1] - 2026-03-13
 
 ### Added
-- **Agent Facade API** (`cognitia.agent`) — high-level 3-line API for AI agents
+- **Agent Facade API** (`swarmline.agent`) — high-level 3-line API for AI agents
   - `Agent` class with `query()`, `stream()`, `conversation()` methods
   - `@tool` decorator for defining tools with auto-inferred JSON Schema
   - `Middleware` protocol with built-in `CostTracker` and `SecurityGuard`
   - `Conversation` for explicit multi-turn dialog management
-- **Import isolation** — `import cognitia` works without any optional dependencies
+- **Import isolation** — `import swarmline` works without any optional dependencies
 - **Test markers** — `requires_claude_sdk`, `requires_anthropic`, `requires_langchain`, `live`
 - LICENSE (MIT), CHANGELOG, CONTRIBUTING, comprehensive documentation
 
@@ -362,7 +362,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **RuntimeFactory** — create runtime by config/env/override
 - **Runtime Ports** — `BaseRuntimePort`, `ThinRuntimePort`, `DeepAgentsRuntimePort`
 - **Model Registry** — multi-provider (Anthropic, OpenAI, Google, DeepSeek) with aliases
-- **CognitiaStack** — bootstrap facade factory for quick setup
+- **SwarmlineStack** — bootstrap facade factory for quick setup
 - **Memory providers** — InMemory, PostgreSQL, SQLite
 - **Web tools** — pluggable search (DuckDuckGo, Tavily, SearXNG, Brave) and fetch providers
 - **Orchestration** — plan manager, subagent spawning, team coordination
@@ -373,7 +373,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Domain-agnostic: removed all finance-specific defaults from library code
-- `RoleSkillsLoader` moved to `cognitia.config.role_skills`
+- `RoleSkillsLoader` moved to `swarmline.config.role_skills`
 - `RoleRouterConfig` is now a typed dataclass (was dict)
 
 ## [0.1.0] - 2026-02-10
@@ -390,14 +390,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/cognitia/compare/v1.4.0...HEAD
-[1.4.0]: https://github.com/fockus/cognitia/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/fockus/cognitia/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/fockus/cognitia/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/fockus/cognitia/compare/v1.0.0...v1.1.0
-[1.0.0-core]: https://github.com/fockus/cognitia/compare/v0.5.0...v1.0.0-core
-[0.5.0]: https://github.com/fockus/cognitia/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/fockus/cognitia/compare/v0.3.0b1...v0.4.0
-[0.3.0b1]: https://github.com/fockus/cognitia/compare/v0.2.0...v0.3.0b1
-[0.2.0]: https://github.com/fockus/cognitia/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/fockus/cognitia/releases/tag/v0.1.0
+[Unreleased]: https://github.com/fockus/swarmline/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/fockus/swarmline/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/fockus/swarmline/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/fockus/swarmline/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/fockus/swarmline/compare/v1.0.0...v1.1.0
+[1.0.0-core]: https://github.com/fockus/swarmline/compare/v0.5.0...v1.0.0-core
+[0.5.0]: https://github.com/fockus/swarmline/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/fockus/swarmline/compare/v0.3.0b1...v0.4.0
+[0.3.0b1]: https://github.com/fockus/swarmline/compare/v0.2.0...v0.3.0b1
+[0.2.0]: https://github.com/fockus/swarmline/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/fockus/swarmline/releases/tag/v0.1.0

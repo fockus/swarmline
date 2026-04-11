@@ -13,20 +13,20 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cognitia.multi_agent.goal_queue import GoalQueue, GoalStatus
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_governance import (
+from swarmline.multi_agent.goal_queue import GoalQueue, GoalStatus
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_governance import (
     GraphGovernanceConfig,
     check_authority_delegation,
     check_hire_allowed,
     validate_capability_delegation,
 )
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_types import AgentCapabilities, AgentNode, LifecycleMode
-from cognitia.protocols.host_adapter import AgentAuthority, AgentHandle, AgentHandleStatus, HostAdapter
-from cognitia.runtime.agent_sdk_adapter import AgentSDKAdapter
-from cognitia.runtime.codex_adapter import CodexAdapter
-from cognitia.runtime.model_registry import get_registry, reset_registry
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode, LifecycleMode
+from swarmline.protocols.host_adapter import AgentAuthority, AgentHandle, AgentHandleStatus, HostAdapter
+from swarmline.runtime.agent_sdk_adapter import AgentSDKAdapter
+from swarmline.runtime.codex_adapter import CodexAdapter
+from swarmline.runtime.model_registry import get_registry, reset_registry
 
 
 # ============================================================
@@ -284,7 +284,7 @@ class TestAgentSDKAdapter:
 
     async def test_spawn_agent_returns_agent_handle(self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "cognitia.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
+            "swarmline.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
             self._patched_spawn,
         )
         handle = await adapter.spawn_agent("dev", "build feature")
@@ -293,7 +293,7 @@ class TestAgentSDKAdapter:
 
     async def test_get_status_returns_idle_after_spawn(self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "cognitia.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
+            "swarmline.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
             self._patched_spawn,
         )
         handle = await adapter.spawn_agent("dev", "test")
@@ -302,7 +302,7 @@ class TestAgentSDKAdapter:
 
     async def test_stop_agent_sets_stopped(self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "cognitia.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
+            "swarmline.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
             self._patched_spawn,
         )
         handle = await adapter.spawn_agent("dev", "test")
@@ -488,7 +488,7 @@ class TestOrchestratorLifecycle:
         return _SimpleEventBus()
 
     async def test_ephemeral_agent_removed_after_task(self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus) -> None:
-        from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+        from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
 
         root = AgentNode(
             id="root", name="Root", role="lead",
@@ -519,7 +519,7 @@ class TestOrchestratorLifecycle:
         assert "graph.agent.self_terminated" in topics
 
     async def test_supervised_agent_stays_after_task(self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus) -> None:
-        from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+        from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
 
         root = AgentNode(
             id="root", name="Root", role="lead",
@@ -542,8 +542,8 @@ class TestOrchestratorLifecycle:
         assert "graph.agent.awaiting_review" in topics
 
     async def test_persistent_agent_resets_to_idle(self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus) -> None:
-        from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
-        from cognitia.multi_agent.registry_types import AgentStatus
+        from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+        from swarmline.multi_agent.registry_types import AgentStatus
 
         persistent = AgentNode(
             id="svc", name="Service", role="service",

@@ -7,9 +7,9 @@ from typing import Any
 
 import pytest
 
-from cognitia.pipeline.partitioned_budget import PartitionedBudgetTracker, _NamespacedBusWrapper
-from cognitia.pipeline.budget import BudgetTracker
-from cognitia.pipeline.types import BudgetPolicy, CostRecord
+from swarmline.pipeline.partitioned_budget import PartitionedBudgetTracker, _NamespacedBusWrapper
+from swarmline.pipeline.budget import BudgetTracker
+from swarmline.pipeline.types import BudgetPolicy, CostRecord
 
 
 class _FakeEventBus:

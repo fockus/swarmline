@@ -6,8 +6,8 @@ No API keys required.
 
 import asyncio
 
-from cognitia.rag import Document, RagInputFilter, SimpleRetriever
-from cognitia.runtime.types import Message
+from swarmline.rag import Document, RagInputFilter, SimpleRetriever
+from swarmline.runtime.types import Message
 
 
 async def main() -> None:
@@ -15,7 +15,7 @@ async def main() -> None:
     docs = [
         Document(content="Python is a programming language created by Guido van Rossum.", metadata={"source": "wiki"}),
         Document(content="Rust is a systems programming language focused on safety.", metadata={"source": "wiki"}),
-        Document(content="Cognitia is an LLM-agnostic framework for building AI agents.", metadata={"source": "docs"}),
+        Document(content="Swarmline is an LLM-agnostic framework for building AI agents.", metadata={"source": "docs"}),
         Document(content="The weather in Berlin is often cloudy in winter.", metadata={"source": "travel"}),
     ]
 

@@ -1,6 +1,6 @@
-"""Smoke: import cognitia modules without optional extras.
+"""Smoke: import swarmline modules without optional extras.
 
-Verifies that `import cognitia` and core submodules work
+Verifies that `import swarmline` and core submodules work
 when optional dependencies (claude_agent_sdk, anthropic, langchain) are absent.
 """
 
@@ -20,10 +20,10 @@ import pytest
 def _block_packages(*names: str) -> Generator[None, None, None]:
     """Temporarily make packages unimportable."""
     saved: dict[str, Any] = {}
-    saved_cognitia = {
+    saved_swarmline = {
         key: value
         for key, value in sys.modules.items()
-        if key == "cognitia" or key.startswith("cognitia.")
+        if key == "swarmline" or key.startswith("swarmline.")
     }
     for name in names:
         # Block the package itself and all subpackages already loaded
@@ -39,39 +39,39 @@ def _block_packages(*names: str) -> Generator[None, None, None]:
         for name in names:
             sys.modules.pop(name, None)
         for key in list(sys.modules):
-            if key == "cognitia" or key.startswith("cognitia."):
+            if key == "swarmline" or key.startswith("swarmline."):
                 sys.modules.pop(key)
         sys.modules.update(saved)
-        sys.modules.update(saved_cognitia)
+        sys.modules.update(saved_swarmline)
 
 
 # -- Core library (no optional deps) --
 
 
 class TestCoreImportsWithoutOptionalDeps:
-    """Import core cognitia without any optional dependencies."""
+    """Import core swarmline without any optional dependencies."""
 
-    def test_import_cognitia_top_level(self) -> None:
-        """Top-level `import cognitia` must work without optional deps."""
+    def test_import_swarmline_top_level(self) -> None:
+        """Top-level `import swarmline` must work without optional deps."""
         with _block_packages(
             "claude_agent_sdk", "anthropic", "langchain_core", "langchain_anthropic"
         ):
             # Force reimport
             for key in list(sys.modules):
-                if key.startswith("cognitia"):
+                if key.startswith("swarmline"):
                     del sys.modules[key]
-            import cognitia
+            import swarmline
 
-            assert hasattr(cognitia, "__version__")
+            assert hasattr(swarmline, "__version__")
 
     def test_import_runtime_types(self) -> None:
         with _block_packages(
             "claude_agent_sdk", "anthropic", "langchain_core", "langchain_anthropic"
         ):
             for key in list(sys.modules):
-                if key.startswith("cognitia.runtime"):
+                if key.startswith("swarmline.runtime"):
                     del sys.modules[key]
-            from cognitia.runtime.types import Message
+            from swarmline.runtime.types import Message
 
             assert Message is not None
 
@@ -80,9 +80,9 @@ class TestCoreImportsWithoutOptionalDeps:
             "claude_agent_sdk", "anthropic", "langchain_core", "langchain_anthropic"
         ):
             for key in list(sys.modules):
-                if key.startswith("cognitia.runtime"):
+                if key.startswith("swarmline.runtime"):
                     del sys.modules[key]
-            from cognitia.runtime.factory import RuntimeFactory
+            from swarmline.runtime.factory import RuntimeFactory
 
             assert RuntimeFactory is not None
 
@@ -91,36 +91,36 @@ class TestCoreImportsWithoutOptionalDeps:
             "claude_agent_sdk", "anthropic", "langchain_core", "langchain_anthropic"
         ):
             for key in list(sys.modules):
-                if key.startswith("cognitia.memory"):
+                if key.startswith("swarmline.memory"):
                     del sys.modules[key]
-            from cognitia.memory import InMemoryMemoryProvider
+            from swarmline.memory import InMemoryMemoryProvider
 
             assert InMemoryMemoryProvider is not None
 
     def test_import_context(self) -> None:
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.context"):
+                if key.startswith("swarmline.context"):
                     del sys.modules[key]
-            from cognitia.context import DefaultContextBuilder
+            from swarmline.context import DefaultContextBuilder
 
             assert DefaultContextBuilder is not None
 
     def test_import_policy(self) -> None:
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.policy"):
+                if key.startswith("swarmline.policy"):
                     del sys.modules[key]
-            from cognitia.policy import DefaultToolPolicy
+            from swarmline.policy import DefaultToolPolicy
 
             assert DefaultToolPolicy is not None
 
     def test_import_routing(self) -> None:
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.routing"):
+                if key.startswith("swarmline.routing"):
                     del sys.modules[key]
-            from cognitia.routing import KeywordRoleRouter
+            from swarmline.routing import KeywordRoleRouter
 
             assert KeywordRoleRouter is not None
 
@@ -128,9 +128,9 @@ class TestCoreImportsWithoutOptionalDeps:
         """hooks module works without claude_agent_sdk."""
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.hooks"):
+                if key.startswith("swarmline.hooks"):
                     del sys.modules[key]
-            from cognitia.hooks import HookRegistry
+            from swarmline.hooks import HookRegistry
 
             assert HookRegistry is not None
 
@@ -138,21 +138,21 @@ class TestCoreImportsWithoutOptionalDeps:
         """Optional runtime re-export should raise, not expose None."""
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.runtime"):
+                if key.startswith("swarmline.runtime"):
                     del sys.modules[key]
 
             with pytest.raises(ImportError, match="RuntimeAdapter"):
-                from cognitia.runtime import RuntimeAdapter  # noqa: F401
+                from swarmline.runtime import RuntimeAdapter  # noqa: F401
 
     def test_runtime_star_import_skips_optional_exports_without_sdk(self) -> None:
         """Star import should keep core runtime symbols available without SDK extras."""
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.runtime"):
+                if key.startswith("swarmline.runtime"):
                     del sys.modules[key]
 
             namespace: dict[str, Any] = {}
-            exec("from cognitia.runtime import *", namespace)
+            exec("from swarmline.runtime import *", namespace)
 
             assert "RuntimeFactory" in namespace
             assert "RuntimeAdapter" not in namespace
@@ -162,53 +162,53 @@ class TestCoreImportsWithoutOptionalDeps:
         """Optional hooks bridge should raise, not expose None."""
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.hooks"):
+                if key.startswith("swarmline.hooks"):
                     del sys.modules[key]
 
             with pytest.raises(ImportError, match="registry_to_sdk_hooks"):
-                from cognitia.hooks import registry_to_sdk_hooks  # noqa: F401
+                from swarmline.hooks import registry_to_sdk_hooks  # noqa: F401
 
     def test_hooks_star_import_skips_sdk_bridge_without_sdk(self) -> None:
         """Star import should not force SDK hook bridge import."""
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.hooks"):
+                if key.startswith("swarmline.hooks"):
                     del sys.modules[key]
 
             namespace: dict[str, Any] = {}
-            exec("from cognitia.hooks import *", namespace)
+            exec("from swarmline.hooks import *", namespace)
 
             assert "HookRegistry" in namespace
             assert "registry_to_sdk_hooks" not in namespace
 
     def test_runtime_ports_reexports_fail_fast_when_optional_modules_unavailable(self) -> None:
         """Optional runtime ports should fail fast when port modules cannot be imported."""
-        with _block_packages("cognitia.runtime.ports.thin", "cognitia.runtime.ports.deepagents"):
+        with _block_packages("swarmline.runtime.ports.thin", "swarmline.runtime.ports.deepagents"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.runtime") and key not in {
-                    "cognitia.runtime.ports.thin",
-                    "cognitia.runtime.ports.deepagents",
+                if key.startswith("swarmline.runtime") and key not in {
+                    "swarmline.runtime.ports.thin",
+                    "swarmline.runtime.ports.deepagents",
                 }:
                     del sys.modules[key]
 
             with pytest.raises(ImportError, match="ThinRuntimePort"):
-                from cognitia.runtime import ThinRuntimePort  # noqa: F401
+                from swarmline.runtime import ThinRuntimePort  # noqa: F401
 
             with pytest.raises(ImportError, match="DeepAgentsRuntimePort"):
-                from cognitia.runtime.ports import DeepAgentsRuntimePort  # noqa: F401
+                from swarmline.runtime.ports import DeepAgentsRuntimePort  # noqa: F401
 
     def test_runtime_ports_star_import_skips_optional_ports_when_unavailable(self) -> None:
         """Star import should expose only base runtime port symbols."""
-        with _block_packages("cognitia.runtime.ports.thin", "cognitia.runtime.ports.deepagents"):
+        with _block_packages("swarmline.runtime.ports.thin", "swarmline.runtime.ports.deepagents"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.runtime") and key not in {
-                    "cognitia.runtime.ports.thin",
-                    "cognitia.runtime.ports.deepagents",
+                if key.startswith("swarmline.runtime") and key not in {
+                    "swarmline.runtime.ports.thin",
+                    "swarmline.runtime.ports.deepagents",
                 }:
                     del sys.modules[key]
 
             namespace: dict[str, Any] = {}
-            exec("from cognitia.runtime.ports import *", namespace)
+            exec("from swarmline.runtime.ports import *", namespace)
 
             assert "BaseRuntimePort" in namespace
             assert "ThinRuntimePort" not in namespace
@@ -218,37 +218,37 @@ class TestCoreImportsWithoutOptionalDeps:
         """Optional memory providers should raise instead of disappearing."""
         with _block_packages("sqlalchemy"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.memory") and key != "sqlalchemy":
+                if key.startswith("swarmline.memory") and key != "sqlalchemy":
                     del sys.modules[key]
 
             with pytest.raises(ImportError, match="SQLiteMemoryProvider"):
-                from cognitia.memory import SQLiteMemoryProvider  # noqa: F401
+                from swarmline.memory import SQLiteMemoryProvider  # noqa: F401
 
             with pytest.raises(ImportError, match="PostgresMemoryProvider"):
-                from cognitia.memory import PostgresMemoryProvider  # noqa: F401
+                from swarmline.memory import PostgresMemoryProvider  # noqa: F401
 
     def test_skills_optional_loader_fail_fast_without_loader_module(self) -> None:
         """Optional skill loader exports should raise instead of disappearing."""
-        with _block_packages("cognitia.skills.loader"):
+        with _block_packages("swarmline.skills.loader"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.skills") and key != "cognitia.skills.loader":
+                if key.startswith("swarmline.skills") and key != "swarmline.skills.loader":
                     del sys.modules[key]
 
             with pytest.raises(ImportError, match="YamlSkillLoader"):
-                from cognitia.skills import YamlSkillLoader  # noqa: F401
+                from swarmline.skills import YamlSkillLoader  # noqa: F401
 
             with pytest.raises(ImportError, match="load_mcp_from_settings"):
-                from cognitia.skills import load_mcp_from_settings  # noqa: F401
+                from swarmline.skills import load_mcp_from_settings  # noqa: F401
 
     def test_skills_star_import_skips_loader_helpers_when_loader_unavailable(self) -> None:
         """Star import should keep core skill symbols available without loader helper."""
-        with _block_packages("cognitia.skills.loader"):
+        with _block_packages("swarmline.skills.loader"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.skills") and key != "cognitia.skills.loader":
+                if key.startswith("swarmline.skills") and key != "swarmline.skills.loader":
                     del sys.modules[key]
 
             namespace: dict[str, Any] = {}
-            exec("from cognitia.skills import *", namespace)
+            exec("from swarmline.skills import *", namespace)
 
             assert "SkillRegistry" in namespace
             assert "YamlSkillLoader" not in namespace
@@ -260,23 +260,23 @@ class TestCoreImportsWithoutOptionalDeps:
             "claude_agent_sdk", "anthropic", "langchain_core", "langchain_anthropic"
         ):
             for key in list(sys.modules):
-                if key.startswith("cognitia.agent"):
+                if key.startswith("swarmline.agent"):
                     del sys.modules[key]
-            from cognitia.agent import Agent
+            from swarmline.agent import Agent
 
             assert Agent is not None
 
-    def test_block_packages_restores_cognitia_module_identity(self) -> None:
-        """Isolation helper restores the original cognitia module objects."""
-        from cognitia.memory_bank.types import MemoryBankViolation
+    def test_block_packages_restores_swarmline_module_identity(self) -> None:
+        """Isolation helper restores the original swarmline module objects."""
+        from swarmline.memory_bank.types import MemoryBankViolation
 
         original = MemoryBankViolation
 
         with _block_packages("claude_agent_sdk"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.memory_bank"):
+                if key.startswith("swarmline.memory_bank"):
                     del sys.modules[key]
-            from cognitia.memory_bank.types import MemoryBankViolation as reimported
+            from swarmline.memory_bank.types import MemoryBankViolation as reimported
 
             assert reimported is not original
 
@@ -286,11 +286,12 @@ class TestAgentRuntimeFactoryBoundary:
 
     @staticmethod
     def _assert_no_concrete_runtime_factory_imports() -> None:
-        base = Path("/Users/fockus/Apps/cognitia/src/cognitia/agent")
+        import swarmline.agent as _agent_mod
+        base = Path(_agent_mod.__file__).parent
         forbidden = {
-            "cognitia.runtime.factory",
-            "cognitia.runtime.thin",
-            "cognitia.runtime.deepagents",
+            "swarmline.runtime.factory",
+            "swarmline.runtime.thin",
+            "swarmline.runtime.deepagents",
         }
         for filename in ["agent.py", "conversation.py", "runtime_dispatch.py", "runtime_wiring.py", "config.py"]:
             tree = ast.parse((base / filename).read_text(encoding="utf-8"))
@@ -304,26 +305,26 @@ class TestAgentRuntimeFactoryBoundary:
         self._assert_no_concrete_runtime_factory_imports()
 
     def test_agent_config_resolved_model_works_without_runtime_factory_module(self) -> None:
-        with _block_packages("cognitia.runtime.factory"):
+        with _block_packages("swarmline.runtime.factory"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.agent"):
+                if key.startswith("swarmline.agent"):
                     del sys.modules[key]
 
-            from cognitia.agent.config import AgentConfig
+            from swarmline.agent.config import AgentConfig
 
             with pytest.warns(DeprecationWarning, match="resolved_model"):
                 cfg = AgentConfig(system_prompt="test", model="sonnet")
                 assert cfg.resolved_model.startswith("claude-sonnet")
 
     def test_agent_accepts_injected_runtime_factory_without_concrete_module(self) -> None:
-        with _block_packages("cognitia.runtime.factory"):
+        with _block_packages("swarmline.runtime.factory"):
             for key in list(sys.modules):
-                if key.startswith("cognitia.agent"):
+                if key.startswith("swarmline.agent"):
                     del sys.modules[key]
 
-            from cognitia.agent import Agent, AgentConfig
-            from cognitia.runtime.capabilities import RuntimeCapabilities
-            from cognitia.runtime.types import RuntimeConfig
+            from swarmline.agent import Agent, AgentConfig
+            from swarmline.runtime.capabilities import RuntimeCapabilities
+            from swarmline.runtime.types import RuntimeConfig
 
             class FakeFactory:
                 def __init__(self) -> None:

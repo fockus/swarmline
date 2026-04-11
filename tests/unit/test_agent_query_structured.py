@@ -13,10 +13,10 @@ from unittest.mock import patch
 import pytest
 from pydantic import BaseModel
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.result import Result
-from cognitia.agent.structured import StructuredOutputError
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.result import Result
+from swarmline.agent.structured import StructuredOutputError
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +303,6 @@ class TestStructuredOutputError:
         assert "Failed to parse" in str(err)
 
     def test_importable_from_agent_package(self) -> None:
-        from cognitia.agent import StructuredOutputError as Imported
+        from swarmline.agent import StructuredOutputError as Imported
 
         assert Imported is StructuredOutputError

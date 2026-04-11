@@ -1,5 +1,5 @@
 """Tests ThinRuntime built-in tools integration. TDD RED: 6 testov for built-in tools in ThinRuntime.
-Stage 1.1 from cognitia-runtime-parity plana.
+Stage 1.1 from swarmline-runtime-parity plana.
 """
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 
 class _FakeSandboxProvider:
@@ -52,7 +52,7 @@ class TestThinBuiltinToolsRegistration:
 
     def test_thin_builtin_tools_registered_by_default(self, sandbox: _FakeSandboxProvider) -> None:
         """Pri nalichii sandbox provider 9 built-in tools available."""
-        from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
+        from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
 
         specs, executors = create_thin_builtin_tools(sandbox)
 
@@ -72,7 +72,7 @@ class TestThinBuiltinToolsRegistration:
 
     def test_thin_builtin_tools_without_sandbox_empty(self) -> None:
         """Without sandbox provider -> 0 built-in tools."""
-        from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
+        from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
 
         specs, executors = create_thin_builtin_tools(None)
         assert specs == {}
@@ -86,7 +86,7 @@ class TestThinBuiltinToolsFeatureMode:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """feature_mode=portable -> 0 built-in tools in otfiltrovannom spiske."""
-        from cognitia.runtime.thin.builtin_tools import (
+        from swarmline.runtime.thin.builtin_tools import (
             create_thin_builtin_tools,
             filter_thin_builtins_by_mode,
         )
@@ -101,7 +101,7 @@ class TestThinBuiltinToolsFeatureMode:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """User tools + built-in without dubley in hybrid mode."""
-        from cognitia.runtime.thin.builtin_tools import (
+        from swarmline.runtime.thin.builtin_tools import (
             create_thin_builtin_tools,
             merge_tools_with_builtins,
         )
@@ -133,7 +133,7 @@ class TestThinBuiltinToolsExecution:
         self, sandbox: _FakeSandboxProvider
     ) -> None:
         """execute("read_file", {"path": "test.txt"}) returns content."""
-        from cognitia.runtime.thin.builtin_tools import create_thin_builtin_tools
+        from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
 
         sandbox._files["test.txt"] = "hello world"
 
@@ -148,7 +148,7 @@ class TestThinBuiltinAliases:
 
     def test_thin_builtin_aliases_resolved(self) -> None:
         """Read → read_file, Bash → execute, Write → write_file."""
-        from cognitia.runtime.thin.builtin_tools import THIN_BUILTIN_ALIASES
+        from swarmline.runtime.thin.builtin_tools import THIN_BUILTIN_ALIASES
 
         assert THIN_BUILTIN_ALIASES["Read"] == "read_file"
         assert THIN_BUILTIN_ALIASES["Write"] == "write_file"

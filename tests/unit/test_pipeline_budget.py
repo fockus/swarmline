@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.pipeline.budget import BudgetExceededError, BudgetTracker
-from cognitia.pipeline.types import BudgetPolicy, CostRecord
+from swarmline.pipeline.budget import BudgetExceededError, BudgetTracker
+from swarmline.pipeline.types import BudgetPolicy, CostRecord
 
 
 class TestBudgetTracker:

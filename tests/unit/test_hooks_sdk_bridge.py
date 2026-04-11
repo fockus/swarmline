@@ -6,8 +6,8 @@ pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не устан
 
 pytestmark = pytest.mark.requires_claude_sdk
 
-from cognitia.hooks.registry import HookRegistry  # noqa: E402
-from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks  # noqa: E402
+from swarmline.hooks.registry import HookRegistry  # noqa: E402
+from swarmline.hooks.sdk_bridge import registry_to_sdk_hooks  # noqa: E402
 
 
 class TestRegistryToSdkHooks:
@@ -108,8 +108,8 @@ class TestRegistryToSdkHooks:
         assert result["PreToolUse"][0].matcher is None
 
     @pytest.mark.asyncio
-    async def test_sdk_callback_wraps_cognitia_callback(self) -> None:
-        """SDK callback vyzyvaet cognitia callback with pravilnymi argumentami."""
+    async def test_sdk_callback_wraps_swarmline_callback(self) -> None:
+        """SDK callback vyzyvaet swarmline callback with pravilnymi argumentami."""
         registry = HookRegistry()
         called_with = {}
 
@@ -139,7 +139,7 @@ class TestRegistryToSdkHooks:
 
     @pytest.mark.asyncio
     async def test_sdk_callback_returns_default_on_none(self) -> None:
-        """If cognitia callback returns None -> default output."""
+        """If swarmline callback returns None -> default output."""
         registry = HookRegistry()
 
         async def my_hook(**kwargs):

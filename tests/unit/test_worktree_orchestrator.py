@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cognitia.multi_agent.worktree_orchestrator import WorktreeOrchestrator
-from cognitia.multi_agent.worktree_strategy import (
+from swarmline.multi_agent.worktree_orchestrator import WorktreeOrchestrator
+from swarmline.multi_agent.worktree_strategy import (
     FactoryWorktreeStrategy,
     MergeResult,
     WorktreePolicy,
 )
-from cognitia.multi_agent.workspace_types import WorkspaceHandle, WorkspaceStrategy
+from swarmline.multi_agent.workspace_types import WorkspaceHandle, WorkspaceStrategy
 
 
 # --- Fixtures ---

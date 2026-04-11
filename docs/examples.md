@@ -1,6 +1,6 @@
 # Examples
 
-The runnable examples live in [`examples/`](https://github.com/fockus/cognitia/tree/main/examples).
+The runnable examples live in [`examples/`](https://github.com/fockus/swarmline/tree/main/examples).
 They are designed as release-surface smoke targets: default invocation should exit cleanly,
 write useful output to `stdout`, and stay quiet on `stderr`.
 

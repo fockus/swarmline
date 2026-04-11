@@ -8,14 +8,14 @@ Three runtimes are registered automatically:
 
 | Name | Class | Extra |
 |------|-------|-------|
-| `thin` | `ThinRuntime` | `cognitia[thin]` |
-| `claude_sdk` | `ClaudeCodeRuntime` | `cognitia[claude]` |
-| `deepagents` | `DeepAgentsRuntime` | `cognitia[deepagents]` |
+| `thin` | `ThinRuntime` | `swarmline[thin]` |
+| `claude_sdk` | `ClaudeCodeRuntime` | `swarmline[claude]` |
+| `deepagents` | `DeepAgentsRuntime` | `swarmline[deepagents]` |
 
 ## Using the Registry
 
 ```python
-from cognitia.runtime.registry import get_default_registry
+from swarmline.runtime.registry import get_default_registry
 
 registry = get_default_registry()
 
@@ -35,8 +35,8 @@ caps = registry.get_capabilities("thin")
 ## Registering a Custom Runtime
 
 ```python
-from cognitia.runtime.registry import get_default_registry
-from cognitia.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.registry import get_default_registry
+from swarmline.runtime.capabilities import RuntimeCapabilities
 
 def my_factory(config, **kwargs):
     return MyCustomRuntime(config=config, **kwargs)
@@ -54,7 +54,7 @@ Register your runtime as a Python package entry point for automatic discovery:
 
 ```toml
 # pyproject.toml
-[project.entry-points."cognitia.runtimes"]
+[project.entry-points."swarmline.runtimes"]
 my_runtime = "my_package.runtime:get_runtime"
 ```
 
@@ -62,7 +62,7 @@ The entry point must return a `tuple[factory_fn, RuntimeCapabilities]`:
 
 ```python
 # my_package/runtime.py
-from cognitia.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.capabilities import RuntimeCapabilities
 
 def get_runtime():
     def factory(config, **kwargs):
@@ -87,7 +87,7 @@ Invalid entry points are skipped with a warning — they don't break the registr
 ### Helper Functions
 
 ```python
-from cognitia.runtime.registry import (
+from swarmline.runtime.registry import (
     get_default_registry,       # singleton registry with built-ins
     reset_default_registry,     # reset to defaults (for testing)
     get_valid_runtime_names,    # shorthand for list_available()

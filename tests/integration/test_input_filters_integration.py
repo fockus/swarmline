@@ -6,9 +6,9 @@ from typing import Any
 
 import pytest
 
-from cognitia.input_filters import MaxTokensFilter, SystemPromptInjector
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent
+from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 
 
 def _msg(role: str, content: str) -> Message:

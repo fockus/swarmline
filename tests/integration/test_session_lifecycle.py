@@ -5,13 +5,13 @@ import warnings
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
-from cognitia.memory.types import GoalState, MemoryMessage
-from cognitia.routing.role_router import KeywordRoleRouter
-from cognitia.runtime.model_policy import ModelPolicy
-from cognitia.session.manager import InMemorySessionManager
-from cognitia.session.rehydrator import DefaultSessionRehydrator
-from cognitia.session.types import SessionKey, SessionState
-from cognitia.types import TurnContext
+from swarmline.memory.types import GoalState, MemoryMessage
+from swarmline.routing.role_router import KeywordRoleRouter
+from swarmline.runtime.model_policy import ModelPolicy
+from swarmline.session.manager import InMemorySessionManager
+from swarmline.session.rehydrator import DefaultSessionRehydrator
+from swarmline.session.types import SessionKey, SessionState
+from swarmline.types import TurnContext
 
 
 def _mock_adapter(connected: bool = True) -> MagicMock:

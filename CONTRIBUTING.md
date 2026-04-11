@@ -1,13 +1,13 @@
-# Contributing to Cognitia
+# Contributing to Swarmline
 
-Thank you for your interest in contributing to Cognitia!
+Thank you for your interest in contributing to Swarmline!
 
 ## Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/fockus/cognitia.git
-cd cognitia
+git clone https://github.com/fockus/swarmline.git
+cd swarmline
 
 # Create virtual environment
 python -m venv .venv
@@ -17,7 +17,7 @@ source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -e ".[dev,all]"
 
 # Verify installation
-python -c "import cognitia; print(cognitia.__version__)"
+python -c "import swarmline; print(swarmline.__version__)"
 ```
 
 ## Running Tests
@@ -33,7 +33,7 @@ pytest -m "requires_claude_sdk or not requires_claude_sdk"
 pytest -m live
 
 # With coverage
-pytest --cov=cognitia --cov-report=term-missing
+pytest --cov=swarmline --cov-report=term-missing
 
 # Specific test file
 pytest tests/unit/test_agent_tool.py -v
@@ -56,7 +56,7 @@ ruff format src/ tests/
 Type checking with [mypy](https://mypy-lang.org/):
 
 ```bash
-mypy src/cognitia/
+mypy src/swarmline/
 ```
 
 ## Architecture Principles
@@ -65,7 +65,7 @@ mypy src/cognitia/
 - **Protocol-first** — define `Protocol` interfaces before implementations
 - **TDD** — write tests before implementation (Red -> Green -> Refactor)
 - **SOLID** — SRP (<300 lines per module), ISP (<=5 methods per protocol), DIP (depend on abstractions)
-- **Domain-agnostic** — cognitia must not contain any domain-specific logic (finance, medical, etc.)
+- **Domain-agnostic** — swarmline must not contain any domain-specific logic (finance, medical, etc.)
 
 ## Pull Request Process
 
@@ -91,7 +91,7 @@ refactor: extract common logic from runtime ports
 
 ## Optional Dependencies
 
-Cognitia uses optional dependency groups. When adding features that require new packages:
+Swarmline uses optional dependency groups. When adding features that require new packages:
 
 1. Add the dependency to the appropriate extra in `pyproject.toml`
 2. Use lazy imports (inside functions/methods) for optional packages

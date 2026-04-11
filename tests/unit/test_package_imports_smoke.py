@@ -29,7 +29,7 @@ def _subprocess_env() -> dict[str, str]:
     ("module_name", "expected_symbols"),
     [
         (
-            "cognitia.daemon",
+            "swarmline.daemon",
             [
                 "DaemonRunner",
                 "Scheduler",
@@ -42,7 +42,7 @@ def _subprocess_env() -> dict[str, str]:
             ],
         ),
         (
-            "cognitia.multi_agent",
+            "swarmline.multi_agent",
             [
                 "AgentToolResult",
                 "create_agent_tool_spec",
@@ -55,7 +55,7 @@ def _subprocess_env() -> dict[str, str]:
             ],
         ),
         (
-            "cognitia.observability",
+            "swarmline.observability",
             [
                 "EventBus",
                 "InMemoryEventBus",
@@ -69,7 +69,7 @@ def _subprocess_env() -> dict[str, str]:
             ],
         ),
         (
-            "cognitia.pipeline",
+            "swarmline.pipeline",
             [
                 "PipelineBuilder",
                 "BudgetPolicy",
@@ -82,7 +82,7 @@ def _subprocess_env() -> dict[str, str]:
             ],
         ),
         (
-            "cognitia.plugins",
+            "swarmline.plugins",
             [
                 "PluginRunner",
                 "SubprocessPluginRunner",
@@ -92,7 +92,7 @@ def _subprocess_env() -> dict[str, str]:
             ],
         ),
         (
-            "cognitia.session",
+            "swarmline.session",
             [
                 "DefaultSessionRehydrator",
                 "InMemorySessionManager",

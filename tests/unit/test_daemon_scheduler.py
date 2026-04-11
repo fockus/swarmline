@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-from cognitia.daemon.scheduler import Scheduler
+from swarmline.daemon.scheduler import Scheduler
 
 
 class TestSchedulerRegistration:
@@ -184,7 +184,7 @@ class TestSchedulerExecution:
 class TestSchedulerProtocol:
 
     def test_protocol_compliance(self) -> None:
-        from cognitia.daemon.protocols import TaskScheduler
+        from swarmline.daemon.protocols import TaskScheduler
         sched = Scheduler()
         assert isinstance(sched, TaskScheduler)
 

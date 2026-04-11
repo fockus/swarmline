@@ -1,6 +1,6 @@
 # Memory Bank
 
-Memory Bank is Cognitia's **long-term project memory** — a file-based knowledge store that persists across agent sessions. While the core [Memory](memory.md) module handles conversation-level data (messages, facts, goals), Memory Bank stores higher-level project knowledge: plans, decisions, lessons learned, and progress logs.
+Memory Bank is Swarmline's **long-term project memory** — a file-based knowledge store that persists across agent sessions. While the core [Memory](memory.md) module handles conversation-level data (messages, facts, goals), Memory Bank stores higher-level project knowledge: plans, decisions, lessons learned, and progress logs.
 
 ## How It Works
 
@@ -13,7 +13,7 @@ Data is isolated per **user_id + topic_id** pair, ensuring multi-tenant safety.
 `MemoryBankProvider` follows ISP (≤5 methods):
 
 ```python
-from cognitia.memory_bank.protocols import MemoryBankProvider
+from swarmline.memory_bank.protocols import MemoryBankProvider
 
 class MemoryBankProvider(Protocol):
     async def read_file(self, path: str) -> str | None: ...
@@ -32,8 +32,8 @@ All paths are **relative** with a maximum depth of 2 (e.g., `plans/feature.md`).
 Stores files on disk under `{root}/{user_id}/{topic_id}/memory/`.
 
 ```python
-from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
 
 config = MemoryBankConfig(
     enabled=True,
@@ -69,7 +69,7 @@ Stores files as rows in a `memory_bank` SQL table via SQLAlchemy async. Works wi
 
 ```python
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from cognitia.memory_bank.db_provider import DatabaseMemoryBankProvider
+from swarmline.memory_bank.db_provider import DatabaseMemoryBankProvider
 
 engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
 session_factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -84,7 +84,7 @@ provider = DatabaseMemoryBankProvider(
 **Schema setup** — use the DDL helper in your Alembic migration or startup:
 
 ```python
-from cognitia.memory_bank.schema import get_memory_bank_ddl
+from swarmline.memory_bank.schema import get_memory_bank_ddl
 
 # For PostgreSQL
 statements = get_memory_bank_ddl(dialect="postgres")
@@ -124,7 +124,7 @@ Unique constraint on `(user_id, topic_id, path)` enables upsert semantics.
 `MemoryBankConfig` controls limits and behavior:
 
 ```python
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.types import MemoryBankConfig
 
 config = MemoryBankConfig(
     enabled=True,                         # Master toggle
@@ -143,19 +143,19 @@ config = MemoryBankConfig(
 
 ## Connecting Memory Bank to an Agent
 
-Memory Bank integrates via `CognitiaStack.create()` — pass the provider and an optional prompt:
+Memory Bank integrates via `SwarmlineStack.create()` — pass the provider and an optional prompt:
 
 ```python
-from cognitia.bootstrap.stack import CognitiaStack
-from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.bootstrap.stack import SwarmlineStack
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
 
 # 1. Create provider
 mb_config = MemoryBankConfig(enabled=True, root_path=Path("./data/mb"))
 mb_provider = FilesystemMemoryBankProvider(mb_config, user_id="u1", topic_id="proj1")
 
 # 2. Wire into agent stack
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     # ... other params ...
     memory_bank_provider=mb_provider,
     # Optional: custom prompt injected into system message
@@ -198,8 +198,8 @@ Violations raise `MemoryBankViolation`.
 
 ```python
 from pathlib import Path
-from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
 
 # Setup
 config = MemoryBankConfig(enabled=True, root_path=Path("./data/mb"))

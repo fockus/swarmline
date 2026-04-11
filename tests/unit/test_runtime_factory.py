@@ -4,9 +4,9 @@ import os
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
-from cognitia.runtime.capabilities import CapabilityRequirements
-from cognitia.runtime.factory import RuntimeFactory, _ErrorRuntime
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.capabilities import CapabilityRequirements
+from swarmline.runtime.factory import RuntimeFactory, _ErrorRuntime
+from swarmline.runtime.types import RuntimeConfig
 
 
 @pytest.fixture
@@ -32,20 +32,20 @@ class TestResolveRuntimeName:
         assert factory.resolve_runtime_name(config=cfg) == "thin"
 
     def test_env_overrides_default(self, factory: RuntimeFactory) -> None:
-        """The COGNITIA_RUNTIME environment variable overrides default."""
-        with patch.dict(os.environ, {"COGNITIA_RUNTIME": "deepagents"}):
+        """The SWARMLINE_RUNTIME environment variable overrides default."""
+        with patch.dict(os.environ, {"SWARMLINE_RUNTIME": "deepagents"}):
             assert factory.resolve_runtime_name() == "deepagents"
 
     def test_config_overrides_env(self, factory: RuntimeFactory) -> None:
         """config takes precedence over env."""
         cfg = RuntimeConfig(runtime_name="thin")
-        with patch.dict(os.environ, {"COGNITIA_RUNTIME": "deepagents"}):
+        with patch.dict(os.environ, {"SWARMLINE_RUNTIME": "deepagents"}):
             assert factory.resolve_runtime_name(config=cfg) == "thin"
 
     def test_override_overrides_all(self, factory: RuntimeFactory) -> None:
         """runtime_override has maximum priority."""
         cfg = RuntimeConfig(runtime_name="thin")
-        with patch.dict(os.environ, {"COGNITIA_RUNTIME": "deepagents"}):
+        with patch.dict(os.environ, {"SWARMLINE_RUNTIME": "deepagents"}):
             result = factory.resolve_runtime_name(
                 config=cfg,
                 runtime_override="claude_sdk",
@@ -54,7 +54,7 @@ class TestResolveRuntimeName:
 
     def test_invalid_env_ignored(self, factory: RuntimeFactory) -> None:
         """Invalid env - is ignored, uses default."""
-        with patch.dict(os.environ, {"COGNITIA_RUNTIME": "invalid_runtime"}):
+        with patch.dict(os.environ, {"SWARMLINE_RUNTIME": "invalid_runtime"}):
             assert factory.resolve_runtime_name() == "claude_sdk"
 
     def test_invalid_override_ignored(self, factory: RuntimeFactory) -> None:
@@ -68,7 +68,7 @@ class TestResolveRuntimeName:
 
     def test_env_case_insensitive(self, factory: RuntimeFactory) -> None:
         """Env with different case - converted to lower."""
-        with patch.dict(os.environ, {"COGNITIA_RUNTIME": "THIN"}):
+        with patch.dict(os.environ, {"SWARMLINE_RUNTIME": "THIN"}):
             assert factory.resolve_runtime_name() == "thin"
 
 
@@ -129,7 +129,7 @@ class TestCreate:
         fake_cls = MagicMock(return_value=fake_runtime)
         tool_exec = {"calc": object()}
 
-        with patch("cognitia.runtime.thin.ThinRuntime", fake_cls):
+        with patch("swarmline.runtime.thin.ThinRuntime", fake_cls):
             runtime = factory.create(config=cfg, tool_executors=tool_exec)
 
         assert runtime is fake_runtime
@@ -147,7 +147,7 @@ class TestCreate:
         fake_cls = MagicMock(return_value=fake_runtime)
         cli_config = MagicMock()
 
-        with patch("cognitia.runtime.cli.runtime.CliAgentRuntime", fake_cls):
+        with patch("swarmline.runtime.cli.runtime.CliAgentRuntime", fake_cls):
             runtime = factory.create(
                 config=cfg,
                 tool_executors={"calc": object()},
@@ -173,7 +173,7 @@ class TestCreate:
 
         with patch.object(RuntimeFactory, "_effective_registry", new_callable=PropertyMock) as mock_registry:
             mock_registry.return_value = None
-            with patch("cognitia.runtime.cli.runtime.CliAgentRuntime", fake_cls):
+            with patch("swarmline.runtime.cli.runtime.CliAgentRuntime", fake_cls):
                 runtime = factory.create(config=cfg)
 
         assert runtime is fake_runtime
@@ -204,8 +204,8 @@ class TestCapabilities:
         assert "tier:full" in err.details["missing"]
 
     def test_get_capabilities_for_custom_runtime(self) -> None:
-        from cognitia.runtime.capabilities import RuntimeCapabilities
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.capabilities import RuntimeCapabilities
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         custom_caps = RuntimeCapabilities(runtime_name="custom_factory_rt", tier="light")
@@ -245,7 +245,7 @@ class TestErrorRuntime:
     @pytest.mark.asyncio
     async def test_run_yields_error(self) -> None:
         """run() returns error event."""
-        from cognitia.runtime.types import RuntimeErrorData
+        from swarmline.runtime.types import RuntimeErrorData
 
         err = RuntimeErrorData(
             kind="dependency_missing",
@@ -265,7 +265,7 @@ class TestErrorRuntime:
     @pytest.mark.asyncio
     async def test_cleanup_noop(self) -> None:
         """cleanup() doesn't crash."""
-        from cognitia.runtime.types import RuntimeErrorData
+        from swarmline.runtime.types import RuntimeErrorData
 
         err = RuntimeErrorData(kind="dependency_missing", message="x")
         runtime = _ErrorRuntime(err)

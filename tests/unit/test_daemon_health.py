@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from cognitia.daemon.health import HealthServer, _build_response, _parse_request
+from swarmline.daemon.health import HealthServer, _build_response, _parse_request
 
 
 class TestParseRequest:
@@ -181,7 +181,7 @@ class TestHealthServer:
         await srv.stop()
 
     def test_protocol_compliance(self) -> None:
-        from cognitia.daemon.protocols import HealthEndpoint
+        from swarmline.daemon.protocols import HealthEndpoint
         srv = HealthServer(allow_unauthenticated_local=True)
         assert isinstance(srv, HealthEndpoint)
 

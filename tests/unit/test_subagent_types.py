@@ -11,7 +11,7 @@ def _now() -> datetime:
 
 class TestSubagentSpec:
     def test_create(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentSpec
+        from swarmline.orchestration.subagent_types import SubagentSpec
 
         spec = SubagentSpec(name="researcher", system_prompt="Ты исследователь")
         assert spec.name == "researcher"
@@ -19,8 +19,8 @@ class TestSubagentSpec:
         assert spec.sandbox_config is None
 
     def test_with_tools(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentSpec
-        from cognitia.runtime.types import ToolSpec
+        from swarmline.orchestration.subagent_types import SubagentSpec
+        from swarmline.runtime.types import ToolSpec
 
         ts = ToolSpec(name="search", description="search", parameters={})
         spec = SubagentSpec(name="s", system_prompt="p", tools=[ts])
@@ -29,26 +29,26 @@ class TestSubagentSpec:
 
 class TestSubagentStatus:
     def test_pending(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentStatus
+        from swarmline.orchestration.subagent_types import SubagentStatus
 
         s = SubagentStatus()
         assert s.state == "pending"
         assert s.result is None
 
     def test_running(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentStatus
+        from swarmline.orchestration.subagent_types import SubagentStatus
 
         s = SubagentStatus(state="running", progress="50%", started_at=_now())
         assert s.state == "running"
 
     def test_completed(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentStatus
+        from swarmline.orchestration.subagent_types import SubagentStatus
 
         s = SubagentStatus(state="completed", result="done", started_at=_now(), finished_at=_now())
         assert s.result == "done"
 
     def test_failed(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentStatus
+        from swarmline.orchestration.subagent_types import SubagentStatus
 
         s = SubagentStatus(state="failed", error="crash")
         assert s.error == "crash"
@@ -56,7 +56,7 @@ class TestSubagentStatus:
 
 class TestSubagentResult:
     def test_create(self) -> None:
-        from cognitia.orchestration.subagent_types import SubagentResult, SubagentStatus
+        from swarmline.orchestration.subagent_types import SubagentResult, SubagentStatus
 
         r = SubagentResult(
             agent_id="a1", status=SubagentStatus(state="completed"), output="result text"
@@ -68,7 +68,7 @@ class TestSubagentResult:
 
 class TestSubagentOrchestratorProtocol:
     def test_runtime_checkable(self) -> None:
-        from cognitia.orchestration.subagent_protocol import SubagentOrchestrator
+        from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
         class FakeOrch:
             async def spawn(self, spec, task):
@@ -89,7 +89,7 @@ class TestSubagentOrchestratorProtocol:
         assert isinstance(FakeOrch(), SubagentOrchestrator)
 
     def test_incomplete_not_instance(self) -> None:
-        from cognitia.orchestration.subagent_protocol import SubagentOrchestrator
+        from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
         class Incomplete:
             async def spawn(self, spec, task):
@@ -98,7 +98,7 @@ class TestSubagentOrchestratorProtocol:
         assert not isinstance(Incomplete(), SubagentOrchestrator)
 
     def test_isp_max_5(self) -> None:
-        from cognitia.orchestration.subagent_protocol import SubagentOrchestrator
+        from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
         methods = [
             n

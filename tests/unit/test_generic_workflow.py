@@ -10,7 +10,7 @@ class TestGenericWorkflowPassFirstTry:
     """execute → verify pass → done."""
 
     async def test_generic_workflow_pass_first_try(self) -> None:
-        from cognitia.orchestration.generic_workflow_engine import (
+        from swarmline.orchestration.generic_workflow_engine import (
             GenericWorkflowEngine,
             GenericWorkflowResult,
             GenericWorkflowStatus,
@@ -35,7 +35,7 @@ class TestGenericWorkflowRetryOnFail:
     """execute → verify fail → retry → pass."""
 
     async def test_generic_workflow_retry_on_fail(self) -> None:
-        from cognitia.orchestration.generic_workflow_engine import (
+        from swarmline.orchestration.generic_workflow_engine import (
             GenericWorkflowEngine,
             GenericWorkflowStatus,
         )
@@ -64,7 +64,7 @@ class TestGenericWorkflowMaxRetriesExceeded:
     """3 fails → max_retries_exceeded status."""
 
     async def test_generic_workflow_max_retries_exceeded(self) -> None:
-        from cognitia.orchestration.generic_workflow_engine import (
+        from swarmline.orchestration.generic_workflow_engine import (
             GenericWorkflowEngine,
             GenericWorkflowStatus,
         )
@@ -86,7 +86,7 @@ class TestGenericWorkflowCustomVerifier:
     """Pluggable verifier (content quality check)."""
 
     async def test_generic_workflow_custom_verifier(self) -> None:
-        from cognitia.orchestration.generic_workflow_engine import (
+        from swarmline.orchestration.generic_workflow_engine import (
             GenericWorkflowEngine,
             GenericWorkflowStatus,
         )
@@ -120,16 +120,16 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
 
     async def test_generic_workflow_code_verifier_backward_compat(self) -> None:
         from _stubs import StubPlannerMode as PlannerMode
-        from cognitia.orchestration.code_workflow_engine import (
+        from swarmline.orchestration.code_workflow_engine import (
             CodeWorkflowEngine,
             WorkflowStatus,
         )
-        from cognitia.orchestration.dod_state_machine import DoDStateMachine
+        from swarmline.orchestration.dod_state_machine import DoDStateMachine
 
         # Minimal mock verifier
         class MockVerifier:
             async def verify_contracts(self):
-                from cognitia.orchestration.verification_types import (
+                from swarmline.orchestration.verification_types import (
                     VerificationResult,
                     VerificationStatus,
                 )
@@ -137,7 +137,7 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                 return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
 
             async def verify_tests_substantive(self):
-                from cognitia.orchestration.verification_types import (
+                from swarmline.orchestration.verification_types import (
                     VerificationResult,
                     VerificationStatus,
                 )
@@ -145,7 +145,7 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                 return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
 
             async def verify_tests_before_code(self):
-                from cognitia.orchestration.verification_types import (
+                from swarmline.orchestration.verification_types import (
                     VerificationResult,
                     VerificationStatus,
                 )
@@ -153,7 +153,7 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                 return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
 
             async def verify_linters(self):
-                from cognitia.orchestration.verification_types import (
+                from swarmline.orchestration.verification_types import (
                     VerificationResult,
                     VerificationStatus,
                 )
@@ -161,7 +161,7 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                 return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
 
             async def verify_coverage(self, min_pct=85):
-                from cognitia.orchestration.verification_types import (
+                from swarmline.orchestration.verification_types import (
                     VerificationResult,
                     VerificationStatus,
                 )
@@ -183,8 +183,8 @@ class TestGenericWorkflowWithWorkflowGraphNode:
     """GenericWorkflowEngine as node in WorkflowGraph."""
 
     async def test_generic_workflow_with_workflow_graph_node(self) -> None:
-        from cognitia.orchestration.generic_workflow_engine import GenericWorkflowEngine
-        from cognitia.orchestration.workflow_graph import WorkflowGraph
+        from swarmline.orchestration.generic_workflow_engine import GenericWorkflowEngine
+        from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         async def executor(task: str, context: dict[str, Any]) -> str:
             return f"executed: {task}"

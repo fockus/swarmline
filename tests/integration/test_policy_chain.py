@@ -3,9 +3,9 @@ aktiviruet skilly finuslugi and iss-price, zatem agent vyzyvaet tools.
 """
 
 import pytest
-from cognitia.policy.tool_budget import ToolBudget
-from cognitia.policy.tool_id_codec import DefaultToolIdCodec
-from cognitia.policy.tool_policy import (
+from swarmline.policy.tool_budget import ToolBudget
+from swarmline.policy.tool_id_codec import DefaultToolIdCodec
+from swarmline.policy.tool_policy import (
     DefaultToolPolicy,
     PermissionAllow,
     PermissionDeny,

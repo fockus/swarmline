@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.orchestration.coding_standards import (
+from swarmline.orchestration.coding_standards import (
     AutonomousLoopConfig,
     CodePipelineConfig,
     CodingStandardsConfig,

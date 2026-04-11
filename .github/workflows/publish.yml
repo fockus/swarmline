@@ -55,8 +55,8 @@ jobs:
       - name: Install wheel and smoke test
         run: |
           pip install dist/*.whl
-          python -c "from cognitia import Agent, AgentConfig; print('OK:', AgentConfig.__name__)"
-          python -c "import cognitia; print('version:', cognitia.__version__)"
+          python -c "from swarmline import Agent, AgentConfig; print('OK:', AgentConfig.__name__)"
+          python -c "import swarmline; print('version:', swarmline.__version__)"
 
   publish-pypi:
     needs: test-install

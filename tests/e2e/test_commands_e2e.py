@@ -10,8 +10,8 @@ from typing import Any
 
 import pytest
 
-from cognitia.commands.loader import load_commands_from_yaml
-from cognitia.commands.registry import CommandRegistry
+from swarmline.commands.loader import load_commands_from_yaml
+from swarmline.commands.registry import CommandRegistry
 
 
 # ---------------------------------------------------------------------------

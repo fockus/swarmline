@@ -7,9 +7,9 @@ import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from cognitia.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 class TestCliRuntimeParserSelection:
@@ -17,7 +17,7 @@ class TestCliRuntimeParserSelection:
 
     def test_cli_runtime_default_parser_claude_command(self) -> None:
         """Command starting with 'claude' -> ClaudeNdjsonParser."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["claude", "--print", "-"])
@@ -26,7 +26,7 @@ class TestCliRuntimeParserSelection:
 
     def test_cli_runtime_default_parser_custom_command(self) -> None:
         """Command not starting with 'claude' -> GenericNdjsonParser."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["my-agent", "--json"])
@@ -35,7 +35,7 @@ class TestCliRuntimeParserSelection:
 
     def test_cli_runtime_explicit_parser_overrides_auto(self) -> None:
         """Explicitly provided parser takes precedence."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["claude", "--print", "-"])
@@ -45,7 +45,7 @@ class TestCliRuntimeParserSelection:
 
     def test_cli_runtime_default_parser_absolute_claude_path(self) -> None:
         """Absolute path to claude should still use ClaudeNdjsonParser."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["/usr/local/bin/claude", "--print", "-"])
@@ -57,7 +57,7 @@ class TestCliRuntimeCommandNormalization:
     """Claude CLI commands are normalized to the NDJSON-compatible shape."""
 
     def test_legacy_claude_command_gets_output_format_and_verbose(self) -> None:
-        from cognitia.runtime.cli.runtime import _normalize_claude_command
+        from swarmline.runtime.cli.runtime import _normalize_claude_command
 
         assert _normalize_claude_command(["claude", "--print", "-"], "stream-json") == [
             "claude",
@@ -69,7 +69,7 @@ class TestCliRuntimeCommandNormalization:
         ]
 
     def test_legacy_output_flag_is_upgraded(self) -> None:
-        from cognitia.runtime.cli.runtime import _normalize_claude_command
+        from swarmline.runtime.cli.runtime import _normalize_claude_command
 
         assert _normalize_claude_command(
             ["claude", "--print", "--output", "stream-json", "-"],
@@ -84,7 +84,7 @@ class TestCliRuntimeCommandNormalization:
         ]
 
     def test_non_claude_command_is_left_untouched(self) -> None:
-        from cognitia.runtime.cli.runtime import _normalize_claude_command
+        from swarmline.runtime.cli.runtime import _normalize_claude_command
 
         assert _normalize_claude_command(["my-agent", "--json"], "json") == [
             "my-agent",
@@ -97,7 +97,7 @@ class TestCliRuntimeProtocol:
 
     def test_cli_runtime_has_run_method(self) -> None:
         """CliAgentRuntime has async run method."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)
@@ -106,7 +106,7 @@ class TestCliRuntimeProtocol:
 
     def test_cli_runtime_has_cancel_method(self) -> None:
         """CliAgentRuntime has cancel method."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)
@@ -115,7 +115,7 @@ class TestCliRuntimeProtocol:
 
     def test_cli_runtime_has_cleanup_method(self) -> None:
         """CliAgentRuntime has async cleanup method."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)
@@ -124,8 +124,8 @@ class TestCliRuntimeProtocol:
 
     def test_cli_runtime_isinstance_agent_runtime(self) -> None:
         """CliAgentRuntime passes isinstance check for AgentRuntime."""
-        from cognitia.runtime.base import AgentRuntime
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.base import AgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)
@@ -136,7 +136,7 @@ class TestCliRuntimePromptSerialization:
     """CliAgentRuntime serializes stdin payload deterministically."""
 
     def test_build_stdin_payload_includes_system_prompt_and_conversation(self) -> None:
-        from cognitia.runtime.cli.runtime import _build_stdin_payload
+        from swarmline.runtime.cli.runtime import _build_stdin_payload
 
         payload = _build_stdin_payload(
             messages=[
@@ -152,7 +152,7 @@ class TestCliRuntimePromptSerialization:
         )
 
     def test_build_stdin_payload_omits_empty_system_prompt(self) -> None:
-        from cognitia.runtime.cli.runtime import _build_stdin_payload
+        from swarmline.runtime.cli.runtime import _build_stdin_payload
 
         payload = _build_stdin_payload(
             messages=[Message(role="user", content="hello")],
@@ -164,7 +164,7 @@ class TestCliRuntimePromptSerialization:
 
 class TestCliRuntimeEnvironment:
     def test_build_subprocess_env_redacts_host_secrets_by_default(self) -> None:
-        from cognitia.runtime.cli.runtime import _build_subprocess_env
+        from swarmline.runtime.cli.runtime import _build_subprocess_env
 
         cli_config = CliConfig(command=["claude"], env={"EXPLICIT_TOKEN": "ok"})
         with patch.dict(
@@ -180,7 +180,7 @@ class TestCliRuntimeEnvironment:
         assert "SECRET_TOKEN" not in env
 
     def test_build_subprocess_env_can_inherit_full_host_env_when_enabled(self) -> None:
-        from cognitia.runtime.cli.runtime import _build_subprocess_env
+        from swarmline.runtime.cli.runtime import _build_subprocess_env
 
         cli_config = CliConfig(command=["claude"], inherit_host_env=True)
         with patch.dict("os.environ", {"PATH": "/usr/bin", "SECRET_TOKEN": "top-secret"}, clear=True):
@@ -194,7 +194,7 @@ class TestCliRuntimeRun:
 
     async def test_cli_runtime_run_yields_parsed_events(self) -> None:
         """run() yields events parsed from subprocess stdout."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["claude", "--print", "-"])
@@ -238,7 +238,7 @@ class TestCliRuntimeRun:
 
     async def test_cli_runtime_run_normalizes_legacy_claude_command_before_exec(self) -> None:
         """Legacy Claude command shape is upgraded before subprocess spawn."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["claude", "--print", "--output", "stream-json", "-"])
@@ -276,7 +276,7 @@ class TestCliRuntimeRun:
 
     async def test_cli_runtime_run_process_error_yields_error_event(self) -> None:
         """Non-zero exit code -> error event."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["false"])
@@ -308,7 +308,7 @@ class TestCliRuntimeRun:
 
     async def test_cli_runtime_run_max_output_exceeded_yields_error(self) -> None:
         """Output exceeding max_output_bytes -> error event."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["echo"], max_output_bytes=10)
@@ -343,7 +343,7 @@ class TestCliRuntimeRun:
         self,
     ) -> None:
         """Exit code 0 without final event -> bad_model_output error."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         cli_config = CliConfig(command=["my-agent", "--json"])
@@ -379,14 +379,14 @@ class TestCliRuntimeCancel:
 
     async def test_cli_runtime_cancel_no_process_no_error(self) -> None:
         """cancel() with no active process does not raise."""
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)
         rt.cancel()  # Should not raise
 
     async def test_cli_runtime_cancel_running_process_yields_cancelled_error(self) -> None:
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)
@@ -445,7 +445,7 @@ class TestCliRuntimeContextManager:
     """CliAgentRuntime async context manager."""
 
     async def test_cli_runtime_aenter_returns_self(self) -> None:
-        from cognitia.runtime.cli.runtime import CliAgentRuntime
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
         rt = CliAgentRuntime(config=config)

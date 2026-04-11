@@ -10,9 +10,9 @@ from typing import Any
 
 import pytest
 
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
-from cognitia.tools.types import ExecutionResult
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.tools.types import ExecutionResult
 
 
 # ---------------------------------------------------------------------------
@@ -417,7 +417,7 @@ class TestThinFeatureModeE2E:
     @pytest.mark.asyncio
     async def test_thin_feature_mode_portable_no_builtins(self) -> None:
         """Agent(feature_mode="portable", sandbox=MockSandbox) -> 0 builtin tools."""
-        from cognitia.runtime.thin.builtin_tools import (
+        from swarmline.runtime.thin.builtin_tools import (
             filter_thin_builtins_by_mode,
             get_thin_builtin_specs,
         )

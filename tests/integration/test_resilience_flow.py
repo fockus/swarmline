@@ -4,8 +4,8 @@ model escalation from-za tool failures.
 
 import time
 
-from cognitia.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry, CircuitState
-from cognitia.runtime.model_policy import ModelPolicy
+from swarmline.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry, CircuitState
+from swarmline.runtime.model_policy import ModelPolicy
 
 
 class TestCircuitBreakerEscalation:

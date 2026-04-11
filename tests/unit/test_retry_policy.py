@@ -6,13 +6,13 @@ RetryPolicy protocol compliance, and integration with RuntimeConfig/RUNTIME_ERRO
 
 from __future__ import annotations
 
-from cognitia.retry import (
+from swarmline.retry import (
     ExponentialBackoff,
     ModelFallbackChain,
     ProviderFallback,
     RetryPolicy,
 )
-from cognitia.runtime.types import RUNTIME_ERROR_KINDS, RuntimeConfig
+from swarmline.runtime.types import RUNTIME_ERROR_KINDS, RuntimeConfig
 
 
 # ---------------------------------------------------------------------------

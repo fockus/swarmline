@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.runtime.headless import HeadlessRuntime
-from cognitia.runtime.registry import get_default_registry, reset_default_registry
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.headless import HeadlessRuntime
+from swarmline.runtime.registry import get_default_registry, reset_default_registry
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 class TestHeadlessRuntime:

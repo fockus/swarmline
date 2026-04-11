@@ -1,17 +1,17 @@
 # CLI Reference
 
-Command-line interface for Cognitia agent infrastructure. Provides direct access to memory, plans, team coordination, agent management, and code execution.
+Command-line interface for Swarmline agent infrastructure. Provides direct access to memory, plans, team coordination, agent management, and code execution.
 
 ## Installation
 
 ```bash
-pip install cognitia[code-agent]
+pip install swarmline[code-agent]
 ```
 
 ## Usage
 
 ```bash
-cognitia [OPTIONS] COMMAND [ARGS]
+swarmline [OPTIONS] COMMAND [ARGS]
 ```
 
 ## Global Options
@@ -29,16 +29,16 @@ Manage agent memory: facts, messages, and summaries.
 
 ```bash
 # Store a fact
-cognitia memory upsert alice language Python
-cognitia memory upsert alice project "cognitia" --topic-id dev
+swarmline memory upsert alice language Python
+swarmline memory upsert alice project "swarmline" --topic-id dev
 
 # Retrieve facts
-cognitia memory get alice
-cognitia memory get alice --topic-id dev
+swarmline memory get alice
+swarmline memory get alice --topic-id dev
 
 # Get recent messages from a conversation
-cognitia memory messages alice session-1
-cognitia memory messages alice session-1 --limit 20
+swarmline memory messages alice session-1
+swarmline memory messages alice session-1 --limit 20
 ```
 
 | Subcommand | Arguments | Options | Description |
@@ -53,26 +53,26 @@ Manage agent plans: create, approve, and track step progress.
 
 ```bash
 # Create a plan with steps
-cognitia plan create "Refactor auth module" \
+swarmline plan create "Refactor auth module" \
   -s "Extract interface" \
   -s "Write contract tests" \
   -s "Implement new adapter" \
   -s "Update DI wiring"
 
 # List plans
-cognitia plan list
-cognitia plan list --user-id alice --topic-id project-x
+swarmline plan list
+swarmline plan list --user-id alice --topic-id project-x
 
 # Get a specific plan
-cognitia plan get plan-a1b2c3d4
+swarmline plan get plan-a1b2c3d4
 
 # Approve a draft plan
-cognitia plan approve plan-a1b2c3d4
-cognitia plan approve plan-a1b2c3d4 --approved-by "tech-lead"
+swarmline plan approve plan-a1b2c3d4
+swarmline plan approve plan-a1b2c3d4 --approved-by "tech-lead"
 
 # Update step status
-cognitia plan step plan-a1b2c3d4 step-e5f6g7h8 --status completed --result "Interface extracted"
-cognitia plan step plan-a1b2c3d4 step-i9j0k1l2 --status failed --result "Tests revealed contract drift"
+swarmline plan step plan-a1b2c3d4 step-e5f6g7h8 --status completed --result "Interface extracted"
+swarmline plan step plan-a1b2c3d4 step-i9j0k1l2 --status failed --result "Tests revealed contract drift"
 ```
 
 | Subcommand | Arguments | Options | Description |
@@ -89,26 +89,26 @@ Manage agent teams: register agents, create tasks, and coordinate work.
 
 ```bash
 # Register an agent
-cognitia team register dev-1 "Developer Agent" developer
-cognitia team register qa-1 "QA Agent" tester --parent-id dev-1 --runtime thin
+swarmline team register dev-1 "Developer Agent" developer
+swarmline team register qa-1 "QA Agent" tester --parent-id dev-1 --runtime thin
 
 # List agents
-cognitia team agents
-cognitia team agents --role developer --status active
+swarmline team agents
+swarmline team agents --role developer --status active
 
 # Create a task
-cognitia team task task-001 "Implement login endpoint" \
+swarmline team task task-001 "Implement login endpoint" \
   --description "REST endpoint with JWT auth" \
   --priority HIGH \
   --assignee dev-1
 
 # Claim next available task
-cognitia team claim
-cognitia team claim --assignee dev-1
+swarmline team claim
+swarmline team claim --assignee dev-1
 
 # List tasks
-cognitia team tasks
-cognitia team tasks --status pending --priority HIGH
+swarmline team tasks
+swarmline team tasks --status pending --priority HIGH
 ```
 
 | Subcommand | Arguments | Options | Description |
@@ -125,14 +125,14 @@ Manage LLM-powered agents. Requires an API key (`ANTHROPIC_API_KEY` or `OPENAI_A
 
 ```bash
 # Create an agent
-cognitia agent create --prompt "You are a Python expert" --model sonnet
-cognitia agent create -p "You review code for security issues" -m sonnet --runtime thin --max-turns 5
+swarmline agent create --prompt "You are a Python expert" --model sonnet
+swarmline agent create -p "You review code for security issues" -m sonnet --runtime thin --max-turns 5
 
 # Query an agent
-cognitia agent query agent-a1b2c3d4 "Review this function for SQL injection"
+swarmline agent query agent-a1b2c3d4 "Review this function for SQL injection"
 
 # List agents
-cognitia agent list
+swarmline agent list
 ```
 
 | Subcommand | Arguments | Options | Description |
@@ -146,8 +146,8 @@ cognitia agent list
 Execute Python code in an isolated subprocess.
 
 ```bash
-cognitia run "print('hello world')"
-cognitia run "import sys; print(sys.version)" --timeout 10
+swarmline run "print('hello world')"
+swarmline run "import sys; print(sys.version)" --timeout 10
 ```
 
 | Arguments | Options | Description |
@@ -156,12 +156,12 @@ cognitia run "import sys; print(sys.version)" --timeout 10
 
 ### mcp-serve
 
-Start the Cognitia MCP server (STDIO transport). Equivalent to running `cognitia-mcp`.
+Start the Swarmline MCP server (STDIO transport). Equivalent to running `swarmline-mcp`.
 
 ```bash
-cognitia mcp-serve
-cognitia mcp-serve --mode headless
-cognitia mcp-serve --mode full
+swarmline mcp-serve
+swarmline mcp-serve --mode headless
+swarmline mcp-serve --mode full
 ```
 
 | Options | Description |

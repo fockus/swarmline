@@ -1,6 +1,6 @@
 # Design Patterns
 
-This guide shows how to combine cognitia features for real-world use cases. Each pattern includes a complete, runnable code example with the exact imports from the codebase.
+This guide shows how to combine swarmline features for real-world use cases. Each pattern includes a complete, runnable code example with the exact imports from the codebase.
 
 ---
 
@@ -65,9 +65,9 @@ User Prompt
 
 import asyncio
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.middleware import (
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import (
     BudgetExceededError,
     CostTracker,
     Middleware,
@@ -75,16 +75,16 @@ from cognitia.agent.middleware import (
     ToolOutputCompressor,
     build_middleware_stack,
 )
-from cognitia.agent.result import Result
-from cognitia.guardrails import (
+from swarmline.agent.result import Result
+from swarmline.guardrails import (
     ContentLengthGuardrail,
     GuardrailContext,
     GuardrailResult,
     RegexGuardrail,
 )
-from cognitia.input_filters import MaxTokensFilter, SystemPromptInjector
-from cognitia.retry import ExponentialBackoff, ModelFallbackChain
-from cognitia.runtime.cost import CostBudget, CostTracker as RuntimeCostTracker, load_pricing
+from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.retry import ExponentialBackoff, ModelFallbackChain
+from swarmline.runtime.cost import CostBudget, CostTracker as RuntimeCostTracker, load_pricing
 
 
 # --- 1. Guardrails: pre/post-LLM validation ---
@@ -289,11 +289,11 @@ User Query
 
 import asyncio
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.memory.inmemory import InMemoryMemoryProvider
-from cognitia.rag import Document, RagInputFilter, SimpleRetriever
-from cognitia.session.backends import (
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.memory.inmemory import InMemoryMemoryProvider
+from swarmline.rag import Document, RagInputFilter, SimpleRetriever
+from swarmline.session.backends import (
     InMemorySessionBackend,
     MemoryScope,
     SqliteSessionBackend,
@@ -317,8 +317,8 @@ knowledge_base = [
         metadata={"source": "sqlalchemy-docs", "topic": "database"},
     ),
     Document(
-        content="Cognitia agents support thin, claude_sdk, and deepagents runtimes.",
-        metadata={"source": "cognitia-docs", "topic": "agents"},
+        content="Swarmline agents support thin, claude_sdk, and deepagents runtimes.",
+        metadata={"source": "swarmline-docs", "topic": "agents"},
     ),
 ]
 
@@ -345,7 +345,7 @@ async def research_query(query: str) -> str:
     """Execute a research query with RAG context injection."""
 
     # Retrieve relevant documents
-    from cognitia.runtime.types import Message
+    from swarmline.runtime.types import Message
 
     messages = [Message(role="user", content=query)]
     filtered_messages, enriched_prompt = await rag_filter.filter(
@@ -501,12 +501,12 @@ import asyncio
 import time
 from collections.abc import AsyncIterator
 
-from cognitia.multi_agent.agent_registry import InMemoryAgentRegistry
-from cognitia.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
-from cognitia.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
-from cognitia.multi_agent.task_queue import InMemoryTaskQueue
-from cognitia.multi_agent.task_types import TaskFilter, TaskItem, TaskPriority, TaskStatus
-from cognitia.runtime.types import Message, RuntimeEvent, ToolSpec
+from swarmline.multi_agent.agent_registry import InMemoryAgentRegistry
+from swarmline.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
+from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
+from swarmline.multi_agent.task_queue import InMemoryTaskQueue
+from swarmline.multi_agent.task_types import TaskFilter, TaskItem, TaskPriority, TaskStatus
+from swarmline.runtime.types import Message, RuntimeEvent, ToolSpec
 
 
 # --- 1. Agent Registry: track all agents ---
@@ -748,12 +748,12 @@ User
 
 import asyncio
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.conversation import Conversation
-from cognitia.agent.middleware import CostTracker, ToolOutputCompressor
-from cognitia.memory.inmemory import InMemoryMemoryProvider
-from cognitia.session.backends import (
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.conversation import Conversation
+from swarmline.agent.middleware import CostTracker, ToolOutputCompressor
+from swarmline.memory.inmemory import InMemoryMemoryProvider
+from swarmline.session.backends import (
     InMemorySessionBackend,
     MemoryScope,
     SqliteSessionBackend,
@@ -766,7 +766,7 @@ from cognitia.session.backends import (
 memory = InMemoryMemoryProvider()
 
 # For production persistence:
-#   from cognitia.memory.sqlite import SqliteMemoryProvider
+#   from swarmline.memory.sqlite import SqliteMemoryProvider
 #   memory = SqliteMemoryProvider(db_path="memory.db")
 
 
@@ -956,13 +956,13 @@ Pipeline Start
 
 import asyncio
 
-from cognitia.agent.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.middleware import BudgetExceededError, CostTracker
-from cognitia.agent.result import Result
-from cognitia.retry import ModelFallbackChain
-from cognitia.runtime.cancellation import CancellationToken
-from cognitia.runtime.cost import CostBudget, CostTracker as RuntimeCostTracker, load_pricing
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import BudgetExceededError, CostTracker
+from swarmline.agent.result import Result
+from swarmline.retry import ModelFallbackChain
+from swarmline.runtime.cancellation import CancellationToken
+from swarmline.runtime.cost import CostBudget, CostTracker as RuntimeCostTracker, load_pricing
 
 
 # --- 1. Budget and pricing setup ---

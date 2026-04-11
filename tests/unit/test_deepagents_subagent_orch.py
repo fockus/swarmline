@@ -6,13 +6,13 @@ import asyncio
 from collections.abc import AsyncIterator
 from unittest.mock import patch
 
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
 
 
 class TestDeepAgentsSubagentOrchestrator:
     async def test_spawn_and_wait(self) -> None:
-        from cognitia.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
 
         class FakeRuntime:
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
@@ -32,7 +32,7 @@ class TestDeepAgentsSubagentOrchestrator:
         assert result.status.state == "completed"
 
     async def test_error_event_maps_to_failed_status(self) -> None:
-        from cognitia.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
 
         class FakeRuntime:
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
@@ -50,7 +50,7 @@ class TestDeepAgentsSubagentOrchestrator:
         assert "boom" in (result.status.error or "")
 
     async def test_cancel_maps_to_cancelled_status(self) -> None:
-        from cognitia.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
 
         class SlowRuntime:
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
@@ -68,14 +68,14 @@ class TestDeepAgentsSubagentOrchestrator:
         assert result.status.state in ("cancelled", "failed")
 
     async def test_isinstance_protocol(self) -> None:
-        from cognitia.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
-        from cognitia.orchestration.subagent_protocol import SubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
         orch = DeepAgentsSubagentOrchestrator()
         assert isinstance(orch, SubagentOrchestrator)
 
     async def test_default_runtime_passes_registered_local_tool_executors(self) -> None:
-        from cognitia.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
 
         captured_tool_executors = {}
 
@@ -105,7 +105,7 @@ class TestDeepAgentsSubagentOrchestrator:
             ],
         )
 
-        with patch("cognitia.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime):
+        with patch("swarmline.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime):
             aid = await orch.spawn(spec, "task")
             result = await orch.wait(aid)
 
@@ -113,7 +113,7 @@ class TestDeepAgentsSubagentOrchestrator:
         assert "send_message" in captured_tool_executors
 
     async def test_unregistered_local_tool_fails_before_runtime_execution(self) -> None:
-        from cognitia.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
 
         runtime_run_called = False
 
@@ -141,7 +141,7 @@ class TestDeepAgentsSubagentOrchestrator:
             ],
         )
 
-        with patch("cognitia.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime):
+        with patch("swarmline.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime):
             aid = await orch.spawn(spec, "task")
             result = await orch.wait(aid)
 
@@ -152,7 +152,7 @@ class TestDeepAgentsSubagentOrchestrator:
 
 class TestClaudeSubagentOrchestrator:
     async def test_spawn_and_wait(self) -> None:
-        from cognitia.orchestration.claude_subagent import ClaudeSubagentOrchestrator
+        from swarmline.orchestration.claude_subagent import ClaudeSubagentOrchestrator
 
         class FakeAdapter:
             is_connected = False
@@ -186,7 +186,7 @@ class TestClaudeSubagentOrchestrator:
         assert result.output == "claude result"
 
     async def test_error_event_maps_to_failed_status(self) -> None:
-        from cognitia.orchestration.claude_subagent import ClaudeSubagentOrchestrator
+        from swarmline.orchestration.claude_subagent import ClaudeSubagentOrchestrator
 
         class FakeAdapter:
             is_connected = False
@@ -216,8 +216,8 @@ class TestClaudeSubagentOrchestrator:
         assert "sdk boom" in (result.status.error or "")
 
     async def test_isinstance_protocol(self) -> None:
-        from cognitia.orchestration.claude_subagent import ClaudeSubagentOrchestrator
-        from cognitia.orchestration.subagent_protocol import SubagentOrchestrator
+        from swarmline.orchestration.claude_subagent import ClaudeSubagentOrchestrator
+        from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
         orch = ClaudeSubagentOrchestrator()
         assert isinstance(orch, SubagentOrchestrator)

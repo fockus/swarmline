@@ -6,10 +6,10 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 
-from cognitia.eval.runner import EvalRunner
-from cognitia.eval.reporters import ConsoleReporter, JsonReporter
-from cognitia.eval.scorers import ContainsScorer, ExactMatchScorer
-from cognitia.eval.types import EvalCase, EvalReport, ScorerResult
+from swarmline.eval.runner import EvalRunner
+from swarmline.eval.reporters import ConsoleReporter, JsonReporter
+from swarmline.eval.scorers import ContainsScorer, ExactMatchScorer
+from swarmline.eval.types import EvalCase, EvalReport, ScorerResult
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ class TestEvalRunner:
 class TestConsoleReporter:
 
     def test_format_report(self) -> None:
-        from cognitia.eval.types import EvalResult
+        from swarmline.eval.types import EvalResult
 
         case = EvalCase(id="c1", input="hi", expected="hello")
         result = EvalResult(
@@ -167,7 +167,7 @@ class TestConsoleReporter:
 class TestJsonReporter:
 
     def test_format_returns_valid_json(self) -> None:
-        from cognitia.eval.types import EvalResult
+        from swarmline.eval.types import EvalResult
 
         case = EvalCase(id="c1", input="hi", expected="hello")
         result = EvalResult(

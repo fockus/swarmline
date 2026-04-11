@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 
-from cognitia.runtime.mcp_bridge import McpBridge
-from cognitia.runtime.thin.mcp_client import McpClient
+from swarmline.runtime.mcp_bridge import McpBridge
+from swarmline.runtime.thin.mcp_client import McpClient
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ class TestMcpBridgeInThinRuntimeE2E:
     @pytest.mark.asyncio
     async def test_mcp_tool_execution_via_executor(self) -> None:
         """ThinRuntime ToolExecutor vyzyvaet MCP tool cherez mcp__server__tool format. Verify full roundtrip cherez ToolExecutor.execute(). """
-        from cognitia.runtime.thin.executor import ToolExecutor
+        from swarmline.runtime.thin.executor import ToolExecutor
 
         # Create McpClient with fake responses
         client = McpClient()
@@ -219,7 +219,7 @@ class TestMcpBridgeInThinRuntimeE2E:
     @pytest.mark.asyncio
     async def test_mcp_tool_not_found_returns_error(self) -> None:
         """Notizvestnyy MCP server -> error JSON."""
-        from cognitia.runtime.thin.executor import ToolExecutor
+        from swarmline.runtime.thin.executor import ToolExecutor
 
         executor = ToolExecutor(
             local_tools={},

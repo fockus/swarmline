@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from typing import Any, AsyncIterator
 
-from cognitia.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
-from cognitia.multi_agent.types import AgentToolResult
-from cognitia.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
+from swarmline.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
+from swarmline.multi_agent.types import AgentToolResult
+from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
 
 
 # ---------------------------------------------------------------------------
@@ -84,8 +84,8 @@ class TestAgentToolCrossModuleImports:
     """All agent-tool types importable from canonical module paths."""
 
     def test_agent_tool_cross_module_imports_from_multi_agent(self) -> None:
-        # Arrange/Act — import from cognitia.multi_agent
-        from cognitia.multi_agent import (
+        # Arrange/Act — import from swarmline.multi_agent
+        from swarmline.multi_agent import (
             AgentToolResult as MAResult,
             create_agent_tool_spec as ma_create,
             execute_agent_tool as ma_execute,
@@ -97,16 +97,16 @@ class TestAgentToolCrossModuleImports:
         assert ma_execute is execute_agent_tool
 
     def test_agent_tool_cross_module_imports_from_protocols(self) -> None:
-        # Arrange/Act — import AgentTool protocol from cognitia.protocols
-        from cognitia.protocols import AgentTool
-        from cognitia.protocols.multi_agent import AgentTool as DirectAgentTool
+        # Arrange/Act — import AgentTool protocol from swarmline.protocols
+        from swarmline.protocols import AgentTool
+        from swarmline.protocols.multi_agent import AgentTool as DirectAgentTool
 
         # Assert — same protocol class
         assert AgentTool is DirectAgentTool
 
     def test_agent_tool_cross_module_imports_toolspec_consistent(self) -> None:
         # Arrange/Act — ToolSpec used in agent_tool.py matches runtime.types
-        from cognitia.runtime.types import ToolSpec as RTToolSpec
+        from swarmline.runtime.types import ToolSpec as RTToolSpec
 
         spec = create_agent_tool_spec("test", "test agent")
 
@@ -119,7 +119,7 @@ class TestAgentToolProtocolCompliance:
 
     def test_agent_tool_protocol_compliance_isinstance_check(self) -> None:
         # Arrange — import the protocol
-        from cognitia.protocols import AgentTool
+        from swarmline.protocols import AgentTool
 
         # Arrange — create a class that implements as_tool()
         class MyAgentWrapper:
@@ -150,7 +150,7 @@ class TestAgentToolProtocolCompliance:
 
     def test_agent_tool_protocol_compliance_non_conforming_fails(self) -> None:
         # Arrange — class without as_tool
-        from cognitia.protocols import AgentTool
+        from swarmline.protocols import AgentTool
 
         class NotAnAgent:
             pass

@@ -11,10 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.runtime.cli.runtime import CliAgentRuntime
-from cognitia.runtime.cli.types import CliConfig
-from cognitia.runtime.registry import get_default_registry
-from cognitia.runtime.types import Message, RuntimeConfig
+from swarmline.runtime.cli.runtime import CliAgentRuntime
+from swarmline.runtime.cli.types import CliConfig
+from swarmline.runtime.registry import get_default_registry
+from swarmline.runtime.types import Message, RuntimeConfig
 
 
 # ---------------------------------------------------------------------------

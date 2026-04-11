@@ -1,19 +1,19 @@
 # Agent
 
-The Agent facade is the primary entry point for interacting with Cognitia.
+The Agent facade is the primary entry point for interacting with Swarmline.
 
 ## Agent
 
-::: cognitia.agent.agent.Agent
+::: swarmline.agent.agent.Agent
 
 ## AgentConfig
 
-::: cognitia.agent.config.AgentConfig
+::: swarmline.agent.config.AgentConfig
 
 ## Result
 
-::: cognitia.agent.result.Result
+::: swarmline.agent.result.Result
 
 ## StructuredOutputError
 
-::: cognitia.agent.structured.StructuredOutputError
+::: swarmline.agent.structured.StructuredOutputError

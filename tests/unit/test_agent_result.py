@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.agent.result import Result
+from swarmline.agent.result import Result
 
 
 class TestResultDefaults:

@@ -1,6 +1,6 @@
 # Web Tools
 
-Cognitia provides pluggable web access through two ISP-compliant protocols: **search** (find information) and **fetch** (extract page content). Mix and match providers independently.
+Swarmline provides pluggable web access through two ISP-compliant protocols: **search** (find information) and **fetch** (extract page content). Mix and match providers independently.
 
 ## Architecture
 
@@ -51,7 +51,7 @@ class SearchResult:
 ### Default (httpx only, no search)
 
 ```python
-from cognitia.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_httpx import HttpxWebProvider
 
 web = HttpxWebProvider(timeout=30)
 # web.fetch(url) works (httpx + trafilatura)
@@ -61,8 +61,8 @@ web = HttpxWebProvider(timeout=30)
 ### With DuckDuckGo Search (no API key)
 
 ```python
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
 web = HttpxWebProvider(
     timeout=30,
@@ -78,8 +78,8 @@ for r in results:
 ### With Jina Reader Fetch
 
 ```python
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.tools.web_providers.jina import JinaReaderFetchProvider
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_providers.jina import JinaReaderFetchProvider
 
 web = HttpxWebProvider(
     fetch_provider=JinaReaderFetchProvider(api_key="jina_..."),
@@ -92,9 +92,9 @@ print(content)  # Clean markdown with tables, code, links
 ### Full Setup (search + fetch)
 
 ```python
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.tools.web_providers.tavily import TavilySearchProvider
-from cognitia.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_providers.tavily import TavilySearchProvider
+from swarmline.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
 
 web = HttpxWebProvider(
     timeout=30,
@@ -108,7 +108,7 @@ web = HttpxWebProvider(
 Create providers by name (useful for configuration-driven setup):
 
 ```python
-from cognitia.tools.web_providers.factory import create_search_provider, create_fetch_provider
+from swarmline.tools.web_providers.factory import create_search_provider, create_fetch_provider
 
 search = create_search_provider("duckduckgo")
 search = create_search_provider("tavily", api_key="tvly-...")
@@ -127,7 +127,7 @@ fetch = create_fetch_provider("crawl4ai")
 Meta-search across 9 engines (Bing, Google, Brave, Yandex, Yahoo, Mojeek, Wikipedia, Grokipedia). No API key required.
 
 ```python
-from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
+from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
 provider = DuckDuckGoSearchProvider(timeout=15)
 ```
@@ -136,7 +136,7 @@ provider = DuckDuckGoSearchProvider(timeout=15)
 |-----------|------|---------|-------------|
 | `timeout` | `int` | `15` | Search timeout in seconds |
 
-**Install:** `pip install cognitia[web-duckduckgo]`
+**Install:** `pip install swarmline[web-duckduckgo]`
 **Dependency:** `ddgs`
 **Rate limit:** None (but may be throttled by DuckDuckGo)
 
@@ -145,7 +145,7 @@ provider = DuckDuckGoSearchProvider(timeout=15)
 Fast, privacy-focused search with free tier (2,000 requests/month).
 
 ```python
-from cognitia.tools.web_providers.brave import BraveSearchProvider
+from swarmline.tools.web_providers.brave import BraveSearchProvider
 
 provider = BraveSearchProvider(api_key="BSA...", timeout=15)
 ```
@@ -155,7 +155,7 @@ provider = BraveSearchProvider(api_key="BSA...", timeout=15)
 | `api_key` | `str` | required | Brave Search API key (`BRAVE_SEARCH_API_KEY`) |
 | `timeout` | `int` | `15` | Request timeout in seconds |
 
-**Install:** `pip install cognitia[web]` (uses httpx)
+**Install:** `pip install swarmline[web]` (uses httpx)
 **Rate limit:** 2,000 req/month (free), higher on paid plans
 
 ### Tavily
@@ -163,7 +163,7 @@ provider = BraveSearchProvider(api_key="BSA...", timeout=15)
 AI-optimized search designed specifically for LLM agents. Returns pre-processed, relevant content.
 
 ```python
-from cognitia.tools.web_providers.tavily import TavilySearchProvider
+from swarmline.tools.web_providers.tavily import TavilySearchProvider
 
 provider = TavilySearchProvider(api_key="tvly-...")
 ```
@@ -172,7 +172,7 @@ provider = TavilySearchProvider(api_key="tvly-...")
 |-----------|------|---------|-------------|
 | `api_key` | `str` | required | Tavily API key (`TAVILY_API_KEY`) |
 
-**Install:** `pip install cognitia[web-tavily]`
+**Install:** `pip install swarmline[web-tavily]`
 **Dependency:** `tavily-python`
 **Rate limit:** 1,000 req/month (free)
 
@@ -181,7 +181,7 @@ provider = TavilySearchProvider(api_key="tvly-...")
 Self-hosted meta-search engine. No API keys, no rate limits, full control.
 
 ```python
-from cognitia.tools.web_providers.searxng import SearXNGSearchProvider
+from swarmline.tools.web_providers.searxng import SearXNGSearchProvider
 
 provider = SearXNGSearchProvider(base_url="https://searx.example.com", timeout=15)
 ```
@@ -191,7 +191,7 @@ provider = SearXNGSearchProvider(base_url="https://searx.example.com", timeout=1
 | `base_url` | `str` | required | URL of your SearXNG instance (`SEARXNG_URL`) |
 | `timeout` | `int` | `15` | Request timeout in seconds |
 
-**Install:** `pip install cognitia[web]` (uses httpx)
+**Install:** `pip install swarmline[web]` (uses httpx)
 **Requirements:** Self-hosted SearXNG instance with JSON API enabled
 
 ## Fetch Providers
@@ -210,14 +210,14 @@ content = await web.fetch("https://example.com")
 - Falls back to regex tag stripping without trafilatura
 - Content truncated to 50,000 characters
 
-**Install:** `pip install cognitia[web]`
+**Install:** `pip install swarmline[web]`
 
 ### Jina Reader
 
 Converts any URL to clean, LLM-friendly markdown via Jina AI Reader API. Supports tables, code blocks, LaTeX, 29 languages.
 
 ```python
-from cognitia.tools.web_providers.jina import JinaReaderFetchProvider
+from swarmline.tools.web_providers.jina import JinaReaderFetchProvider
 
 provider = JinaReaderFetchProvider(api_key="jina_...", timeout=30)
 ```
@@ -227,7 +227,7 @@ provider = JinaReaderFetchProvider(api_key="jina_...", timeout=30)
 | `api_key` | `str` | required | Jina API key (`JINA_API_KEY`) |
 | `timeout` | `int` | `30` | Request timeout in seconds |
 
-**Install:** `pip install cognitia[web-jina]`
+**Install:** `pip install swarmline[web-jina]`
 **Free tier:** 1M tokens
 
 ### Crawl4AI
@@ -235,7 +235,7 @@ provider = JinaReaderFetchProvider(api_key="jina_...", timeout=30)
 Playwright-based crawler for JavaScript-heavy sites. Renders pages in a real browser before extracting content.
 
 ```python
-from cognitia.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
+from swarmline.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
 
 provider = Crawl4AIFetchProvider(timeout=30)
 ```
@@ -244,7 +244,7 @@ provider = Crawl4AIFetchProvider(timeout=30)
 |-----------|------|---------|-------------|
 | `timeout` | `int` | `30` | Crawl timeout in seconds |
 
-**Install:** `pip install cognitia[web-crawl4ai]`
+**Install:** `pip install swarmline[web-crawl4ai]`
 **Dependency:** `crawl4ai` (includes Playwright)
 
 Best for: SPAs, dynamic content, sites that require JavaScript rendering.
@@ -268,19 +268,19 @@ Best for: SPAs, dynamic content, sites that require JavaScript rendering.
 | **Jina Reader** | Required | Clean markdown, tables, LaTeX |
 | **Crawl4AI** | None | JS-heavy sites, SPAs |
 
-## Using with CognitiaStack
+## Using with SwarmlineStack
 
 ```python
-from cognitia.bootstrap.stack import CognitiaStack
-from cognitia.tools.web_httpx import HttpxWebProvider
-from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
+from swarmline.bootstrap.stack import SwarmlineStack
+from swarmline.tools.web_httpx import HttpxWebProvider
+from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
 web = HttpxWebProvider(
     timeout=30,
     search_provider=DuckDuckGoSearchProvider(),
 )
 
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     prompts_dir=Path("prompts"),
     skills_dir=Path("skills"),
     project_root=Path("."),
@@ -295,7 +295,7 @@ stack = CognitiaStack.create(
 Implement one of the protocols:
 
 ```python
-from cognitia.tools.web_protocols import WebSearchProvider, WebFetchProvider, SearchResult
+from swarmline.tools.web_protocols import WebSearchProvider, WebFetchProvider, SearchResult
 
 class MySearchProvider:
     """Custom search provider — just implement the protocol."""

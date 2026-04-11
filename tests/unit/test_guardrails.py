@@ -19,7 +19,7 @@ import asyncio
 
 import pytest
 
-from cognitia.guardrails import (
+from swarmline.guardrails import (
     CallerAllowlistGuardrail,
     ContentLengthGuardrail,
     GuardrailContext,
@@ -28,7 +28,7 @@ from cognitia.guardrails import (
     OutputGuardrail,
     RegexGuardrail,
 )
-from cognitia.runtime.types import RUNTIME_ERROR_KINDS, RuntimeConfig
+from swarmline.runtime.types import RUNTIME_ERROR_KINDS, RuntimeConfig
 
 
 # ---------------------------------------------------------------------------

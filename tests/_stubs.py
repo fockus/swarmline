@@ -1,4 +1,4 @@
-"""Shared test stubs for cognitia orchestration tests.
+"""Shared test stubs for swarmline orchestration tests.
 
 StubPlannerMode: satisfies CodePlannerPort Protocol with deterministic output.
 Replaces PlannerMode placeholder that was in code_workflow_engine.py (Y5).

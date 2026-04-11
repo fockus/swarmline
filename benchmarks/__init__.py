@@ -1,1 +1,1 @@
-"""Cognitia benchmarks — performance measurement utilities."""
+"""Swarmline benchmarks — performance measurement utilities."""

@@ -1,4 +1,4 @@
-"""Unit: CognitiaA2AAdapter — wraps Agent as A2A service."""
+"""Unit: SwarmlineA2AAdapter — wraps Agent as A2A service."""
 
 from __future__ import annotations
 
@@ -6,15 +6,15 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 
-from cognitia.a2a.adapter import CognitiaA2AAdapter, _extract_user_text
-from cognitia.a2a.types import (
+from swarmline.a2a.adapter import SwarmlineA2AAdapter, _extract_user_text
+from swarmline.a2a.types import (
     AgentSkill,
     Message,
     Task,
     TaskState,
     TextPart,
 )
-from cognitia.agent.result import Result
+from swarmline.agent.result import Result
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ def _task_with_message(text: str, task_id: str = "t1") -> Task:
 class TestAdapterAgentCard:
 
     def test_agent_card_has_name_and_url(self) -> None:
-        adapter = CognitiaA2AAdapter(
+        adapter = SwarmlineA2AAdapter(
             _mock_agent(), name="TestBot", url="http://localhost:9000"
         )
         card = adapter.agent_card
@@ -53,12 +53,12 @@ class TestAdapterAgentCard:
         assert card.url == "http://localhost:9000"
 
     def test_agent_card_has_streaming_capability(self) -> None:
-        adapter = CognitiaA2AAdapter(_mock_agent(), url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(_mock_agent(), url="http://test:8000")
         assert adapter.agent_card.capabilities.streaming is True
 
     def test_agent_card_with_skills(self) -> None:
         skills = [AgentSkill(id="search", name="Search")]
-        adapter = CognitiaA2AAdapter(_mock_agent(), url="http://test:8000", skills=skills)
+        adapter = SwarmlineA2AAdapter(_mock_agent(), url="http://test:8000", skills=skills)
         assert len(adapter.agent_card.skills) == 1
         assert adapter.agent_card.skills[0].id == "search"
 
@@ -72,7 +72,7 @@ class TestAdapterHandleTask:
 
     async def test_handle_task_success(self) -> None:
         agent = _mock_agent(text="Hello from agent")
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Hi")
 
         result = await adapter.handle_task(task)
@@ -83,7 +83,7 @@ class TestAdapterHandleTask:
 
     async def test_handle_task_calls_agent_query(self) -> None:
         agent = _mock_agent()
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Test prompt")
 
         await adapter.handle_task(task)
@@ -92,7 +92,7 @@ class TestAdapterHandleTask:
 
     async def test_handle_task_no_user_message_fails(self) -> None:
         agent = _mock_agent()
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = Task(id="t1", messages=[])
 
         result = await adapter.handle_task(task)
@@ -101,7 +101,7 @@ class TestAdapterHandleTask:
 
     async def test_handle_task_agent_error_sets_failed(self) -> None:
         agent = _mock_agent(ok=False)
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Hi")
 
         result = await adapter.handle_task(task)
@@ -111,7 +111,7 @@ class TestAdapterHandleTask:
     async def test_handle_task_exception_sets_failed(self) -> None:
         agent = MagicMock()
         agent.query = AsyncMock(side_effect=RuntimeError("boom"))
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Hi")
 
         result = await adapter.handle_task(task)
@@ -137,7 +137,7 @@ class TestAdapterHandleTaskStreaming:
             yield E(type="done", text="Hello World", is_final=True)
 
         agent.stream = fake_stream
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Hi")
 
         events = []
@@ -160,7 +160,7 @@ class TestAdapterTaskManagement:
 
     async def test_get_task_after_handle(self) -> None:
         agent = _mock_agent()
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Hi", task_id="lookup-1")
 
         await adapter.handle_task(task)
@@ -170,12 +170,12 @@ class TestAdapterTaskManagement:
         assert found.id == "lookup-1"
 
     async def test_get_task_not_found(self) -> None:
-        adapter = CognitiaA2AAdapter(_mock_agent(), url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(_mock_agent(), url="http://test:8000")
         assert adapter.get_task("nonexistent") is None
 
     async def test_cancel_task(self) -> None:
         agent = _mock_agent()
-        adapter = CognitiaA2AAdapter(agent, url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
         task = _task_with_message("Hi", task_id="cancel-1")
         await adapter.handle_task(task)
 
@@ -185,7 +185,7 @@ class TestAdapterTaskManagement:
         assert canceled.status.state == TaskState.COMPLETED
 
     async def test_cancel_nonexistent_task(self) -> None:
-        adapter = CognitiaA2AAdapter(_mock_agent(), url="http://test:8000")
+        adapter = SwarmlineA2AAdapter(_mock_agent(), url="http://test:8000")
         result = await adapter.cancel_task("nope")
         assert result is None
 

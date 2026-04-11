@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.memory_bank.knowledge_types import (
+from swarmline.memory_bank.knowledge_types import (
     ChecklistItem,
     DocumentKind,
     DocumentMeta,
@@ -42,36 +42,36 @@ class TestProtocolCompliance:
     """Verify InMemory classes satisfy runtime_checkable protocols."""
 
     def test_knowledge_store_isinstance(self) -> None:
-        from cognitia.memory_bank.knowledge_inmemory import InMemoryKnowledgeStore
-        from cognitia.memory_bank.knowledge_protocols import KnowledgeStore
+        from swarmline.memory_bank.knowledge_inmemory import InMemoryKnowledgeStore
+        from swarmline.memory_bank.knowledge_protocols import KnowledgeStore
 
         assert isinstance(InMemoryKnowledgeStore(), KnowledgeStore)
 
     def test_knowledge_searcher_isinstance(self) -> None:
-        from cognitia.memory_bank.knowledge_inmemory import (
+        from swarmline.memory_bank.knowledge_inmemory import (
             InMemoryKnowledgeSearcher,
             InMemoryKnowledgeStore,
         )
-        from cognitia.memory_bank.knowledge_protocols import KnowledgeSearcher
+        from swarmline.memory_bank.knowledge_protocols import KnowledgeSearcher
 
         store = InMemoryKnowledgeStore()
         assert isinstance(InMemoryKnowledgeSearcher(store), KnowledgeSearcher)
 
     def test_progress_log_isinstance(self) -> None:
-        from cognitia.memory_bank.knowledge_inmemory import InMemoryProgressLog
-        from cognitia.memory_bank.knowledge_protocols import ProgressLog
+        from swarmline.memory_bank.knowledge_inmemory import InMemoryProgressLog
+        from swarmline.memory_bank.knowledge_protocols import ProgressLog
 
         assert isinstance(InMemoryProgressLog(), ProgressLog)
 
     def test_checklist_manager_isinstance(self) -> None:
-        from cognitia.memory_bank.knowledge_inmemory import InMemoryChecklistManager
-        from cognitia.memory_bank.knowledge_protocols import ChecklistManager
+        from swarmline.memory_bank.knowledge_inmemory import InMemoryChecklistManager
+        from swarmline.memory_bank.knowledge_protocols import ChecklistManager
 
         assert isinstance(InMemoryChecklistManager(), ChecklistManager)
 
     def test_null_verifier_isinstance(self) -> None:
-        from cognitia.memory_bank.knowledge_inmemory import NullVerifier
-        from cognitia.memory_bank.knowledge_protocols import VerificationStrategy
+        from swarmline.memory_bank.knowledge_inmemory import NullVerifier
+        from swarmline.memory_bank.knowledge_protocols import VerificationStrategy
 
         assert isinstance(NullVerifier(), VerificationStrategy)
 
@@ -86,7 +86,7 @@ class TestInMemoryKnowledgeStore:
 
     @pytest.fixture()
     def store(self):
-        from cognitia.memory_bank.knowledge_inmemory import InMemoryKnowledgeStore
+        from swarmline.memory_bank.knowledge_inmemory import InMemoryKnowledgeStore
 
         return InMemoryKnowledgeStore()
 
@@ -153,7 +153,7 @@ class TestInMemoryKnowledgeSearcher:
 
     @pytest.fixture()
     def store_and_searcher(self):
-        from cognitia.memory_bank.knowledge_inmemory import (
+        from swarmline.memory_bank.knowledge_inmemory import (
             InMemoryKnowledgeSearcher,
             InMemoryKnowledgeStore,
         )
@@ -247,7 +247,7 @@ class TestInMemoryProgressLog:
 
     @pytest.fixture()
     def log(self):
-        from cognitia.memory_bank.knowledge_inmemory import InMemoryProgressLog
+        from swarmline.memory_bank.knowledge_inmemory import InMemoryProgressLog
 
         return InMemoryProgressLog()
 
@@ -299,7 +299,7 @@ class TestInMemoryChecklistManager:
 
     @pytest.fixture()
     def mgr(self):
-        from cognitia.memory_bank.knowledge_inmemory import InMemoryChecklistManager
+        from swarmline.memory_bank.knowledge_inmemory import InMemoryChecklistManager
 
         return InMemoryChecklistManager()
 
@@ -364,7 +364,7 @@ class TestNullVerifier:
 
     @pytest.fixture()
     def verifier(self):
-        from cognitia.memory_bank.knowledge_inmemory import NullVerifier
+        from swarmline.memory_bank.knowledge_inmemory import NullVerifier
 
         return NullVerifier()
 

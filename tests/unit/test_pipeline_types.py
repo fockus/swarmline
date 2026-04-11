@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import inspect
 
-from cognitia.pipeline.protocols import CostTracker, GoalDecomposer, QualityGate
-from cognitia.pipeline.types import (
+from swarmline.pipeline.protocols import CostTracker, GoalDecomposer, QualityGate
+from swarmline.pipeline.types import (
     BudgetPolicy,
     CostRecord,
     GateResult,

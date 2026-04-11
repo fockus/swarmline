@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.tool import tool
-from cognitia.skills.types import McpServerSpec
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.tool import tool
+from swarmline.skills.types import McpServerSpec
 
 
 def _make_config(**overrides: Any) -> AgentConfig:
@@ -17,7 +17,7 @@ def _make_config(**overrides: Any) -> AgentConfig:
 
 class TestBuildPortableRuntimePlan:
     def test_maps_tool_executors_and_active_tools(self) -> None:
-        from cognitia.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
 
         @tool(name="calc", description="Calculator")
         async def calc(expr: str) -> str:
@@ -32,7 +32,7 @@ class TestBuildPortableRuntimePlan:
         assert [spec.name for spec in plan.active_tools] == ["calc"]
 
     def test_includes_mcp_servers_only_for_portable_runtimes(self) -> None:
-        from cognitia.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
 
         mcp_servers = {"iss": McpServerSpec(name="iss", url="https://iss.test")}
         portable_config = _make_config(runtime="deepagents", mcp_servers=mcp_servers)
@@ -45,7 +45,7 @@ class TestBuildPortableRuntimePlan:
         assert "mcp_servers" not in cli_plan.create_kwargs
 
     def test_injects_thread_id_for_deepagents_sessions(self) -> None:
-        from cognitia.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
 
         config = _make_config(runtime="deepagents", native_config={"checkpointer": object()})
 
@@ -59,7 +59,7 @@ class TestBuildPortableRuntimePlan:
         assert plan.config.native_config["thread_id"] == "conv-thread-1"
 
     def test_preserves_dict_style_mcp_servers_for_portable_runtime(self) -> None:
-        from cognitia.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
 
         mcp_servers = {"iss": {"type": "http", "url": "https://iss.test"}}
         config = _make_config(runtime="thin", mcp_servers=mcp_servers)
@@ -71,7 +71,7 @@ class TestBuildPortableRuntimePlan:
 
 class TestResolveMcpServerUrl:
     def test_resolves_plain_dict_server_config(self) -> None:
-        from cognitia.runtime.thin.mcp_client import resolve_mcp_server_url
+        from swarmline.runtime.thin.mcp_client import resolve_mcp_server_url
 
         url = resolve_mcp_server_url(
             {"iss": {"type": "http", "url": "https://iss.test"}},

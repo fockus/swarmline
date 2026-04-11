@@ -5,8 +5,8 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from cognitia.memory.postgres import _USER_ID_SUB, PostgresMemoryProvider, _json_or_none
-from cognitia.memory.types import GoalState
+from swarmline.memory.postgres import _USER_ID_SUB, PostgresMemoryProvider, _json_or_none
+from swarmline.memory.types import GoalState
 
 
 def _mock_session_factory():

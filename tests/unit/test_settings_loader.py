@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from cognitia.skills.loader import load_mcp_from_settings
+from swarmline.skills.loader import load_mcp_from_settings
 
 
 class TestLoadMcpFromSettings:

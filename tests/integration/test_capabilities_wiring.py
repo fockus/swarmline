@@ -1,4 +1,4 @@
-"""Integration tests: wiring capabilities in CognitiaStack. Verifies chto sandbox/todo/thinking tools correctly are assembled
+"""Integration tests: wiring capabilities in SwarmlineStack. Verifies chto sandbox/todo/thinking tools correctly are assembled
 and kazhdaya capability includessya/vyklyuchaetsya notzavisimo.
 """
 
@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from cognitia.tools.types import SandboxConfig
+from swarmline.tools.types import SandboxConfig
 
 
 @pytest.fixture()
@@ -26,8 +26,8 @@ class TestCollectCapabilityTools:
 
     def test_sandbox_only(self, sandbox_config: SandboxConfig) -> None:
         """Sandbox enabled, todo disabled → sandbox tools + thinking."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sandbox = LocalSandboxProvider(sandbox_config)
         specs, _executors = collect_capability_tools(
@@ -44,8 +44,8 @@ class TestCollectCapabilityTools:
 
     def test_todo_only(self) -> None:
         """Todo enabled, sandbox disabled → todo tools + thinking."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
 
         todo = InMemoryTodoProvider(user_id="u", topic_id="t")
         specs, _executors = collect_capability_tools(
@@ -61,9 +61,9 @@ class TestCollectCapabilityTools:
 
     def test_all_capabilities(self, sandbox_config: SandboxConfig) -> None:
         """Sandbox + todo + thinking -> vse tooly."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sandbox = LocalSandboxProvider(sandbox_config)
         todo = InMemoryTodoProvider(user_id="u", topic_id="t")
@@ -93,7 +93,7 @@ class TestCollectCapabilityTools:
 
     def test_nothing_enabled(self) -> None:
         """Vse capability disabled -> empty dicts."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
+        from swarmline.bootstrap.capabilities import collect_capability_tools
 
         specs, executors = collect_capability_tools(thinking_enabled=False)
         assert specs == {}
@@ -101,8 +101,8 @@ class TestCollectCapabilityTools:
 
     def test_thinking_disabled(self, sandbox_config: SandboxConfig) -> None:
         """Thinking otklyuchen -> nott thinking tool."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sandbox = LocalSandboxProvider(sandbox_config)
         specs, _executors = collect_capability_tools(
@@ -119,8 +119,8 @@ class TestCapabilityToolsExecution:
 
     async def test_sandbox_bash_works(self, sandbox_config: SandboxConfig) -> None:
         """bash tool from capability wiring works."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
-        from cognitia.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
 
         sandbox = LocalSandboxProvider(sandbox_config)
         _specs, executors = collect_capability_tools(sandbox_provider=sandbox)
@@ -131,8 +131,8 @@ class TestCapabilityToolsExecution:
 
     async def test_todo_write_read_works(self) -> None:
         """todo_write -> todo_read from capability wiring works."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
-        from cognitia.todo.inmemory_provider import InMemoryTodoProvider
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+        from swarmline.todo.inmemory_provider import InMemoryTodoProvider
 
         todo = InMemoryTodoProvider(user_id="u", topic_id="t")
         _specs, executors = collect_capability_tools(todo_provider=todo)
@@ -149,7 +149,7 @@ class TestCapabilityToolsExecution:
 
     async def test_thinking_works(self) -> None:
         """thinking tool from capability wiring works."""
-        from cognitia.bootstrap.capabilities import collect_capability_tools
+        from swarmline.bootstrap.capabilities import collect_capability_tools
 
         _specs, executors = collect_capability_tools(thinking_enabled=True)
 

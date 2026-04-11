@@ -13,13 +13,13 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from cognitia.agent.tool import tool
-from cognitia.orchestration.workflow_graph import (
+from swarmline.agent.tool import tool
+from swarmline.orchestration.workflow_graph import (
     END_NODE,
     WorkflowGraph,
     WorkflowInterrupt,
 )
-from cognitia.runtime.structured_output import validate_structured_output
+from swarmline.runtime.structured_output import validate_structured_output
 
 # ---------------------------------------------------------------------------
 # Domain models
@@ -440,7 +440,7 @@ def build_shopping_graph() -> WorkflowGraph:
 
 async def main() -> None:
     print("=" * 60)
-    print("Shopping Agent — cognitia WorkflowGraph demo")
+    print("Shopping Agent — swarmline WorkflowGraph demo")
     print("=" * 60)
 
     graph = build_shopping_graph()

@@ -8,9 +8,9 @@ import asyncio
 import json
 
 import pytest
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
-from cognitia.runtime.types import ToolSpec
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
+from swarmline.runtime.types import ToolSpec
 
 
 def _make_llm_call(response_text: str):

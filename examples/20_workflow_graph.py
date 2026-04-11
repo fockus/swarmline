@@ -7,7 +7,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.orchestration.workflow_graph import (
+from swarmline.orchestration.workflow_graph import (
     END_NODE,
     InMemoryCheckpoint,
     WorkflowGraph,
@@ -105,7 +105,7 @@ async def main() -> None:
     loop_graph.set_entry("draft")
     loop_graph.set_max_loops("draft", max_loops=5)
 
-    result = await loop_graph.execute({"topic": "Cognitia framework"})
+    result = await loop_graph.execute({"topic": "Swarmline framework"})
     print(f"Final revision: {result.get('revision')}, published: {result.get('published')}\n")
 
     # === 3. Parallel execution ===

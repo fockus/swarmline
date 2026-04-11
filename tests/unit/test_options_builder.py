@@ -6,14 +6,14 @@ pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не устан
 
 pytestmark = pytest.mark.requires_claude_sdk
 
-from cognitia.runtime.options_builder import (  # noqa: E402
+from swarmline.runtime.options_builder import (  # noqa: E402
     ClaudeOptionsBuilder,
     _build_sse_config,
     _build_stdio_config,
     _build_url_config,
     _spec_to_sdk_config,
 )
-from cognitia.skills.types import McpServerSpec  # noqa: E402
+from swarmline.skills.types import McpServerSpec  # noqa: E402
 
 
 class TestSpecToSdkConfig:
@@ -136,7 +136,7 @@ class TestClaudeOptionsBuilder:
 
     def test_build_with_custom_model_policy(self) -> None:
         """Userskaya model policy."""
-        from cognitia.runtime.model_policy import ModelPolicy
+        from swarmline.runtime.model_policy import ModelPolicy
 
         policy = ModelPolicy(
             default_model="custom-sonnet",

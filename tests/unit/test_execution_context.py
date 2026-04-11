@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cognitia.multi_agent.execution_context import ExecutionContext, ExecutionMode
+from swarmline.multi_agent.execution_context import ExecutionContext, ExecutionMode
 
 
 class _FakeBoard:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import threading
 
-from cognitia.runtime.cancellation import CancellationToken
+from swarmline.runtime.cancellation import CancellationToken
 
 
 class TestCancellationTokenBasics:
@@ -95,13 +95,13 @@ class TestCancellationTokenInRuntimeConfig:
     """CancellationToken field in RuntimeConfig."""
 
     def test_runtime_config_default_no_token(self) -> None:
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.types import RuntimeConfig
 
         cfg = RuntimeConfig(runtime_name="thin")
         assert cfg.cancellation_token is None
 
     def test_runtime_config_with_token(self) -> None:
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.types import RuntimeConfig
 
         token = CancellationToken()
         cfg = RuntimeConfig(runtime_name="thin", cancellation_token=token)
@@ -113,8 +113,8 @@ class TestThinRuntimeCancel:
 
     async def test_thin_runtime_cancel_yields_cancelled_error(self) -> None:
         """cancel() before run() yields cancelled error event."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         token = CancellationToken()
         cfg = RuntimeConfig(runtime_name="thin", cancellation_token=token)
@@ -137,8 +137,8 @@ class TestThinRuntimeCancel:
 
     async def test_thin_runtime_cancel_method(self) -> None:
         """ThinRuntime.cancel() triggers the config token."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import RuntimeConfig
 
         token = CancellationToken()
         cfg = RuntimeConfig(runtime_name="thin", cancellation_token=token)
@@ -150,8 +150,8 @@ class TestThinRuntimeCancel:
 
     async def test_thin_runtime_context_manager(self) -> None:
         """ThinRuntime works as async context manager."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import RuntimeConfig
 
         cfg = RuntimeConfig(runtime_name="thin")
         async with ThinRuntime(config=cfg, llm_call=_noop_llm) as rt:
@@ -162,8 +162,8 @@ class TestThinRuntimeCancel:
         """__aexit__ calls cleanup()."""
         from unittest.mock import AsyncMock
 
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import RuntimeConfig
 
         cfg = RuntimeConfig(runtime_name="thin")
         rt = ThinRuntime(config=cfg, llm_call=_noop_llm)
@@ -176,8 +176,8 @@ class TestThinRuntimeCancel:
 
     async def test_thin_runtime_cancel_during_conversational_call(self) -> None:
         """Cancel after run() starts suppresses final and returns cancelled error."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         started = asyncio.Event()
         release = asyncio.Event()
@@ -213,8 +213,8 @@ class TestThinRuntimeCancel:
 
     async def test_thin_runtime_cancel_during_react_loop(self) -> None:
         """Cancel between tool execution and final emit stops the react loop."""
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         second_call_started = asyncio.Event()
         release_second_call = asyncio.Event()
@@ -263,10 +263,10 @@ class TestThinRuntimeCancel:
 
     async def test_thin_runtime_cancel_during_retry_backoff(self) -> None:
         """Cancellation during retry sleep exits quickly instead of waiting full delay."""
-        from cognitia.retry import ExponentialBackoff
-        from cognitia.runtime.thin.errors import ThinLlmError
-        from cognitia.runtime.thin.runtime import ThinRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig, RuntimeErrorData
+        from swarmline.retry import ExponentialBackoff
+        from swarmline.runtime.thin.errors import ThinLlmError
+        from swarmline.runtime.thin.runtime import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig, RuntimeErrorData
 
         first_call_done = asyncio.Event()
 
@@ -315,12 +315,12 @@ class TestCancelledErrorKind:
     """'cancelled' is a valid RUNTIME_ERROR_KINDS."""
 
     def test_cancelled_in_error_kinds(self) -> None:
-        from cognitia.runtime.types import RUNTIME_ERROR_KINDS
+        from swarmline.runtime.types import RUNTIME_ERROR_KINDS
 
         assert "cancelled" in RUNTIME_ERROR_KINDS
 
     def test_cancelled_error_data_valid(self) -> None:
-        from cognitia.runtime.types import RuntimeErrorData
+        from swarmline.runtime.types import RuntimeErrorData
 
         err = RuntimeErrorData(kind="cancelled", message="Operation cancelled")
         assert err.kind == "cancelled"

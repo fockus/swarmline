@@ -7,15 +7,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cognitia.multi_agent.graph_orchestrator_types import (
+from swarmline.multi_agent.graph_orchestrator_types import (
     DelegationRequest,
     OrchestratorRunState,
 )
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_types import AgentNode
-from cognitia.multi_agent.task_types import TaskStatus
-from cognitia.protocols.graph_orchestrator import GraphOrchestrator
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_types import AgentNode
+from swarmline.multi_agent.task_types import TaskStatus
+from swarmline.protocols.graph_orchestrator import GraphOrchestrator
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ def make_orchestrator(org, task_board, event_bus):
     """Factory to create orchestrator with custom runner."""
     def _make(agent_runner=None, max_concurrent=5, max_retries=2, approval_gate=None):
         # Lazy import — implementation doesn't exist yet during TDD red phase
-        from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+        from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
         return DefaultGraphOrchestrator(
             graph=org,
             task_board=task_board,
@@ -387,7 +387,7 @@ class TestRetryBackoff:
             sleep_calls.append(delay)
             await original_sleep(0)  # yield control without actual delay
 
-        with unittest.mock.patch("cognitia.multi_agent.graph_orchestrator.asyncio.sleep", side_effect=mock_sleep):
+        with unittest.mock.patch("swarmline.multi_agent.graph_orchestrator.asyncio.sleep", side_effect=mock_sleep):
             run_id = await orch.start("Build")
             await asyncio.sleep(0.3)
             status = await orch.get_status(run_id)
@@ -503,7 +503,7 @@ class TestContextAwareRunner:
         self, make_orchestrator,
     ) -> None:
         """Orchestrator with 1-arg runner passes AgentExecutionContext."""
-        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+        from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
         received: list[AgentExecutionContext] = []
 
@@ -542,12 +542,12 @@ class TestContextAwareRunner:
 
     async def test_context_has_tools_and_skills(self, org, task_board, event_bus) -> None:
         """AgentExecutionContext includes tools and skills from AgentNode."""
-        from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
-        from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
-        from cognitia.multi_agent.graph_types import AgentNode
+        from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
+        from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+        from swarmline.multi_agent.graph_types import AgentNode
 
         # Create a graph with tools and skills on the root node
-        from cognitia.multi_agent.graph_store import InMemoryAgentGraph
+        from swarmline.multi_agent.graph_store import InMemoryAgentGraph
 
         store = InMemoryAgentGraph()
         await store.add_node(AgentNode(

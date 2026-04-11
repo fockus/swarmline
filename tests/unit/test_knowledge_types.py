@@ -6,7 +6,7 @@ import dataclasses
 
 import pytest
 
-from cognitia.memory_bank.knowledge_types import (
+from swarmline.memory_bank.knowledge_types import (
     ChecklistItem,
     DocumentMeta,
     ExperimentRecord,

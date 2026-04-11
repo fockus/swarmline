@@ -7,8 +7,8 @@ No API keys required.
 import asyncio
 from collections.abc import AsyncIterator
 
-from cognitia.runtime.types import RuntimeEvent, RuntimeErrorData
-from cognitia.ui.projection import ChatProjection, project_stream
+from swarmline.runtime.types import RuntimeEvent, RuntimeErrorData
+from swarmline.ui.projection import ChatProjection, project_stream
 
 
 async def simulated_agent_stream() -> AsyncIterator[RuntimeEvent]:

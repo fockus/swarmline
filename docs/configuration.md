@@ -1,16 +1,16 @@
 # Configuration
 
-## CognitiaStack -- Unified Assembly Point
+## SwarmlineStack -- Unified Assembly Point
 
-`CognitiaStack.create()` assembles all library components into a single object.
+`SwarmlineStack.create()` assembles all library components into a single object.
 Each capability is an independent toggle -- pass a provider to enable it, or `None` to disable.
 
 ```python
-from cognitia.bootstrap.stack import CognitiaStack
-from cognitia.runtime.types import RuntimeConfig
-from cognitia.policy.tool_selector import ToolBudgetConfig
+from swarmline.bootstrap.stack import SwarmlineStack
+from swarmline.runtime.types import RuntimeConfig
+from swarmline.policy.tool_selector import ToolBudgetConfig
 
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     # === Required ===
     prompts_dir=Path("prompts"),
     skills_dir=Path("skills"),
@@ -73,7 +73,7 @@ The current release family is secure by default at the relevant boundary:
 `AgentConfig` is the frozen configuration for the Agent facade. The only required parameter is `system_prompt`.
 
 ```python
-from cognitia.agent.config import AgentConfig
+from swarmline.agent.config import AgentConfig
 
 config = AgentConfig(
     system_prompt="You are a helpful assistant.",
@@ -105,7 +105,7 @@ config = AgentConfig(
 `RuntimeConfig` controls which runtime executes the agent loop and its operational limits.
 
 ```python
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",                        # claude_sdk | thin | deepagents
@@ -146,7 +146,7 @@ You can also use prefix matching: `"claude-sonnet"` resolves to `"claude-sonnet-
 `DefaultToolPolicy` implements a default-deny approach to tool access.
 
 ```python
-from cognitia.policy import DefaultToolPolicy
+from swarmline.policy import DefaultToolPolicy
 
 policy = DefaultToolPolicy(
     allowed_system_tools={"bash", "read", "write"},  # whitelist
@@ -180,7 +180,7 @@ These tools are denied by default. Add them to `allowed_system_tools` to whiteli
 Controls how many tools are exposed to the model and in what priority order.
 
 ```python
-from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
+from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
 config = ToolBudgetConfig(
     max_tools=30,                           # total tool limit (default: 30)
@@ -204,7 +204,7 @@ config = ToolBudgetConfig(
 ## MemoryBankConfig
 
 ```python
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.types import MemoryBankConfig
 
 config = MemoryBankConfig(
     enabled=True,
@@ -226,7 +226,7 @@ config = MemoryBankConfig(
 ## TodoConfig
 
 ```python
-from cognitia.todo.types import TodoConfig
+from swarmline.todo.types import TodoConfig
 
 config = TodoConfig(
     enabled=True,
@@ -242,7 +242,7 @@ config = TodoConfig(
 ## SandboxConfig
 
 ```python
-from cognitia.tools.types import SandboxConfig
+from swarmline.tools.types import SandboxConfig
 
 config = SandboxConfig(
     root_path="/data/sandbox",
@@ -270,7 +270,7 @@ Each agent gets an isolated workspace at `{root_path}/{user_id}/{topic_id}/works
 | `GOOGLE_API_KEY`     | Google GenAI API key                                                               | --                         |
 | `OPENROUTER_API_KEY` | Convenience variable for OpenRouter (mapped to OpenAI-compatible path)             | --                         |
 | `ANTHROPIC_MODEL`    | Anthropic model (alias or full name)                                               | `claude-sonnet-4-20250514` |
-| `COGNITIA_RUNTIME`   | Runtime selection (`claude_sdk`, `thin`, `deepagents`, `cli`)                      | `claude_sdk`               |
+| `SWARMLINE_RUNTIME`   | Runtime selection (`claude_sdk`, `thin`, `deepagents`, `cli`)                      | `claude_sdk`               |
 | `E2B_API_KEY`        | E2B API key (cloud sandbox)                                                        | --                         |
 | `DATABASE_URL`       | PostgreSQL connection string                                                       | --                         |
 

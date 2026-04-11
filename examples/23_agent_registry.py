@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.multi_agent.agent_registry import (
+from swarmline.multi_agent.agent_registry import (
     AgentFilter,
     AgentRecord,
     AgentStatus,

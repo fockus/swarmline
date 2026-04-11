@@ -25,8 +25,8 @@ class TestDeepAgentsPlannerGenerate:
     """generate_plan with mocknutym LLM."""
 
     async def test_generate_plan(self) -> None:
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         mock_llm = AsyncMock()
@@ -40,8 +40,8 @@ class TestDeepAgentsPlannerGenerate:
         assert len(plan.steps) == 2
 
     async def test_approve(self) -> None:
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         mock_llm = AsyncMock()
@@ -53,8 +53,8 @@ class TestDeepAgentsPlannerGenerate:
         assert approved.status == "approved"
 
     async def test_execute_step(self) -> None:
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         mock_llm = AsyncMock()
@@ -72,8 +72,8 @@ class TestDeepAgentsPlannerGenerate:
         assert step.result == "done"
 
     async def test_execute_all_marks_plan_completed(self) -> None:
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         mock_llm = AsyncMock()
@@ -97,8 +97,8 @@ class TestDeepAgentsPlannerGenerate:
         assert loaded.status == "completed"
 
     async def test_replan(self) -> None:
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         mock_llm = AsyncMock()
@@ -112,8 +112,8 @@ class TestDeepAgentsPlannerGenerate:
         assert new_plan.status == "draft"
 
     async def test_execute_all_rejects_unapproved_plan(self) -> None:
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
-        from cognitia.orchestration.plan_store import InMemoryPlanStore
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.plan_store import InMemoryPlanStore
 
         store = InMemoryPlanStore()
         mock_llm = AsyncMock()
@@ -134,7 +134,7 @@ class TestDeepAgentsPlannerGenerate:
 
     def test_has_all_protocol_methods(self) -> None:
         """DeepAgentsPlannerMode imeet vse metody PlannerMode."""
-        from cognitia.orchestration.deepagents_planner import DeepAgentsPlannerMode
+        from swarmline.orchestration.deepagents_planner import DeepAgentsPlannerMode
 
         assert hasattr(DeepAgentsPlannerMode, "generate_plan")
         assert hasattr(DeepAgentsPlannerMode, "approve")

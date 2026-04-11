@@ -8,10 +8,10 @@ import time
 
 import pytest
 
-from cognitia.daemon.pid import PidFile
-from cognitia.daemon.runner import DaemonRunner
-from cognitia.daemon.scheduler import Scheduler
-from cognitia.daemon.types import DaemonConfig, DaemonState
+from swarmline.daemon.pid import PidFile
+from swarmline.daemon.runner import DaemonRunner
+from swarmline.daemon.scheduler import Scheduler
+from swarmline.daemon.types import DaemonConfig, DaemonState
 
 
 @pytest.fixture()

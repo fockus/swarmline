@@ -7,10 +7,10 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from cognitia.retry import ExponentialBackoff
-from cognitia.runtime.thin.errors import ThinLlmError
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import (
+from swarmline.retry import ExponentialBackoff
+from swarmline.runtime.thin.errors import ThinLlmError
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
     RuntimeErrorData,
@@ -308,12 +308,12 @@ class TestThinRuntimeConversational:
         thin_error = ThinLlmError(
             RuntimeErrorData(
                 kind="dependency_missing",
-                message="google-genai SDK не установлен. Установите: pip install cognitia[thin]",
+                message="google-genai SDK не установлен. Установите: pip install swarmline[thin]",
                 recoverable=False,
             )
         )
         with patch(
-            "cognitia.runtime.thin.llm_client.get_cached_adapter",
+            "swarmline.runtime.thin.llm_client.get_cached_adapter",
             side_effect=thin_error,
         ):
             events = await collect(runtime, "test", mode_hint="conversational")
@@ -331,7 +331,7 @@ class TestThinRuntimeConversational:
             raise ThinLlmError(
                 RuntimeErrorData(
                     kind="dependency_missing",
-                    message="openai SDK не установлен. Установите: pip install cognitia[thin]",
+                    message="openai SDK не установлен. Установите: pip install swarmline[thin]",
                     recoverable=False,
                 )
             )
@@ -493,7 +493,7 @@ class TestPerCallConfig:
 
         mock_default = AsyncMock(return_value="response text")
         with patch(
-            "cognitia.runtime.thin.runtime.default_llm_call",
+            "swarmline.runtime.thin.runtime.default_llm_call",
             mock_default,
         ):
             # Re-create the internal llm_call after patching

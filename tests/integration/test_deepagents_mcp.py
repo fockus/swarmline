@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cognitia.runtime.deepagents import DeepAgentsRuntime
-from cognitia.runtime.mcp_bridge import McpBridge
-from cognitia.runtime.types import RuntimeConfig, ToolSpec
+from swarmline.runtime.deepagents import DeepAgentsRuntime
+from swarmline.runtime.mcp_bridge import McpBridge
+from swarmline.runtime.types import RuntimeConfig, ToolSpec
 
 
 class TestDeepAgentsMcpToolInjection:

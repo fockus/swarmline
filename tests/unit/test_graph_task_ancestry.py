@@ -6,8 +6,8 @@ import dataclasses
 
 import pytest
 
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.multi_agent.task_types import TaskPriority, TaskStatus
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent.task_types import TaskPriority, TaskStatus
 
 
 class TestGraphTaskItemEpicIdDefault:

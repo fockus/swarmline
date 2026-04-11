@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from cognitia.daemon.pid import DaemonAlreadyRunningError, PidFile
+from swarmline.daemon.pid import DaemonAlreadyRunningError, PidFile
 
 
 @pytest.fixture()
@@ -101,7 +101,7 @@ class TestPidFile:
         assert "~" not in pf.path
 
     def test_protocol_compliance(self, pid_path: str) -> None:
-        from cognitia.daemon.protocols import ProcessLock
+        from swarmline.daemon.protocols import ProcessLock
         pf = PidFile(pid_path)
         assert isinstance(pf, ProcessLock)
 

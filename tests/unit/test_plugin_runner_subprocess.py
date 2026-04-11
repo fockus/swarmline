@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from cognitia.plugins.runner import SubprocessPluginRunner
-from cognitia.plugins.runner_types import PluginManifest, PluginState
+from swarmline.plugins.runner import SubprocessPluginRunner
+from swarmline.plugins.runner_types import PluginManifest, PluginState
 
 
 # ---------------------------------------------------------------------------

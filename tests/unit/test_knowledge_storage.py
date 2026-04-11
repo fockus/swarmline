@@ -11,16 +11,16 @@ from pathlib import Path
 
 import pytest
 
-from cognitia.memory_bank.knowledge_checklist import DefaultChecklistManager
-from cognitia.memory_bank.knowledge_progress import DefaultProgressLog
-from cognitia.memory_bank.knowledge_search import DefaultKnowledgeSearcher
-from cognitia.memory_bank.knowledge_store import DefaultKnowledgeStore
-from cognitia.memory_bank.knowledge_types import (
+from swarmline.memory_bank.knowledge_checklist import DefaultChecklistManager
+from swarmline.memory_bank.knowledge_progress import DefaultProgressLog
+from swarmline.memory_bank.knowledge_search import DefaultKnowledgeSearcher
+from swarmline.memory_bank.knowledge_store import DefaultKnowledgeStore
+from swarmline.memory_bank.knowledge_types import (
     ChecklistItem,
     DocumentMeta,
     KnowledgeEntry,
 )
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.types import MemoryBankConfig
 
 
 # ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ class DictMemoryBankProvider:
 
 def _make_fs_provider(tmp_path: Path):
     """Create a real FilesystemMemoryBankProvider rooted in tmp_path."""
-    from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
+    from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
 
     config = MemoryBankConfig(root_path=tmp_path, enabled=True)
     return FilesystemMemoryBankProvider(config, user_id="u1", topic_id="t1")

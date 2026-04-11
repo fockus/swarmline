@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
 
 class TestDefaultConstruction:

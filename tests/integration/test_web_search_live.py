@@ -8,8 +8,8 @@ import pytest
 
 pytestmark = pytest.mark.live
 
-from cognitia.tools.web_httpx import HttpxWebProvider, _extract_text  # noqa: E402
-from cognitia.tools.web_protocols import SearchResult  # noqa: E402
+from swarmline.tools.web_httpx import HttpxWebProvider, _extract_text  # noqa: E402
+from swarmline.tools.web_protocols import SearchResult  # noqa: E402
 
 # Verify dostupnost ddgs
 try:
@@ -27,7 +27,7 @@ class TestDdgsLiveSearch:
     @pytest.mark.skipif(not _HAS_DDGS, reason="ddgs не установлен")
     async def test_ddgs_returns_real_results(self) -> None:
         """ddgs returns >0 realnyh resultov on simple query."""
-        from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
+        from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
         provider = DuckDuckGoSearchProvider(timeout=15)
         results = await provider.search("Python programming language", max_results=3)
@@ -40,7 +40,7 @@ class TestDdgsLiveSearch:
     @pytest.mark.skipif(not _HAS_DDGS, reason="ddgs не установлен")
     async def test_ddgs_russian_query(self) -> None:
         """ddgs correctly obrabatyvaet russkoyazychnye queries."""
-        from cognitia.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
+        from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
 
         provider = DuckDuckGoSearchProvider(timeout=15)
         results = await provider.search("финансовая грамотность", max_results=3)

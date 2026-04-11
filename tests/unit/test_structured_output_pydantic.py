@@ -9,12 +9,12 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from cognitia.runtime.structured_output import (
+from swarmline.runtime.structured_output import (
     extract_pydantic_schema,
     try_resolve_structured_output,
     validate_structured_output,
 )
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 
 # ---------------------------------------------------------------------------

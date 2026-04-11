@@ -19,8 +19,8 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from cognitia.runtime.types import RuntimeErrorData, RuntimeEvent
-from cognitia.ui.projection import (
+from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent
+from swarmline.ui.projection import (
     ChatProjection,
     ErrorBlock,
     EventProjection,

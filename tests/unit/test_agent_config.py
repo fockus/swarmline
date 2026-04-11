@@ -5,10 +5,10 @@ from __future__ import annotations
 import dataclasses
 
 import pytest
-from cognitia.agent import Agent
-from cognitia.agent.config import AgentConfig
-from cognitia.runtime.capabilities import CapabilityRequirements, RuntimeCapabilities
-from cognitia.runtime.types import resolve_model_name
+from swarmline.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.runtime.capabilities import CapabilityRequirements, RuntimeCapabilities
+from swarmline.runtime.types import resolve_model_name
 
 
 class TestAgentConfigDefaults:
@@ -137,7 +137,7 @@ class TestAgentConfigValidation:
 
     def test_custom_runtime_from_registry_is_accepted(self) -> None:
         """DTO stores custom runtime names without needing constructor validation."""
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="custom_agent_rt", tier="light")
@@ -175,7 +175,7 @@ class TestAgentRuntimeBoundaryValidation:
             )
 
     def test_agent_accepts_registry_registered_runtime(self) -> None:
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="custom_agent_rt", tier="light")

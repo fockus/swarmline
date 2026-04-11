@@ -10,10 +10,10 @@ from typing import Any
 
 import pytest
 
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.orchestration.team_types import TeamConfig, TeamMessage
-from cognitia.orchestration.thin_team import ThinTeamOrchestrator
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.team_types import TeamConfig, TeamMessage
+from swarmline.orchestration.thin_team import ThinTeamOrchestrator
+from swarmline.runtime.types import RuntimeConfig
 
 
 class TestThinSubagentTeamMessageBus:

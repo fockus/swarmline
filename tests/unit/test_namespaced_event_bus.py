@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cognitia.observability.event_bus import EventBus
-from cognitia.observability.namespaced_event_bus import NamespacedEventBus
+from swarmline.observability.event_bus import EventBus
+from swarmline.observability.namespaced_event_bus import NamespacedEventBus
 
 
 @pytest.fixture

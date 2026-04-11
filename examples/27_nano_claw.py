@@ -14,13 +14,13 @@ import textwrap
 from collections.abc import AsyncIterator
 from typing import Any
 
-from cognitia.agent.config import AgentConfig
-from cognitia.agent.middleware import CostTracker, Middleware
-from cognitia.agent.result import Result
-from cognitia.agent.tool import tool
-from cognitia.runtime.capabilities import RuntimeCapabilities
-from cognitia.runtime.registry import get_default_registry
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import CostTracker, Middleware
+from swarmline.agent.result import Result
+from swarmline.agent.tool import tool
+from swarmline.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.registry import get_default_registry
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 # ---------------------------------------------------------------------------
 # Mock filesystem tools (safe, no disk side-effects in demo)
@@ -320,7 +320,7 @@ class NanoClaw:
             tools=_AGENT_TOOLS,
             middleware=(self._cost_tracker, self._turn_logger),
         )
-        from cognitia.agent.agent import Agent
+        from swarmline.agent.agent import Agent
 
         self._agent = Agent(self._config)
         self._conv = self._agent.conversation(session_id="nano-claw-session")

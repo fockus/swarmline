@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.memory.types import PhaseState, ToolEvent
+from swarmline.memory.types import PhaseState, ToolEvent
 
 
 class TestPhaseState:

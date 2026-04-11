@@ -4,7 +4,7 @@ parentheses, start offset, no JSON, not closed objects."""
 from __future__ import annotations
 
 import pytest
-from cognitia.runtime.thin.json_utils import find_json_object_boundaries
+from swarmline.runtime.thin.json_utils import find_json_object_boundaries
 
 
 class TestFindJsonObjectBoundariesBasic:

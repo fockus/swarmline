@@ -7,7 +7,7 @@ handling, and error reporting without any LLM calls.
 
 from __future__ import annotations
 
-from cognitia.mcp._tools_code import exec_code
+from swarmline.mcp._tools_code import exec_code
 
 
 async def test_exec_valid_arithmetic():

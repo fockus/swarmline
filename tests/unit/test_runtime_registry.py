@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from cognitia.runtime.capabilities import RuntimeCapabilities
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.capabilities import RuntimeCapabilities
+from swarmline.runtime.types import RuntimeConfig
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ class TestRuntimeRegistryCore:
 
     def test_register_and_get_returns_factory(self) -> None:
         """register() stores factory, get() retrieves it."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         registry.register("custom", _dummy_factory)
@@ -41,7 +41,7 @@ class TestRuntimeRegistryCore:
 
     def test_register_overwrites_existing(self) -> None:
         """Re-register same name overwrites previous factory."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         factory_a = MagicMock()
@@ -52,7 +52,7 @@ class TestRuntimeRegistryCore:
 
     def test_unregister_removes_runtime(self) -> None:
         """unregister() removes runtime, get() returns None."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         registry.register("custom", _dummy_factory)
@@ -62,21 +62,21 @@ class TestRuntimeRegistryCore:
 
     def test_unregister_nonexistent_returns_false(self) -> None:
         """unregister() on unknown name returns False."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         assert registry.unregister("nonexistent") is False
 
     def test_get_nonexistent_returns_none(self) -> None:
         """get() for unknown name returns None."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         assert registry.get("unknown") is None
 
     def test_is_registered_true_for_known(self) -> None:
         """is_registered() returns True for registered runtime."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         registry.register("custom", _dummy_factory)
@@ -84,7 +84,7 @@ class TestRuntimeRegistryCore:
 
     def test_is_registered_false_for_unknown(self) -> None:
         """is_registered() returns False for unknown runtime."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         assert registry.is_registered("unknown") is False
@@ -95,7 +95,7 @@ class TestRuntimeRegistryCapabilities:
 
     def test_get_capabilities_returns_registered(self) -> None:
         """get_capabilities() returns capabilities passed during register."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         caps = _dummy_capabilities()
@@ -104,7 +104,7 @@ class TestRuntimeRegistryCapabilities:
 
     def test_get_capabilities_none_when_not_provided(self) -> None:
         """get_capabilities() returns None if no capabilities registered."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         registry.register("custom", _dummy_factory)
@@ -112,7 +112,7 @@ class TestRuntimeRegistryCapabilities:
 
     def test_get_capabilities_unknown_returns_none(self) -> None:
         """get_capabilities() returns None for unknown runtime."""
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         assert registry.get_capabilities("unknown") is None
@@ -128,7 +128,7 @@ class TestBuiltinRegistration:
 
     def test_list_available_includes_builtins(self) -> None:
         """Default registry includes claude_sdk, deepagents, thin."""
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         available = registry.list_available()
@@ -138,7 +138,7 @@ class TestBuiltinRegistration:
 
     def test_is_registered_builtins(self) -> None:
         """All builtins are registered."""
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         assert registry.is_registered("claude_sdk")
@@ -147,7 +147,7 @@ class TestBuiltinRegistration:
 
     def test_get_capabilities_builtins(self) -> None:
         """Builtins have capabilities registered."""
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         for name in ("claude_sdk", "deepagents", "thin"):
@@ -166,7 +166,7 @@ class TestCustomRuntimeRegistration:
 
     def test_custom_runtime_register_and_list(self) -> None:
         """Custom runtime appears in list_available()."""
-        from cognitia.runtime.registry import get_default_registry
+        from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         registry.register("my_custom", _dummy_factory)
@@ -176,7 +176,7 @@ class TestCustomRuntimeRegistration:
 
     def test_custom_runtime_in_valid_names(self) -> None:
         """Registered custom runtime passes RuntimeConfig validation."""
-        from cognitia.runtime.registry import get_default_registry, get_valid_runtime_names
+        from swarmline.runtime.registry import get_default_registry, get_valid_runtime_names
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="my_rt", tier="light")
@@ -201,8 +201,8 @@ class TestFactoryUsesRegistry:
 
     def test_factory_uses_registry(self) -> None:
         """RuntimeFactory(registry=...) delegates create to registry."""
-        from cognitia.runtime.factory import RuntimeFactory
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.factory import RuntimeFactory
+        from swarmline.runtime.registry import RuntimeRegistry
 
         mock_runtime = MagicMock()
         mock_factory_fn = MagicMock(return_value=mock_runtime)
@@ -233,7 +233,7 @@ class TestFactoryUsesRegistry:
 
     def test_factory_backward_compat_no_registry(self) -> None:
         """RuntimeFactory() without explicit registry still works."""
-        from cognitia.runtime.factory import RuntimeFactory
+        from swarmline.runtime.factory import RuntimeFactory
 
         factory = RuntimeFactory()
         # Should resolve runtime name without error
@@ -254,7 +254,7 @@ class TestEntryPointsDiscovery:
 
     def test_entry_points_discovery_registers_runtime(self) -> None:
         """Mock entry point is auto-discovered and registered."""
-        from cognitia.runtime.registry import RuntimeRegistry, _discover_entry_points
+        from swarmline.runtime.registry import RuntimeRegistry, _discover_entry_points
 
         mock_runtime_fn = MagicMock()
         mock_caps = RuntimeCapabilities(runtime_name="plugin_rt", tier="light")
@@ -265,7 +265,7 @@ class TestEntryPointsDiscovery:
 
         registry = RuntimeRegistry()
         with patch(
-            "cognitia.runtime.registry.entry_points",
+            "swarmline.runtime.registry.entry_points",
             return_value=[mock_ep],
         ):
             _discover_entry_points(registry)
@@ -276,7 +276,7 @@ class TestEntryPointsDiscovery:
 
     def test_entry_points_bad_plugin_skipped(self) -> None:
         """Bad entry point (raises on load) is skipped silently."""
-        from cognitia.runtime.registry import RuntimeRegistry, _discover_entry_points
+        from swarmline.runtime.registry import RuntimeRegistry, _discover_entry_points
 
         mock_ep = MagicMock()
         mock_ep.name = "bad_plugin"
@@ -284,7 +284,7 @@ class TestEntryPointsDiscovery:
 
         registry = RuntimeRegistry()
         with patch(
-            "cognitia.runtime.registry.entry_points",
+            "swarmline.runtime.registry.entry_points",
             return_value=[mock_ep],
         ):
             _discover_entry_points(registry)
@@ -293,7 +293,7 @@ class TestEntryPointsDiscovery:
 
     def test_entry_points_bad_return_format_skipped(self) -> None:
         """Entry point returning wrong format is skipped."""
-        from cognitia.runtime.registry import RuntimeRegistry, _discover_entry_points
+        from swarmline.runtime.registry import RuntimeRegistry, _discover_entry_points
 
         mock_ep = MagicMock()
         mock_ep.name = "bad_format"
@@ -301,7 +301,7 @@ class TestEntryPointsDiscovery:
 
         registry = RuntimeRegistry()
         with patch(
-            "cognitia.runtime.registry.entry_points",
+            "swarmline.runtime.registry.entry_points",
             return_value=[mock_ep],
         ):
             _discover_entry_points(registry)
@@ -321,7 +321,7 @@ class TestThreadSafety:
         """Concurrent register calls don't crash."""
         import threading
 
-        from cognitia.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
         errors: list[Exception] = []

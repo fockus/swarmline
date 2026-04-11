@@ -6,7 +6,7 @@ No API keys required.
 
 import asyncio
 
-from cognitia.guardrails import (
+from swarmline.guardrails import (
     CallerAllowlistGuardrail,
     ContentLengthGuardrail,
     GuardrailContext,

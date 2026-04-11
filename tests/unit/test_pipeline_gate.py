@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from cognitia.pipeline.gate import CallbackGate, CompositeGate
-from cognitia.pipeline.protocols import QualityGate
+from swarmline.pipeline.gate import CallbackGate, CompositeGate
+from swarmline.pipeline.protocols import QualityGate
 
 
 class TestCallbackGate:

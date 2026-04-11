@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from cognitia.commands.registry import CommandRegistry, _validate_params
+from swarmline.commands.registry import CommandRegistry, _validate_params
 
 
 # --- _validate_params ---
@@ -245,7 +245,7 @@ class TestDictLikeAccess:
     """__getitem__ for backward compatibility."""
 
     def test_command_def_getitem(self) -> None:
-        from cognitia.commands.registry import CommandDef
+        from swarmline.commands.registry import CommandDef
 
         async def h(**kw: Any) -> str:
             return ""
@@ -255,7 +255,7 @@ class TestDictLikeAccess:
         assert cmd["description"] == "desc"
 
     def test_tool_definition_getitem(self) -> None:
-        from cognitia.commands.registry import ToolDefinition
+        from swarmline.commands.registry import ToolDefinition
 
         tool = ToolDefinition(name="t", description="d", parameters={"type": "object"})
         assert tool["name"] == "t"
@@ -269,7 +269,7 @@ class TestLoaderEdgeCases:
     """loader.py — directory scan, single-command, errors."""
 
     async def test_load_from_directory(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         (tmp_path / "a.yaml").write_text("name: cmd_a\ndescription: A\ncategory: ops\n")
         (tmp_path / "b.yml").write_text("name: cmd_b\ndescription: B\n")
@@ -280,7 +280,7 @@ class TestLoaderEdgeCases:
         assert "cmd_b" in names
 
     async def test_load_single_command_format(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         f = tmp_path / "single.yaml"
         f.write_text("name: solo\ndescription: Single\ncategory: test\n")
@@ -290,7 +290,7 @@ class TestLoaderEdgeCases:
         assert commands[0].category == "test"
 
     async def test_load_invalid_yaml_returns_empty(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         f = tmp_path / "bad.yaml"
         f.write_text(":::: not valid yaml {{{{")
@@ -298,7 +298,7 @@ class TestLoaderEdgeCases:
         assert commands == []
 
     async def test_load_no_name_entries_skipped(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         f = tmp_path / "noname.yaml"
         f.write_text("commands:\n  - description: no name here\n  - name: valid\n    description: ok\n")
@@ -307,7 +307,7 @@ class TestLoaderEdgeCases:
         assert commands[0].name == "valid"
 
     async def test_load_non_dict_data_returns_empty(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import load_commands_from_yaml
+        from swarmline.commands.loader import load_commands_from_yaml
 
         f = tmp_path / "list.yaml"
         f.write_text("- item1\n- item2\n")
@@ -315,7 +315,7 @@ class TestLoaderEdgeCases:
         assert commands == []
 
     async def test_loaded_command_dict_access(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import LoadedCommand
+        from swarmline.commands.loader import LoadedCommand
 
         cmd = LoadedCommand(name="test", description="d", category="c")
         assert cmd["name"] == "test"
@@ -326,7 +326,7 @@ class TestAutoDiscoverCommands:
     """auto_discover_commands - registratsiya YAML in CommandRegistry."""
 
     async def test_auto_discover_registers_commands(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import auto_discover_commands
+        from swarmline.commands.loader import auto_discover_commands
 
         (tmp_path / "deploy.yaml").write_text(
             "name: deploy\ndescription: Deploy\ncategory: admin\n"
@@ -342,7 +342,7 @@ class TestAutoDiscoverCommands:
         assert reg.resolve("status") is not None
 
     async def test_auto_discover_with_handler_registry(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import auto_discover_commands
+        from swarmline.commands.loader import auto_discover_commands
 
         (tmp_path / "greet.yaml").write_text("name: greet\ndescription: Say hi\n")
 
@@ -356,7 +356,7 @@ class TestAutoDiscoverCommands:
         assert result == "hi!"
 
     async def test_auto_discover_noop_handler_when_no_registry(self, tmp_path: Any) -> None:
-        from cognitia.commands.loader import auto_discover_commands
+        from swarmline.commands.loader import auto_discover_commands
 
         (tmp_path / "noop.yaml").write_text("name: noop_cmd\ndescription: No handler\n")
 

@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cognitia.plugins.registry import PluginRegistry
-from cognitia.plugins.types import PluginInfo, PluginType
+from swarmline.plugins.registry import PluginRegistry
+from swarmline.plugins.types import PluginInfo, PluginType
 
 
 # ---------------------------------------------------------------------------
@@ -15,7 +15,7 @@ from cognitia.plugins.types import PluginInfo, PluginType
 # ---------------------------------------------------------------------------
 
 
-def _fake_ep(name: str, value: str, group: str = "cognitia.plugins") -> MagicMock:
+def _fake_ep(name: str, value: str, group: str = "swarmline.plugins") -> MagicMock:
     ep = MagicMock()
     ep.name = name
     ep.value = value
@@ -70,22 +70,22 @@ class TestPluginType:
 
 class TestDiscover:
 
-    @patch("cognitia.plugins.registry._entry_points")
+    @patch("swarmline.plugins.registry._entry_points")
     def test_discovers_from_entry_points(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = [
-            _fake_ep("my-rt", "my_pkg:MyRuntime", "cognitia.runtimes"),
+            _fake_ep("my-rt", "my_pkg:MyRuntime", "swarmline.runtimes"),
         ]
         plugins = PluginRegistry.discover(PluginType.RUNTIME)
         assert len(plugins) >= 1
         assert plugins[0].name == "my-rt"
 
-    @patch("cognitia.plugins.registry._entry_points")
+    @patch("swarmline.plugins.registry._entry_points")
     def test_empty_when_no_plugins(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = []
         plugins = PluginRegistry.discover()
         assert plugins == []
 
-    @patch("cognitia.plugins.registry._entry_points")
+    @patch("swarmline.plugins.registry._entry_points")
     def test_type_filter(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = [
             _fake_ep("scorer1", "pkg:Scorer1"),
@@ -101,7 +101,7 @@ class TestDiscover:
 
 class TestLoad:
 
-    @patch("cognitia.plugins.registry._entry_points")
+    @patch("swarmline.plugins.registry._entry_points")
     def test_load_missing_raises(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = []
         with pytest.raises(KeyError, match="not found"):
@@ -115,12 +115,12 @@ class TestLoad:
 
 class TestGetInfo:
 
-    @patch("cognitia.plugins.registry._entry_points")
+    @patch("swarmline.plugins.registry._entry_points")
     def test_get_info_returns_none_for_missing(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = []
         assert PluginRegistry.get_info("nonexistent") is None
 
-    @patch("cognitia.plugins.registry._entry_points")
+    @patch("swarmline.plugins.registry._entry_points")
     def test_get_info_returns_plugin(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = [_fake_ep("my-tool", "pkg:Tool")]
         info = PluginRegistry.get_info("my-tool")

@@ -11,12 +11,12 @@ starlette = pytest.importorskip("starlette")
 
 from starlette.testclient import TestClient  # noqa: E402
 
-from cognitia.a2a.adapter import CognitiaA2AAdapter  # noqa: E402
-from cognitia.a2a.server import A2AServer  # noqa: E402
-from cognitia.a2a.types import (  # noqa: E402
+from swarmline.a2a.adapter import SwarmlineA2AAdapter  # noqa: E402
+from swarmline.a2a.server import A2AServer  # noqa: E402
+from swarmline.a2a.types import (  # noqa: E402
     AgentSkill,
 )
-from cognitia.agent.result import Result  # noqa: E402
+from swarmline.agent.result import Result  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ def _mock_agent(text: str = "Hello from agent") -> MagicMock:
 def _make_server(agent: Any = None) -> tuple[A2AServer, TestClient]:
     if agent is None:
         agent = _mock_agent()
-    adapter = CognitiaA2AAdapter(
+    adapter = SwarmlineA2AAdapter(
         agent,
         name="TestBot",
         url="http://localhost:8000",

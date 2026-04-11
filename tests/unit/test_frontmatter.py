@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from cognitia.memory_bank.frontmatter import parse_frontmatter, render_frontmatter
-from cognitia.memory_bank.knowledge_types import DocumentMeta
+from swarmline.memory_bank.frontmatter import parse_frontmatter, render_frontmatter
+from swarmline.memory_bank.knowledge_types import DocumentMeta
 
 
 class TestParseFrontmatter:

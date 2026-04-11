@@ -4,14 +4,14 @@ Testiruem sushchestvuyushchiy message_tools.py API.
 
 from __future__ import annotations
 
-from cognitia.orchestration.message_bus import MessageBus
+from swarmline.orchestration.message_bus import MessageBus
 
 
 class TestMessageBusSendReceive:
     """agent A sends → agent B receives."""
 
     async def test_message_bus_send_receive(self) -> None:
-        from cognitia.orchestration.message_tools import create_send_message_tool
+        from swarmline.orchestration.message_tools import create_send_message_tool
 
         bus = MessageBus()
         tool_fn = create_send_message_tool(bus, "agent-a")
@@ -30,7 +30,7 @@ class TestMessageBusBroadcast:
     """broadcast → all agents receive."""
 
     async def test_message_bus_broadcast(self) -> None:
-        from cognitia.orchestration.message_tools import create_send_message_tool
+        from swarmline.orchestration.message_tools import create_send_message_tool
 
         bus = MessageBus()
         tool_fn = create_send_message_tool(bus, "lead", team_members=["w1", "w2", "w3"])
@@ -51,7 +51,7 @@ class TestMessageToolSendsViaBus:
     """Tool call -> message in bus with korrektnym ToolSpec."""
 
     async def test_message_tool_sends_via_bus(self) -> None:
-        from cognitia.orchestration.message_tools import (
+        from swarmline.orchestration.message_tools import (
             SEND_MESSAGE_TOOL_SPEC,
             create_send_message_tool,
         )

@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import json
 
-from cognitia.orchestration.workflow_graph import WorkflowGraph
+from swarmline.orchestration.workflow_graph import WorkflowGraph
 
 
 class TestWorkflowThinExecutor:
     """Workflow runs via ThinRuntime per node."""
 
     async def test_workflow_thin_executor(self) -> None:
-        from cognitia.orchestration.workflow_executor import ThinWorkflowExecutor
+        from swarmline.orchestration.workflow_executor import ThinWorkflowExecutor
 
         async def mock_llm_call(messages, system_prompt, **kwargs):
             return json.dumps({"type": "final", "final_message": "node done"})
@@ -45,7 +45,7 @@ class TestWorkflowDeepAgentsLangGraphCompile:
     """WorkflowGraph → LangGraph StateGraph (structural check)."""
 
     async def test_workflow_deepagents_langgraph_compile(self) -> None:
-        from cognitia.orchestration.workflow_executor import compile_to_langgraph_spec
+        from swarmline.orchestration.workflow_executor import compile_to_langgraph_spec
 
         wf = WorkflowGraph("langgraph-test")
 

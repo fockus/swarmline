@@ -12,8 +12,8 @@ import json
 from collections.abc import AsyncIterator
 
 import pytest
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 # ---------------------------------------------------------------------------
 # Mock streaming LLM
@@ -96,7 +96,7 @@ class TestIncrementalEnvelopeParser:
 
     def test_thin_stream_json_envelope_parsed_incrementally(self) -> None:
         """JSON envelope collects from otdelnyh token chunks."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
 
@@ -114,7 +114,7 @@ class TestIncrementalEnvelopeParser:
 
     def test_thin_stream_parser_handles_nested_json(self) -> None:
         """Parser obrabatyvaet vlozhennye JSON obekty."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
 
@@ -140,7 +140,7 @@ class TestIncrementalEnvelopeParser:
 
     def test_thin_stream_parser_fallback_on_invalid_json(self) -> None:
         """Pri notvalidnom JSON -> parser returns None, not crash."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
         result = parser.feed("this is not json at all")
@@ -157,7 +157,7 @@ class TestStreamParser:
 
     def test_stream_json_envelope_parsed_incrementally(self) -> None:
         """StreamParser sobiraet JSON and returns ActionEnvelope."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         envelope_json = '{"type": "final", "final_message": "Hello world"}'
@@ -173,7 +173,7 @@ class TestStreamParser:
 
     def test_stream_partial_json_not_complete(self) -> None:
         """Notfull JSON - parser eshche not zavershen."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         result = parser.feed('{"type": "final", "final_')
@@ -182,7 +182,7 @@ class TestStreamParser:
 
     def test_stream_invalid_envelope_sets_error(self) -> None:
         """Validnyy JSON no invalid ActionEnvelope - error set."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         # type must match ^(tool_call|final|clarify)$
@@ -194,7 +194,7 @@ class TestStreamParser:
 
     def test_stream_reset_clears_state(self) -> None:
         """reset() sbrasyvaet vse vnutrennie sostoyaniya."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         parser.feed('{"type": "final", "final_message": "Hi"}')
@@ -207,7 +207,7 @@ class TestStreamParser:
 
     def test_stream_markdown_fences_stripped(self) -> None:
         """JSON obernutyy in markdown fences parsitsya correctly."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         fenced = '```json\n{"type": "final", "final_message": "fenced"}\n```'
@@ -227,7 +227,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
 
     def test_thin_stream_parser_text_before_json_skipped(self) -> None:
         """Tekst pered JSON obektom is skipped."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
         result = parser.feed('Some prefix text {"type": "final", "final_message": "ok"}')
@@ -236,7 +236,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
 
     def test_thin_stream_parser_finalize_incomplete(self) -> None:
         """finalize() on notpolnom JSON -> None."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
         parser.feed('{"type": "final"')
@@ -245,7 +245,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
 
     def test_thin_stream_parser_get_buffered_text(self) -> None:
         """get_buffered_text() returns nakoplennyy tekst."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
         parser.feed('{"partial":')
@@ -254,7 +254,7 @@ class TestIncrementalEnvelopeParserEdgeCases:
 
     def test_thin_stream_parser_escaped_quotes_in_string(self) -> None:
         r"""Escaped quotes (\") vnutri JSON strings obrabatyvayutsya."""
-        from cognitia.runtime.thin.stream_parser import IncrementalEnvelopeParser
+        from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
         result = parser.feed('{"type": "final", "final_message": "say \\"hello\\""}')
@@ -267,7 +267,7 @@ class TestStreamParserEdgeCases:
 
     def test_stream_parser_json_with_escaped_strings(self) -> None:
         r"""JSON with escaped stringmi parsitsya correctly."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         done = parser.feed('{"type": "final", "final_message": "path: C:\\\\Users"}')
@@ -276,7 +276,7 @@ class TestStreamParserEdgeCases:
 
     def test_stream_parser_empty_fenced_block(self) -> None:
         """Empty fenced block -> not zavershen."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         done = parser.feed("```json\n```")
@@ -284,7 +284,7 @@ class TestStreamParserEdgeCases:
 
     def test_stream_parser_no_json_object(self) -> None:
         """Tekst without JSON obekta -> not zavershen."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         done = parser.feed("just plain text without braces")
@@ -292,7 +292,7 @@ class TestStreamParserEdgeCases:
 
     def test_stream_parser_invalid_json_structure(self) -> None:
         """Skobki balansiruyutsya no content - not JSON."""
-        from cognitia.runtime.thin.stream_parser import StreamParser
+        from swarmline.runtime.thin.stream_parser import StreamParser
 
         parser = StreamParser()
         done = parser.feed("{not valid json content}")

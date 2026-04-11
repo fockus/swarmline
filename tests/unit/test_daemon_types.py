@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from cognitia.daemon.types import (
+from swarmline.daemon.types import (
     DaemonConfig,
     DaemonState,
     DaemonStatus,
@@ -16,14 +16,14 @@ class TestDaemonConfig:
 
     def test_defaults(self) -> None:
         cfg = DaemonConfig()
-        assert cfg.pid_path == "~/.cognitia/daemon.pid"
+        assert cfg.pid_path == "~/.swarmline/daemon.pid"
         assert cfg.log_path is None
         assert cfg.health_host == "127.0.0.1"
         assert cfg.health_port == 8471
         assert cfg.health_check_interval == 60.0
         assert cfg.max_concurrent_tasks == 5
         assert cfg.shutdown_timeout == 30.0
-        assert cfg.name == "cognitia-daemon"
+        assert cfg.name == "swarmline-daemon"
         assert cfg.metadata == {}
 
     def test_resolved_pid_path_expands_tilde(self) -> None:

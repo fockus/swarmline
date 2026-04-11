@@ -21,16 +21,16 @@ import asyncio
 
 import pytest
 
-from cognitia.multi_agent.graph_communication import InMemoryGraphCommunication
-from cognitia.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
-from cognitia.multi_agent.graph_orchestrator_types import (
+from swarmline.multi_agent.graph_communication import InMemoryGraphCommunication
+from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+from swarmline.multi_agent.graph_orchestrator_types import (
     DelegationRequest,
     OrchestratorRunState,
 )
-from cognitia.multi_agent.graph_store import InMemoryAgentGraph
-from cognitia.multi_agent.graph_task_board import InMemoryGraphTaskBoard
-from cognitia.multi_agent.graph_types import AgentNode
-from cognitia.observability.event_bus import InMemoryEventBus
+from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+from swarmline.multi_agent.graph_types import AgentNode
+from swarmline.observability.event_bus import InMemoryEventBus
 
 
 # ---------------------------------------------------------------------------

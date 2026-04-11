@@ -3,14 +3,14 @@
 - feature_mode filtering (portable/hybrid/native_first)
 - Aliases are compatible with DeepAgents (Read -> read_file etc.)
 - Without sandbox provider -> 0 built-in tools
-- Merge user tools + built-in without duplicates Contract: cognitia.runtime.thin.builtin_tools"""
+- Merge user tools + built-in without duplicates Contract: swarmline.runtime.thin.builtin_tools"""
 
 from __future__ import annotations
 
 import json
 
 import pytest
-from cognitia.runtime.thin.builtin_tools import (
+from swarmline.runtime.thin.builtin_tools import (
     THIN_BUILTIN_ALIASES,
     THIN_BUILTIN_TOOLS,
     create_thin_builtin_tools,
@@ -18,7 +18,7 @@ from cognitia.runtime.thin.builtin_tools import (
     get_thin_builtin_specs,
     merge_tools_with_builtins,
 )
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -174,7 +174,7 @@ class TestThinBuiltinToolsAliases:
 
     def test_thin_builtin_aliases_cover_deepagents_set(self) -> None:
         """All DeepAgents aliases have mapping in THIN_BUILTIN_ALIASES."""
-        from cognitia.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_ALIASES
+        from swarmline.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_ALIASES
 
         for alias, canonical in DEEPAGENTS_NATIVE_BUILTIN_ALIASES.items():
             assert alias in THIN_BUILTIN_ALIASES, f"Missing alias: {alias}"

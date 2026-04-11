@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cognitia.runtime.ports.base import BaseRuntimePort
-from cognitia.runtime.ports.deepagents import DeepAgentsRuntimePort
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.ports.base import BaseRuntimePort
+from swarmline.runtime.ports.deepagents import DeepAgentsRuntimePort
+from swarmline.runtime.types import RuntimeConfig
 
 
 class TestNativeDeepAgentsSkipsCompaction:
@@ -196,7 +196,7 @@ class TestArgumentTruncation:
 
     def test_truncate_long_args_in_history(self) -> None:
         """Messages with content > 2000 chars truncated pered peredachey in summarizer."""
-        from cognitia.runtime.ports.base import truncate_long_args
+        from swarmline.runtime.ports.base import truncate_long_args
 
         messages = [
             {"role": "user", "content": "short"},
@@ -210,7 +210,7 @@ class TestArgumentTruncation:
         assert result[2]["content"] == "ok"  # untouched
 
     def test_truncate_preserves_short_messages(self) -> None:
-        from cognitia.runtime.ports.base import truncate_long_args
+        from swarmline.runtime.ports.base import truncate_long_args
 
         messages = [
             {"role": "user", "content": "hello"},
@@ -221,7 +221,7 @@ class TestArgumentTruncation:
         assert result[1]["content"] == "short result"
 
     def test_truncate_default_threshold(self) -> None:
-        from cognitia.runtime.ports.base import truncate_long_args
+        from swarmline.runtime.ports.base import truncate_long_args
 
         messages = [{"role": "tool", "content": "x" * 3000}]
         result = truncate_long_args(messages)
@@ -230,7 +230,7 @@ class TestArgumentTruncation:
 
     def test_truncate_skips_user_messages(self) -> None:
         """User messages NE are truncated, dazhe if dlinnye."""
-        from cognitia.runtime.ports.base import truncate_long_args
+        from swarmline.runtime.ports.base import truncate_long_args
 
         messages = [{"role": "user", "content": "x" * 5000}]
         result = truncate_long_args(messages, max_chars=2000)
@@ -238,7 +238,7 @@ class TestArgumentTruncation:
 
     def test_truncate_skips_assistant_messages(self) -> None:
         """Assistant messages NE are truncated."""
-        from cognitia.runtime.ports.base import truncate_long_args
+        from swarmline.runtime.ports.base import truncate_long_args
 
         messages = [{"role": "assistant", "content": "x" * 5000}]
         result = truncate_long_args(messages, max_chars=2000)

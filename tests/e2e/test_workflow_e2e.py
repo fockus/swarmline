@@ -9,12 +9,12 @@ from typing import Any
 
 import pytest
 
-from cognitia.orchestration.workflow_executor import (
+from swarmline.orchestration.workflow_executor import (
     ThinRuntimeExecutor,
     ThinWorkflowExecutor,
 )
-from cognitia.orchestration.workflow_graph import END_NODE, WorkflowGraph
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.orchestration.workflow_graph import END_NODE, WorkflowGraph
+from swarmline.runtime.types import RuntimeConfig
 
 
 # ---------------------------------------------------------------------------

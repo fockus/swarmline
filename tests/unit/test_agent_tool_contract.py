@@ -6,7 +6,7 @@ Any class implementing as_tool(name, description) -> ToolSpec should pass.
 
 from __future__ import annotations
 
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 
 class _ValidAgentTool:
@@ -31,7 +31,7 @@ class TestAgentToolProtocol:
     """AgentTool Protocol contract tests."""
 
     def test_agent_tool_protocol_is_runtime_checkable(self) -> None:
-        from cognitia.protocols.multi_agent import AgentTool
+        from swarmline.protocols.multi_agent import AgentTool
 
         impl = _ValidAgentTool()
         assert isinstance(impl, AgentTool)
@@ -50,12 +50,12 @@ class TestAgentToolProtocol:
         assert spec.is_local is True
 
     def test_agent_tool_without_method_fails_isinstance(self) -> None:
-        from cognitia.protocols.multi_agent import AgentTool
+        from swarmline.protocols.multi_agent import AgentTool
 
         invalid = _InvalidAgentTool()
         assert not isinstance(invalid, AgentTool)
 
     def test_agent_tool_importable_from_protocols_package(self) -> None:
-        from cognitia.protocols import AgentTool
+        from swarmline.protocols import AgentTool
 
         assert AgentTool is not None

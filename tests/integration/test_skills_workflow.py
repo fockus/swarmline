@@ -7,15 +7,15 @@ check via ToolPolicy.
 from pathlib import Path
 
 import pytest
-from cognitia.policy.tool_id_codec import DefaultToolIdCodec
-from cognitia.policy.tool_policy import (
+from swarmline.policy.tool_id_codec import DefaultToolIdCodec
+from swarmline.policy.tool_policy import (
     DefaultToolPolicy,
     PermissionAllow,
     PermissionDeny,
     ToolPolicyInput,
 )
-from cognitia.skills.loader import YamlSkillLoader
-from cognitia.skills.registry import SkillRegistry
+from swarmline.skills.loader import YamlSkillLoader
+from swarmline.skills.registry import SkillRegistry
 
 SKILLS_DIR = Path(__file__).parent.parent.parent / "skills"
 
@@ -37,18 +37,18 @@ class TestRealSkillsLoading:
         """At least one skill is loaded."""
         assert len(registry.list_all()) > 0
 
-    def test_cognitia_agents_skill_present(self, registry: SkillRegistry) -> None:
-        """Skill cognitia-agents is loaded."""
-        skill = registry.get("cognitia-agents")
+    def test_swarmline_agents_skill_present(self, registry: SkillRegistry) -> None:
+        """Skill swarmline-agents is loaded."""
+        skill = registry.get("swarmline-agents")
         assert skill is not None
         assert skill.spec.title
 
-    def test_cognitia_agents_has_mcp_servers(self, registry: SkillRegistry) -> None:
-        """cognitia-agents skill has MCP servers."""
-        skill = registry.get("cognitia-agents")
+    def test_swarmline_agents_has_mcp_servers(self, registry: SkillRegistry) -> None:
+        """swarmline-agents skill has MCP servers."""
+        skill = registry.get("swarmline-agents")
         assert skill is not None
         assert len(skill.spec.mcp_servers) > 0
-        assert skill.spec.mcp_servers[0].name == "cognitia"
+        assert skill.spec.mcp_servers[0].name == "swarmline"
 
     def test_skills_have_instructions(self, registry: SkillRegistry) -> None:
         """All skills have instruction content."""
@@ -61,13 +61,13 @@ class TestRegistryAggregation:
 
     def test_get_mcp_servers_for_single_skill(self, registry: SkillRegistry) -> None:
         """MCP servers for a single skill."""
-        servers = registry.get_mcp_servers_for_skills(["cognitia-agents"])
-        assert "cognitia" in servers
+        servers = registry.get_mcp_servers_for_skills(["swarmline-agents"])
+        assert "swarmline" in servers
 
     def test_nonexistent_skill_ignored(self, registry: SkillRegistry) -> None:
         """Non-existent skill is ignored without error."""
-        servers = registry.get_mcp_servers_for_skills(["cognitia-agents", "nonexistent"])
-        assert "cognitia" in servers
+        servers = registry.get_mcp_servers_for_skills(["swarmline-agents", "nonexistent"])
+        assert "swarmline" in servers
 
 
 class TestPolicyWithRealSkills:
@@ -77,14 +77,14 @@ class TestPolicyWithRealSkills:
         """Tool from active MCP server -> allow."""
         policy = DefaultToolPolicy(codec=DefaultToolIdCodec())
         # Policy checks server_name against active_skill_ids,
-        # so we pass the MCP server name ("cognitia"), not the skill ID
+        # so we pass the MCP server name ("swarmline"), not the skill ID
         state = ToolPolicyInput(
             tool_name="",
             input_data={},
-            active_skill_ids=["cognitia"],
+            active_skill_ids=["swarmline"],
             allowed_local_tools=set(),
         )
-        result = policy.can_use_tool("mcp__cognitia__memory_upsert_fact", {}, state)
+        result = policy.can_use_tool("mcp__swarmline__memory_upsert_fact", {}, state)
         assert isinstance(result, PermissionAllow)
 
     def test_deny_tool_from_inactive_skill(self, registry: SkillRegistry) -> None:
@@ -96,5 +96,5 @@ class TestPolicyWithRealSkills:
             active_skill_ids=[],
             allowed_local_tools=set(),
         )
-        result = policy.can_use_tool("mcp__cognitia__memory_upsert_fact", {}, state)
+        result = policy.can_use_tool("mcp__swarmline__memory_upsert_fact", {}, state)
         assert isinstance(result, PermissionDeny)

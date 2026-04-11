@@ -13,8 +13,8 @@ import asyncio
 import time
 from datetime import UTC, datetime
 
-from cognitia.memory.episodic import InMemoryEpisodicMemory
-from cognitia.memory.episodic_types import Episode
+from swarmline.memory.episodic import InMemoryEpisodicMemory
+from swarmline.memory.episodic_types import Episode
 
 
 async def bench_episodic_write(store: InMemoryEpisodicMemory, n: int = 1000) -> float:
@@ -53,7 +53,7 @@ async def bench_episodic_recent(store: InMemoryEpisodicMemory, n: int = 100) -> 
 
 
 async def main() -> None:
-    print("Cognitia Memory Benchmark")
+    print("Swarmline Memory Benchmark")
     print("=" * 50)
 
     store = InMemoryEpisodicMemory()

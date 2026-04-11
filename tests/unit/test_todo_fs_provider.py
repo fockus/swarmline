@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from cognitia.todo.types import TodoItem
+from swarmline.todo.types import TodoItem
 
 
 def _now() -> datetime:
@@ -13,13 +13,13 @@ def _now() -> datetime:
 
 class TestFilesystemTodoProvider:
     async def test_empty_read(self, tmp_path) -> None:
-        from cognitia.todo.fs_provider import FilesystemTodoProvider
+        from swarmline.todo.fs_provider import FilesystemTodoProvider
 
         p = FilesystemTodoProvider(tmp_path, "u1", "t1")
         assert await p.read_todos() == []
 
     async def test_write_and_read(self, tmp_path) -> None:
-        from cognitia.todo.fs_provider import FilesystemTodoProvider
+        from swarmline.todo.fs_provider import FilesystemTodoProvider
 
         p = FilesystemTodoProvider(tmp_path, "u1", "t1")
         items = [
@@ -31,7 +31,7 @@ class TestFilesystemTodoProvider:
         assert result[0].id == "1"
 
     async def test_bulk_replace(self, tmp_path) -> None:
-        from cognitia.todo.fs_provider import FilesystemTodoProvider
+        from swarmline.todo.fs_provider import FilesystemTodoProvider
 
         p = FilesystemTodoProvider(tmp_path, "u1", "t1")
         now = _now()
@@ -46,7 +46,7 @@ class TestFilesystemTodoProvider:
         assert result[0].id == "2"
 
     async def test_cross_user_isolation(self, tmp_path) -> None:
-        from cognitia.todo.fs_provider import FilesystemTodoProvider
+        from swarmline.todo.fs_provider import FilesystemTodoProvider
 
         p1 = FilesystemTodoProvider(tmp_path, "alice", "t1")
         p2 = FilesystemTodoProvider(tmp_path, "bob", "t1")
@@ -58,8 +58,8 @@ class TestFilesystemTodoProvider:
         assert len(await p2.read_todos()) == 0
 
     async def test_isinstance_protocol(self, tmp_path) -> None:
-        from cognitia.todo.fs_provider import FilesystemTodoProvider
-        from cognitia.todo.protocols import TodoProvider
+        from swarmline.todo.fs_provider import FilesystemTodoProvider
+        from swarmline.todo.protocols import TodoProvider
 
         p = FilesystemTodoProvider(tmp_path, "u", "t")
         assert isinstance(p, TodoProvider)

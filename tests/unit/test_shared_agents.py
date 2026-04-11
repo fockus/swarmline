@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from cognitia.multi_agent.graph_types import AgentNode
-from cognitia.multi_agent.shared_agents import SharedAgentRegistry
+from swarmline.multi_agent.graph_types import AgentNode
+from swarmline.multi_agent.shared_agents import SharedAgentRegistry
 
 
 def _agent(id: str, role: str = "developer", name: str = "") -> AgentNode:

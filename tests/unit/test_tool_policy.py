@@ -1,7 +1,7 @@
 """Tests for DefaultToolPolicy."""
 
 import pytest
-from cognitia.policy import (
+from swarmline.policy import (
     ALWAYS_DENIED_TOOLS,
     DefaultToolPolicy,
     PermissionAllow,

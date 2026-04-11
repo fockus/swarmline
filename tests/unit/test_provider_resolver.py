@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cognitia.runtime.provider_resolver import (
+from swarmline.runtime.provider_resolver import (
     ResolvedProvider,
     resolve_provider,
 )

@@ -6,7 +6,7 @@ Uses InMemory MemoryBankProvider (no disk/DB needed).
 
 from __future__ import annotations
 
-from cognitia.memory_bank.tiered import (
+from swarmline.memory_bank.tiered import (
     SimpleTierGenerator,
     TieredContextManager,
     _estimate_tokens,
@@ -283,7 +283,7 @@ class TestBuildContext:
 
 class TestTieredRetriever:
     async def test_implements_retriever_protocol(self) -> None:
-        from cognitia.rag import Retriever, TieredRetriever
+        from swarmline.rag import Retriever, TieredRetriever
 
         provider = InMemoryBankProvider()
         manager = TieredContextManager(provider)
@@ -291,7 +291,7 @@ class TestTieredRetriever:
         assert isinstance(retriever, Retriever)
 
     async def test_retrieve_returns_documents(self) -> None:
-        from cognitia.rag import TieredRetriever
+        from swarmline.rag import TieredRetriever
 
         provider = InMemoryBankProvider()
         manager = TieredContextManager(provider)
@@ -307,7 +307,7 @@ class TestTieredRetriever:
         assert docs[0].score is None  # score not set (no relevance ranking)
 
     async def test_retrieve_empty_query(self) -> None:
-        from cognitia.rag import TieredRetriever
+        from swarmline.rag import TieredRetriever
 
         provider = InMemoryBankProvider()
         manager = TieredContextManager(provider)
@@ -318,7 +318,7 @@ class TestTieredRetriever:
     async def test_rejects_wrong_type(self) -> None:
         """TieredRetriever rejects non-TieredContextManager."""
         import pytest
-        from cognitia.rag import TieredRetriever
+        from swarmline.rag import TieredRetriever
 
         with pytest.raises(TypeError, match="Expected TieredContextManager"):
             TieredRetriever("not a manager")

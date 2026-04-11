@@ -1,6 +1,6 @@
-# Cognitia Integration for Claude Code
+# Swarmline Integration for Claude Code
 
-Connect Cognitia's persistent memory, planning, and team coordination to Claude Code via MCP.
+Connect Swarmline's persistent memory, planning, and team coordination to Claude Code via MCP.
 
 ## Prerequisites
 
@@ -8,13 +8,13 @@ Connect Cognitia's persistent memory, planning, and team coordination to Claude 
 - Claude Code CLI installed and working
 
 ```bash
-pip install cognitia[code-agent]
+pip install swarmline[code-agent]
 ```
 
 Verify the entry point is available:
 
 ```bash
-cognitia-mcp --help
+swarmline-mcp --help
 ```
 
 ## Configuration
@@ -25,7 +25,7 @@ Copy the example settings and merge with your existing Claude Code config:
 # If you have no existing config:
 cp settings.json.example ~/.claude/settings.json
 
-# If you already have ~/.claude/settings.json, merge the "cognitia" key
+# If you already have ~/.claude/settings.json, merge the "swarmline" key
 # into your existing mcpServers block.
 ```
 
@@ -35,10 +35,10 @@ The `--mode auto` argument detects available API keys at startup. If `ANTHROPIC_
 
 ```bash
 # Start the server manually to confirm it launches:
-cognitia-mcp --mode headless
+swarmline-mcp --mode headless
 
 # In another terminal, check the CLI:
-cognitia status
+swarmline status
 ```
 
 If the server starts without errors, Claude Code will be able to connect to it.
@@ -61,8 +61,8 @@ Set your API key in the `env` block of `settings.json`:
 ```json
 {
   "mcpServers": {
-    "cognitia": {
-      "command": "cognitia-mcp",
+    "swarmline": {
+      "command": "swarmline-mcp",
       "args": ["--mode", "auto"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
@@ -86,10 +86,10 @@ Full mode adds agent creation and querying tools on top of all headless tools.
 
 ## Troubleshooting
 
-**`cognitia-mcp: command not found`** -- The package entry point is not on PATH. Run `pip show cognitia` to find the install location, then ensure its `bin/` or `Scripts/` directory is on PATH. Alternatively, use the module form: set `"command"` to `"python"` and `"args"` to `["-m", "cognitia.mcp", "--mode", "auto"]`.
+**`swarmline-mcp: command not found`** -- The package entry point is not on PATH. Run `pip show swarmline` to find the install location, then ensure its `bin/` or `Scripts/` directory is on PATH. Alternatively, use the module form: set `"command"` to `"python"` and `"args"` to `["-m", "swarmline.mcp", "--mode", "auto"]`.
 
-**`ImportError: fastmcp`** -- The `[code-agent]` extra was not installed. Run `pip install cognitia[code-agent]`.
+**`ImportError: fastmcp`** -- The `[code-agent]` extra was not installed. Run `pip install swarmline[code-agent]`.
 
-**Logs polluting stdout** -- Cognitia uses structlog and writes all logs to stderr. MCP communication happens on stdout. If you see log noise, ensure your terminal is not merging streams.
+**Logs polluting stdout** -- Swarmline uses structlog and writes all logs to stderr. MCP communication happens on stdout. If you see log noise, ensure your terminal is not merging streams.
 
 **Server starts but tools not visible** -- Restart Claude Code after changing `settings.json`. The MCP connection is established at startup.

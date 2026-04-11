@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 
 class TestDeepAgentsMcpDiscovery:
     async def test_deepagents_mcp_tools_discovered(self) -> None:
         """mcp_servers provided -> MCP tools added to active_tools."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         mcp_tools = [
             ToolSpec(
@@ -32,7 +32,7 @@ class TestDeepAgentsMcpDiscovery:
         ):
             # Mock LangChain to avoid import issues
             with patch(
-                "cognitia.runtime.deepagents._check_langchain_available", return_value=None
+                "swarmline.runtime.deepagents._check_langchain_available", return_value=None
             ):
                 with patch.object(runtime, "_stream_langchain") as mock_stream:
                     # Capture what tools are passed
@@ -58,7 +58,7 @@ class TestDeepAgentsMcpDiscovery:
 
     async def test_deepagents_mcp_merged_with_custom_tools(self) -> None:
         """MCP tools + custom tools -> both available."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         mcp_tools = [
             ToolSpec(name="mcp__srv__calc", description="Calc", parameters={}),
@@ -77,7 +77,7 @@ class TestDeepAgentsMcpDiscovery:
             return_value=mcp_tools,
         ):
             with patch(
-                "cognitia.runtime.deepagents._check_langchain_available", return_value=None
+                "swarmline.runtime.deepagents._check_langchain_available", return_value=None
             ):
                 with patch.object(runtime, "_stream_langchain") as mock_stream:
                     captured_tools: list[ToolSpec] = []
@@ -100,7 +100,7 @@ class TestDeepAgentsMcpDiscovery:
 
     async def test_deepagents_no_mcp_servers_no_change(self) -> None:
         """Without mcp_servers -> behavior unchanged."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         runtime = DeepAgentsRuntime(
             config=RuntimeConfig(runtime_name="deepagents"),
@@ -109,7 +109,7 @@ class TestDeepAgentsMcpDiscovery:
 
     async def test_deepagents_mcp_feature_mode_all(self) -> None:
         """MCP tools available in all feature modes."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         for mode in ["portable", "hybrid", "native_first"]:
             runtime = DeepAgentsRuntime(
@@ -120,7 +120,7 @@ class TestDeepAgentsMcpDiscovery:
 
     async def test_deepagents_mcp_tool_execution(self) -> None:
         """MCP tool executor is registered and callable."""
-        from cognitia.runtime.deepagents import DeepAgentsRuntime
+        from swarmline.runtime.deepagents import DeepAgentsRuntime
 
         runtime = DeepAgentsRuntime(
             config=RuntimeConfig(runtime_name="deepagents"),

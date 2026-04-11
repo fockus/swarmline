@@ -1,8 +1,8 @@
 """Behavioral integration tests for Postgres backends.
 
 These tests require a disposable Postgres database. Set either
-`COGNITIA_TEST_POSTGRES_DSN` or `TEST_POSTGRES_DSN` to an async SQLAlchemy DSN,
-for example `postgresql+asyncpg://user:pass@localhost:5432/cognitia_test`.
+`SWARMLINE_TEST_POSTGRES_DSN` or `TEST_POSTGRES_DSN` to an async SQLAlchemy DSN,
+for example `postgresql+asyncpg://user:pass@localhost:5432/swarmline_test`.
 """
 
 from __future__ import annotations
@@ -14,23 +14,23 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from cognitia.multi_agent.graph_store_postgres import POSTGRES_GRAPH_SCHEMA, PostgresAgentGraph
-from cognitia.multi_agent.graph_task_board_postgres import (
+from swarmline.multi_agent.graph_store_postgres import POSTGRES_GRAPH_SCHEMA, PostgresAgentGraph
+from swarmline.multi_agent.graph_task_board_postgres import (
     POSTGRES_GRAPH_TASK_SCHEMA,
     PostgresGraphTaskBoard,
 )
-from cognitia.multi_agent.graph_task_types import GraphTaskItem
-from cognitia.multi_agent.graph_types import AgentNode
-from cognitia.session.backends_postgres import POSTGRES_SESSION_SCHEMA, PostgresSessionBackend
+from swarmline.multi_agent.graph_task_types import GraphTaskItem
+from swarmline.multi_agent.graph_types import AgentNode
+from swarmline.session.backends_postgres import POSTGRES_SESSION_SCHEMA, PostgresSessionBackend
 
 pytestmark = pytest.mark.integration
 
 
 @pytest.fixture(scope="module")
 def postgres_dsn() -> str:
-    dsn = os.getenv("COGNITIA_TEST_POSTGRES_DSN") or os.getenv("TEST_POSTGRES_DSN")
+    dsn = os.getenv("SWARMLINE_TEST_POSTGRES_DSN") or os.getenv("TEST_POSTGRES_DSN")
     if not dsn:
-        pytest.skip("Set COGNITIA_TEST_POSTGRES_DSN or TEST_POSTGRES_DSN for Postgres integration")
+        pytest.skip("Set SWARMLINE_TEST_POSTGRES_DSN or TEST_POSTGRES_DSN for Postgres integration")
     return dsn
 
 

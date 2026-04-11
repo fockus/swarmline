@@ -8,16 +8,16 @@ from typing import Any
 
 import pytest
 
-from cognitia.orchestration.code_workflow_engine import (
+from swarmline.orchestration.code_workflow_engine import (
     CodeWorkflowEngine,
     WorkflowStatus,
 )
-from cognitia.orchestration.dod_state_machine import DoDStateMachine
-from cognitia.orchestration.generic_workflow_engine import (
+from swarmline.orchestration.dod_state_machine import DoDStateMachine
+from swarmline.orchestration.generic_workflow_engine import (
     GenericWorkflowEngine,
     GenericWorkflowStatus,
 )
-from cognitia.orchestration.verification_types import (
+from swarmline.orchestration.verification_types import (
     CheckDetail,
     VerificationResult,
     VerificationStatus,
@@ -155,10 +155,10 @@ class TestGenericWorkflowE2E:
 
         engine = GenericWorkflowEngine(executor=executor, verifier=verifier)
 
-        await engine.run("task", context={"project": "cognitia", "env": "test"})
+        await engine.run("task", context={"project": "swarmline", "env": "test"})
 
         assert len(received_contexts) == 2
-        assert received_contexts[0]["project"] == "cognitia"
+        assert received_contexts[0]["project"] == "swarmline"
         assert received_contexts[1]["env"] == "test"
 
 

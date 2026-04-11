@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from cognitia.memory.consolidation import (
+from swarmline.memory.consolidation import (
     ConsolidationPipeline,
     ConsolidationResult,
     KeywordFactExtractor,
 )
-from cognitia.memory.episodic import InMemoryEpisodicMemory
-from cognitia.memory.episodic_types import Episode
+from swarmline.memory.episodic import InMemoryEpisodicMemory
+from swarmline.memory.episodic_types import Episode
 
 
 # ---------------------------------------------------------------------------

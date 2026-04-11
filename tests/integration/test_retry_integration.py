@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from cognitia.retry import ExponentialBackoff
-from cognitia.runtime.thin.errors import ThinLlmError
-from cognitia.runtime.thin.runtime import ThinRuntime
-from cognitia.runtime.types import (
+from swarmline.retry import ExponentialBackoff
+from swarmline.runtime.thin.errors import ThinLlmError
+from swarmline.runtime.thin.runtime import ThinRuntime
+from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
     RuntimeErrorData,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 
 def _spec(name: str) -> ToolSpec:
@@ -14,7 +14,7 @@ class TestToolBudgetConfig:
     """Konfig vynosit nastroyki from hardkoda."""
 
     def test_defaults(self) -> None:
-        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
+        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
         cfg = ToolBudgetConfig()
         assert cfg.max_tools == 30
@@ -23,14 +23,14 @@ class TestToolBudgetConfig:
         assert cfg.group_limits == {}
 
     def test_custom_max_tools(self) -> None:
-        from cognitia.policy.tool_selector import ToolBudgetConfig
+        from swarmline.policy.tool_selector import ToolBudgetConfig
 
         cfg = ToolBudgetConfig(max_tools=15)
         assert cfg.max_tools == 15
 
     def test_custom_priority(self) -> None:
         """User mozhet override poryadok prioritetov."""
-        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
+        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
         cfg = ToolBudgetConfig(
             group_priority=[ToolGroup.MCP, ToolGroup.ALWAYS, ToolGroup.SANDBOX],
@@ -39,13 +39,13 @@ class TestToolBudgetConfig:
 
     def test_group_limits(self) -> None:
         """Per-group limity."""
-        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup
+        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup
 
         cfg = ToolBudgetConfig(group_limits={ToolGroup.SANDBOX: 3, ToolGroup.MCP: 10})
         assert cfg.group_limits[ToolGroup.SANDBOX] == 3
 
     def test_frozen(self) -> None:
-        from cognitia.policy.tool_selector import ToolBudgetConfig
+        from swarmline.policy.tool_selector import ToolBudgetConfig
 
         cfg = ToolBudgetConfig()
         with pytest.raises(AttributeError):
@@ -56,7 +56,7 @@ class TestToolSelector:
     """ToolSelector - otbiraet tools by konfigu."""
 
     def test_always_tools_included(self) -> None:
-        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import ToolGroup, ToolSelector
 
         selector = ToolSelector(max_tools=5)
         selector.add_group(
@@ -70,7 +70,7 @@ class TestToolSelector:
         assert "todo_read" in names
 
     def test_budget_limits_total(self) -> None:
-        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import ToolGroup, ToolSelector
 
         selector = ToolSelector(max_tools=3)
         selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
@@ -80,7 +80,7 @@ class TestToolSelector:
         assert len(selected) <= 3
 
     def test_mcp_gets_priority_after_always(self) -> None:
-        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import ToolGroup, ToolSelector
 
         selector = ToolSelector(max_tools=5)
         selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
@@ -98,7 +98,7 @@ class TestToolSelector:
 
     def test_config_based_selector(self) -> None:
         """ToolSelector with yavnym config."""
-        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
 
         cfg = ToolBudgetConfig(max_tools=4, group_limits={ToolGroup.SANDBOX: 2})
         selector = ToolSelector(config=cfg)
@@ -115,7 +115,7 @@ class TestToolSelector:
 
     def test_custom_priority_order(self) -> None:
         """Kastomnyy poryadok: SANDBOX pered MCP."""
-        from cognitia.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
 
         cfg = ToolBudgetConfig(
             max_tools=3,
@@ -133,13 +133,13 @@ class TestToolSelector:
         assert len(selected) == 3
 
     def test_empty_groups(self) -> None:
-        from cognitia.policy.tool_selector import ToolSelector
+        from swarmline.policy.tool_selector import ToolSelector
 
         selector = ToolSelector(max_tools=10)
         assert selector.select() == []
 
     def test_priority_order(self) -> None:
-        from cognitia.policy.tool_selector import ToolGroup
+        from swarmline.policy.tool_selector import ToolGroup
 
         assert ToolGroup.ALWAYS.value < ToolGroup.MCP.value
         assert ToolGroup.MCP.value < ToolGroup.MEMORY.value
@@ -148,7 +148,7 @@ class TestToolSelector:
         assert ToolGroup.SANDBOX.value < ToolGroup.WEB.value
 
     def test_all_fit_in_budget(self) -> None:
-        from cognitia.policy.tool_selector import ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import ToolGroup, ToolSelector
 
         selector = ToolSelector(max_tools=50)
         selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])

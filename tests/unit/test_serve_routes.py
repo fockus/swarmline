@@ -1,4 +1,4 @@
-"""Unit: cognitia serve HTTP routes."""
+"""Unit: swarmline serve HTTP routes."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from cognitia.serve.app import create_app
+from swarmline.serve.app import create_app
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ class TestQuery:
 
     def test_query_closed_by_default(self, client) -> None:
         tc, _ = client
-        with patch("cognitia.serve.app._log") as mock_log:
+        with patch("swarmline.serve.app._log") as mock_log:
             resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 404
         mock_log.warning.assert_called_once_with(
@@ -170,7 +170,7 @@ class TestAuth:
 
         agent = _mock_agent()
         tc = TestClient(create_app(agent, auth_token="secret-123"))
-        with patch("cognitia.serve.app._log") as mock_log:
+        with patch("swarmline.serve.app._log") as mock_log:
             resp = tc.post("/v1/query", json={"prompt": "hi"})
         assert resp.status_code == 401
         mock_log.warning.assert_called_once_with(

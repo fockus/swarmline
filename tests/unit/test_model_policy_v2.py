@@ -4,7 +4,7 @@
 - Fallback on Sonnet
 """
 
-from cognitia.runtime.model_policy import ModelPolicy
+from swarmline.runtime.model_policy import ModelPolicy
 
 
 class TestSelectForTurn:

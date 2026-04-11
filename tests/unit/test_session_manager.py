@@ -7,10 +7,10 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
-from cognitia.runtime.types import Message, RuntimeEvent, ToolSpec
-from cognitia.session.backends import InMemorySessionBackend
-from cognitia.session.manager import InMemorySessionManager
-from cognitia.session.types import SessionKey, SessionState
+from swarmline.runtime.types import Message, RuntimeEvent, ToolSpec
+from swarmline.session.backends import InMemorySessionBackend
+from swarmline.session.manager import InMemorySessionManager
+from swarmline.session.types import SessionKey, SessionState
 from conftest import FakeStreamEvent
 
 

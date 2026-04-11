@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cognitia.memory.procedural_types import Procedure, ProcedureStep, ProceduralMemory
+from swarmline.memory.procedural_types import Procedure, ProcedureStep, ProceduralMemory
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ class TestProcedureTypes:
 class TestInMemoryProceduralMemory:
 
     async def _store(self):
-        from cognitia.memory.procedural import InMemoryProceduralMemory
+        from swarmline.memory.procedural import InMemoryProceduralMemory
 
         return InMemoryProceduralMemory()
 

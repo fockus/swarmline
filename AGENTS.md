@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project
 
-**Cognitia** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.0.0, Python 3.10+.
+**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.0.0, Python 3.10+.
 
 ## Commands
 
@@ -19,7 +19,7 @@ pytest tests/unit/test_foo.py::TestBar::test_baz -v  # single test
 pytest -k "test_name" -v                        # by name pattern
 pytest -m integration -v                        # by marker
 pytest -m "requires_claude_sdk" -v              # SDK-specific
-pytest --cov=cognitia --cov-report=term-missing # with coverage
+pytest --cov=swarmline --cov-report=term-missing # with coverage
 
 # Lint & format
 ruff check src/ tests/                          # lint
@@ -27,7 +27,7 @@ ruff check --fix src/ tests/                    # auto-fix
 ruff format src/ tests/                         # format
 
 # Type checking
-mypy src/cognitia/
+mypy src/swarmline/
 ```
 
 **Test markers:** `security`, `requires_claude_sdk`, `requires_anthropic`, `requires_langchain`, `live`, `integration`.
@@ -58,13 +58,13 @@ All runtimes implement the same async generator contract: `async def run(...) ->
 ### Source Layout
 
 ```
-src/cognitia/
+src/swarmline/
 ├── protocols.py      # All 14 domain protocols
 ├── types.py          # Core types (TurnContext, ContextPack, SkillSet)
 ├── agent/            # Agent facade, config, middleware, result, conversation
 ├── runtime/          # thin/, claude_code, deepagents adapters + models.yaml
 ├── memory/           # Providers: inmemory, sqlite, postgres + types
-├── bootstrap/        # CognitiaStack factory
+├── bootstrap/        # SwarmlineStack factory
 ├── orchestration/    # Planning, subagents, teams, code verification
 ├── tools/            # Builtin tools (sandbox, web, thinking)
 ├── skills/           # MCP skill registration & YAML loading

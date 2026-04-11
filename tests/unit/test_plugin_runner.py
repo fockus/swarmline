@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cognitia.plugins.runner import PluginRunner, SubprocessPluginRunner
-from cognitia.plugins.runner_types import PluginHandle, PluginManifest, PluginState
+from swarmline.plugins.runner import PluginRunner, SubprocessPluginRunner
+from swarmline.plugins.runner_types import PluginHandle, PluginManifest, PluginState
 
 
 # ---------------------------------------------------------------------------

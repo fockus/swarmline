@@ -11,11 +11,11 @@ import asyncio
 
 import pytest
 
-from cognitia.daemon.scheduler import Scheduler
-from cognitia.orchestration.workflow_graph import WorkflowGraph, WorkflowInterrupt
-from cognitia.session.backends import InMemorySessionBackend
-from cognitia.session.manager import InMemorySessionManager
-from cognitia.session.types import SessionKey, SessionState
+from swarmline.daemon.scheduler import Scheduler
+from swarmline.orchestration.workflow_graph import WorkflowGraph, WorkflowInterrupt
+from swarmline.session.backends import InMemorySessionBackend
+from swarmline.session.manager import InMemorySessionManager
+from swarmline.session.types import SessionKey, SessionState
 
 
 # ---------------------------------------------------------------------------

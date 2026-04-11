@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from cognitia.memory._shared import (
+from swarmline.memory._shared import (
     build_goal_state,
     build_phase_state,
     build_session_state,

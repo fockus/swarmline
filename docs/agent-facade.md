@@ -1,11 +1,11 @@
 # Agent Facade API
 
-The `cognitia.agent` module provides a high-level API for building AI agents in 3-5 lines of code.
+The `swarmline.agent` module provides a high-level API for building AI agents in 3-5 lines of code.
 
 ## Overview
 
 ```python
-from cognitia import Agent, AgentConfig, tool
+from swarmline import Agent, AgentConfig, tool
 
 agent = Agent(AgentConfig(runtime="thin"))
 result = await agent.query("Hello!")
@@ -17,7 +17,7 @@ print(result.text)
 Frozen dataclass with all agent configuration:
 
 ```python
-from cognitia import AgentConfig
+from swarmline import AgentConfig
 
 config = AgentConfig(
     runtime="thin",                    # "thin" | "claude_sdk" | "deepagents" | "cli"
@@ -117,7 +117,7 @@ class Result:
 Define tools with automatic JSON Schema inference from type hints:
 
 ```python
-from cognitia import tool
+from swarmline import tool
 
 @tool(name="weather", description="Get current weather")
 async def get_weather(city: str, units: str = "celsius") -> str:
@@ -163,7 +163,7 @@ td.name          # "weather"
 td.description   # "Get current weather"
 td.parameters    # {"type": "object", "properties": {...}, "required": [...]}
 td.handler       # reference to the original async function
-td.to_tool_spec()  # convert to cognitia ToolSpec for runtime
+td.to_tool_spec()  # convert to swarmline ToolSpec for runtime
 ```
 
 ## Middleware
@@ -171,7 +171,7 @@ td.to_tool_spec()  # convert to cognitia ToolSpec for runtime
 Middleware intercepts the request/response lifecycle:
 
 ```python
-from cognitia.agent import Middleware
+from swarmline.agent import Middleware
 
 class LoggingMiddleware(Middleware):
     async def before_query(self, prompt: str, config) -> str:
@@ -188,7 +188,7 @@ class LoggingMiddleware(Middleware):
 Tracks cumulative cost and blocks queries when budget exceeded:
 
 ```python
-from cognitia.agent import CostTracker
+from swarmline.agent import CostTracker
 
 tracker = CostTracker(budget_usd=5.0)
 agent = Agent(AgentConfig(middleware=(tracker,)))
@@ -205,7 +205,7 @@ If a request pushes the cumulative spend above the configured budget,
 Blocks prompts containing sensitive patterns:
 
 ```python
-from cognitia.agent import SecurityGuard
+from swarmline.agent import SecurityGuard
 
 guard = SecurityGuard(
     block_patterns=["password", "api_key", "secret"],
@@ -217,7 +217,7 @@ guard = SecurityGuard(
 Compresses large tool outputs between turns. Content-type aware: JSON arrays are truncated, HTML tags are stripped, plain text uses head+tail strategy.
 
 ```python
-from cognitia.agent import ToolOutputCompressor
+from swarmline.agent import ToolOutputCompressor
 
 compressor = ToolOutputCompressor(max_result_chars=10000)
 agent = Agent(AgentConfig(middleware=(compressor,)))
@@ -230,7 +230,7 @@ Integrates with `HookRegistry` via `on_post_tool_use` callback.
 Factory function for common middleware combinations:
 
 ```python
-from cognitia.agent import build_middleware_stack
+from swarmline.agent import build_middleware_stack
 
 stack = build_middleware_stack(
     cost_tracker=True,

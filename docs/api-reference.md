@@ -1,15 +1,15 @@
 # API Reference
 
-Complete reference for all public classes, methods, protocols, and types in cognitia.
+Complete reference for all public classes, methods, protocols, and types in swarmline.
 
-## Agent Facade (`cognitia.agent`)
+## Agent Facade (`swarmline.agent`)
 
 ### Agent
 
 High-level facade for interacting with AI agents.
 
 ```python
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 agent = Agent(config: AgentConfig)
 ```
@@ -45,7 +45,7 @@ async with Agent(config) as agent:
 Frozen dataclass with all agent configuration. Only `system_prompt` is required.
 
 ```python
-from cognitia import AgentConfig
+from swarmline import AgentConfig
 ```
 
 | Field | Type | Default | Description |
@@ -86,7 +86,7 @@ from cognitia import AgentConfig
 Frozen dataclass returned by `query()` and `conversation.say()`.
 
 ```python
-from cognitia.agent import Result
+from swarmline.agent import Result
 ```
 
 | Field | Type | Default | Description |
@@ -136,7 +136,7 @@ Runtime behavior:
 Define tools with automatic JSON Schema inference from type hints.
 
 ```python
-from cognitia import tool
+from swarmline import tool
 
 @tool(name="my_tool", description="Description for LLM", schema=None)
 async def my_tool(param: str) -> str:
@@ -179,7 +179,7 @@ td.to_tool_spec() # ToolSpec for runtime
 Base class for request/response interceptors.
 
 ```python
-from cognitia.agent import Middleware
+from swarmline.agent import Middleware
 
 class MyMiddleware(Middleware):
     async def before_query(self, prompt: str, config: AgentConfig) -> str:
@@ -199,7 +199,7 @@ Execution order:
 #### CostTracker
 
 ```python
-from cognitia.agent import CostTracker
+from swarmline.agent import CostTracker
 
 tracker = CostTracker(budget_usd=5.0)
 tracker.total_cost_usd  # float — accumulated cost
@@ -210,7 +210,7 @@ tracker.reset()         # reset counter
 #### SecurityGuard
 
 ```python
-from cognitia.agent import SecurityGuard
+from swarmline.agent import SecurityGuard
 
 guard = SecurityGuard(block_patterns=["password", "secret"])
 # Blocks tool inputs containing any of the patterns via PreToolUse hook
@@ -232,14 +232,14 @@ Events yielded by `agent.stream()` and `conversation.stream()`:
 
 ---
 
-## Runtime Types (`cognitia.runtime.types`)
+## Runtime Types (`swarmline.runtime.types`)
 
 ### Message
 
 Universal message for agent runtimes.
 
 ```python
-from cognitia.runtime.types import Message
+from swarmline.runtime.types import Message
 
 msg = Message(role="user", content="Hello")
 ```
@@ -259,7 +259,7 @@ Methods: `to_dict()`, `Message.from_memory_message(mm)`.
 Tool description for runtime.
 
 ```python
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.types import ToolSpec
 
 spec = ToolSpec(name="my_tool", description="...", parameters={...}, is_local=True)
 ```
@@ -289,7 +289,7 @@ Static factory methods: `RuntimeEvent.assistant_delta(text)`, `RuntimeEvent.stat
 ### RuntimeConfig
 
 ```python
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",              # claude_sdk | thin | deepagents | cli
@@ -321,7 +321,7 @@ Error kinds: `runtime_crash`, `bad_model_output`, `loop_limit`, `budget_exceeded
 ### TurnMetrics
 
 ```python
-from cognitia.runtime.types import TurnMetrics
+from swarmline.runtime.types import TurnMetrics
 ```
 
 | Field | Type | Default | Description |
@@ -335,14 +335,14 @@ from cognitia.runtime.types import TurnMetrics
 
 ---
 
-## Runtime Capabilities (`cognitia.runtime.capabilities`)
+## Runtime Capabilities (`swarmline.runtime.capabilities`)
 
 ### RuntimeCapabilities
 
 Describes what a runtime supports.
 
 ```python
-from cognitia.runtime.capabilities import get_runtime_capabilities
+from swarmline.runtime.capabilities import get_runtime_capabilities
 
 caps = get_runtime_capabilities("claude_sdk")
 caps.tier              # "full"
@@ -362,7 +362,7 @@ caps.enabled_flags()   # frozenset({"mcp", "resume", "interrupt"})
 Declare what your application needs. Fail-fast validation at config time.
 
 ```python
-from cognitia.runtime.capabilities import CapabilityRequirements
+from swarmline.runtime.capabilities import CapabilityRequirements
 
 reqs = CapabilityRequirements(
     tier="full",
@@ -372,12 +372,12 @@ reqs = CapabilityRequirements(
 
 ---
 
-## Model Registry (`cognitia.runtime.types`)
+## Model Registry (`swarmline.runtime.types`)
 
 ### resolve_model_name
 
 ```python
-from cognitia.runtime.types import resolve_model_name
+from swarmline.runtime.types import resolve_model_name
 
 resolve_model_name("sonnet")   # "claude-sonnet-4-20250514"
 resolve_model_name("opus")     # "claude-opus-4-20250514"
@@ -390,11 +390,11 @@ resolve_model_name("r1")       # "deepseek-reasoner"
 resolve_model_name(None)       # default model
 ```
 
-Models and aliases are defined in `cognitia/runtime/models.yaml`.
+Models and aliases are defined in `swarmline/runtime/models.yaml`.
 
 ---
 
-## Memory Protocols (`cognitia.memory`)
+## Memory Protocols (`swarmline.memory`)
 
 All 8 protocols follow ISP (<=5 methods each). Three providers implement all 8: `InMemoryMemoryProvider`, `PostgresMemoryProvider`, `SQLiteMemoryProvider`.
 
@@ -465,7 +465,7 @@ class ToolEventStore(Protocol):
 
 ---
 
-## Web Protocols (`cognitia.tools.web_protocols`)
+## Web Protocols (`swarmline.tools.web_protocols`)
 
 ### WebProvider
 
@@ -503,12 +503,12 @@ See [Web Tools](web-tools.md) for provider implementations.
 
 ---
 
-## Hooks (`cognitia.hooks`)
+## Hooks (`swarmline.hooks`)
 
 ### HookRegistry
 
 ```python
-from cognitia.hooks import HookRegistry
+from swarmline.hooks import HookRegistry
 
 registry = HookRegistry()
 registry.on_pre_tool_use(callback, matcher="Bash")
@@ -522,7 +522,7 @@ Events: `PreToolUse`, `PostToolUse`, `Stop`, `UserPromptSubmit`.
 ### SDK Bridge
 
 ```python
-from cognitia.hooks import registry_to_sdk_hooks
+from swarmline.hooks import registry_to_sdk_hooks
 
 sdk_hooks = registry_to_sdk_hooks(registry)
 # Pass to Claude Agent SDK options
@@ -530,12 +530,12 @@ sdk_hooks = registry_to_sdk_hooks(registry)
 
 ---
 
-## Observability (`cognitia.observability`)
+## Observability (`swarmline.observability`)
 
 ### AgentLogger
 
 ```python
-from cognitia.observability import AgentLogger, configure_logging
+from swarmline.observability import AgentLogger, configure_logging
 
 configure_logging(level="info", fmt="json")
 logger = AgentLogger(component="my_app")
@@ -549,12 +549,12 @@ logger.turn_complete(user_id="u1", topic_id="t1", role_id="coach", prompt_hash="
 
 ---
 
-## Resilience (`cognitia.resilience`)
+## Resilience (`swarmline.resilience`)
 
 ### CircuitBreaker
 
 ```python
-from cognitia.resilience import CircuitBreaker
+from swarmline.resilience import CircuitBreaker
 
 cb = CircuitBreaker(failure_threshold=3, recovery_timeout_s=60)
 
@@ -570,14 +570,14 @@ States: `closed` (normal) → `open` (blocking) → `half_open` (testing recover
 
 ---
 
-## Bootstrap (`cognitia.bootstrap`)
+## Bootstrap (`swarmline.bootstrap`)
 
-### CognitiaStack
+### SwarmlineStack
 
 ```python
-from cognitia.bootstrap.stack import CognitiaStack
+from swarmline.bootstrap.stack import SwarmlineStack
 
-stack = CognitiaStack.create(
+stack = SwarmlineStack.create(
     prompts_dir=Path("prompts"),
     skills_dir=Path("skills"),
     project_root=Path("."),
@@ -595,7 +595,7 @@ stack = CognitiaStack.create(
 )
 ```
 
-Returns a `CognitiaStack` with:
+Returns a `SwarmlineStack` with:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
@@ -609,12 +609,12 @@ Returns a `CognitiaStack` with:
 
 ---
 
-## Policy (`cognitia.policy`)
+## Policy (`swarmline.policy`)
 
 ### DefaultToolPolicy
 
 ```python
-from cognitia.policy import DefaultToolPolicy
+from swarmline.policy import DefaultToolPolicy
 
 policy = DefaultToolPolicy(
     allowed_system_tools={"bash", "read"},
@@ -629,7 +629,7 @@ Always denied: `Bash`, `Read`, `Write`, `Edit`, `MultiEdit`, `Glob`, `Grep`, `LS
 ### ToolIdCodec
 
 ```python
-from cognitia.policy import DefaultToolIdCodec
+from swarmline.policy import DefaultToolIdCodec
 
 codec = DefaultToolIdCodec()
 codec.encode("server", "tool")      # "mcp__server__tool"
@@ -639,12 +639,12 @@ codec.matches("mcp__s__t", "s")     # True
 
 ---
 
-## Routing (`cognitia.routing`)
+## Routing (`swarmline.routing`)
 
 ### KeywordRoleRouter
 
 ```python
-from cognitia.routing import KeywordRoleRouter
+from swarmline.routing import KeywordRoleRouter
 
 router = KeywordRoleRouter(
     default_role="coach",
@@ -661,12 +661,12 @@ router.resolve("...", explicit_role="coach")  # "coach" (explicit wins)
 
 ---
 
-## Commands (`cognitia.commands`)
+## Commands (`swarmline.commands`)
 
 ### CommandRegistry
 
 ```python
-from cognitia.commands import CommandRegistry
+from swarmline.commands import CommandRegistry
 
 registry = CommandRegistry()
 registry.register(name="help", handler=handler, aliases=["h", "?"], description="Show help")

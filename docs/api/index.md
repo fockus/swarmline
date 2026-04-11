@@ -1,6 +1,6 @@
 # API Reference
 
-Auto-generated reference documentation for the Cognitia Python API.
+Auto-generated reference documentation for the Swarmline Python API.
 
 ## Core Modules
 

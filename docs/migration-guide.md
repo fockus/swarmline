@@ -21,7 +21,7 @@ Keep the defaults closed unless you explicitly trust the operator boundary.
 
 ### Upgrade recipe 1: MCP host exec
 
-If you previously depended on the `cognitia_exec_code` tool, leave host execution closed by default and open it only for trusted operators:
+If you previously depended on the `swarmline_exec_code` tool, leave host execution closed by default and open it only for trusted operators:
 
 ```python
 server = create_server(
@@ -64,7 +64,7 @@ Prefer authenticated access whenever possible. If you intentionally open the rou
 
 ## Legacy: v0.5.0 to v1.0.0
 
-This legacy section covers the original core migration from Cognitia 0.5.0 to 1.0.0-core.
+This legacy section covers the original core migration from Swarmline 0.5.0 to 1.0.0-core.
 
 ## 1. Breaking Changes
 
@@ -75,12 +75,12 @@ deprecated and will be removed in v2.0.
 
 | v0.5.0 | v1.0.0 |
 |--------|--------|
-| `cognitia.protocols.RuntimePort` | `cognitia.runtime.base.AgentRuntime` |
+| `swarmline.protocols.RuntimePort` | `swarmline.runtime.base.AgentRuntime` |
 
 **Old code:**
 
 ```python
-from cognitia.protocols import RuntimePort
+from swarmline.protocols import RuntimePort
 
 class MyRuntime:
     """Implements RuntimePort."""
@@ -94,8 +94,8 @@ class MyRuntime:
 **New code:**
 
 ```python
-from cognitia.runtime.base import AgentRuntime
-# or: from cognitia import AgentRuntime
+from swarmline.runtime.base import AgentRuntime
+# or: from swarmline import AgentRuntime
 
 class MyRuntime:
     """Implements AgentRuntime."""
@@ -126,21 +126,21 @@ Key differences in the new contract:
 ### 1.2 Protocols package restructured (ISP split)
 
 `protocols.py` (single file) has been split into a package with dedicated
-modules. All protocols are still re-exported from `cognitia.protocols` for
+modules. All protocols are still re-exported from `swarmline.protocols` for
 backward compatibility.
 
 | Module | Protocols |
 |--------|-----------|
-| `cognitia.protocols.memory` | `MessageStore`, `FactStore`, `SummaryStore`, `GoalStore`, `SessionStateStore`, `UserStore`, `PhaseStore`, `ToolEventStore`, `SummaryGenerator` |
-| `cognitia.protocols.session` | `SessionFactory`, `SessionLifecycle`, `SessionManager`, `SessionRehydrator` |
-| `cognitia.protocols.routing` | `ContextBuilder`, `ModelSelector`, `RoleRouter`, `RoleSkillsProvider` |
-| `cognitia.protocols.tools` | `LocalToolResolver`, `ToolIdCodec` |
-| `cognitia.protocols.runtime` | `RuntimePort` (deprecated), re-exports `AgentRuntime` |
-| `cognitia.protocols.multi_agent` | `AgentTool`, `TaskQueue`, `AgentRegistry` |
+| `swarmline.protocols.memory` | `MessageStore`, `FactStore`, `SummaryStore`, `GoalStore`, `SessionStateStore`, `UserStore`, `PhaseStore`, `ToolEventStore`, `SummaryGenerator` |
+| `swarmline.protocols.session` | `SessionFactory`, `SessionLifecycle`, `SessionManager`, `SessionRehydrator` |
+| `swarmline.protocols.routing` | `ContextBuilder`, `ModelSelector`, `RoleRouter`, `RoleSkillsProvider` |
+| `swarmline.protocols.tools` | `LocalToolResolver`, `ToolIdCodec` |
+| `swarmline.protocols.runtime` | `RuntimePort` (deprecated), re-exports `AgentRuntime` |
+| `swarmline.protocols.multi_agent` | `AgentTool`, `TaskQueue`, `AgentRegistry` |
 
-**Action required:** If you imported from `cognitia.protocols`, no changes are
-needed -- all names are re-exported from `cognitia.protocols.__init__`. If you
-imported directly from `cognitia.protocols` as a single-file module in a
+**Action required:** If you imported from `swarmline.protocols`, no changes are
+needed -- all names are re-exported from `swarmline.protocols.__init__`. If you
+imported directly from `swarmline.protocols` as a single-file module in a
 non-standard way, update to the package import.
 
 ### 1.3 RuntimeEvent changes
@@ -209,7 +209,7 @@ Extract typed responses from LLM output using Pydantic models.
 
 ```python
 from pydantic import BaseModel
-from cognitia import Agent, AgentConfig
+from swarmline import Agent, AgentConfig
 
 class SentimentResult(BaseModel):
     sentiment: str
@@ -232,7 +232,7 @@ validation retries, and `max_model_retries`.
 Define tools with automatic JSON Schema inference from type hints and docstrings.
 
 ```python
-from cognitia import tool
+from swarmline import tool
 
 @tool
 def get_weather(city: str, units: str = "celsius") -> str:
@@ -255,7 +255,7 @@ See [Tools and Skills docs](tools-and-skills.md).
 Thread-safe, extensible runtime registry with plugin discovery via entry points.
 
 ```python
-from cognitia.runtime.registry import RuntimeRegistry
+from swarmline.runtime.registry import RuntimeRegistry
 
 # Register a custom runtime
 RuntimeRegistry.register("my_runtime", MyRuntimeFactory)
@@ -271,8 +271,8 @@ See [Runtime Registry docs](runtime-registry.md).
 Per-session budget enforcement with bundled pricing data.
 
 ```python
-from cognitia.runtime.cost import CostBudget, CostTracker
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.cost import CostBudget, CostTracker
+from swarmline.runtime.types import RuntimeConfig
 
 budget = CostBudget(max_usd=1.0, action_on_exceed="error")
 config = RuntimeConfig(cost_budget=budget)
@@ -284,7 +284,7 @@ Input/output guardrails with parallel execution. Built-in guards include
 `ContentLengthGuardrail`, `RegexGuardrail`, and `CallerAllowlistGuardrail`.
 
 ```python
-from cognitia.guardrails import ContentLengthGuardrail, RegexGuardrail
+from swarmline.guardrails import ContentLengthGuardrail, RegexGuardrail
 
 config = RuntimeConfig(
     input_guardrails=[ContentLengthGuardrail(max_chars=10000)],
@@ -298,7 +298,7 @@ Pre-process user input before LLM calls. Built-in filters: `MaxTokensFilter`,
 `SystemPromptInjector`.
 
 ```python
-from cognitia.filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.filters import MaxTokensFilter, SystemPromptInjector
 
 config = RuntimeConfig(
     input_filters=[
@@ -313,7 +313,7 @@ config = RuntimeConfig(
 Resilient LLM calls with configurable retry policies and model fallback chains.
 
 ```python
-from cognitia.resilience import ExponentialBackoff, ModelFallbackChain
+from swarmline.resilience import ExponentialBackoff, ModelFallbackChain
 
 config = RuntimeConfig(
     retry_policy=ExponentialBackoff(max_retries=3, base_delay=1.0),
@@ -332,8 +332,8 @@ See [Sessions docs](sessions.md).
 Pub-sub event bus for runtime observability and span-based tracing.
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracing import ConsoleTracer, TracingSubscriber
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracing import ConsoleTracer, TracingSubscriber
 
 bus = InMemoryEventBus()
 tracer = ConsoleTracer()
@@ -351,7 +351,7 @@ See [Observability docs](observability.md).
 Transform runtime event streams into UI-friendly blocks for frontend rendering.
 
 ```python
-from cognitia.ui.projection import ChatProjection, project_stream
+from swarmline.ui.projection import ChatProjection, project_stream
 
 projection = ChatProjection()
 async for ui_state in project_stream(event_stream, projection):
@@ -367,10 +367,10 @@ See [UI Projection docs](ui-projection.md).
 Automatic context injection via `Retriever` protocol and `RagInputFilter`.
 
 ```python
-from cognitia.rag import SimpleRetriever, Document
+from swarmline.rag import SimpleRetriever, Document
 
 retriever = SimpleRetriever(documents=[
-    Document(content="Cognitia supports 3 runtimes.", metadata={"source": "docs"}),
+    Document(content="Swarmline supports 3 runtimes.", metadata={"source": "docs"}),
 ])
 config = RuntimeConfig(retriever=retriever)
 ```
@@ -406,7 +406,7 @@ See [CLI Runtime docs](cli-runtime.md).
 Cooperative cancellation with callback support.
 
 ```python
-from cognitia.runtime.cancellation import CancellationToken
+from swarmline.runtime.cancellation import CancellationToken
 
 token = CancellationToken()
 config = RuntimeConfig(cancellation_token=token)
@@ -420,7 +420,7 @@ token.cancel()
 Namespace isolation for memory operations.
 
 ```python
-from cognitia.memory.scopes import MemoryScope
+from swarmline.memory.scopes import MemoryScope
 
 key = MemoryScope.AGENT.scoped_key("agent-1", "preferences")
 # -> "agent:agent-1:preferences"
@@ -432,11 +432,11 @@ key = MemoryScope.AGENT.scoped_key("agent-1", "preferences")
 
 | Deprecated | Replacement | Removal target |
 |------------|-------------|----------------|
-| `RuntimePort` protocol (`cognitia.protocols.runtime`) | `AgentRuntime` (`cognitia.runtime.base`) | v2.0.0 |
+| `RuntimePort` protocol (`swarmline.protocols.runtime`) | `AgentRuntime` (`swarmline.runtime.base`) | v2.0.0 |
 | `RuntimePort.stream_reply()` | `AgentRuntime.run()` | v2.0.0 |
 | `RuntimePort.connect()` / `disconnect()` | `AgentRuntime` context manager / `cleanup()` | v2.0.0 |
 | `RuntimePort.is_connected` property | Removed (no replacement) | v2.0.0 |
-| `protocols.py` single-file import path | `cognitia.protocols` package (backward-compatible re-exports remain) | v2.0.0 |
+| `protocols.py` single-file import path | `swarmline.protocols` package (backward-compatible re-exports remain) | v2.0.0 |
 
 ---
 
@@ -447,7 +447,7 @@ Follow these steps to upgrade from v0.5.0 to v1.0.0:
 ### Step 1: Update the dependency
 
 ```bash
-pip install cognitia>=1.0.0
+pip install swarmline>=1.0.0
 ```
 
 ### Step 2: Replace RuntimePort with AgentRuntime
@@ -462,11 +462,11 @@ Replace with `AgentRuntime`:
 
 ```python
 # Before
-from cognitia.protocols import RuntimePort
+from swarmline.protocols import RuntimePort
 
 # After
-from cognitia import AgentRuntime
-# or: from cognitia.runtime.base import AgentRuntime
+from swarmline import AgentRuntime
+# or: from swarmline.runtime.base import AgentRuntime
 ```
 
 If you have custom runtime implementations, update them to implement the
@@ -525,7 +525,7 @@ These are additive and do not require changes to existing code:
 ```bash
 pytest
 ruff check src/ tests/
-mypy src/cognitia/
+mypy src/swarmline/
 ```
 
 Verify that all tests pass and there are no import errors or type check failures
@@ -539,4 +539,4 @@ related to the renamed protocols.
 - [Architecture Overview](architecture.md)
 - [API Reference](api-reference.md)
 - [Examples](examples.md)
-- [Full Changelog](https://github.com/fockus/cognitia/blob/main/CHANGELOG.md)
+- [Full Changelog](https://github.com/fockus/swarmline/blob/main/CHANGELOG.md)

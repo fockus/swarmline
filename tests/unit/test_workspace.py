@@ -9,8 +9,8 @@ import time
 
 import pytest
 
-from cognitia.multi_agent.workspace import ExecutionWorkspace, LocalWorkspace
-from cognitia.multi_agent.workspace_types import (
+from swarmline.multi_agent.workspace import ExecutionWorkspace, LocalWorkspace
+from swarmline.multi_agent.workspace_types import (
     WorkspaceHandle,
     WorkspaceSpec,
     WorkspaceStrategy,

@@ -1,4 +1,4 @@
-"""Integration: SDK 0.1.48 features wiring - assembly ClaudeAgentOptions so vsemi novymi fichami. Verifies chto komponotnty cognitia correctly are assembled vmeste:
+"""Integration: SDK 0.1.48 features wiring - assembly ClaudeAgentOptions so vsemi novymi fichami. Verifies chto komponotnty swarmline correctly are assembled vmeste:
 - HookRegistry -> SDK hooks cherez bridge -> ClaudeAgentOptions
 - In-process MCP tools -> ClaudeAgentOptions.mcp_servers
 - Structured output + session management + betas -> ClaudeAgentOptions
@@ -17,11 +17,11 @@ pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не устан
 
 pytestmark = pytest.mark.requires_claude_sdk
 
-from cognitia.hooks.registry import HookRegistry  # noqa: E402
-from cognitia.hooks.sdk_bridge import registry_to_sdk_hooks  # noqa: E402
-from cognitia.runtime.adapter import RuntimeAdapter  # noqa: E402
-from cognitia.runtime.options_builder import ClaudeOptionsBuilder  # noqa: E402
-from cognitia.runtime.sdk_tools import create_mcp_server, mcp_tool  # noqa: E402
+from swarmline.hooks.registry import HookRegistry  # noqa: E402
+from swarmline.hooks.sdk_bridge import registry_to_sdk_hooks  # noqa: E402
+from swarmline.runtime.adapter import RuntimeAdapter  # noqa: E402
+from swarmline.runtime.options_builder import ClaudeOptionsBuilder  # noqa: E402
+from swarmline.runtime.sdk_tools import create_mcp_server, mcp_tool  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # HookRegistry → SDK hooks → ClaudeAgentOptions pipeline
@@ -152,7 +152,7 @@ class TestMcpToolsToOptions:
 
     def test_mixed_mcp_servers_in_options(self) -> None:
         """Remote MCP + in-process MCP in odnih options."""
-        from cognitia.skills.types import McpServerSpec
+        from swarmline.skills.types import McpServerSpec
 
         @mcp_tool("local_calc", "Calculator", {"expr": str})
         async def calc(args: dict[str, Any]) -> dict[str, Any]:
@@ -287,7 +287,7 @@ class TestAdapterDynamicControlPipeline:
     @pytest.mark.asyncio
     async def test_set_model_propagates_through_claude_code_runtime(self) -> None:
         """set_model on adapter dostupen cherez ClaudeCodeRuntime.adapter."""
-        from cognitia.runtime.claude_code import ClaudeCodeRuntime
+        from swarmline.runtime.claude_code import ClaudeCodeRuntime
 
         mock_client = AsyncMock()
         mock_options = MagicMock()
@@ -304,7 +304,7 @@ class TestAdapterDynamicControlPipeline:
     @pytest.mark.asyncio
     async def test_interrupt_propagates_through_claude_code_runtime(self) -> None:
         """interrupt() dostupen cherez ClaudeCodeRuntime.adapter."""
-        from cognitia.runtime.claude_code import ClaudeCodeRuntime
+        from swarmline.runtime.claude_code import ClaudeCodeRuntime
 
         mock_client = AsyncMock()
         mock_options = MagicMock()
@@ -320,7 +320,7 @@ class TestAdapterDynamicControlPipeline:
     @pytest.mark.asyncio
     async def test_get_mcp_status_propagates_through_runtime(self) -> None:
         """get_mcp_status() cherez ClaudeCodeRuntime.adapter."""
-        from cognitia.runtime.claude_code import ClaudeCodeRuntime
+        from swarmline.runtime.claude_code import ClaudeCodeRuntime
 
         mock_client = AsyncMock()
         mock_client.get_mcp_status.return_value = {
@@ -352,9 +352,9 @@ class TestMetricsPropagation:
     @pytest.mark.asyncio
     async def test_stream_event_metrics_reach_claude_code_runtime(self) -> None:
         """Metrics from ResultMessage -> StreamEvent.done -> ClaudeCodeRuntime final event."""
-        from cognitia.runtime.adapter import ResultMessage
-        from cognitia.runtime.claude_code import ClaudeCodeRuntime
-        from cognitia.runtime.types import Message, RuntimeConfig
+        from swarmline.runtime.adapter import ResultMessage
+        from swarmline.runtime.claude_code import ClaudeCodeRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
 
         mock_client = AsyncMock()
 
@@ -369,7 +369,7 @@ class TestMetricsPropagation:
         result_msg.duration_ms = 2000
 
         # Mock AssistantMessage
-        from cognitia.runtime.adapter import AssistantMessage, TextBlock
+        from swarmline.runtime.adapter import AssistantMessage, TextBlock
 
         text_block = MagicMock(spec=TextBlock)
         text_block.text = "Результат анализа"
@@ -410,11 +410,11 @@ class TestMetricsPropagation:
     @pytest.mark.asyncio
     async def test_structured_output_in_stream_event(self) -> None:
         """structured_output from ResultMessage dostupen in StreamEvent.done."""
-        from cognitia.runtime.adapter import ResultMessage
+        from swarmline.runtime.adapter import ResultMessage
 
         mock_client = AsyncMock()
 
-        from cognitia.runtime.adapter import AssistantMessage, TextBlock
+        from swarmline.runtime.adapter import AssistantMessage, TextBlock
 
         text_block = MagicMock(spec=TextBlock)
         text_block.text = "answer"

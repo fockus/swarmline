@@ -11,12 +11,12 @@ from typing import Any
 
 import pytest
 
-from cognitia.orchestration.message_bus import MessageBus
-from cognitia.orchestration.subagent_types import SubagentSpec
-from cognitia.orchestration.team_types import TeamConfig
-from cognitia.orchestration.thin_subagent import ThinSubagentOrchestrator
-from cognitia.orchestration.thin_team import ThinTeamOrchestrator
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.orchestration.message_bus import MessageBus
+from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.orchestration.team_types import TeamConfig
+from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
+from swarmline.orchestration.thin_team import ThinTeamOrchestrator
+from swarmline.runtime.types import RuntimeConfig
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ class TestTeamMessageBusE2E:
         """Team with 2 workers, messages cherez MessageBus vidny in history. Verify bus.send() + bus.get_history() cherez pryamoy dostup k bus. """
         bus = MessageBus()
 
-        from cognitia.orchestration.team_types import TeamMessage
+        from swarmline.orchestration.team_types import TeamMessage
         from datetime import UTC, datetime
 
         # Worker 1 otpravlyaet message worker 2

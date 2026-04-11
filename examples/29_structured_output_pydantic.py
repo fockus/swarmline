@@ -15,7 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from cognitia.agent import Agent, AgentConfig, StructuredOutputError
+from swarmline.agent import Agent, AgentConfig, StructuredOutputError
 
 
 # ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ _MOCK_RESPONSES: dict[str, str] = {
     "entities": json.dumps({
         "people": ["Alice", "Bob"],
         "places": ["Paris", "Tokyo"],
-        "organizations": ["Cognitia Labs", "ACME Corp"],
+        "organizations": ["Swarmline Labs", "ACME Corp"],
     }),
 }
 
@@ -76,12 +76,12 @@ async def mock_llm(messages: list[dict[str, str]], system_prompt: str, **kw: Any
 async def main() -> None:
     from unittest.mock import patch
 
-    from cognitia.runtime.thin.runtime import ThinRuntime
+    from swarmline.runtime.thin.runtime import ThinRuntime
 
     def patched_create(self: Any, config: Any, **kwargs: Any) -> ThinRuntime:
         return ThinRuntime(config=config, llm_call=mock_llm)
 
-    with patch("cognitia.runtime.factory.RuntimeFactory.create", patched_create):
+    with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_create):
         agent = Agent(AgentConfig(
             system_prompt="You are a helpful analysis assistant.",
             runtime="thin",
@@ -102,7 +102,7 @@ async def main() -> None:
         # --- Entity Extraction ---
         print("=== Entity Extraction ===")
         entities = await agent.query_structured(
-            "Extract entities: Alice met Bob in Paris near the Cognitia Labs office.",
+            "Extract entities: Alice met Bob in Paris near the Swarmline Labs office.",
             ExtractedEntities,
         )
         print(f"  People: {entities.people}")

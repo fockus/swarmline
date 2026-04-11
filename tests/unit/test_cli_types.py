@@ -12,7 +12,7 @@ class TestCliConfig:
 
     def test_cli_config_frozen_cannot_mutate(self) -> None:
         """CliConfig is frozen — mutation raises FrozenInstanceError."""
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(command=["claude", "--print", "-"])
         with pytest.raises(dataclasses.FrozenInstanceError):
@@ -20,34 +20,34 @@ class TestCliConfig:
 
     def test_cli_config_defaults_timeout(self) -> None:
         """Default timeout is 300 seconds."""
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(command=["claude"])
         assert cfg.timeout_seconds == 300.0
 
     def test_cli_config_defaults_max_output(self) -> None:
         """Default max_output_bytes is 4MB."""
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(command=["claude"])
         assert cfg.max_output_bytes == 4_000_000
 
     def test_cli_config_defaults_output_format(self) -> None:
         """Default output_format is stream-json."""
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(command=["claude"])
         assert cfg.output_format == "stream-json"
 
     def test_cli_config_defaults_env_empty(self) -> None:
         """Default env is empty dict."""
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(command=["claude"])
         assert cfg.env == {}
 
     def test_cli_config_defaults_host_env_redacted(self) -> None:
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(command=["claude"])
         assert cfg.inherit_host_env is False
@@ -55,7 +55,7 @@ class TestCliConfig:
 
     def test_cli_config_custom_values(self) -> None:
         """CliConfig accepts custom values for all fields."""
-        from cognitia.runtime.cli.types import CliConfig
+        from swarmline.runtime.cli.types import CliConfig
 
         cfg = CliConfig(
             command=["my-agent", "--json"],

@@ -6,8 +6,8 @@ No API keys required.
 
 import asyncio
 
-from cognitia.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry
-from cognitia.retry import ExponentialBackoff, ModelFallbackChain, ProviderFallback
+from swarmline.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry
+from swarmline.retry import ExponentialBackoff, ModelFallbackChain, ProviderFallback
 
 
 async def main() -> None:

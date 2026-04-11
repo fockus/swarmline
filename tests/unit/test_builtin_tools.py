@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from cognitia.tools.types import SandboxConfig
+from swarmline.tools.types import SandboxConfig
 
 
 @pytest.fixture()
@@ -23,14 +23,14 @@ def sandbox_config(tmp_path) -> SandboxConfig:
 
 @pytest.fixture()
 async def sandbox(sandbox_config: SandboxConfig):
-    from cognitia.tools.sandbox_local import LocalSandboxProvider
+    from swarmline.tools.sandbox_local import LocalSandboxProvider
 
     return LocalSandboxProvider(sandbox_config)
 
 
 @pytest.fixture()
 def sandbox_tools(sandbox):
-    from cognitia.tools.builtin import create_sandbox_tools
+    from swarmline.tools.builtin import create_sandbox_tools
 
     specs, executors = create_sandbox_tools(sandbox)
     return specs, executors
@@ -218,7 +218,7 @@ class TestWebTools:
 
     def test_create_web_tools_without_provider(self) -> None:
         """Without WebProvider -> empty result."""
-        from cognitia.tools.builtin import create_web_tools
+        from swarmline.tools.builtin import create_web_tools
 
         specs, executors = create_web_tools(None)
         assert specs == {}
@@ -226,7 +226,7 @@ class TestWebTools:
 
     async def test_web_fetch_with_mock_provider(self) -> None:
         """web_fetch with mock WebProvider."""
-        from cognitia.tools.builtin import create_web_tools
+        from swarmline.tools.builtin import create_web_tools
 
         class MockWeb:
             async def fetch(self, url: str) -> str:
@@ -242,8 +242,8 @@ class TestWebTools:
 
     async def test_web_search_with_mock_provider(self) -> None:
         """web_search with mock WebProvider."""
-        from cognitia.tools.builtin import create_web_tools
-        from cognitia.tools.web_protocols import SearchResult
+        from swarmline.tools.builtin import create_web_tools
+        from swarmline.tools.web_protocols import SearchResult
 
         class MockWeb:
             async def fetch(self, url: str) -> str:
@@ -263,7 +263,7 @@ class TestAliasMap:
     """SDK-alias (Bash -> bash) cherez alias map."""
 
     def test_alias_map_exists(self) -> None:
-        from cognitia.tools.builtin import TOOL_ALIAS_MAP
+        from swarmline.tools.builtin import TOOL_ALIAS_MAP
 
         assert TOOL_ALIAS_MAP["Bash"] == "bash"
         assert TOOL_ALIAS_MAP["Read"] == "read"

@@ -1,4 +1,4 @@
-"""Tests for Cognitia CLI commands."""
+"""Tests for Swarmline CLI commands."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import json
 import pytest
 from click.testing import CliRunner
 
-from cognitia.cli._app import cli
-from cognitia.cli._output import format_output
+from swarmline.cli._app import cli
+from swarmline.cli._output import format_output
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ class TestCLIHelp:
     def test_main_help_shows_group_name(self, runner: CliRunner) -> None:
         result = runner.invoke(cli, ["--help"])
         assert result.exit_code == 0
-        assert "Cognitia" in result.output
+        assert "Swarmline" in result.output
 
     def test_memory_help(self, runner: CliRunner) -> None:
         result = runner.invoke(cli, ["memory", "--help"])

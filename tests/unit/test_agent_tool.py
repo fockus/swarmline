@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from cognitia.agent.tool import ToolDefinition, tool
+from swarmline.agent.tool import ToolDefinition, tool
 
 
 class TestToolDecoratorBasic:
@@ -136,8 +136,8 @@ class TestToolDefinitionConversion:
     """Conversion ToolDefinition -> SDK/ToolSpec formaty."""
 
     def test_to_tool_spec(self) -> None:
-        """Conversion in cognitia ToolSpec (for thin/deepagents)."""
-        from cognitia.runtime.types import ToolSpec
+        """Conversion in swarmline ToolSpec (for thin/deepagents)."""
+        from swarmline.runtime.types import ToolSpec
 
         @tool(name="calc", description="Calculator")
         async def calc(expr: str) -> str:
@@ -184,7 +184,7 @@ class TestAdaptHandler:
     @pytest.mark.asyncio
     async def test_adapts_kwargs_and_wraps_result(self) -> None:
         """User handler(a, b) → SDK handler(args_dict) → {content: [...]}."""
-        from cognitia.agent.agent import _adapt_handler
+        from swarmline.agent.agent import _adapt_handler
 
         @tool(name="add", description="Add")
         async def add(a: int, b: int) -> int:
@@ -200,7 +200,7 @@ class TestAdaptHandler:
 
     @pytest.mark.asyncio
     async def test_adapts_string_result(self) -> None:
-        from cognitia.agent.agent import _adapt_handler
+        from swarmline.agent.agent import _adapt_handler
 
         @tool(name="greet", description="Greet")
         async def greet(name: str) -> str:
@@ -214,7 +214,7 @@ class TestAdaptHandler:
     @pytest.mark.asyncio
     async def test_handler_returning_dict_passthrough(self) -> None:
         """If handler uzhe returns MCP-format {content: [...]}, not oborachivaem."""
-        from cognitia.agent.agent import _adapt_handler
+        from swarmline.agent.agent import _adapt_handler
 
         @tool(name="raw", description="Raw")
         async def raw(x: str) -> dict:
@@ -228,7 +228,7 @@ class TestAdaptHandler:
     @pytest.mark.asyncio
     async def test_handler_error_returns_is_error(self) -> None:
         """If handler brosaet exception -> is_error=True."""
-        from cognitia.agent.agent import _adapt_handler
+        from swarmline.agent.agent import _adapt_handler
 
         @tool(name="fail", description="Fail")
         async def fail(x: str) -> str:

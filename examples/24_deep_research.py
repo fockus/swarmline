@@ -28,14 +28,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from cognitia.agent.tool import tool
-from cognitia.orchestration.workflow_graph import END_NODE, WorkflowGraph
-from cognitia.rag import Document, RagInputFilter, SimpleRetriever
-from cognitia.runtime.structured_output import (
+from swarmline.agent.tool import tool
+from swarmline.orchestration.workflow_graph import END_NODE, WorkflowGraph
+from swarmline.rag import Document, RagInputFilter, SimpleRetriever
+from swarmline.runtime.structured_output import (
     extract_pydantic_schema,
     validate_structured_output,
 )
-from cognitia.runtime.types import Message
+from swarmline.runtime.types import Message
 
 # ---------------------------------------------------------------------------
 # Domain models — structured output contracts
@@ -451,7 +451,7 @@ def _resolve_live_model() -> str:
 
 async def live(question: str) -> None:
     """Run the same scenario through a real thin runtime."""
-    from cognitia import Agent, AgentConfig
+    from swarmline import Agent, AgentConfig
 
     model = _resolve_live_model()
 

@@ -3,7 +3,7 @@
 import pytest
 
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
-from cognitia.runtime.sdk_tools import create_mcp_server, mcp_tool
+from swarmline.runtime.sdk_tools import create_mcp_server, mcp_tool
 
 
 class TestMcpTool:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from cognitia.memory_bank.tools import create_memory_bank_tools
+from swarmline.memory_bank.tools import create_memory_bank_tools
 
 
 class InMemoryProvider:

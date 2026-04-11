@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from cognitia.runtime.mcp_bridge import McpBridge
-from cognitia.runtime.types import ToolSpec
+from swarmline.runtime.mcp_bridge import McpBridge
+from swarmline.runtime.types import ToolSpec
 
 
 class TestMcpBridgeDiscovery:

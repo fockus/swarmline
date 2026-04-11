@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
-from cognitia.agent import Agent, AgentConfig
-from cognitia.runtime.adapter import StreamEvent
-from cognitia.runtime.types import Message, RuntimeEvent
+from swarmline.agent import Agent, AgentConfig
+from swarmline.runtime.adapter import StreamEvent
+from swarmline.runtime.types import Message, RuntimeEvent
 
 
 def _portable_reply(prompt: str) -> str:
@@ -99,7 +99,7 @@ def _patch_runtime_boundary(runtime_name: str, include_new_messages: bool = Fals
     if runtime_name == "deepagents":
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakePortableRuntime(include_new_messages)
-        with patch("cognitia.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
             yield
         return
 
@@ -119,11 +119,11 @@ def _patch_runtime_boundary(runtime_name: str, include_new_messages: bool = Fals
 
     with (
         patch(
-            "cognitia.runtime.sdk_query.stream_one_shot_query",
+            "swarmline.runtime.sdk_query.stream_one_shot_query",
             side_effect=fake_stream_one_shot_query,
         ),
         patch(
-            "cognitia.agent.conversation.Conversation._create_adapter",
+            "swarmline.agent.conversation.Conversation._create_adapter",
             new=fake_create_adapter,
         ),
     ):

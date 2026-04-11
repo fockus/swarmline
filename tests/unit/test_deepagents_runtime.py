@@ -19,13 +19,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 pytest.importorskip("deepagents", reason="deepagents не установлен")
-from cognitia.runtime.deepagents import (
+from swarmline.runtime.deepagents import (
     DeepAgentsRuntime,
     _check_langchain_available,
     create_langchain_tool,
 )
-from cognitia.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_TOOLS
-from cognitia.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
+from swarmline.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_TOOLS
+from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSpec
 
 # ---------------------------------------------------------------------------
 # Built-in tools filtering
@@ -160,12 +160,12 @@ class TestDeepAgentsRuntimeRun:
     @pytest.mark.asyncio
     async def test_run_without_deps_yields_error(self) -> None:
         """If deps are missing -> error event."""
-        from cognitia.runtime.types import RuntimeErrorData
+        from swarmline.runtime.types import RuntimeErrorData
 
         runtime = DeepAgentsRuntime()
         fake_error = RuntimeErrorData(kind="dependency_missing", message="not installed")
         with patch(
-            "cognitia.runtime.deepagents._check_langchain_available",
+            "swarmline.runtime.deepagents._check_langchain_available",
             return_value=fake_error,
         ):
             events = []
@@ -189,7 +189,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Привет, мир!")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -216,7 +216,7 @@ class TestDeepAgentsRuntimeRun:
             yield  # async generator
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -241,7 +241,7 @@ class TestDeepAgentsRuntimeRun:
             yield  # async generator
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_failing_stream),
         ):
             events = []
@@ -270,7 +270,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("ok")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream) as mock_stream,
         ):
             events = []
@@ -303,7 +303,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta('{"name":"Alice"}')
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -333,7 +333,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("native")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_native", side_effect=_fake_native) as mock_native,
             patch.object(
                 runtime,
@@ -364,7 +364,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("compat")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_compat) as mock_compat,
             patch.object(
                 runtime,
@@ -392,7 +392,7 @@ class TestDeepAgentsRuntimeRun:
         )
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.dict("sys.modules", {"langchain_openai": None}),
         ):
             events = []
@@ -421,7 +421,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Результат: 42")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream_with_tools),
         ):
             events = []
@@ -458,7 +458,7 @@ class TestDeepAgentsRuntimeRun:
         ]
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_capturing_stream),
         ):
             events = []
@@ -502,7 +502,7 @@ class TestDeepAgentsRuntimeRun:
         ]
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_native", side_effect=_capturing_stream),
         ):
             events = []
@@ -540,7 +540,7 @@ class TestDeepAgentsRuntimeRun:
         ]
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_native", side_effect=_capturing_stream),
         ):
             events = []
@@ -564,7 +564,7 @@ class TestDeepAgentsRuntimeRun:
         )
 
         events = []
-        with patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None):
+        with patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None):
             async for event in runtime.run(
                 messages=[Message(role="user", content="hi")],
                 system_prompt="test",
@@ -586,7 +586,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Ответ модели")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -628,7 +628,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Ответ модели")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -686,7 +686,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("done")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_multi_tools),
         ):
             events = []
@@ -711,7 +711,7 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("ok")
 
         with (
-            patch("cognitia.runtime.deepagents._check_langchain_available", return_value=None),
+            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream) as mock_stream,
         ):
             async for _ in runtime.run(
@@ -732,7 +732,7 @@ class TestDeepAgentsRuntimeRun:
 
 
 class TestBuildLcMessages:
-    """_build_lc_messages - conversion of cognitia Message -> LangChain."""
+    """_build_lc_messages - conversion of swarmline Message -> LangChain."""
 
     def _make_runtime(self) -> DeepAgentsRuntime:
         return DeepAgentsRuntime()
@@ -885,7 +885,7 @@ class TestBuildLlm:
         sentinel = object()
 
         with patch(
-            "cognitia.runtime.deepagents.build_deepagents_chat_model",
+            "swarmline.runtime.deepagents.build_deepagents_chat_model",
             return_value=sentinel,
         ) as mock_build:
             llm = runtime._build_llm("openai:gpt-4o", base_url="https://proxy.test")
@@ -1090,7 +1090,7 @@ class TestStreamLangchain:
         with (
             patch.object(runtime, "_build_lc_messages", return_value=[]),
             patch.object(runtime, "_build_llm", return_value=mock_llm),
-            patch("cognitia.runtime.deepagents.create_langchain_tool", return_value=MagicMock()),
+            patch("swarmline.runtime.deepagents.create_langchain_tool", return_value=MagicMock()),
         ):
             async for _ in runtime._stream_langchain(
                 messages=[],

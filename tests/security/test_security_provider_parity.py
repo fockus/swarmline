@@ -6,15 +6,15 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-from cognitia.policy import DefaultToolPolicy, PermissionAllow, PermissionDeny
-from cognitia.policy.tool_policy import ToolPolicyInput
-from cognitia.todo.inmemory_provider import InMemoryTodoProvider
-from cognitia.todo.types import TodoItem
-from cognitia.tools.sandbox_docker import DockerSandboxProvider
-from cognitia.tools.sandbox_e2b import E2BSandboxProvider
-from cognitia.tools.sandbox_local import LocalSandboxProvider
-from cognitia.tools.sandbox_openshell import OpenShellSandboxProvider
-from cognitia.tools.types import SandboxConfig, SandboxViolation
+from swarmline.policy import DefaultToolPolicy, PermissionAllow, PermissionDeny
+from swarmline.policy.tool_policy import ToolPolicyInput
+from swarmline.todo.inmemory_provider import InMemoryTodoProvider
+from swarmline.todo.types import TodoItem
+from swarmline.tools.sandbox_docker import DockerSandboxProvider
+from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+from swarmline.tools.sandbox_local import LocalSandboxProvider
+from swarmline.tools.sandbox_openshell import OpenShellSandboxProvider
+from swarmline.tools.types import SandboxConfig, SandboxViolation
 
 pytestmark = pytest.mark.security
 

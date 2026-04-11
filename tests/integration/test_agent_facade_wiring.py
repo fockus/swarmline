@@ -1,5 +1,5 @@
 """Integration: Agent Facade - full pipeline sborki komponotntov. Verifies chto Agent, AgentConfig, @tool, Middleware correctly
-are assembled vmeste cherez real komponotnty cognitia.
+are assembled vmeste cherez real komponotnty swarmline.
 """
 
 from __future__ import annotations
@@ -8,7 +8,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from cognitia.agent import (
+from swarmline.agent import (
     Agent,
     AgentConfig,
     Conversation,
@@ -16,7 +16,7 @@ from cognitia.agent import (
     SecurityGuard,
     tool,
 )
-from cognitia.hooks.registry import HookRegistry
+from swarmline.hooks.registry import HookRegistry
 from conftest import FakeStreamEvent
 
 # ---------------------------------------------------------------------------
