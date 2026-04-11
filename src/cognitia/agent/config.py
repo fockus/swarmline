@@ -29,6 +29,9 @@ class AgentConfig:
     # Runtime: claude_sdk | thin | deepagents | openai_agents | cli
     runtime: str = "claude_sdk"
 
+    # Base URL for LLM API (OpenRouter, proxy, etc.). None = provider default.
+    base_url: str | None = None
+
     # Tools (standalone @tool decorated functions)
     tools: tuple[ToolDefinition, ...] = ()
 
