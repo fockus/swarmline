@@ -10,6 +10,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from swarmline.commands.registry import CommandRegistry
     from swarmline.hooks.dispatcher import HookDispatcher
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
@@ -60,8 +61,10 @@ class ThinRuntime:
         hook_registry: HookRegistry | None = None,
         tool_policy: DefaultToolPolicy | None = None,
         subagent_config: Any | None = None,
+        command_registry: CommandRegistry | None = None,
     ) -> None:
         self._config = config or RuntimeConfig(runtime_name="thin")
+        self._command_registry = command_registry
         self._auto_wrap_retriever()
         self._retry_events: list[RuntimeEvent] = []
         if llm_call is not None:
@@ -229,6 +232,22 @@ class ThinRuntime:
                 if messages and messages[-1].role == "user":
                     messages = list(messages)
                     messages[-1] = Message(role="user", content=user_text)
+
+        # --- Command intercept ---
+        # Only intercept single-line text starting with / that resolves to a registered command.
+        # URLs, paths, and unknown /text pass through to LLM.
+        if (
+            self._command_registry is not None
+            and self._command_registry.is_command(user_text)
+            and "\n" not in user_text.strip()
+        ):
+            cmd_name, cmd_args = self._command_registry.parse_command(user_text)
+            if self._command_registry.resolve(cmd_name) is not None:
+                cmd_result = await self._command_registry.execute(cmd_name, args=cmd_args)
+                yield RuntimeEvent.final(text=cmd_result)
+                if self._hook_dispatcher is not None:
+                    await self._hook_dispatcher.dispatch_stop(result_text=cmd_result)
+                return
 
         # --- Input guardrails ---
         if effective_config.input_guardrails:

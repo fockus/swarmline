@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from swarmline.agent.middleware import Middleware
     from swarmline.agent.tool import ToolDefinition
+    from swarmline.commands.registry import CommandRegistry
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
@@ -78,6 +79,9 @@ class AgentConfig:
 
     # Subagent configuration (spawn_agent tool)
     subagent_config: SubagentToolConfig | None = None
+
+    # Command registry (slash-command routing)
+    command_registry: CommandRegistry | None = None
 
     # Runtime convergence / capability negotiation
     feature_mode: str = "portable"
