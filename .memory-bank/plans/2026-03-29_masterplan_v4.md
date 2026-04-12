@@ -1,8 +1,8 @@
-# Master Plan v4: Cognitia Enhancement Roadmap (Phases 11–15)
+# Master Plan v4: Swarmline Enhancement Roadmap (Phases 11–15)
 
 > **Предшественник:** masterplan_v3.md (Phases 0–10A — все завершены, v1.0.0 released)
 > **Базовое состояние:** 2646 tests passed, 199 source files, 4 runtimes, 14 protocols, Clean Architecture
-> **Цель:** Сделать Cognitia enterprise-ready, community-friendly и state-of-the-art
+> **Цель:** Сделать Swarmline enterprise-ready, community-friendly и state-of-the-art
 
 ---
 
@@ -17,8 +17,8 @@
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/observability/otel_exporter.py` | **NEW** — OTelExporter (EventBus subscriber → OTel spans) |
-| `src/cognitia/observability/__init__.py` | Добавить exports |
+| `src/swarmline/observability/otel_exporter.py` | **NEW** — OTelExporter (EventBus subscriber → OTel spans) |
+| `src/swarmline/observability/__init__.py` | Добавить exports |
 | `pyproject.toml` | Добавить optional dep: `otel = ["opentelemetry-api>=1.29", "opentelemetry-sdk>=1.29"]` |
 | `tests/unit/test_otel_exporter.py` | **NEW** — unit-тесты с mock TracerProvider |
 | `tests/integration/test_otel_integration.py` | **NEW** — EventBus → OTel span lifecycle |
@@ -36,12 +36,12 @@ class OTelExporter:
 ```
 
 **OTel GenAI атрибуты:**
-- `gen_ai.system` = "cognitia"
+- `gen_ai.system` = "swarmline"
 - `gen_ai.request.model` = model alias
 - `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`
 - `gen_ai.response.finish_reasons`
-- `cognitia.runtime` = runtime name
-- `cognitia.session_id` = session ID
+- `swarmline.runtime` = runtime name
+- `swarmline.session_id` = session ID
 
 **DoD:**
 - [ ] OTelExporter подписывается на EventBus и создаёт OTel spans для LLM/tool calls
@@ -62,9 +62,9 @@ class OTelExporter:
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/agent/structured.py` | **NEW** — StructuredOutput[T], parse/validate/retry logic |
-| `src/cognitia/agent/facade.py` | Добавить `query_structured(prompt, output_type: type[T]) -> T` |
-| `src/cognitia/runtime/thin/loop.py` | Response format passthrough (JSON mode) |
+| `src/swarmline/agent/structured.py` | **NEW** — StructuredOutput[T], parse/validate/retry logic |
+| `src/swarmline/agent/facade.py` | Добавить `query_structured(prompt, output_type: type[T]) -> T` |
+| `src/swarmline/runtime/thin/loop.py` | Response format passthrough (JSON mode) |
 | `tests/unit/test_structured_output.py` | **NEW** — parsing, validation, retry, edge cases |
 | `tests/integration/test_structured_output_integration.py` | **NEW** — Agent.query_structured E2E |
 | `docs/structured-output.md` | Расширить: Pydantic models, retry, streaming |
@@ -100,16 +100,16 @@ async def query_structured(self, prompt: str, output_type: type[T], **kwargs) ->
 
 ### 11.3 — A2A Protocol Support (Agent-to-Agent)
 
-**Описание:** A2A (Google, 50+ enterprise partners) = стандарт для agent-to-agent communication. MCP = vertical (agent→tools), A2A = horizontal (agent↔agent). Позволяет Cognitia-агентам общаться с агентами на CrewAI, LangGraph, Google ADK.
+**Описание:** A2A (Google, 50+ enterprise partners) = стандарт для agent-to-agent communication. MCP = vertical (agent→tools), A2A = horizontal (agent↔agent). Позволяет Swarmline-агентам общаться с агентами на CrewAI, LangGraph, Google ADK.
 
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/a2a/__init__.py` | **NEW** — package |
-| `src/cognitia/a2a/types.py` | **NEW** — AgentCard, Task, TaskState, Message, Artifact |
-| `src/cognitia/a2a/server.py` | **NEW** — A2AServer (HTTP endpoint exposing agent as A2A service) |
-| `src/cognitia/a2a/client.py` | **NEW** — A2AClient (call remote A2A agents) |
-| `src/cognitia/a2a/adapter.py` | **NEW** — CognitiaA2AAdapter (wraps Agent as A2A-compatible) |
+| `src/swarmline/a2a/__init__.py` | **NEW** — package |
+| `src/swarmline/a2a/types.py` | **NEW** — AgentCard, Task, TaskState, Message, Artifact |
+| `src/swarmline/a2a/server.py` | **NEW** — A2AServer (HTTP endpoint exposing agent as A2A service) |
+| `src/swarmline/a2a/client.py` | **NEW** — A2AClient (call remote A2A agents) |
+| `src/swarmline/a2a/adapter.py` | **NEW** — SwarmlineA2AAdapter (wraps Agent as A2A-compatible) |
 | `pyproject.toml` | Optional dep: `a2a = ["starlette>=0.40", "httpx>=0.28"]` |
 | `tests/unit/test_a2a_types.py` | **NEW** — type serialization roundtrip |
 | `tests/unit/test_a2a_server.py` | **NEW** — server routing, task lifecycle |
@@ -121,10 +121,10 @@ async def query_structured(self, prompt: str, output_type: type[T], **kwargs) ->
 
 **Архитектура:**
 ```
-CognitiaAgent
+SwarmlineAgent
     │
     ▼
-CognitiaA2AAdapter → implements A2A Agent interface
+SwarmlineA2AAdapter → implements A2A Agent interface
     │
     ├── A2AServer (Starlette ASGI app)
     │   ├── GET  /.well-known/agent.json  → AgentCard
@@ -148,7 +148,7 @@ CognitiaA2AAdapter → implements A2A Agent interface
 - [ ] Task lifecycle: submitted → working → completed/failed
 - [ ] A2AServer: HTTP endpoints для send, sendSubscribe (SSE), cancel
 - [ ] A2AClient: discover, send_task, stream_task
-- [ ] CognitiaA2AAdapter: wraps любой Cognitia Agent как A2A service
+- [ ] SwarmlineA2AAdapter: wraps любой Swarmline Agent как A2A service
 - [ ] Streaming через SSE (Server-Sent Events)
 - [ ] Unit-тесты: type roundtrip, server routing, client mock
 - [ ] Integration-тест: server ↔ client full task lifecycle (in-process)
@@ -161,28 +161,28 @@ CognitiaA2AAdapter → implements A2A Agent interface
 
 **Цель:** Снизить time-to-hello-world, дать production-ready templates, профессиональную документацию.
 
-### 12.1 — `cognitia init` CLI Scaffolding
+### 12.1 — `swarmline init` CLI Scaffolding
 
-**Описание:** `cognitia init my-agent --runtime thin --memory sqlite` → готовый проект за 10 секунд. "create-react-app" эффект для AI agents.
+**Описание:** `swarmline init my-agent --runtime thin --memory sqlite` → готовый проект за 10 секунд. "create-react-app" эффект для AI agents.
 
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/cli/__init__.py` | **NEW** — CLI package |
-| `src/cognitia/cli/main.py` | **NEW** — Click/Typer CLI entry point |
-| `src/cognitia/cli/init_cmd.py` | **NEW** — `cognitia init` command |
-| `src/cognitia/cli/templates/` | **NEW** — Jinja2 templates (agent.py, config.yaml, tests/, Dockerfile, .env.example) |
-| `pyproject.toml` | Entry point: `[project.scripts] cognitia = "cognitia.cli.main:app"` + dep `click>=8.1` |
+| `src/swarmline/cli/__init__.py` | **NEW** — CLI package |
+| `src/swarmline/cli/main.py` | **NEW** — Click/Typer CLI entry point |
+| `src/swarmline/cli/init_cmd.py` | **NEW** — `swarmline init` command |
+| `src/swarmline/cli/templates/` | **NEW** — Jinja2 templates (agent.py, config.yaml, tests/, Dockerfile, .env.example) |
+| `pyproject.toml` | Entry point: `[project.scripts] swarmline = "swarmline.cli.main:app"` + dep `click>=8.1` |
 | `tests/unit/test_cli_init.py` | **NEW** — template rendering, file creation, flag combinations |
-| `docs/getting-started.md` | Обновить: `cognitia init` quick start |
+| `docs/getting-started.md` | Обновить: `swarmline init` quick start |
 
 **Шаблоны (5 вариантов):**
 ```
-cognitia init my-agent                    → minimal (thin, inmemory)
-cognitia init my-agent --runtime claude   → Claude SDK
-cognitia init my-agent --memory sqlite    → with persistence
-cognitia init my-agent --full             → all features (memory, tools, web, planning)
-cognitia init my-agent --template research → research assistant template
+swarmline init my-agent                    → minimal (thin, inmemory)
+swarmline init my-agent --runtime claude   → Claude SDK
+swarmline init my-agent --memory sqlite    → with persistence
+swarmline init my-agent --full             → all features (memory, tools, web, planning)
+swarmline init my-agent --template research → research assistant template
 ```
 
 **Генерируемая структура:**
@@ -201,12 +201,12 @@ my-agent/
 ```
 
 **DoD:**
-- [ ] `cognitia init my-agent` создаёт рабочий проект, `cd my-agent && python agent.py` работает
+- [ ] `swarmline init my-agent` создаёт рабочий проект, `cd my-agent && python agent.py` работает
 - [ ] Флаги `--runtime`, `--memory`, `--full`, `--template` генерируют правильные конфиги
 - [ ] Генерируемый код — clean, lint-clean, с тестом
 - [ ] Dockerfile multi-stage, production-ready
 - [ ] Unit-тесты: все комбинации флагов, file system assertions
-- [ ] `cognitia --help` показывает доступные команды
+- [ ] `swarmline --help` показывает доступные команды
 - [ ] Entry point зарегистрирован в pyproject.toml
 - [ ] docs/getting-started.md обновлён
 
@@ -269,7 +269,7 @@ templates/<name>/
 | `.github/PULL_REQUEST_TEMPLATE.md` | **NEW** — PR template |
 | `README.md` | Добавить badges (PyPI, tests, coverage, license, docs) |
 | `pyproject.toml` | `py.typed` marker |
-| `src/cognitia/py.typed` | **NEW** — PEP 561 marker file |
+| `src/swarmline/py.typed` | **NEW** — PEP 561 marker file |
 
 **DoD:**
 - [ ] `mkdocs serve` показывает auto-generated API docs для всех public модулей
@@ -279,7 +279,7 @@ templates/<name>/
 - [ ] PR template: checklist (tests, lint, docs, changelog)
 - [ ] README badges: PyPI version, test status, coverage %, license, docs link
 - [ ] `py.typed` marker присутствует — IDE type checking работает для потребителей
-- [ ] `pip install cognitia` + IDE показывает type hints
+- [ ] `pip install swarmline` + IDE показывает type hints
 
 ---
 
@@ -294,12 +294,12 @@ templates/<name>/
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/eval/__init__.py` | **NEW** — package |
-| `src/cognitia/eval/types.py` | **NEW** — EvalCase, EvalResult, EvalSuite, ScorerResult |
-| `src/cognitia/eval/runner.py` | **NEW** — EvalRunner (runs suite, collects results) |
-| `src/cognitia/eval/scorers.py` | **NEW** — builtin scorers |
-| `src/cognitia/eval/reporters.py` | **NEW** — JSON/CSV/console reporters |
-| `src/cognitia/eval/pytest_plugin.py` | **NEW** — pytest integration (@pytest.mark.eval) |
+| `src/swarmline/eval/__init__.py` | **NEW** — package |
+| `src/swarmline/eval/types.py` | **NEW** — EvalCase, EvalResult, EvalSuite, ScorerResult |
+| `src/swarmline/eval/runner.py` | **NEW** — EvalRunner (runs suite, collects results) |
+| `src/swarmline/eval/scorers.py` | **NEW** — builtin scorers |
+| `src/swarmline/eval/reporters.py` | **NEW** — JSON/CSV/console reporters |
+| `src/swarmline/eval/pytest_plugin.py` | **NEW** — pytest integration (@pytest.mark.eval) |
 | `tests/unit/test_eval_types.py` | **NEW** |
 | `tests/unit/test_eval_runner.py` | **NEW** |
 | `tests/unit/test_eval_scorers.py` | **NEW** |
@@ -364,8 +364,8 @@ class HallucinationScorer: ...   # factual grounding check (via RAG context)
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/eval/compare.py` | **NEW** — EvalComparator (diff between runs) |
-| `src/cognitia/eval/history.py` | **NEW** — EvalHistory (store/load eval results) |
+| `src/swarmline/eval/compare.py` | **NEW** — EvalComparator (diff between runs) |
+| `src/swarmline/eval/history.py` | **NEW** — EvalHistory (store/load eval results) |
 | `tests/unit/test_eval_compare.py` | **NEW** |
 | `docs/evaluation.md` | Расширить: comparison, history, CI integration |
 | `examples/33_eval_comparison.py` | **NEW** — A/B model comparison |
@@ -374,7 +374,7 @@ class HallucinationScorer: ...   # factual grounding check (via RAG context)
 - [ ] EvalComparator: diff двух EvalReport по scorer, case, aggregate
 - [ ] Выводит: improved/regressed/unchanged per case
 - [ ] EvalHistory: save/load results to JSON file (для tracking over time)
-- [ ] CLI: `cognitia eval compare run1.json run2.json` — table diff
+- [ ] CLI: `swarmline eval compare run1.json run2.json` — table diff
 - [ ] Unit-тесты: comparison logic, edge cases (missing cases, new scorers)
 - [ ] Пример: A/B comparison двух моделей на одном eval suite
 
@@ -391,9 +391,9 @@ class HallucinationScorer: ...   # factual grounding check (via RAG context)
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/memory/episodic.py` | **NEW** — EpisodicMemory protocol + InMemory implementation |
-| `src/cognitia/memory/episodic_types.py` | **NEW** — Episode, EpisodeQuery, EpisodeResult |
-| `src/cognitia/memory/episodic_sqlite.py` | **NEW** — SQLite backend |
+| `src/swarmline/memory/episodic.py` | **NEW** — EpisodicMemory protocol + InMemory implementation |
+| `src/swarmline/memory/episodic_types.py` | **NEW** — Episode, EpisodeQuery, EpisodeResult |
+| `src/swarmline/memory/episodic_sqlite.py` | **NEW** — SQLite backend |
 | `tests/unit/test_episodic_memory.py` | **NEW** — contract tests (parametrized InMemory + SQLite) |
 | `tests/integration/test_episodic_integration.py` | **NEW** |
 | `docs/memory.md` | Расширить: episodic memory guide |
@@ -437,8 +437,8 @@ class EpisodicMemory(Protocol):
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/memory/procedural.py` | **NEW** — ProceduralMemory protocol + InMemory impl |
-| `src/cognitia/memory/procedural_types.py` | **NEW** — Procedure, ProcedureStep |
+| `src/swarmline/memory/procedural.py` | **NEW** — ProceduralMemory protocol + InMemory impl |
+| `src/swarmline/memory/procedural_types.py` | **NEW** — Procedure, ProcedureStep |
 | `tests/unit/test_procedural_memory.py` | **NEW** |
 | `docs/memory.md` | Расширить: procedural memory |
 
@@ -483,7 +483,7 @@ class ProceduralMemory(Protocol):
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/memory/consolidation.py` | **NEW** — ConsolidationPipeline |
+| `src/swarmline/memory/consolidation.py` | **NEW** — ConsolidationPipeline |
 | `tests/unit/test_consolidation.py` | **NEW** |
 | `docs/memory.md` | Расширить: consolidation pipeline |
 
@@ -515,17 +515,17 @@ class ConsolidationPipeline:
 
 **Цель:** Упростить deployment, добавить HITL patterns, улучшить DX.
 
-### 15.1 — `cognitia serve` (HTTP API)
+### 15.1 — `swarmline serve` (HTTP API)
 
 **Описание:** Одна команда — agent доступен по HTTP. REST API + SSE streaming. Для production: FastAPI/Starlette обёртка.
 
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/cli/serve_cmd.py` | **NEW** — `cognitia serve` command |
-| `src/cognitia/serve/__init__.py` | **NEW** — package |
-| `src/cognitia/serve/app.py` | **NEW** — Starlette ASGI app |
-| `src/cognitia/serve/routes.py` | **NEW** — REST endpoints |
+| `src/swarmline/cli/serve_cmd.py` | **NEW** — `swarmline serve` command |
+| `src/swarmline/serve/__init__.py` | **NEW** — package |
+| `src/swarmline/serve/app.py` | **NEW** — Starlette ASGI app |
+| `src/swarmline/serve/routes.py` | **NEW** — REST endpoints |
 | `pyproject.toml` | Optional dep: `serve = ["starlette>=0.40", "uvicorn>=0.30"]` |
 | `tests/unit/test_serve_routes.py` | **NEW** |
 | `tests/integration/test_serve_integration.py` | **NEW** — HTTP client → agent |
@@ -542,7 +542,7 @@ GET  /v1/info            → agent info (capabilities, model, version)
 ```
 
 **DoD:**
-- [ ] `cognitia serve --config config.yaml --port 8080` запускает HTTP server
+- [ ] `swarmline serve --config config.yaml --port 8080` запускает HTTP server
 - [ ] POST /v1/query: JSON request → agent response → JSON
 - [ ] POST /v1/stream: JSON request → SSE stream (text chunks, tool calls, errors)
 - [ ] GET /v1/health: returns 200 + status
@@ -562,11 +562,11 @@ GET  /v1/info            → agent info (capabilities, model, version)
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/hitl/__init__.py` | **NEW** — package |
-| `src/cognitia/hitl/types.py` | **NEW** — ApprovalRequest, ApprovalResponse, ApprovalPolicy |
-| `src/cognitia/hitl/gate.py` | **NEW** — ApprovalGate middleware |
-| `src/cognitia/hitl/policies.py` | **NEW** — AlwaysApprove, AlwaysDeny, ToolApproval, CostApproval |
-| `src/cognitia/hitl/callback.py` | **NEW** — ApprovalCallback protocol (CLI, HTTP, custom) |
+| `src/swarmline/hitl/__init__.py` | **NEW** — package |
+| `src/swarmline/hitl/types.py` | **NEW** — ApprovalRequest, ApprovalResponse, ApprovalPolicy |
+| `src/swarmline/hitl/gate.py` | **NEW** — ApprovalGate middleware |
+| `src/swarmline/hitl/policies.py` | **NEW** — AlwaysApprove, AlwaysDeny, ToolApproval, CostApproval |
+| `src/swarmline/hitl/callback.py` | **NEW** — ApprovalCallback protocol (CLI, HTTP, custom) |
 | `tests/unit/test_hitl.py` | **NEW** |
 | `tests/integration/test_hitl_integration.py` | **NEW** |
 | `docs/hitl.md` | **NEW** — HITL guide |
@@ -612,17 +612,17 @@ class ContentApprovalPolicy:   # approve output content before delivery
 **Файлы:**
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/plugins/__init__.py` | **NEW** — package |
-| `src/cognitia/plugins/registry.py` | **NEW** — PluginRegistry (entry point discovery) |
-| `src/cognitia/plugins/types.py` | **NEW** — PluginInfo, PluginType (runtime, memory, tool, scorer) |
-| `src/cognitia/cli/plugins_cmd.py` | **NEW** — `cognitia plugins list/info` |
+| `src/swarmline/plugins/__init__.py` | **NEW** — package |
+| `src/swarmline/plugins/registry.py` | **NEW** — PluginRegistry (entry point discovery) |
+| `src/swarmline/plugins/types.py` | **NEW** — PluginInfo, PluginType (runtime, memory, tool, scorer) |
+| `src/swarmline/cli/plugins_cmd.py` | **NEW** — `swarmline plugins list/info` |
 | `tests/unit/test_plugin_registry.py` | **NEW** |
 | `docs/plugins.md` | **NEW** — plugin development guide |
 
 **Архитектура:**
 ```python
 # Third-party package pyproject.toml:
-# [project.entry-points."cognitia.plugins"]
+# [project.entry-points."swarmline.plugins"]
 # my_runtime = "my_package:MyRuntime"
 
 class PluginRegistry:
@@ -636,10 +636,10 @@ class PluginRegistry:
 ```
 
 **DoD:**
-- [ ] PluginRegistry.discover() находит все installed entry points из `cognitia.plugins` namespace
+- [ ] PluginRegistry.discover() находит все installed entry points из `swarmline.plugins` namespace
 - [ ] PluginInfo: name, version, type (runtime/memory/tool/scorer), module_path
-- [ ] `cognitia plugins list` — показывает discovered plugins
-- [ ] `cognitia plugins info <name>` — подробная информация
+- [ ] `swarmline plugins list` — показывает discovered plugins
+- [ ] `swarmline plugins info <name>` — подробная информация
 - [ ] Plugin types: runtime, memory_provider, tool_provider, eval_scorer
 - [ ] Unit-тесты: discovery mock, type filtering, missing plugin graceful
 - [ ] docs/plugins.md: how to create a plugin (entry points, protocol compliance)
@@ -676,7 +676,7 @@ class PluginRegistry:
 ## Quick Wins (вне фаз, делать по мере возможности)
 
 ### QW-1: py.typed Marker
-- [ ] Создать `src/cognitia/py.typed` (пустой файл)
+- [ ] Создать `src/swarmline/py.typed` (пустой файл)
 - [ ] Добавить в pyproject.toml: `[tool.hatch.build.targets.wheel] ... include py.typed`
 - [ ] Проверить: `pip install -e . && mypy --strict consumer.py` видит типы
 
@@ -696,15 +696,15 @@ class PluginRegistry:
 
 ## Phase 16: Code Agent Integration (делает нас универсальным инструментом)
 
-**Цель:** Любой код-агент (Claude Code, Codex CLI, OpenCode) использует Cognitia как инструмент. Мозги = код-агент (подписка LLM), руки = Cognitia.
+**Цель:** Любой код-агент (Claude Code, Codex CLI, OpenCode) использует Swarmline как инструмент. Мозги = код-агент (подписка LLM), руки = Swarmline.
 
-**Юридическая модель:** Cognitia = tool (как Figma MCP, GitHub MCP). Код-агент остаётся продуктом. Стандартное MCP-использование, не нарушает ToS Anthropic/OpenAI.
+**Юридическая модель:** Swarmline = tool (как Figma MCP, GitHub MCP). Код-агент остаётся продуктом. Стандартное MCP-использование, не нарушает ToS Anthropic/OpenAI.
 
 **Детальный план:** `plans/2026-03-29_feature_code-agent-integration.md`
 
 ### Подзадачи:
-- **16.1** Cognitia MCP Server (FastMCP STDIO, 15 typed tools + code REPL)
-- **16.2** Cognitia CLI Client (cognitia agent/memory/team/run subcommands)
+- **16.1** Swarmline MCP Server (FastMCP STDIO, 15 typed tools + code REPL)
+- **16.2** Swarmline CLI Client (swarmline agent/memory/team/run subcommands)
 - **16.3** Claude Code Skill (SKILL.md + examples + patterns)
 - **16.4** Headless Mode (0 LLM calls — memory/tools/plans only)
 - **16.5** Codex & OpenCode Configuration (auto-setup, ready-made configs)
@@ -721,7 +721,7 @@ Phase 11 (Production Trust)
 
 Phase 12 (Ecosystem)
     ├── 12.1 CLI init      → standalone
-    ├── 12.2 Templates     → после 12.1 (templates use cognitia init structure)
+    ├── 12.2 Templates     → после 12.1 (templates use swarmline init structure)
     └── 12.3 API Docs      → standalone
 
 Phase 13 (Evaluation)

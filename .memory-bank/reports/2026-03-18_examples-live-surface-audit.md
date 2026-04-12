@@ -9,7 +9,7 @@
 - `examples/25_shopping_agent.py`
 - `examples/26_code_project_team.py`
 - `examples/27_nano_claw.py`
-- Related seams: `src/cognitia/agent/agent.py`, `src/cognitia/agent/conversation.py`, `src/cognitia/runtime/cli/runtime.py`, `src/cognitia/orchestration/workflow_graph.py`
+- Related seams: `src/swarmline/agent/agent.py`, `src/swarmline/agent/conversation.py`, `src/swarmline/runtime/cli/runtime.py`, `src/swarmline/orchestration/workflow_graph.py`
 
 ## Defendable Findings
 

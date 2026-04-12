@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-30
 **Frameworks analyzed:** CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, Semantic Kernel, Swarms, LangGraph Swarm
-**Purpose:** Internal positioning for Swarmline (formerly Cognitia)
+**Purpose:** Internal positioning for Swarmline (formerly Swarmline)
 
 ## Key Findings
 

@@ -6,39 +6,39 @@
 ## Критичное
 
 ### C1. Path traversal в loader.py через instruction field
-**Файл:** `src/cognitia/skills/loader.py:176-181`
+**Файл:** `src/swarmline/skills/loader.py:176-181`
 Злонамеренный `skill.yaml` может указать `instruction: /etc/passwd` — содержимое файла попадёт в `instruction_md`. Путь `self._project_root / instruction_file_raw` разрешает произвольные пути без валидации.
 **Fix:** Добавить `instruction_path.resolve().is_relative_to(self._project_root.resolve())` проверку перед чтением.
 
 ### C2. Tool bridge — proxy заглушка, tools не работают
-**Файл:** `src/cognitia/runtime/openai_agents/tool_bridge.py:21-24`
+**Файл:** `src/swarmline/runtime/openai_agents/tool_bridge.py:21-24`
 Функция `_proxy` всегда возвращает `{"status": "proxy_not_connected"}`. Все local tools в openai_agents runtime сломаны.
-**Fix:** Реализовать делегирование к Cognitia tool executor через замыкание `toolspecs_to_agent_tools(specs, executor=...)`, или добавить docstring что это staged stub + feature flag.
+**Fix:** Реализовать делегирование к Swarmline tool executor через замыкание `toolspecs_to_agent_tools(specs, executor=...)`, или добавить docstring что это staged stub + feature flag.
 
 ### C3. _build_codex_mcp() игнорирует config
-**Файл:** `src/cognitia/runtime/openai_agents/runtime.py:179-197`
+**Файл:** `src/swarmline/runtime/openai_agents/runtime.py:179-197`
 `codex_sandbox` и `codex_approval_policy` из `OpenAIAgentsConfig` не передаются в MCP server. Staticmethod не имеет доступа к self. Пользователь думает sandbox включён, но настройка не применяется.
 **Fix:** Сделать обычным методом, передавать config параметры.
 
 ## Серьёзное
 
 ### S1. _resolve_thinking молча проглатывает невалидный type
-**Файл:** `src/cognitia/runtime/options_builder.py:150-166`
+**Файл:** `src/swarmline/runtime/options_builder.py:150-166`
 `thinking={"type": "turbo"}` → thinking молча отключается (возвращает None). Нарушение fail-fast.
 **Fix:** `raise ValueError(f"Unknown thinking type: {kind!r}")` для неизвестных типов.
 
 ### S2. settings.json ошибки парсинга без логирования
-**Файл:** `src/cognitia/skills/loader.py:43-61`
+**Файл:** `src/swarmline/skills/loader.py:43-61`
 `except (json.JSONDecodeError, OSError): continue` — silent failure, debugging nightmare.
 **Fix:** Добавить `_log.warning("settings_parse_error", ...)` перед continue.
 
 ### S3. settings_mcp_servers property не инициализирован
-**Файл:** `src/cognitia/skills/loader.py:137-140`
+**Файл:** `src/swarmline/skills/loader.py:137-140`
 `getattr(self, "_settings_mcp", {})` — если вызвать до `load_all()`, вернёт пустой dict без предупреждения.
 **Fix:** Инициализировать `self._settings_mcp = {}` в `__init__`.
 
 ### S4. env поле в OpenAIAgentsConfig — dead config
-**Файл:** `src/cognitia/runtime/openai_agents/types.py:22`
+**Файл:** `src/swarmline/runtime/openai_agents/types.py:22`
 Поле `env` нигде не используется. Misleading API.
 **Fix:** Удалить до реализации или пробросить в MCP server params.
 
@@ -48,29 +48,29 @@
 **Fix:** Исправить на актуальную команду установки Google Gemini CLI.
 
 ### S6. Нет тестов для tool_bridge.py
-**Файл:** `src/cognitia/runtime/openai_agents/tool_bridge.py`
+**Файл:** `src/swarmline/runtime/openai_agents/tool_bridge.py`
 0% покрытие. Ни `toolspec_to_function_tool`, ни `toolspecs_to_agent_tools` не тестируются.
 **Fix:** Минимум 3 теста: конвертация, фильтрация is_local, пустой список.
 
 ## Замечания
 
 ### W1. _FRONTMATTER_RE не обрабатывает trailing newline edge case
-**Файл:** `src/cognitia/skills/loader.py:26`
+**Файл:** `src/swarmline/skills/loader.py:26`
 `\n---\s*\n` требует newline после закрывающего `---`. Файл без trailing newline не парсится.
 **Fix:** `r"\A---\s*\n(.*?)\n---\s*\n?(.*)"` — сделать trailing newline опциональным.
 
 ### W2. Stale docstring в registry.py
-**Файл:** `src/cognitia/runtime/registry.py:134`
+**Файл:** `src/swarmline/runtime/registry.py:134`
 "Register built-in runtimes: Claude_SDK, DeepAgents, Thin, cli" — не упомянут openai_agents.
 **Fix:** Обновить docstring.
 
 ### W3. Any overuse в event_mapper.py
-**Файл:** `src/cognitia/runtime/openai_agents/event_mapper.py`
+**Файл:** `src/swarmline/runtime/openai_agents/event_mapper.py`
 Все event params — `Any`. Typo в имени атрибута не детектируется.
 **Fix:** Protocol/TypedDict для event типов или explicit comments.
 
 ### W4. Typo: `handoff_occured` (одна r)
-**Файл:** `src/cognitia/runtime/openai_agents/event_mapper.py:83`
+**Файл:** `src/swarmline/runtime/openai_agents/event_mapper.py:83`
 Если SDK использует `handoff_occurred` — branch не сработает.
 **Fix:** Проверить по OpenAI SDK docs.
 
@@ -85,7 +85,7 @@ SDK активно разрабатывается, breaking changes возмож
 **Fix:** `openai-agents>=0.1,<1.0`.
 
 ### W7. relative_to() может бросить ValueError
-**Файл:** `src/cognitia/skills/loader.py:189`
+**Файл:** `src/swarmline/skills/loader.py:189`
 Если instruction_path не подпуть project_root — необработанный ValueError.
 **Fix:** try/except или is_relative_to() проверка.
 

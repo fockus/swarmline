@@ -1,7 +1,7 @@
 # Detailed Competitive Analysis: Swarmline vs 7 Agent Frameworks
 
 **Date:** 2026-03-30
-**Context:** Rebranding cognitia → swarmline, full competitive positioning
+**Context:** Rebranding swarmline → swarmline, full competitive positioning
 **Frameworks:** CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, Semantic Kernel, Swarms, LangGraph Swarm
 
 ---

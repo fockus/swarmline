@@ -37,7 +37,7 @@ These passes matter because they reduce the chance that the remaining findings a
 ### P2 — `InMemoryMemoryProvider` aliases saved session state instead of snapshotting it
 
 File:
-- `src/cognitia/memory/inmemory.py:145-175`
+- `src/swarmline/memory/inmemory.py:145-175`
 
 Problem:
 - `save_session_state()` stores `active_skill_ids` by reference inside `_session_states`
@@ -57,8 +57,8 @@ Why this is a bug:
 ### P3 — SQL fact-source precedence does not match the documented contract
 
 Files:
-- `src/cognitia/memory/sqlite.py:131-164`
-- `src/cognitia/memory/postgres.py:131-160`
+- `src/swarmline/memory/sqlite.py:131-164`
+- `src/swarmline/memory/postgres.py:131-160`
 
 Problem:
 - both SQL backends document source priority as `user > ai_inferred > mcp`
@@ -78,7 +78,7 @@ Why this is a bug:
 ### P1 — workflow checkpoint resume skips the failed node instead of replaying it
 
 File:
-- `src/cognitia/orchestration/workflow_graph.py:187-198`
+- `src/swarmline/orchestration/workflow_graph.py:187-198`
 
 Problem:
 - when resuming from a checkpoint, `execute(..., resume=True)` loads `(last_node, saved_state)` and immediately advances to `_get_next(last_node, state)`
@@ -97,8 +97,8 @@ Why this is a bug:
 ### P2 — LangGraph compilation helpers drop parallel-group semantics
 
 Files:
-- `src/cognitia/orchestration/workflow_executor.py:130-154`
-- `src/cognitia/orchestration/workflow_langgraph.py:40-78`
+- `src/swarmline/orchestration/workflow_executor.py:130-154`
+- `src/swarmline/orchestration/workflow_langgraph.py:40-78`
 
 Problem:
 - `compile_to_langgraph_spec()` serializes only `nodes`, `edges`, and `conditional_edges`
@@ -121,8 +121,8 @@ Why this is a bug:
 ### P2 — `CliAgentRuntime.cancel()` is reported as `runtime_crash` instead of `cancelled`
 
 File:
-- `src/cognitia/runtime/cli/runtime.py:142-155`
-- `src/cognitia/runtime/cli/runtime.py:170-189`
+- `src/swarmline/runtime/cli/runtime.py:142-155`
+- `src/swarmline/runtime/cli/runtime.py:170-189`
 
 Problem:
 - `cancel()` just terminates the subprocess
@@ -143,8 +143,8 @@ Why this is a bug:
 ### P2 — dict-style `mcp_servers` configs break on portable runtime wiring
 
 Files:
-- `src/cognitia/agent/runtime_wiring.py:51-52`
-- `src/cognitia/runtime/thin/mcp_client.py:34-42`
+- `src/swarmline/agent/runtime_wiring.py:51-52`
+- `src/swarmline/runtime/thin/mcp_client.py:34-42`
 
 Problem:
 - portable runtime wiring forwards `agent_config.mcp_servers` as-is
@@ -165,8 +165,8 @@ Why this is a bug:
 ### P2 — Claude SDK tool-result metadata is dropped and failures are masked as successful tool calls
 
 Files:
-- `src/cognitia/runtime/adapter.py:391-396`
-- `src/cognitia/runtime/claude_code.py:218-223`
+- `src/swarmline/runtime/adapter.py:391-396`
+- `src/swarmline/runtime/claude_code.py:218-223`
 
 Problem:
 - `RuntimeAdapter._process_message()` converts `ToolResultBlock` into `StreamEvent(type="tool_use_result")` with only `tool_result`

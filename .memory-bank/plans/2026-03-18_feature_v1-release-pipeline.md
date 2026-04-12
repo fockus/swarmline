@@ -14,7 +14,7 @@
 Текущие метрики:
 - `ruff check src/`: 11 errors (все E402 — import order в deepagents.py)
 - `ruff check tests/`: 49 errors (7 F401 unused imports, 16 E402, остальное мелочь)
-- `mypy src/cognitia/`: 27 errors в 17 файлах (5 в llm_providers, 4 в sandbox_docker, 4 в sqlite, остальные по 1-2 в optional deps)
+- `mypy src/swarmline/`: 27 errors в 17 файлах (5 в llm_providers, 4 в sandbox_docker, 4 в sqlite, остальные по 1-2 в optional deps)
 - `pytest -q`: 2357 passed, 0 failed
 - `pyproject.toml version`: 0.5.0 (нужен bump до 1.0.0)
 - CHANGELOG.md: есть, содержит [Unreleased] + [1.0.0-core]
@@ -53,7 +53,7 @@
 ### Этап 1: Ruff cleanup — src/
 
 **Цель:** `ruff check src/` = 0 errors
-**Файлы:** `src/cognitia/runtime/deepagents.py`, `src/cognitia/runtime/deepagents_builtins.py`
+**Файлы:** `src/swarmline/runtime/deepagents.py`, `src/swarmline/runtime/deepagents_builtins.py`
 
 **Реализация:**
 1. `ruff check --fix src/` для safe auto-fixes
@@ -89,7 +89,7 @@
 
 ### Этап 3: Mypy cleanup
 
-**Цель:** `mypy src/cognitia/` = 0 errors (или определённый baseline с документированными исключениями)
+**Цель:** `mypy src/swarmline/` = 0 errors (или определённый baseline с документированными исключениями)
 **Файлы:** 17 файлов с mypy ошибками
 
 **Реализация:**
@@ -104,11 +104,11 @@
 6. Настроить `mypy.ini` / `pyproject.toml` секцию `[tool.mypy]` для optional deps
 
 **Тесты:**
-- `mypy src/cognitia/` = 0 errors (или agreed baseline)
+- `mypy src/swarmline/` = 0 errors (или agreed baseline)
 - `pytest -q` green
 
 **DoD:**
-- [ ] `mypy src/cognitia/` = 0 errors (или ≤5 documented optional-dep exclusions)
+- [ ] `mypy src/swarmline/` = 0 errors (или ≤5 documented optional-dep exclusions)
 - [ ] Реальные type issues (llm_providers, sqlite, structured_output, options_builder) — все исправлены
 - [ ] Каждый `# type: ignore` имеет `[error-code]` и комментарий-причину
 - [ ] `pytest -q` green
@@ -116,7 +116,7 @@
 ### Этап 4: Wave 2 remaining — Session/runtime migration cleanup (Phase 5 remediation)
 
 **Цель:** Убрать дублирование wiring-логики между Agent, Conversation, SessionManager
-**Файлы:** `src/cognitia/agent/agent.py`, `src/cognitia/agent/conversation.py`, `src/cognitia/session/manager.py`
+**Файлы:** `src/swarmline/agent/agent.py`, `src/swarmline/agent/conversation.py`, `src/swarmline/session/manager.py`
 
 **Реализация:**
 1. Выделить shared composition helper для runtime creation + tool wiring + hook merge
@@ -140,7 +140,7 @@
 ### Этап 5: Wave 2 remaining — Factory/registry hardening (Phase 6 remediation)
 
 **Цель:** Public imports не возвращают None, RuntimeFactory и registry согласованы
-**Файлы:** `src/cognitia/runtime/factory.py`, `src/cognitia/runtime/registry.py`, `src/cognitia/runtime/__init__.py`, `src/cognitia/hooks/__init__.py`, `src/cognitia/memory/__init__.py`, `src/cognitia/skills/__init__.py`
+**Файлы:** `src/swarmline/runtime/factory.py`, `src/swarmline/runtime/registry.py`, `src/swarmline/runtime/__init__.py`, `src/swarmline/hooks/__init__.py`, `src/swarmline/memory/__init__.py`, `src/swarmline/skills/__init__.py`
 
 **Реализация:**
 1. Канонизировать runtime creation через registry path
@@ -190,7 +190,7 @@
 **Реализация:**
 1. Проверить все code snippets на актуальность (event types, API signatures)
 2. Добавить секции про новые фичи: CLI runtime, multi-agent, RAG, workflow graph
-3. Обновить install instructions: `pip install cognitia[thin]`
+3. Обновить install instructions: `pip install swarmline[thin]`
 4. Убедиться что примеры копируемы и запускаемы
 
 **Тесты:**
@@ -226,8 +226,8 @@
 
 ### Этап 9: Version bump + PyPI release
 
-**Цель:** cognitia v1.0.0 опубликована на PyPI
-**Файлы:** `pyproject.toml`, `src/cognitia/__init__.py` (если есть __version__)
+**Цель:** swarmline v1.0.0 опубликована на PyPI
+**Файлы:** `pyproject.toml`, `src/swarmline/__init__.py` (если есть __version__)
 
 **Реализация:**
 1. Bump version: 0.5.0 → 1.0.0 в `pyproject.toml`
@@ -240,7 +240,7 @@
 **Тесты:**
 - `hatch build` = success
 - `twine check dist/*` = PASSED
-- `pip install cognitia` из PyPI работает
+- `pip install swarmline` из PyPI работает
 
 **DoD:**
 - [ ] `pyproject.toml` version = "1.0.0"
@@ -248,7 +248,7 @@
 - [ ] `twine check dist/*` = PASSED
 - [ ] Package uploaded to PyPI
 - [ ] Git tag `v1.0.0` создан
-- [ ] `pip install cognitia` из чистого venv работает
+- [ ] `pip install swarmline` из чистого venv работает
 
 ### Этап 10: Финальная проверка
 
@@ -257,7 +257,7 @@
 **Тесты:**
 - Полный `pytest -q` green
 - `ruff check src/ tests/` = 0 errors
-- `mypy src/cognitia/` = 0 errors (или agreed baseline)
+- `mypy src/swarmline/` = 0 errors (или agreed baseline)
 - `mkdocs build` success
 - Все 27 examples запускаются
 

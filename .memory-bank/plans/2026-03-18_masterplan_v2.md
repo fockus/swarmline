@@ -1,4 +1,4 @@
-# Master Plan v2.0 — Cognitia Roadmap
+# Master Plan v2.0 — Swarmline Roadmap
 
 > Создан: 2026-03-18 (обновление v1 от 2026-03-17)
 > Базовая версия: 0.5.0 (multi-provider ThinRuntime + upstream middleware)
@@ -93,7 +93,7 @@ IDEA-001 (OAuth), IDEA-017 (RTK), IDEA-020 (cred proxy) — независимы
 
 **Scope**:
 1. `RuntimeFactory.register(name, factory_fn)` / `unregister(name)`
-2. Entry points (`pyproject.toml [project.entry-points."cognitia.runtimes"]`) для auto-discovery
+2. Entry points (`pyproject.toml [project.entry-points."swarmline.runtimes"]`) для auto-discovery
 3. Валидация: factory_fn возвращает объект, реализующий `AgentRuntime` Protocol
 4. Встроенные runtime'ы регистрируются через тот же механизм (dog-fooding)
 5. `RuntimeFactory.list_available()` — все зарегистрированные runtime'ы
@@ -198,7 +198,7 @@ IDEA-001 (OAuth), IDEA-017 (RTK), IDEA-020 (cred proxy) — независимы
 **Scope**:
 1. `SessionBackend` Protocol: `save(key, state)` / `load(key)` / `delete(key)` / `list()`
 2. `SqliteSessionBackend` — zero-config, для dev/single-node
-3. `RedisSessionBackend` (optional `cognitia[redis]`)
+3. `RedisSessionBackend` (optional `swarmline[redis]`)
 4. `EncryptedSessionBackend` — overlay (AES-256-GCM)
 5. Сериализация: history, rolling_summary, session_id, turn_count, metadata
 6. `SessionManager(backend=...)` — inject через конструктор
@@ -630,7 +630,7 @@ CliAgentRuntime implements AgentRuntime
 
 **Приоритет**: Medium | **Сложность**: Medium | **~3-4 дня**
 
-**Scope**: OAuth token в RuntimeConfig, refresh, Bearer auth, CLI flow `cognitia auth login`, token storage.
+**Scope**: OAuth token в RuntimeConfig, refresh, Bearer auth, CLI flow `swarmline auth login`, token storage.
 
 **DoD**:
 - [ ] Contract: `AuthProvider` Protocol
@@ -653,7 +653,7 @@ CliAgentRuntime implements AgentRuntime
 1. `TokenOptimizer` Protocol: `optimize(command, output) -> optimized_output`
 2. `RtkOptimizer` — wrapper: если `shutil.which("rtk")` → route через `rtk <command>`
 3. `RuntimeConfig.token_optimizer: TokenOptimizer | None` (disabled by default)
-4. Включение: `RuntimeConfig(token_optimizer=RtkOptimizer())` или env `COGNITIA_RTK_ENABLED=1`
+4. Включение: `RuntimeConfig(token_optimizer=RtkOptimizer())` или env `SWARMLINE_RTK_ENABLED=1`
 5. Fallback: если RTK не установлен → warning + pass-through (не crash)
 6. Transparent: агент не знает что output оптимизирован
 
@@ -701,7 +701,7 @@ Week 17-19: 11A → 11B + 11C + 11D
 
 ## Phase 11: OpenAI Agents SDK Integration
 
-**Цель**: 4-й runtime. Мост cognitia ↔ openai-agents.
+**Цель**: 4-й runtime. Мост swarmline ↔ openai-agents.
 
 > **Условие старта**: OpenAI Agents SDK ≥ v1.0 ИЛИ Phase 6-10 done.
 > **Референс**: `reports/2026-03-17_research_openai-agents-sdk.md`, ADR-001.
@@ -710,7 +710,7 @@ Week 17-19: 11A → 11B + 11C + 11D
 `OpenAIAgentsRuntime` → `AgentRuntime`, tool bridge, event mapping, custom TracingProcessor (не openai traces), LiteLLM multi-provider.
 
 ### 11B: Session Backends Bridge (~2-3 дн)
-cognitia `SessionBackend` ↔ openai-agents session storage (9 backends).
+swarmline `SessionBackend` ↔ openai-agents session storage (9 backends).
 
 ### 11C: Structured Output & Guardrails Bridge (~2-3 дн)
 output_type bridge, guardrails bridge, handoff → delegation mapping.

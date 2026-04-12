@@ -6,30 +6,30 @@
 
 ## Концепция
 
-Cognitia становится **универсальным инструментом** для код-агентов:
+Swarmline становится **универсальным инструментом** для код-агентов:
 
 ```
 Code Agent (мозги + подписка LLM)
-    └── MCP/CLI → Cognitia (инфраструктура агентов)
+    └── MCP/CLI → Swarmline (инфраструктура агентов)
                      ├── Headless: memory, tools, plans, state (0 LLM)
                      └── Full: + собственные агенты (API key пользователя)
 ```
 
-**Юридическая безопасность:** Cognitia = tool, как GitHub MCP или Figma MCP. Код-агент остаётся продуктом. Не нарушает ToS Anthropic/OpenAI.
+**Юридическая безопасность:** Swarmline = tool, как GitHub MCP или Figma MCP. Код-агент остаётся продуктом. Не нарушает ToS Anthropic/OpenAI.
 
 ---
 
-## 16.1 — Cognitia MCP Server
+## 16.1 — Swarmline MCP Server
 
 ### Файлы
 
 | Файл | Действие | Строк |
 |------|----------|-------|
-| `src/cognitia/mcp/__init__.py` | NEW | 20 |
-| `src/cognitia/mcp/server.py` | NEW — FastMCP server | 350 |
-| `src/cognitia/mcp/session.py` | NEW — StatefulSession | 200 |
-| `src/cognitia/mcp/sandbox_exec.py` | NEW — safe code execution | 150 |
-| `src/cognitia/mcp/__main__.py` | NEW — entry point | 30 |
+| `src/swarmline/mcp/__init__.py` | NEW | 20 |
+| `src/swarmline/mcp/server.py` | NEW — FastMCP server | 350 |
+| `src/swarmline/mcp/session.py` | NEW — StatefulSession | 200 |
+| `src/swarmline/mcp/sandbox_exec.py` | NEW — safe code execution | 150 |
+| `src/swarmline/mcp/__main__.py` | NEW — entry point | 30 |
 | `pyproject.toml` | MODIFY — entry point + dep | 5 |
 | `tests/unit/test_mcp_server.py` | NEW | 300 |
 | `tests/unit/test_mcp_session.py` | NEW | 200 |
@@ -39,34 +39,34 @@ Code Agent (мозги + подписка LLM)
 ### Tools (15 typed + 1 code)
 
 **Agent lifecycle:**
-1. `cognitia_create_agent(name, system_prompt, model?, runtime?, memory?, tools[])` → agent_id
-2. `cognitia_query(agent_id, prompt)` → response text
-3. `cognitia_conversation(agent_id, message, session_id?)` → response text
-4. `cognitia_list_agents()` → JSON array
-5. `cognitia_destroy_agent(agent_id)` → confirmation
+1. `swarmline_create_agent(name, system_prompt, model?, runtime?, memory?, tools[])` → agent_id
+2. `swarmline_query(agent_id, prompt)` → response text
+3. `swarmline_conversation(agent_id, message, session_id?)` → response text
+4. `swarmline_list_agents()` → JSON array
+5. `swarmline_destroy_agent(agent_id)` → confirmation
 
 **Memory:**
-6. `cognitia_memory_store(agent_id, key, value, tags[]?)` → confirmation
-7. `cognitia_memory_recall(agent_id, query, top_k?)` → JSON array of facts
-8. `cognitia_memory_list(agent_id, tag?)` → JSON array
+6. `swarmline_memory_store(agent_id, key, value, tags[]?)` → confirmation
+7. `swarmline_memory_recall(agent_id, query, top_k?)` → JSON array of facts
+8. `swarmline_memory_list(agent_id, tag?)` → JSON array
 
 **Multi-agent:**
-9. `cognitia_create_team(name, lead_config, worker_configs[])` → team_id
-10. `cognitia_team_task(team_id, task_description)` → result
+9. `swarmline_create_team(name, lead_config, worker_configs[])` → team_id
+10. `swarmline_team_task(team_id, task_description)` → result
 
 **Planning:**
-11. `cognitia_create_plan(goal, steps[])` → plan_id
-12. `cognitia_execute_plan(plan_id)` → execution result
+11. `swarmline_create_plan(goal, steps[])` → plan_id
+12. `swarmline_execute_plan(plan_id)` → execution result
 
 **Tools:**
-13. `cognitia_execute_tool(tool_name, args{})` → tool output
+13. `swarmline_execute_tool(tool_name, args{})` → tool output
 
 **System:**
-14. `cognitia_status()` → system health JSON
-15. `cognitia_configure(settings{})` → confirmation
+14. `swarmline_status()` → system health JSON
+15. `swarmline_configure(settings{})` → confirmation
 
 **Code REPL:**
-16. `cognitia_execute(code)` → eval result (stateful Python session)
+16. `swarmline_execute(code)` → eval result (stateful Python session)
 
 ### StatefulSession
 
@@ -86,11 +86,11 @@ class StatefulSession:
 ```
 
 ### DoD
-- [ ] `cognitia-mcp` запускается как STDIO MCP server
-- [ ] `python -m cognitia.mcp` — альтернативный запуск
+- [ ] `swarmline-mcp` запускается как STDIO MCP server
+- [ ] `python -m swarmline.mcp` — альтернативный запуск
 - [ ] 15 typed tools + 1 code REPL — все возвращают JSON
 - [ ] StatefulSession: agents/memory/plans persist между вызовами
-- [ ] cognitia_execute: sandboxed Python REPL (restricted builtins)
+- [ ] swarmline_execute: sandboxed Python REPL (restricted builtins)
 - [ ] Headless mode (default): только memory/tools/plans (0 LLM)
 - [ ] Full mode (--mode full): + agent create/query (API key required)
 - [ ] Error handling: invalid agent_id, missing API key, timeout → structured JSON errors
@@ -101,21 +101,21 @@ class StatefulSession:
 
 ---
 
-## 16.2 — Cognitia CLI Client
+## 16.2 — Swarmline CLI Client
 
 ### Файлы
 
 | Файл | Действие | Строк |
 |------|----------|-------|
-| `src/cognitia/cli/__init__.py` | NEW | 10 |
-| `src/cognitia/cli/main.py` | NEW — Click app | 80 |
-| `src/cognitia/cli/agent_cmd.py` | NEW | 180 |
-| `src/cognitia/cli/memory_cmd.py` | NEW | 120 |
-| `src/cognitia/cli/team_cmd.py` | NEW | 100 |
-| `src/cognitia/cli/run_cmd.py` | NEW | 80 |
-| `src/cognitia/cli/setup_cmd.py` | NEW — auto-config code agents | 150 |
-| `src/cognitia/cli/state.py` | NEW — SQLite state persistence | 100 |
-| `pyproject.toml` | MODIFY — entry point `cognitia` | 3 |
+| `src/swarmline/cli/__init__.py` | NEW | 10 |
+| `src/swarmline/cli/main.py` | NEW — Click app | 80 |
+| `src/swarmline/cli/agent_cmd.py` | NEW | 180 |
+| `src/swarmline/cli/memory_cmd.py` | NEW | 120 |
+| `src/swarmline/cli/team_cmd.py` | NEW | 100 |
+| `src/swarmline/cli/run_cmd.py` | NEW | 80 |
+| `src/swarmline/cli/setup_cmd.py` | NEW — auto-config code agents | 150 |
+| `src/swarmline/cli/state.py` | NEW — SQLite state persistence | 100 |
+| `pyproject.toml` | MODIFY — entry point `swarmline` | 3 |
 | `tests/unit/test_cli_agent.py` | NEW | 200 |
 | `tests/unit/test_cli_memory.py` | NEW | 120 |
 | `tests/unit/test_cli_setup.py` | NEW | 100 |
@@ -125,45 +125,45 @@ class StatefulSession:
 ### Commands
 
 ```
-cognitia agent create --name X --prompt "..."     → agent-id (JSON)
-cognitia agent query <id> "prompt"                → response (text|JSON)
-cognitia agent chat <id>                          → interactive REPL
-cognitia agent list                               → table/JSON
-cognitia agent destroy <id>                       → confirmation
+swarmline agent create --name X --prompt "..."     → agent-id (JSON)
+swarmline agent query <id> "prompt"                → response (text|JSON)
+swarmline agent chat <id>                          → interactive REPL
+swarmline agent list                               → table/JSON
+swarmline agent destroy <id>                       → confirmation
 
-cognitia memory store <id> --key K --value V      → confirmation
-cognitia memory recall <id> "query"               → facts (JSON)
-cognitia memory list <id>                         → facts (JSON)
+swarmline memory store <id> --key K --value V      → confirmation
+swarmline memory recall <id> "query"               → facts (JSON)
+swarmline memory list <id>                         → facts (JSON)
 
-cognitia team create --config team.yaml           → team-id
-cognitia team task <id> "description"             → result
-cognitia team status <id>                         → status (JSON)
+swarmline team create --config team.yaml           → team-id
+swarmline team task <id> "description"             → result
+swarmline team status <id>                         → status (JSON)
 
-cognitia run <script.py>                          → script output
-cognitia run --code 'await agent.query("hi")'     → result
+swarmline run <script.py>                          → script output
+swarmline run --code 'await agent.query("hi")'     → result
 
-cognitia mcp-serve                                → start MCP server
-cognitia setup claude-code|codex|opencode         → auto-configure
+swarmline mcp-serve                                → start MCP server
+swarmline setup claude-code|codex|opencode         → auto-configure
 ```
 
 ### State persistence
 
 ```
-~/.cognitia/
+~/.swarmline/
 ├── state.db          ← SQLite: agents, memory, sessions
 ├── config.yaml       ← user preferences
 └── logs/             ← structured logs
 ```
 
 ### DoD
-- [ ] `pip install cognitia[cli]` → `cognitia --help` работает
+- [ ] `pip install swarmline[cli]` → `swarmline --help` работает
 - [ ] agent create/query/list/destroy — полный lifecycle
 - [ ] memory store/recall/list — persistent между вызовами
 - [ ] team create/task/status — multi-agent из CLI
-- [ ] `cognitia run <script.py>` — Python с Cognitia pre-imported
-- [ ] `cognitia mcp-serve` — запуск MCP server
+- [ ] `swarmline run <script.py>` — Python с Swarmline pre-imported
+- [ ] `swarmline mcp-serve` — запуск MCP server
 - [ ] JSON output при pipe (`| jq`), text при TTY
-- [ ] State в `~/.cognitia/state.db` (SQLite)
+- [ ] State в `~/.swarmline/state.db` (SQLite)
 - [ ] Exit codes: 0=ok, 1=error, 2=agent-error
 - [ ] Unit-тесты: каждый subcommand + format switching
 
@@ -175,10 +175,10 @@ cognitia setup claude-code|codex|opencode         → auto-configure
 
 | Файл | Действие |
 |------|----------|
-| `skills/cognitia-agents/SKILL.md` | NEW — skill definition |
-| `skills/cognitia-agents/references/examples.md` | NEW — 10 patterns |
-| `skills/cognitia-agents/references/patterns.md` | NEW — 7 architectures |
-| `skills/cognitia-agents/references/troubleshooting.md` | NEW |
+| `skills/swarmline-agents/SKILL.md` | NEW — skill definition |
+| `skills/swarmline-agents/references/examples.md` | NEW — 10 patterns |
+| `skills/swarmline-agents/references/patterns.md` | NEW — 7 architectures |
+| `skills/swarmline-agents/references/troubleshooting.md` | NEW |
 | `docs/claude-code-integration.md` | NEW |
 | `docs/codex-integration.md` | NEW |
 
@@ -186,27 +186,27 @@ cognitia setup claude-code|codex|opencode         → auto-configure
 
 ```yaml
 ---
-name: cognitia-agents
+name: swarmline-agents
 description: >
-  Create and orchestrate AI agents with Cognitia framework.
+  Create and orchestrate AI agents with Swarmline framework.
   Use when asked to create agents, multi-agent teams, agent
   pipelines, or persistent agent memory. Agents use YOUR LLM — no extra keys.
-allowed-tools: Bash(cognitia *), Bash(pip install cognitia*), Read, Write, Glob, Grep
+allowed-tools: Bash(swarmline *), Bash(pip install swarmline*), Read, Write, Glob, Grep
 ---
 ```
 
 ### Skill logic (instruction body)
 
-1. Check: `cognitia --version` → install if missing
+1. Check: `swarmline --version` → install if missing
 2. Detect: MCP available? → use MCP tools (faster, stateful)
-3. Fallback: CLI via Bash (`cognitia agent create ...`)
+3. Fallback: CLI via Bash (`swarmline agent create ...`)
 4. Patterns: reference examples.md для конкретного use case
-5. Multi-agent: YAML config → `cognitia team create`
+5. Multi-agent: YAML config → `swarmline team create`
 
 ### DoD
-- [ ] SKILL.md: auto-invokes при "create agent", "agent team", "cognitia"
+- [ ] SKILL.md: auto-invokes при "create agent", "agent team", "swarmline"
 - [ ] Bash fallback: works without MCP config
-- [ ] MCP mode: uses cognitia_* tools when available
+- [ ] MCP mode: uses swarmline_* tools when available
 - [ ] examples.md: 10 copy-paste patterns
 - [ ] patterns.md: 7 architecture patterns
 - [ ] troubleshooting.md: top-10 issues
@@ -221,8 +221,8 @@ allowed-tools: Bash(cognitia *), Bash(pip install cognitia*), Read, Write, Glob,
 
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/runtime/headless.py` | NEW — HeadlessRuntime |
-| `src/cognitia/mcp/server.py` | MODIFY — mode flag |
+| `src/swarmline/runtime/headless.py` | NEW — HeadlessRuntime |
+| `src/swarmline/mcp/server.py` | MODIFY — mode flag |
 | `tests/unit/test_headless_runtime.py` | NEW |
 | `docs/headless-mode.md` | NEW |
 
@@ -254,7 +254,7 @@ allowed-tools: Bash(cognitia *), Bash(pip install cognitia*), Read, Write, Glob,
 
 | Файл | Действие |
 |------|----------|
-| `src/cognitia/cli/setup_cmd.py` | NEW (in 16.2) |
+| `src/swarmline/cli/setup_cmd.py` | NEW (in 16.2) |
 | `integrations/claude-code/settings.json.example` | NEW |
 | `integrations/claude-code/README.md` | NEW |
 | `integrations/codex/config.toml.example` | NEW |
@@ -265,14 +265,14 @@ allowed-tools: Bash(cognitia *), Bash(pip install cognitia*), Read, Write, Glob,
 ### One-liner setup
 
 ```bash
-cognitia setup claude-code   # patches ~/.claude/settings.json
-cognitia setup codex         # patches ~/.codex/config.toml
-cognitia setup opencode      # patches opencode config
+swarmline setup claude-code   # patches ~/.claude/settings.json
+swarmline setup codex         # patches ~/.codex/config.toml
+swarmline setup opencode      # patches opencode config
 ```
 
 ### DoD
-- [ ] `cognitia setup claude-code` — non-destructive JSON merge
-- [ ] `cognitia setup codex` — non-destructive TOML merge
+- [ ] `swarmline setup claude-code` — non-destructive JSON merge
+- [ ] `swarmline setup codex` — non-destructive TOML merge
 - [ ] Backup existing config before patching
 - [ ] Confirmation prompt before write
 - [ ] Example configs в `integrations/`
@@ -284,7 +284,7 @@ cognitia setup opencode      # patches opencode config
 
 ### Описание
 
-7 реальных сценариев использования Cognitia код-агентами. Каждый сценарий = отдельный E2E тест, проверяющий полный workflow через CLI/MCP.
+7 реальных сценариев использования Swarmline код-агентами. Каждый сценарий = отдельный E2E тест, проверяющий полный workflow через CLI/MCP.
 
 ### Файлы
 
@@ -477,7 +477,7 @@ cognitia setup opencode      # patches opencode config
 - [ ] UC5 тестирует code execution (subprocess, timeout)
 - [ ] Тесты не зависят друг от друга (isolated sessions)
 - [ ] docs/use-cases.md документирует все 7 сценариев с примерами вызовов
-- [ ] Каждый UC может быть воспроизведён через CLI: `cognitia agent/memory/plan/team ...`
+- [ ] Каждый UC может быть воспроизведён через CLI: `swarmline agent/memory/plan/team ...`
 
 ---
 
@@ -513,6 +513,6 @@ mcp = ["fastmcp>=2.0"]
 cli = ["click>=8.1"]
 
 [project.scripts]
-cognitia = "cognitia.cli.main:app"
-cognitia-mcp = "cognitia.mcp.server:main"
+swarmline = "swarmline.cli.main:app"
+swarmline-mcp = "swarmline.mcp.server:main"
 ```

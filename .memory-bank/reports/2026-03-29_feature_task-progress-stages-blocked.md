@@ -74,7 +74,7 @@ Parent (progress=0.67)
 
 **WorkflowConfig:**
 ```python
-from cognitia.multi_agent import WorkflowConfig, WorkflowStage
+from swarmline.multi_agent import WorkflowConfig, WorkflowStage
 
 stages = (
     WorkflowStage(name="backlog", maps_to=TaskStatus.TODO, order=0),

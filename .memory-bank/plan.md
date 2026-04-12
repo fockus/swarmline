@@ -1,34 +1,46 @@
 # Plan
 
 ## Текущий приоритет
-**Audit remediation follow-up** — planned low-risk structural cleanup is completed: `ThinRuntime`, `DefaultGraphOrchestrator`, and `SessionManager` now have extracted helper/store seams, and the security/docs/boundary tranche itself is fully validated.
+
+**ThinRuntime Claude Code Parity** — доработка ThinRuntime до полноценного runtime. 6 фаз, ~81 новых тестов, ~5 новых файлов.
+
+Детальный план: `plans/2026-04-12_feature_thin-runtime-claude-code-parity.md`
+GSD Roadmap: `.planning/ROADMAP.md`
 
 ## Следующий шаг
-1. Keep the remediated tree stable until release/tag.
-2. If continuing architecture work, treat any further refactor as optional post-tranche cleanup, not as an open remediation requirement.
+
+ThinRuntime Claude Code Parity COMPLETE (all 10 phases). Next: v1.5.0 release.
 
 ## Релизный контекст
-**v1.4.0 Release Candidate** — validation gate completed on `main`; next step is external publish/tag workflow.
+
+**v1.4.1** опубликован на PyPI (swarmline). Следующий release: **v1.5.0** после завершения ThinRuntime parity.
 
 ## Активный план
 
-**Release publication** — tag/publish `v1.4.0` and announce the secure-by-default tranche.
-
-## Следующий шаг
-
-**Next engineering tranche** → performance/load hardening after `v1.4.0` publication.
+| Phase | Название | Приоритет | Статус |
+|-------|----------|-----------|--------|
+| 1 | Hook Dispatch в ThinRuntime | P0 | ✅ |
+| 2 | Tool Policy Enforcement | P0 | ✅ |
+| 3 | LLM-Initiated Subagents | P1 | ✅ |
+| 4 | Command Routing | P2 | ✅ |
+| 5 | Native Tool Calling | P2 | ✅ |
+| 6 | Integration Validation | P3 | ✅ |
+| 7 | Coding Profile Foundation | P2 | ✅ |
+| 8 | Coding Task Runtime and Persistence | P2 | ✅ |
+| 9 | Coding Context and Compatibility | P2 | ✅ |
+| 10 | Coding Subagent Inheritance and Validation | P3 | ✅ |
 
 ### Iteration 1 (highest ROI):
 1. QW-1/2/3: py.typed, badges, deprecation cleanup
 2. **11.1** OTel Exporter
 3. **11.2** Structured Output (Pydantic-level)
-4. **12.1** `cognitia init` CLI
+4. **12.1** `swarmline init` CLI
 5. **12.3** API Docs + Community infra
 
 ### Iteration 2 (differentiation):
 6. **13.1** Eval Framework Core
 7. **12.2** Production Templates (5 шт)
-8. **15.1** `cognitia serve` HTTP API
+8. **15.1** `swarmline serve` HTTP API
 
 ### Iteration 3 (advanced):
 9. **11.3** A2A Protocol
@@ -43,7 +55,7 @@
 16. **15.4** Benchmarks
 
 ## Направление
-cognitia = **простая библиотека** (не фреймворк) для AI агентов.
+swarmline = **простая библиотека** (не фреймворк) для AI агентов.
 - Core (Phases 6-8): ✅ DONE → v1.0.0-core
 - Enterprise extras (Phase 9): tasks, hierarchy, delegation, scheduler
 - Platform (Phase 10): CLI, MCP, plugins

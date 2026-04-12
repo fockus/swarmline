@@ -56,7 +56,7 @@ async def list_keys(self) -> list[str]
 ### Пример использования
 
 ```python
-from cognitia.session.backends import (
+from swarmline.session.backends import (
     SqliteSessionBackend, MemoryScope, scoped_key
 )
 
@@ -126,8 +126,8 @@ async def emit(self, event_type: str, data: dict[str, Any]) -> None
 ### Пример использования
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.runtime.types import RuntimeConfig
 
 bus = InMemoryEventBus()
 metrics: list[dict] = []
@@ -185,9 +185,9 @@ def add_event(self, span_id: str, name: str, attrs: dict[str, Any] | None = None
 ### Пример использования
 
 ```python
-from cognitia.observability.event_bus import InMemoryEventBus
-from cognitia.observability.tracer import ConsoleTracer, TracingSubscriber
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.observability.event_bus import InMemoryEventBus
+from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
+from swarmline.runtime.types import RuntimeConfig
 
 bus = InMemoryEventBus()
 tracer = ConsoleTracer()
@@ -261,7 +261,7 @@ subscriber.detach()  # снимает подписку
 ### Пример использования
 
 ```python
-from cognitia.ui.projection import ChatProjection, project_stream
+from swarmline.ui.projection import ChatProjection, project_stream
 
 projection = ChatProjection()
 
@@ -325,8 +325,8 @@ Retrieval-Augmented Generation — инъекция релевантных до�
 ### Пример использования
 
 ```python
-from cognitia.rag import Document, SimpleRetriever, RagInputFilter
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.rag import Document, SimpleRetriever, RagInputFilter
+from swarmline.runtime.types import RuntimeConfig
 
 docs = [
     Document(content="Paris is the capital of France", metadata={"src": "geo"}),

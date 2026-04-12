@@ -1,4 +1,4 @@
-# Master Plan v3.2 — Cognitia Roadmap
+# Master Plan v3.2 — Swarmline Roadmap
 
 > Обновлён: 2026-03-18 (v3.2 — retry/cancel/RAG/DX improvements)
 > Базовая версия: 0.5.0 (multi-provider ThinRuntime + upstream middleware)
@@ -9,10 +9,10 @@
 
 ## Философия
 
-**Cognitia — это библиотека, не фреймворк.**
+**Swarmline — это библиотека, не фреймворк.**
 
-1. **Simple by default** — `pip install cognitia` даёт core: multi-runtime, structured output, budget, sessions. Работает за 5 минут.
-2. **Opt-in complexity** — tasks, hierarchy, scheduler, MCP = optional extras (`cognitia[tasks]`, `cognitia[scheduler]`).
+1. **Simple by default** — `pip install swarmline` даёт core: multi-runtime, structured output, budget, sessions. Работает за 5 минут.
+2. **Opt-in complexity** — tasks, hierarchy, scheduler, MCP = optional extras (`swarmline[tasks]`, `swarmline[scheduler]`).
 3. **Protocol-first** — все компоненты через Protocol. Замени любой на свой.
 4. **Thin wrappers** — не дублируем SDK, оборачиваем. Когда SDK обновляется, новые фичи доступны через pass-through.
 5. **Docs-first delivery** — каждая фаза завершается документацией. Код без документации = не сделано.
@@ -61,7 +61,7 @@
 ## Обзор
 
 ```
-CORE (cognitia):
+CORE (swarmline):
   Phase 6: DX Foundation      ← structured output, @tool, adapter registry, legacy cleanup
   Phase 7: Production Safety  ← cost budget, guardrails, input filters
   Phase 8: Persistence        ← session backends (extend existing), tracing
@@ -80,13 +80,13 @@ ECOSYSTEM:
 
 | Layer | Пакет | Что входит | Цель |
 |-------|-------|-----------|------|
-| **Core** | `cognitia` | Phases 6-8 | Быстрый старт, production-ready single agent |
-| **Tasks** | `cognitia[tasks]` | 9B full | Enterprise task store |
-| **Multi-Agent** | `cognitia[multi-agent]` | 9A, 9C, 9D | Agent hierarchy + delegation |
-| **Scheduler** | `cognitia[scheduler]` | 9E | Heartbeat / cron agents |
-| **CLI** | `cognitia[cli]` | 10A | Subprocess CLI agents |
-| **MCP** | `cognitia[mcp]` | 10B, 10C | MCP multi-transport |
-| **OpenAI SDK** | `cognitia[openai-agents]` | Phase 11 | OpenAI Agents runtime |
+| **Core** | `swarmline` | Phases 6-8 | Быстрый старт, production-ready single agent |
+| **Tasks** | `swarmline[tasks]` | 9B full | Enterprise task store |
+| **Multi-Agent** | `swarmline[multi-agent]` | 9A, 9C, 9D | Agent hierarchy + delegation |
+| **Scheduler** | `swarmline[scheduler]` | 9E | Heartbeat / cron agents |
+| **CLI** | `swarmline[cli]` | 10A | Subprocess CLI agents |
+| **MCP** | `swarmline[mcp]` | 10B, 10C | MCP multi-transport |
+| **OpenAI SDK** | `swarmline[openai-agents]` | Phase 11 | OpenAI Agents runtime |
 
 ---
 
@@ -313,7 +313,7 @@ Merged into parent: IDEA-021 (memory scopes → 8A), IDEA-022 (caller policy →
 **Scope**:
 1. `SessionBackend` Protocol: `save(key, state)` / `load(key)` / `delete(key)` / `list()`
 2. `SqliteSessionBackend` — zero-config (расширение существующего sqlite memory store)
-3. `RedisSessionBackend` (optional `cognitia[redis]`)
+3. `RedisSessionBackend` (optional `swarmline[redis]`)
 4. `EncryptedSessionBackend` — overlay
 5. **Migration**: существующий `SessionManager` получает `backend` parameter, in-memory = default
 6. **Memory Scopes**: `MemoryScope` enum → prefix keys (`global:`, `agent:{id}:`, `shared:{group}:`)
@@ -390,7 +390,7 @@ config = RuntimeConfig(model="claude-sonnet-4-20250514", retriever=ChromaRetriev
 
 > **Источник**: UI Event Projection pattern (stream.md). UI не должен интерпретировать сырые RuntimeEvent — UI получает готовое состояние.
 
-**Проблема**: Сейчас cognitia стримит `RuntimeEvent` (token, tool_call, tool_result, final, error). Каждый frontend должен сам собирать UI state из этих событий — парсить токены в текст, собирать tool results, отслеживать lifecycle. Это:
+**Проблема**: Сейчас swarmline стримит `RuntimeEvent` (token, tool_call, tool_result, final, error). Каждый frontend должен сам собирать UI state из этих событий — парсить токены в текст, собирать tool results, отслеживать lifecycle. Это:
 - Дублирование логики в каждом UI
 - Трудно менять event model backend'а
 - Невозможно replay/debug UI
@@ -403,7 +403,7 @@ AgentRuntime.run()
 RuntimeEvent stream (token, tool_call, tool_result, final, error)
       │
       ▼
-EventProjection (NEW — cognitia layer)
+EventProjection (NEW — swarmline layer)
       │
       ▼
 UIState stream (ready-to-render state updates)
@@ -483,7 +483,7 @@ async for state in project_stream(runtime.run("Проверь цену SBER"), p
 
 **Приоритет**: High | **Сложность**: Medium → High
 
-> **Два уровня**: MVP в core, Full как `cognitia[tasks]`.
+> **Два уровня**: MVP в core, Full как `swarmline[tasks]`.
 
 #### 9B-MVP: Simple Task Queue (~2-3 дня)
 
@@ -512,7 +512,7 @@ queue.complete(task.id)
 - [ ] Integration: agent gets task → completes — 3+ тестов
 - [ ] Docs: task queue guide + code example + docstrings
 
-#### 9B-Full: Enterprise Task Store (~5-7 дней) — `cognitia[tasks]`
+#### 9B-Full: Enterprise Task Store (~5-7 дней) — `swarmline[tasks]`
 
 **Optional extra** — для тех, кому нужен Paperclip-level control.
 
@@ -566,7 +566,7 @@ class AgentConfig:
 - [ ] Integration: register + lookup — 3+ тестов
 - [ ] Docs: agent registry guide + code example + docstrings
 
-#### 9C-Full: Enterprise Hierarchy (~3-4 дня) — `cognitia[multi-agent]`
+#### 9C-Full: Enterprise Hierarchy (~3-4 дня) — `swarmline[multi-agent]`
 
 **Scope** (поверх MVP):
 1. `AgentPermissions` — can_create_agents, can_assign_tasks, max_sub_agents
@@ -581,7 +581,7 @@ class AgentConfig:
 - [ ] Integration: parent creates child → assigns task → completes — 4+ тестов
 - [ ] Docs: enterprise hierarchy guide + org chart example + docstrings
 
-### 9D: Multi-Agent Delegation (IDEA-006) — `cognitia[multi-agent]`
+### 9D: Multi-Agent Delegation (IDEA-006) — `swarmline[multi-agent]`
 
 **Приоритет**: High | **Сложность**: High | **~8-12 дней**
 
@@ -607,7 +607,7 @@ class AgentConfig:
 - [ ] E2E: full delegation flow — 2+ тестов
 - [ ] Docs: multi-agent delegation guide + error handling guide + code example + docstrings
 
-### 9E: Scheduled / Heartbeat Agents (IDEA-007) — `cognitia[scheduler]`
+### 9E: Scheduled / Heartbeat Agents (IDEA-007) — `swarmline[scheduler]`
 
 **Приоритет**: High | **Сложность**: Medium
 
@@ -722,22 +722,22 @@ class AgentConfig:
 
 **Scope**: `TokenOptimizer` Protocol, `RtkOptimizer` wrapper, toggleable, graceful fallback.
 
-### 10G: `cognitia init` CLI (IDEA-029) — NEW
+### 10G: `swarmline init` CLI (IDEA-029) — NEW
 
 **Приоритет**: Medium | **Сложность**: Low | **~1-2 дня**
 
 > Mastra: `npx create-mastra@latest`. CrewAI: `crewai create`. У нас — ничего.
 
 **Scope**:
-1. `cognitia init [project-name]` — генерирует minimal project
+1. `swarmline init [project-name]` — генерирует minimal project
 2. Template: `main.py`, `tools.py`, `config.py`, `.env.example`, `pyproject.toml`
 3. Интерактивный выбор: runtime (thin/claude_sdk/cli), provider (anthropic/openai/google)
 4. Jinja2 templates (встроенные, не external dependency)
 
 **DoD**:
-- [ ] CLI command работает: `cognitia init my-agent`
+- [ ] CLI command работает: `swarmline init my-agent`
 - [ ] Unit: template rendering — 5+ тестов
-- [ ] Docs: getting started guide ссылается на `cognitia init`
+- [ ] Docs: getting started guide ссылается на `swarmline init`
 
 ### 10H: LiteLLM Adapter (IDEA-030) — NEW
 
@@ -747,8 +747,8 @@ class AgentConfig:
 
 **Scope**:
 1. `LiteLLMAdapter` implements `LlmAdapter` — wrapper вокруг `litellm.completion()`
-2. Optional extra: `cognitia[litellm]`
-3. Все модели доступные через litellm → доступны в cognitia
+2. Optional extra: `swarmline[litellm]`
+3. Все модели доступные через litellm → доступны в swarmline
 4. Fallback: если native adapter не найден → попробовать litellm
 
 **DoD**:

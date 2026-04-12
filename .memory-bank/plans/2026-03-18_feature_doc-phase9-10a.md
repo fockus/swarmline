@@ -23,7 +23,7 @@ Close documentation debt (6-DOC, 7-DOC, 8-DOC), implement Phase 9 MVP (agent-as-
 
 ### NOT included:
 - Phase 9 Full (enterprise tasks, hierarchy, delegation, scheduler)
-- Phase 10B-10H (MCP, OAuth, RTK, LiteLLM, cognitia init)
+- Phase 10B-10H (MCP, OAuth, RTK, LiteLLM, swarmline init)
 - Phase 11 (OpenAI Agents SDK)
 - Actual mkdocs build / deployment
 - Redis session backend
@@ -77,7 +77,7 @@ Close documentation debt (6-DOC, 7-DOC, 8-DOC), implement Phase 9 MVP (agent-as-
 ### Tasks:
 1. Create examples/ directory
 2. Write each example as a standalone async Python script:
-   - Imports from cognitia public API only
+   - Imports from swarmline public API only
    - Uses asyncio.run(main()) pattern
    - Has a comment header explaining what it demonstrates
    - Uses a mock llm_call callable where possible to run without API keys
@@ -86,7 +86,7 @@ Close documentation debt (6-DOC, 7-DOC, 8-DOC), implement Phase 9 MVP (agent-as-
 
 ### DoD:
 - [ ] 9 example files created, each syntactically valid Python
-- [ ] Each example imports only from cognitia public API (no internal modules)
+- [ ] Each example imports only from swarmline public API (no internal modules)
 - [ ] README.md lists all examples
 - [ ] Lint clean: ruff check examples/
 
@@ -163,7 +163,7 @@ head -100 CHANGELOG.md
 - [ ] 6 new sections added to getting-started.md
 - [ ] Structured Output section updated to show output_type
 - [ ] Streaming section uses correct event type names
-- [ ] All code snippets use actual cognitia public API
+- [ ] All code snippets use actual swarmline public API
 - [ ] File is valid Markdown
 
 ### Test Scenarios:
@@ -173,10 +173,10 @@ head -100 CHANGELOG.md
 ### Commands:
 ```bash
 python -c "
-from cognitia.runtime.cost import CostBudget
-from cognitia.session.backends import SqliteSessionBackend
-from cognitia.observability.tracing import ConsoleTracer
-from cognitia.ui.projection import ChatProjection, project_stream
+from swarmline.runtime.cost import CostBudget
+from swarmline.session.backends import SqliteSessionBackend
+from swarmline.observability.tracing import ConsoleTracer
+from swarmline.ui.projection import ChatProjection, project_stream
 print('All imports OK')
 "
 ```
@@ -242,24 +242,24 @@ print(f'Total pages: {len(mds)}, Missing: {missing}')
 **Dependencies:** --
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/protocols/multi_agent.py
-- CREATE: src/cognitia/multi_agent/__init__.py
-- CREATE: src/cognitia/multi_agent/types.py
+- CREATE: src/swarmline/protocols/multi_agent.py
+- CREATE: src/swarmline/multi_agent/__init__.py
+- CREATE: src/swarmline/multi_agent/types.py
 
 ### Tasks:
-1. Create src/cognitia/multi_agent/types.py with domain types:
+1. Create src/swarmline/multi_agent/types.py with domain types:
    - AgentToolResult frozen dataclass: success: bool, output: str, error: str | None, agent_id: str, tokens_used: int, cost_usd: float
-2. Create src/cognitia/protocols/multi_agent.py with:
+2. Create src/swarmline/protocols/multi_agent.py with:
    - AgentTool Protocol (runtime_checkable): as_tool(name: str, description: str) -> ToolSpec (1 method, well under ISP limit)
-3. Create src/cognitia/multi_agent/__init__.py with re-exports
-4. Update src/cognitia/protocols/__init__.py to re-export AgentTool
+3. Create src/swarmline/multi_agent/__init__.py with re-exports
+4. Update src/swarmline/protocols/__init__.py to re-export AgentTool
 
 ### DoD:
 - [ ] AgentToolResult is frozen dataclass with 6 fields
 - [ ] AgentTool Protocol has exactly 1 method (ISP-compliant)
-- [ ] Both are importable from cognitia.protocols and cognitia.multi_agent
-- [ ] mypy src/cognitia/multi_agent/ src/cognitia/protocols/multi_agent.py clean
-- [ ] No external dependencies (stdlib + cognitia.runtime.types only)
+- [ ] Both are importable from swarmline.protocols and swarmline.multi_agent
+- [ ] mypy src/swarmline/multi_agent/ src/swarmline/protocols/multi_agent.py clean
+- [ ] No external dependencies (stdlib + swarmline.runtime.types only)
 
 ### Test Scenarios:
 - test_agent_tool_result_is_frozen -- cannot mutate fields
@@ -268,8 +268,8 @@ print(f'Total pages: {len(mds)}, Missing: {missing}')
 
 ### Commands:
 ```bash
-mypy src/cognitia/multi_agent/ src/cognitia/protocols/multi_agent.py
-ruff check src/cognitia/multi_agent/ src/cognitia/protocols/multi_agent.py
+mypy src/swarmline/multi_agent/ src/swarmline/protocols/multi_agent.py
+ruff check src/swarmline/multi_agent/ src/swarmline/protocols/multi_agent.py
 ```
 
 ---
@@ -315,12 +315,12 @@ pytest tests/unit/test_agent_tool_types.py tests/unit/test_agent_tool_contract.p
 **Dependencies:** Stage 5, Stage 6
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/multi_agent/agent_tool.py
-- MODIFY: src/cognitia/runtime/thin/runtime.py (add as_tool method, ~15 lines)
-- MODIFY: src/cognitia/multi_agent/__init__.py (re-export)
+- CREATE: src/swarmline/multi_agent/agent_tool.py
+- MODIFY: src/swarmline/runtime/thin/runtime.py (add as_tool method, ~15 lines)
+- MODIFY: src/swarmline/multi_agent/__init__.py (re-export)
 
 ### Tasks:
-1. Create src/cognitia/multi_agent/agent_tool.py:
+1. Create src/swarmline/multi_agent/agent_tool.py:
    - create_agent_tool_executor(runtime, config, timeout_seconds) -> Callable -- async function that:
      a. Creates messages from tool input args
      b. Calls runtime.run(messages=..., system_prompt=..., active_tools=[])
@@ -341,8 +341,8 @@ pytest tests/unit/test_agent_tool_types.py tests/unit/test_agent_tool_contract.p
 - [ ] Executor function handles timeout (asyncio.TimeoutError)
 - [ ] agent_tool.py <= 100 lines
 - [ ] Contract tests from Stage 6 pass
-- [ ] ruff check src/cognitia/multi_agent/ clean
-- [ ] mypy src/cognitia/multi_agent/ clean
+- [ ] ruff check src/swarmline/multi_agent/ clean
+- [ ] mypy src/swarmline/multi_agent/ clean
 
 ### Test Scenarios:
 - test_thin_runtime_as_tool_returns_valid_spec -- name, description, parameters correct
@@ -353,8 +353,8 @@ pytest tests/unit/test_agent_tool_types.py tests/unit/test_agent_tool_contract.p
 ### Commands:
 ```bash
 pytest tests/unit/test_agent_tool_types.py tests/unit/test_agent_tool_contract.py -v
-ruff check src/cognitia/multi_agent/
-mypy src/cognitia/multi_agent/
+ruff check src/swarmline/multi_agent/
+mypy src/swarmline/multi_agent/
 ```
 
 ---
@@ -394,16 +394,16 @@ pytest tests/integration/test_agent_tool_integration.py -v
 **Dependencies:** --
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/multi_agent/task_types.py
-- MODIFY: src/cognitia/protocols/multi_agent.py (add TaskQueue Protocol)
+- CREATE: src/swarmline/multi_agent/task_types.py
+- MODIFY: src/swarmline/protocols/multi_agent.py (add TaskQueue Protocol)
 
 ### Tasks:
-1. Create src/cognitia/multi_agent/task_types.py:
+1. Create src/swarmline/multi_agent/task_types.py:
    - TaskStatus enum: TODO, IN_PROGRESS, DONE, CANCELLED (4 values)
    - TaskPriority enum: LOW, MEDIUM, HIGH, CRITICAL (4 values)
    - TaskItem frozen dataclass: id, title, description, status, priority, assignee_agent_id, metadata, created_at
    - TaskFilter frozen dataclass: status, priority, assignee_agent_id (all optional)
-2. Add to src/cognitia/protocols/multi_agent.py:
+2. Add to src/swarmline/protocols/multi_agent.py:
    - TaskQueue Protocol (runtime_checkable): 5 methods exactly:
      - async put(item: TaskItem) -> None
      - async get(filters: TaskFilter | None = None) -> TaskItem | None (highest priority unassigned)
@@ -418,7 +418,7 @@ pytest tests/integration/test_agent_tool_integration.py -v
 - [ ] TaskItem is frozen dataclass with 8 fields
 - [ ] TaskQueue Protocol has exactly 5 methods (ISP limit)
 - [ ] All types are stdlib-only (no external deps)
-- [ ] mypy src/cognitia/multi_agent/task_types.py clean
+- [ ] mypy src/swarmline/multi_agent/task_types.py clean
 
 ### Test Scenarios:
 - test_task_item_is_frozen -- FrozenInstanceError on mutation
@@ -427,8 +427,8 @@ pytest tests/integration/test_agent_tool_integration.py -v
 
 ### Commands:
 ```bash
-mypy src/cognitia/multi_agent/task_types.py src/cognitia/protocols/multi_agent.py
-ruff check src/cognitia/multi_agent/
+mypy src/swarmline/multi_agent/task_types.py src/swarmline/protocols/multi_agent.py
+ruff check src/swarmline/multi_agent/
 ```
 
 ---
@@ -478,7 +478,7 @@ pytest tests/unit/test_task_types.py -v
 **Dependencies:** Stage 9, Stage 10
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/multi_agent/task_queue.py
+- CREATE: src/swarmline/multi_agent/task_queue.py
 
 ### Tasks:
 1. InMemoryTaskQueue:
@@ -499,8 +499,8 @@ pytest tests/unit/test_task_types.py -v
 - [ ] InMemoryTaskQueue passes all contract tests from Stage 10
 - [ ] SqliteTaskQueue passes all contract tests from Stage 10
 - [ ] Both implementations < 150 lines
-- [ ] ruff check src/cognitia/multi_agent/task_queue.py clean
-- [ ] mypy src/cognitia/multi_agent/task_queue.py clean
+- [ ] ruff check src/swarmline/multi_agent/task_queue.py clean
+- [ ] mypy src/swarmline/multi_agent/task_queue.py clean
 
 ### Test Scenarios:
 - Contract tests parametrized with both implementations
@@ -509,8 +509,8 @@ pytest tests/unit/test_task_types.py -v
 ### Commands:
 ```bash
 pytest tests/unit/test_task_queue_contract.py tests/unit/test_task_types.py -v
-ruff check src/cognitia/multi_agent/task_queue.py
-mypy src/cognitia/multi_agent/task_queue.py
+ruff check src/swarmline/multi_agent/task_queue.py
+mypy src/swarmline/multi_agent/task_queue.py
 ```
 
 ---
@@ -548,15 +548,15 @@ pytest tests/integration/test_task_queue_integration.py -v
 **Dependencies:** --
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/multi_agent/registry_types.py
-- MODIFY: src/cognitia/protocols/multi_agent.py (add AgentRegistry Protocol)
+- CREATE: src/swarmline/multi_agent/registry_types.py
+- MODIFY: src/swarmline/protocols/multi_agent.py (add AgentRegistry Protocol)
 
 ### Tasks:
-1. Create src/cognitia/multi_agent/registry_types.py:
+1. Create src/swarmline/multi_agent/registry_types.py:
    - AgentStatus enum: IDLE, RUNNING, STOPPED (3 values)
    - AgentRecord frozen dataclass: id, name, role, parent_id (str | None), runtime_name, runtime_config (dict), status (AgentStatus), budget_limit_usd (float | None), metadata (dict)
    - AgentFilter frozen dataclass: role (str | None), status (AgentStatus | None), parent_id (str | None)
-2. Add to src/cognitia/protocols/multi_agent.py:
+2. Add to src/swarmline/protocols/multi_agent.py:
    - AgentRegistry Protocol (runtime_checkable): 5 methods:
      - async register(record: AgentRecord) -> None
      - async get(agent_id: str) -> AgentRecord | None
@@ -578,8 +578,8 @@ pytest tests/integration/test_task_queue_integration.py -v
 
 ### Commands:
 ```bash
-mypy src/cognitia/multi_agent/registry_types.py src/cognitia/protocols/multi_agent.py
-ruff check src/cognitia/multi_agent/
+mypy src/swarmline/multi_agent/registry_types.py src/swarmline/protocols/multi_agent.py
+ruff check src/swarmline/multi_agent/
 ```
 
 ---
@@ -628,7 +628,7 @@ pytest tests/unit/test_agent_registry_types.py -v
 **Dependencies:** Stage 13, Stage 14
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/multi_agent/agent_registry.py
+- CREATE: src/swarmline/multi_agent/agent_registry.py
 
 ### Tasks:
 1. InMemoryAgentRegistry:
@@ -653,8 +653,8 @@ pytest tests/unit/test_agent_registry_types.py -v
 ### Commands:
 ```bash
 pytest tests/unit/test_agent_registry_contract.py tests/unit/test_agent_registry_types.py -v
-ruff check src/cognitia/multi_agent/agent_registry.py
-mypy src/cognitia/multi_agent/agent_registry.py
+ruff check src/swarmline/multi_agent/agent_registry.py
+mypy src/swarmline/multi_agent/agent_registry.py
 ```
 
 ---
@@ -695,14 +695,14 @@ pytest tests/integration/test_agent_registry_integration.py -v
 **Dependencies:** --
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/runtime/cli/__init__.py
-- CREATE: src/cognitia/runtime/cli/types.py
-- CREATE: src/cognitia/runtime/cli/parser.py
+- CREATE: src/swarmline/runtime/cli/__init__.py
+- CREATE: src/swarmline/runtime/cli/types.py
+- CREATE: src/swarmline/runtime/cli/parser.py
 
 ### Tasks:
-1. Create src/cognitia/runtime/cli/types.py:
+1. Create src/swarmline/runtime/cli/types.py:
    - CliConfig frozen dataclass: command (list[str], e.g. ["claude", "--print", "-"]), output_format (str, e.g. "stream-json"), timeout_seconds (float, default 300), max_output_bytes (int, default 4_000_000), env (dict[str, str], extra env vars)
-2. Create src/cognitia/runtime/cli/parser.py:
+2. Create src/swarmline/runtime/cli/parser.py:
    - NdjsonParser Protocol (runtime_checkable): def parse_line(self, line: str) -> RuntimeEvent | None (1 method)
    - ClaudeNdjsonParser implementation: maps Claude Code stream-json events to RuntimeEvent:
      - type=assistant, subtype=text -> RuntimeEvent.assistant_delta
@@ -717,7 +717,7 @@ pytest tests/integration/test_agent_registry_integration.py -v
 - [ ] NdjsonParser Protocol has 1 method (ISP)
 - [ ] ClaudeNdjsonParser handles at least 3 event types
 - [ ] GenericNdjsonParser as fallback
-- [ ] mypy src/cognitia/runtime/cli/ clean
+- [ ] mypy src/swarmline/runtime/cli/ clean
 
 ### Test Scenarios:
 - test_cli_config_frozen
@@ -728,8 +728,8 @@ pytest tests/integration/test_agent_registry_integration.py -v
 
 ### Commands:
 ```bash
-mypy src/cognitia/runtime/cli/
-ruff check src/cognitia/runtime/cli/
+mypy src/swarmline/runtime/cli/
+ruff check src/swarmline/runtime/cli/
 ```
 
 ---
@@ -775,12 +775,12 @@ pytest tests/unit/test_cli_parser.py tests/unit/test_cli_types.py -v
 **Dependencies:** Stage 17, Stage 18
 **Agent:** developer
 **Files:**
-- CREATE: src/cognitia/runtime/cli/runtime.py
-- MODIFY: src/cognitia/runtime/registry.py (add cli registration)
-- MODIFY: src/cognitia/runtime/capabilities.py (add cli capabilities)
+- CREATE: src/swarmline/runtime/cli/runtime.py
+- MODIFY: src/swarmline/runtime/registry.py (add cli registration)
+- MODIFY: src/swarmline/runtime/capabilities.py (add cli capabilities)
 
 ### Tasks:
-1. Create src/cognitia/runtime/cli/runtime.py:
+1. Create src/swarmline/runtime/cli/runtime.py:
    - CliAgentRuntime implements AgentRuntime:
      - __init__(config: RuntimeConfig, cli_config: CliConfig, parser: NdjsonParser | None = None):
        - Default parser: ClaudeNdjsonParser() if command starts with "claude", else GenericNdjsonParser()
@@ -810,8 +810,8 @@ pytest tests/unit/test_cli_parser.py tests/unit/test_cli_types.py -v
 - [ ] Registered in RuntimeRegistry as "cli"
 - [ ] RuntimeConfig(runtime_name="cli") is valid
 - [ ] File < 200 lines
-- [ ] ruff check src/cognitia/runtime/cli/ clean
-- [ ] mypy src/cognitia/runtime/cli/ clean
+- [ ] ruff check src/swarmline/runtime/cli/ clean
+- [ ] mypy src/swarmline/runtime/cli/ clean
 
 ### Test Scenarios:
 - test_cli_runtime_implements_agent_runtime -- isinstance check
@@ -823,8 +823,8 @@ pytest tests/unit/test_cli_parser.py tests/unit/test_cli_types.py -v
 
 ### Commands:
 ```bash
-ruff check src/cognitia/runtime/cli/
-mypy src/cognitia/runtime/cli/
+ruff check src/swarmline/runtime/cli/
+mypy src/swarmline/runtime/cli/
 ```
 
 ---
@@ -944,18 +944,18 @@ print(f'Missing: {missing}' if missing else 'All nav pages exist')
 
 ### DoD:
 - [ ] pytest -- all tests pass (existing 2122 + new ~55 tests)
-- [ ] ruff check src/cognitia/multi_agent/ src/cognitia/runtime/cli/ examples/ -- clean
-- [ ] mypy src/cognitia/multi_agent/ src/cognitia/runtime/cli/ -- clean
+- [ ] ruff check src/swarmline/multi_agent/ src/swarmline/runtime/cli/ examples/ -- clean
+- [ ] mypy src/swarmline/multi_agent/ src/swarmline/runtime/cli/ -- clean
 - [ ] New modules coverage >= 85%
 - [ ] No import errors for new modules
-- [ ] python -c "from cognitia.multi_agent import AgentToolResult, InMemoryTaskQueue, InMemoryAgentRegistry; from cognitia.runtime.cli import CliAgentRuntime" succeeds
+- [ ] python -c "from swarmline.multi_agent import AgentToolResult, InMemoryTaskQueue, InMemoryAgentRegistry; from swarmline.runtime.cli import CliAgentRuntime" succeeds
 
 ### Commands:
 ```bash
 pytest --tb=short -q
-ruff check src/cognitia/multi_agent/ src/cognitia/runtime/cli/ examples/
-mypy src/cognitia/multi_agent/ src/cognitia/runtime/cli/
-pytest tests/unit/test_agent_tool_types.py tests/unit/test_agent_tool_contract.py tests/unit/test_task_queue_contract.py tests/unit/test_task_types.py tests/unit/test_agent_registry_contract.py tests/unit/test_agent_registry_types.py tests/unit/test_cli_parser.py tests/unit/test_cli_types.py tests/unit/test_cli_runtime.py tests/integration/test_agent_tool_integration.py tests/integration/test_task_queue_integration.py tests/integration/test_agent_registry_integration.py tests/integration/test_cli_runtime_integration.py --cov=cognitia.multi_agent --cov=cognitia.runtime.cli --cov-report=term-missing -v
+ruff check src/swarmline/multi_agent/ src/swarmline/runtime/cli/ examples/
+mypy src/swarmline/multi_agent/ src/swarmline/runtime/cli/
+pytest tests/unit/test_agent_tool_types.py tests/unit/test_agent_tool_contract.py tests/unit/test_task_queue_contract.py tests/unit/test_task_types.py tests/unit/test_agent_registry_contract.py tests/unit/test_agent_registry_types.py tests/unit/test_cli_parser.py tests/unit/test_cli_types.py tests/unit/test_cli_runtime.py tests/integration/test_agent_tool_integration.py tests/integration/test_task_queue_integration.py tests/integration/test_agent_registry_integration.py tests/integration/test_cli_runtime_integration.py --cov=swarmline.multi_agent --cov=swarmline.runtime.cli --cov-report=term-missing -v
 ```
 
 ---
@@ -999,11 +999,11 @@ Stage 17 (10A types) > Stage 18 (10A contract) > Stage 19 -> Stage 20┤
 
 ## Potential Merge Conflicts
 
-- src/cognitia/protocols/multi_agent.py -- Stages 5, 9, 13 all modify this file. Resolve by having Stage 5 create the file, Stages 9 and 13 append to it. If parallel, each adds its own Protocol.
-- src/cognitia/multi_agent/__init__.py -- Stages 5, 9, 11, 13, 15 update re-exports. Sequential within each 9x block.
+- src/swarmline/protocols/multi_agent.py -- Stages 5, 9, 13 all modify this file. Resolve by having Stage 5 create the file, Stages 9 and 13 append to it. If parallel, each adds its own Protocol.
+- src/swarmline/multi_agent/__init__.py -- Stages 5, 9, 11, 13, 15 update re-exports. Sequential within each 9x block.
 - mkdocs.yml -- Stages 4 and 21 both modify nav. Stage 4 runs first (DOC block), Stage 21 depends on implementation.
 - CHANGELOG.md -- Stages 2 and 21 both modify. Stage 2 adds v0.6/v0.7/v1.0-core, Stage 21 adds v1.1.0 entries.
-- src/cognitia/runtime/registry.py -- Only Stage 19 modifies (adds cli registration).
+- src/swarmline/runtime/registry.py -- Only Stage 19 modifies (adds cli registration).
 
 ## Checklist (copy to checklist.md)
 

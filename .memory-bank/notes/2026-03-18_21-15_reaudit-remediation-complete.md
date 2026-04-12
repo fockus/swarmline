@@ -15,7 +15,7 @@
   - `skills` package root now reflects registry/types as the stable surface
 - Wave 3 static debt:
   - repo-wide `ruff` clean
-  - repo-wide `mypy src/cognitia/` clean
+  - repo-wide `mypy src/swarmline/` clean
 
 ## Notable implementation details
 
@@ -26,7 +26,7 @@
 ## Verification
 
 - `ruff check src/ tests/`
-- `mypy src/cognitia/`
+- `mypy src/swarmline/`
 - `python -m pytest -q`
 - `git diff --check`
 

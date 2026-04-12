@@ -1,34 +1,132 @@
 # Progress
 
+## 2026-04-12: Phase 6 Integration Validation complete (Judge 4.25/5.0)
+
+- Cross-feature integration tests: hooks+commands, stop hook, backward compat, unregistered passthrough
+- mypy fix: variable shadowing (tc → ntc) in native tool path
+- Quality gates: 4394 passed, ruff clean, mypy clean, 86% coverage
+- ThinRuntime Claude Code Parity milestone: Phases 1-6 COMPLETE
+- Commit: 250164a
+
+## 2026-04-12: Phase 5 Native Tool Calling complete (Judge 4.33/5.0)
+
+- NativeToolCallAdapter Protocol + NativeToolCall/Result frozen dataclasses
+- 3 adapters (Anthropic, OpenAI, Google) с call_with_tools()
+- React strategy: native path + parallel execution (asyncio.gather) + Strangler Fig fallback
+- Budget enforcement в native path (max_tool_calls)
+- Hooks + policy dispatched через executor.execute() (тот же pipeline что JSON-in-text)
+- isinstance() вместо hasattr() для Protocol check
+- 29 тестов (18 unit + 8 strategy + 3 integration), 4389 total, 0 regressions
+- Review iteration 1: 2 CRITICAL + 4 SERIOUS → all fixed. Judge iteration 1: FAIL (3.95) → iteration 2: PASS (4.33)
+- Commit: 1b08eeb
+
+## 2026-04-12: Phase 4 Command Routing complete (Judge 4.59/5.0)
+
+- CommandInterceptor в ThinRuntime.run() — перехват /commands перед LLM
+- Только зарегистрированные команды перехватываются; unknown /text, URL, multiline → LLM
+- Pipeline: UserPromptSubmit hook → Command intercept → Guardrails → LLM
+- AgentConfig.command_registry + runtime_wiring + ThinRuntime integration
+- 15 тестов (11 unit + 2 wiring + 2 integration), 4360 total, 0 regressions
+- Review iteration 1: 3 SERIOUS findings → all fixed (resolve() check, multiline guard, TYPE_CHECKING)
+- Judge iteration 2: PASS 4.59/5.0
+- Commit: 2549def
+
+## 2026-04-12: Detailed feature spec complete — Thin coding-agent profile
+
+- На основе анализа `2026-04-12_analysis_thin-coding-agent-reuse-aura-claw-pi-mono.md` и плана `2026-04-12_feature_thin-coding-agent-profile.md` собрана implementation-ready спецификация в `.specs/tasks/todo/implement-thin-coding-agent-profile.feature.md`.
+- Спецификация зафиксировала:
+  - scope / non-goals / acceptance criteria;
+  - reuse matrix по `swarmline`, `aura`, `claw-code-agent`, `pi-mono`;
+  - architecture seams, compatibility contract, task lifecycle contract, coding context contract;
+  - 9 implementation steps с шаговыми DoD;
+  - execution waves и merge-point правила;
+  - детальную verification strategy по каждому шагу и tranche-level acceptance gate.
+- Отдельно зафиксировано, что `claw-code-agent` остаётся reference-only до отдельного подтверждения лицензии.
+- Черновик спецификации перенесён из `.specs/tasks/draft/` в `.specs/tasks/todo/`.
+
+## 2026-04-12: Phase 3 Complete — LLM-Initiated Subagents
+
+- **Judge: 4.02/5.0** (PASS, iteration 2 after reviewer fixes)
+- SubagentToolConfig (max_depth=3, max_concurrent=4, timeout=300s)
+- SUBAGENT_TOOL_SPEC registered as spawn_agent tool
+- create_subagent_executor: fail-safe, all errors → JSON
+- ThinRuntime wiring: auto-append spec to active_tools in run()
+- Tool inheritance: child gets actual parent tools (not just builtins)
+- Reviewer findings fixed: spec injection in run(), tool inheritance, depth propagation
+- 33 new tests, commit: 65479ac
+- Total tests: 4356 passed
+
+## 2026-04-12: Phase 2 Complete — Tool Policy Enforcement
+
+- **Judge: 4.26/5.0** (PASS, iteration 2 after reviewer fixes)
+- DefaultToolPolicy enforced in ToolExecutor after PreToolUse hooks
+- Pipeline: hooks → policy → execute → post-hooks
+- PermissionAllow.updated_input handling added (contract compliance)
+- AgentConfig.tool_policy field + wiring through RuntimeFactory
+- 10 new tests (8 original + 2 edge cases from review)
+- Reviewer findings fixed: false-positive MCP test, typing, updated_input
+- Commit: 0822a62
+- Total tests: 4323 passed
+
+## 2026-04-12: Phase 1 Complete — Hook Dispatch in ThinRuntime
+
+- **Judge: 4.40/5.0** (PASS, iteration 2 after reviewer fixes)
+- HookDispatcher Protocol (4 methods, ISP), HookResult frozen dataclass, DefaultHookDispatcher
+- ToolExecutor: PreToolUse/PostToolUse hooks fire before/after every tool call
+- ThinRuntime: UserPromptSubmit/Stop hooks fire at start/end of run()
+- Agent → RuntimeFactory → ThinRuntime wiring via merge_hooks in create_kwargs
+- 50 new tests (27 dispatcher + 7 executor + 7 runtime + 3 wiring + 2 integration + 4 legacy)
+- Coverage: dispatcher.py 98%, all 4313 tests pass, ruff + mypy clean
+- DRY fix: removed duplicate merge_hooks from agent.py
+- Reviewer findings fixed: modify chaining, stop hook result text, proper typing
+- Commit: a50e4ec
+- P0 security gap CLOSED: SecurityGuard now actually blocks tools in thin runtime
+
+## 2026-04-12: GSD Initialized — ThinRuntime Claude Code Parity
+
+- PROJECT.md: ThinRuntime доработка до полноценного runtime (hooks, subagents, commands, native tools, policy)
+- REQUIREMENTS.md: 36 v1 requirements (HOOK 10, PLCY 4, SUBA 8, CMDR 4, NATV 6, INTG 4)
+- ROADMAP.md: 6 phases, 11 plans, interactive mode, quality models (Opus), research + plan check + verifier
+- Key decisions: fail-open hooks, subagent prompt from tool args, Anthropic-first native tools
+- Bridge: GSD (.planning/) ↔ MB (.memory-bank/) connected
+
+## 2026-04-12: Repository housekeeping — cognitia → swarmline
+
+- Renamed folder /Apps/cognitia → /Apps/swarmline + symlink
+- Git remotes: origin → swarmline-dev, public → swarmline (removed old cognitia remotes)
+- CLAUDE.md, AGENTS.md, AGENTS.public.md — updated with swarmline references, versioning rules
+- docs/releasing.md — created full release workflow documentation (SemVer, PyPI, dual-repo)
+- .memory-bank/ — all 53 files updated: cognitia → swarmline
+
 ## 2026-04-11: Audit remediation follow-up — SessionManager snapshot store seam
-- Extracted session snapshot serialization/persistence from `src/cognitia/session/manager.py` into `src/cognitia/session/snapshot_store.py`.
+- Extracted session snapshot serialization/persistence from `src/swarmline/session/manager.py` into `src/swarmline/session/snapshot_store.py`.
 - `_AsyncSessionCore` now delegates snapshot codec and backend load/save/delete to `SessionSnapshotStore`, while keeping cache/TTL/lifecycle orchestration in the manager core.
 - Preserved behavior that mattered for rehydration and TTL: wall-clock ↔ monotonic conversion stayed unchanged, `is_rehydrated` is still applied on snapshot load, and `close()` vs `close_all()` semantics remain distinct.
 - Verified:
   - targeted session pack: `50 passed`
   - repo-wide `ruff check` on touched session files/tests: green
-  - repo-wide `mypy src/cognitia`: green (`355` source files)
+  - repo-wide `mypy src/swarmline`: green (`355` source files)
   - full offline `pytest -q`: `4249 passed, 3 skipped, 5 deselected`
 
 ## 2026-04-11: Audit remediation follow-up — SessionManager runtime bridge seam
-- Extracted runtime execution/legacy streaming bridge logic from `src/cognitia/session/manager.py` into `src/cognitia/session/runtime_bridge.py`.
+- Extracted runtime execution/legacy streaming bridge logic from `src/swarmline/session/manager.py` into `src/swarmline/session/runtime_bridge.py`.
 - `_AsyncSessionCore` now keeps locking, TTL/cache, and persistence orchestration, while runtime-specific event mapping and legacy `StreamEvent` bridging are delegated to helper functions.
 - Preserved public behavior: no signature changes for `run_turn()` / `stream_reply()`, no API expansion, and existing session semantics around terminal events, history persistence, and runtime error normalization stayed intact.
 - Verified:
   - targeted session pack: `50 passed`
   - repo-wide `ruff check` on touched session files/tests: green
-  - repo-wide `mypy src/cognitia`: green (`354` source files)
+  - repo-wide `mypy src/swarmline`: green (`354` source files)
   - full offline `pytest -q`: `4249 passed, 3 skipped, 5 deselected`
 
 ## 2026-04-11: Audit remediation follow-up — phase-4 low-risk seams
-- Extracted `ThinRuntime` helper logic into `src/cognitia/runtime/thin/runtime_support.py` and switched `ThinRuntime` wrappers to delegate through the helper seam while preserving patchable compatibility for `runtime.default_llm_call`.
-- Extracted mutable orchestration run-state management into `src/cognitia/multi_agent/graph_orchestrator_state.py`; `DefaultGraphOrchestrator` now delegates run creation/snapshot/stop/execution bookkeeping to `GraphRunStore`.
+- Extracted `ThinRuntime` helper logic into `src/swarmline/runtime/thin/runtime_support.py` and switched `ThinRuntime` wrappers to delegate through the helper seam while preserving patchable compatibility for `runtime.default_llm_call`.
+- Extracted mutable orchestration run-state management into `src/swarmline/multi_agent/graph_orchestrator_state.py`; `DefaultGraphOrchestrator` now delegates run creation/snapshot/stop/execution bookkeeping to `GraphRunStore`.
 - Preserved public behavior and existing tests: the changes are structural only, with no API expansion and no behavior drift in runtime/orchestrator flows.
 - Verified:
   - targeted thin-runtime pack: `42 passed`
   - targeted graph-orchestrator pack: `83 passed`
   - repo-wide `ruff check src tests`: green
-  - repo-wide `mypy src/cognitia`: green (`353` source files)
+  - repo-wide `mypy src/swarmline`: green (`353` source files)
   - full offline `pytest -q`: `4249 passed, 3 skipped, 5 deselected`
 
 ## 2026-04-10: Phase 0 — Swarmline + HostAdapter
@@ -60,18 +158,18 @@
 - Обновлены `docs/cli-runtime.md`, `docs/multi-agent.md` и protocol docstring для claim- и stdin-семантики.
 - Добавлены/обновлены тесты для `RuntimeFactory`, `CliAgentRuntime`, `Agent.query`, `Conversation.say`, `execute_agent_tool`, `TaskQueue` contract/integration.
 - Проверено: targeted `pytest` green (`172 passed`), полный offline `pytest -q` green (`2321 passed, 16 skipped, 5 deselected`), targeted `ruff check` по changed files green.
-- Ограничение: repo-wide `ruff check src/ tests/` и `mypy src/cognitia/` по-прежнему падают на pre-existing issues вне этого fix set.
+- Ограничение: repo-wide `ruff check src/ tests/` и `mypy src/swarmline/` по-прежнему падают на pre-existing issues вне этого fix set.
 - Закрыт второй batch review findings: SQLite terminal transitions теперь atomic, `CliAgentRuntime` fail-fast'ится с `bad_model_output` без final event, autodetect Claude переведён на basename, `execute_agent_tool()` изолирует любой `Exception`.
 - Добавлены новые regression tests для contract/integration path'ов `TaskQueue`, `CliAgentRuntime`, `Agent.query`, `Conversation.say` и `execute_agent_tool`.
 - Проверено: targeted `pytest` green (`150 passed`), targeted `ruff check` green, полный offline `pytest -q` green (`2331 passed, 16 skipped, 5 deselected`).
 - Ограничение остаётся прежним: `mypy` по touched modules поднимает pre-existing ошибки из импортируемых модулей вне текущего diff.
 - Выполнен полный read-only аудит библиотеки с участием сабагентов (`Mendel`, `Linnaeus`, `Dalton`).
-- Подтверждено верификацией: `pytest -q` green (`2331 passed, 16 skipped, 5 deselected`), но repo-wide `ruff check src/ tests/` остаётся красным (`68` ошибок), а `mypy src/cognitia/` — красным (`48` ошибок в `23` файлах).
+- Подтверждено верификацией: `pytest -q` green (`2331 passed, 16 skipped, 5 deselected`), но repo-wide `ruff check src/ tests/` остаётся красным (`68` ошибок), а `mypy src/swarmline/` — красным (`48` ошибок в `23` файлах).
 - Зафиксирован подробный отчёт со сценариями, примерами и приоритетами: `.memory-bank/reports/2026-03-18_library-audit.md`.
 - Ключевые выводы аудита: runtime/session migration не завершена; portable runtime path теряет `mcp_servers`; `Conversation`/facade игнорируют `final.new_messages`; thin-team path не advertises `send_message`; SDK/runtime helpers всё ещё имеют silent-success paths без terminal event.
 - На основе audit-report подготовлен детальный remediation plan с фазами, DoD, wave-based порядком и параллельным разбиением по сабагентам: `.memory-bank/plans/2026-03-18_fix_library-audit-remediation.md`.
 - Wave 1 remediation для контрактов `sdk_query` / `RuntimeAdapter` / `collect_runtime_output` реализован в пределах ownership: incomplete run больше не считается success без terminal `ResultMessage`/`final RuntimeEvent`.
-- Добавлены regression tests на incomplete stream paths и минимальные runtime fixes только в `src/cognitia/runtime/sdk_query.py`, `src/cognitia/runtime/adapter.py`, `src/cognitia/orchestration/runtime_helpers.py`.
+- Добавлены regression tests на incomplete stream paths и минимальные runtime fixes только в `src/swarmline/runtime/sdk_query.py`, `src/swarmline/runtime/adapter.py`, `src/swarmline/orchestration/runtime_helpers.py`.
 - Проверено: targeted `pytest -q tests/unit/test_sdk_query.py tests/unit/test_runtime_adapter.py tests/unit/test_collect_runtime_output.py` green (`65 passed`).
 - Ограничение: broader repo-wide lint/type gates не запускались, чтобы не выходить за scope targeted verification.
 - Выполнен Wave 1 fixes в пределах ownership: `BaseRuntimePort` и `InMemorySessionManager` теперь сохраняют final metadata в `StreamEvent(done)`, а `ThinRuntimePort` больше не скрывает local tools за `active_tools=[]`.
@@ -88,8 +186,8 @@
 - Проверено: targeted `pytest` green (`256 passed, 18 warnings`), targeted `ruff check` green, targeted `mypy --follow-imports=silent` green (`11` source files), полный offline `pytest -q` green (`2347 passed, 16 skipped, 5 deselected`).
 - Остаток плана не закрыт: впереди runtime/session migration cleanup, factory/optional import surface hardening и repo-wide static debt cleanup из audit-report.
 - 2026-03-18 17:25: выполнены два low-risk batch'а Wave 2 поверх основного remediation plan.
-- Batch A: вынесен private helper `src/cognitia/agent/runtime_wiring.py`, который централизует portable runtime plan (`RuntimeConfig`, `tool_executors`, `active_tools`, conditional `mcp_servers`, `deepagents.thread_id`) для `Agent` и `Conversation`. Это сократило дублирование в portable runtime path без втягивания `SessionManager` в ранний refactor.
-- Batch B: package surfaces `runtime`, `runtime.ports`, `hooks`, `memory`, `skills` переведены на lazy fail-fast optional exports через `__getattr__`; `None` placeholders убраны. Отдельно сохранена совместимость с package-style submodule access (`cognitia.runtime.thin`) для `monkeypatch`/import tooling.
+- Batch A: вынесен private helper `src/swarmline/agent/runtime_wiring.py`, который централизует portable runtime plan (`RuntimeConfig`, `tool_executors`, `active_tools`, conditional `mcp_servers`, `deepagents.thread_id`) для `Agent` и `Conversation`. Это сократило дублирование в portable runtime path без втягивания `SessionManager` в ранний refactor.
+- Batch B: package surfaces `runtime`, `runtime.ports`, `hooks`, `memory`, `skills` переведены на lazy fail-fast optional exports через `__getattr__`; `None` placeholders убраны. Отдельно сохранена совместимость с package-style submodule access (`swarmline.runtime.thin`) для `monkeypatch`/import tooling.
 - Добавлены regression tests: `tests/unit/test_agent_runtime_wiring.py`, новые call-through guards в `test_agent_facade.py` и `test_agent_conversation.py`, import-isolation сценарии для optional exports в `test_import_isolation.py`.
 - Проверено: targeted `pytest` по helper slice green (`76 passed, 1 skipped`), targeted import/registry subsets green (`54 passed`, `32 passed`, `30 passed`), targeted `ruff check` green, targeted `mypy --follow-imports=silent` green, полный offline `pytest -q` green (`2357 passed, 16 skipped, 5 deselected`).
 - Остаток плана после этих batch'ей: registry/factory fail-soft cleanup (`RuntimeFactory._effective_registry`, builtin `cli` fallback, entry-point discovery errors) и более глубокий runtime/session migration cleanup вокруг `SessionManager`.
@@ -98,19 +196,19 @@
 - Новый consolidated report: `.memory-bank/reports/2026-03-18_reaudit_broader-audit.md`.
 - Подтверждено дополнительно: `BaseRuntimePort` и `SessionManager` всё ещё синтезируют `done` на silent EOF; `ClaudeCodeRuntime` может выдать `error` и затем `final`; DeepAgents portable path теряет tool history; `ThinWorkflowExecutor`/`MixedRuntimeExecutor` частично интегрированы; `convert_event()` теряет `tool_name` для `tool_call_finished`.
 - Подтверждены broader non-code gaps: docs/README не синхронизированы с `cli` runtime и fail-fast optional exports, skills migration narrative остаётся противоречивой, `test_skills_optional_loader_fail_fast_without_yaml` даёт ложный сигнал и падает при isolated run на unsupported expectation.
-- Repo-wide snapshot на момент re-audit: `python -m pytest -q` green (`2357 passed, 16 skipped, 5 deselected`), `ruff check src/ tests/ --statistics` red (`60` ошибок), `mypy src/cognitia/` red (`27` ошибок в `17` файлах).
+- Repo-wide snapshot на момент re-audit: `python -m pytest -q` green (`2357 passed, 16 skipped, 5 deselected`), `ruff check src/ tests/ --statistics` red (`60` ошибок), `mypy src/swarmline/` red (`27` ошибок в `17` файлах).
 - На основе re-review + broader audit собран единый remediation backlog с wave-based приоритизацией, параллельными ownership slices и DoD: `.memory-bank/plans/2026-03-18_fix_reaudit-remediation-backlog.md`.
 - Backlog разделён на:
   - Wave 1: must-fix correctness (`terminal contract`, `canonical history`, `cli fallback`, `workflow executor integration`)
   - Wave 2: docs/tests/public-surface sync
   - Wave 3: tracked architecture/static debt
-- Wave 1 Batch 1A slice реализован точечно в `src/cognitia/runtime/claude_code.py` и `tests/unit/test_claude_code_runtime.py`: failed adapter turn теперь завершается только error path и не синтезирует `final`.
-- Проверено: `python -m pytest -q tests/unit/test_claude_code_runtime.py` green (`11 passed`), targeted `ruff check` green, targeted `mypy --follow-imports=silent src/cognitia/runtime/claude_code.py` green.
+- Wave 1 Batch 1A slice реализован точечно в `src/swarmline/runtime/claude_code.py` и `tests/unit/test_claude_code_runtime.py`: failed adapter turn теперь завершается только error path и не синтезирует `final`.
+- Проверено: `python -m pytest -q tests/unit/test_claude_code_runtime.py` green (`11 passed`), targeted `ruff check` green, targeted `mypy --follow-imports=silent src/swarmline/runtime/claude_code.py` green.
 - 2026-03-18 17:10: зафиксированы 4 повторно подтверждённых review findings в `.memory-bank/notes/2026-03-18_17-10_2026-03-18review-findings-followup.md`:
   - `SessionManager.stream_reply()` теряет canonical `final.new_messages`;
   - builtin `cli` расходится с legacy fallback path `RuntimeFactory.create()`;
-  - `cognitia.runtime` lazy optional exports ломают star-import в SDK-free окружении;
-  - `cognitia.skills` lazy optional exports ломают star-import без PyYAML.
+  - `swarmline.runtime` lazy optional exports ломают star-import в SDK-free окружении;
+  - `swarmline.skills` lazy optional exports ломают star-import без PyYAML.
 - 2026-03-18 17:25: выполнен follow-up read-only аудит runtime/session/orchestration seams после этих 4 findings; подробный отчёт сохранён в `.memory-bank/reports/2026-03-18_runtime-session-orchestration-followup-audit.md`.
 - Подтверждены новые defects:
   - `BaseRuntimePort.stream_reply()` и `SessionManager.stream_reply()` всё ещё синтезируют `done` на silent EOF без terminal `final/error`;
@@ -118,32 +216,32 @@
   - deepagents portable path теряет `tool` history (`build_langchain_messages()` игнорирует `tool` role, `final.new_messages` содержит только assistant text);
   - `ThinWorkflowExecutor` не advertises tools (`active_tools=[]`), а `MixedRuntimeExecutor` не делает runtime routing, только пишет metadata;
   - `RuntimePort` conversion для `tool_call_finished` теряет `tool_name`.
-- Проверено: полный offline `pytest -q` green (`2357 passed, 16 skipped, 5 deselected`), repo-wide `ruff check src/ tests/ --statistics` red (`60` issues), repo-wide `mypy src/cognitia/` red (`27` errors in `17` files).
+- Проверено: полный offline `pytest -q` green (`2357 passed, 16 skipped, 5 deselected`), repo-wide `ruff check src/ tests/ --statistics` red (`60` issues), repo-wide `mypy src/swarmline/` red (`27` errors in `17` files).
 - Следующий шаг: либо превратить follow-up audit report в remediation backlog/plan, либо начать low-risk fix wave с terminal-contract wrappers (`BaseRuntimePort`, `SessionManager`, `ClaudeCodeRuntime`).
-- Выполнен re-review текущего diff и подтверждены 4 открытых findings, которые нельзя потерять: `SessionManager.stream_reply()` всё ещё теряет canonical `final.new_messages`; builtin `cli` по-прежнему расходится с legacy fallback в `RuntimeFactory`; `cognitia.runtime` и `cognitia.skills` имеют package-level optional export regressions через `__all__`/`__getattr__`.
+- Выполнен re-review текущего diff и подтверждены 4 открытых findings, которые нельзя потерять: `SessionManager.stream_reply()` всё ещё теряет canonical `final.new_messages`; builtin `cli` по-прежнему расходится с legacy fallback в `RuntimeFactory`; `swarmline.runtime` и `swarmline.skills` имеют package-level optional export regressions через `__all__`/`__getattr__`.
 - Эти 4 findings отдельно зафиксированы в `.memory-bank/notes/2026-03-18_19-20_rereview-open-findings.md`.
 - Поверх strict review выполнен более широкий read-only аудит public API/import surface, registry/factory composition и docs/examples drift с использованием сабагентных срезов и локальной верификации.
-- Дополнительно подтверждены adjacent gaps: cold `import cognitia` и cold `from cognitia.skills import YamlSkillLoader` всё ещё ломаются через `runtime.model_registry -> yaml`; `docs/runtimes.md` / `docs/why-cognitia.md` всё ещё описывают только 3 runtime; `docs/advanced.md` продолжает обещать `None` для `registry_to_sdk_hooks`; `tests/unit/test_import_isolation.py` не ловит cold-start failure для skills path.
-- Проверено: полный offline `pytest -q` green (`2357 passed, 16 skipped, 5 deselected`), repo-wide `ruff check src/ tests/` красный (`60` ошибок), repo-wide `mypy src/cognitia/` красный (`27` ошибок в `17` файлах).
+- Дополнительно подтверждены adjacent gaps: cold `import swarmline` и cold `from swarmline.skills import YamlSkillLoader` всё ещё ломаются через `runtime.model_registry -> yaml`; `docs/runtimes.md` / `docs/why-swarmline.md` всё ещё описывают только 3 runtime; `docs/advanced.md` продолжает обещать `None` для `registry_to_sdk_hooks`; `tests/unit/test_import_isolation.py` не ловит cold-start failure для skills path.
+- Проверено: полный offline `pytest -q` green (`2357 passed, 16 skipped, 5 deselected`), repo-wide `ruff check src/ tests/` красный (`60` ошибок), repo-wide `mypy src/swarmline/` красный (`27` ошибок в `17` файлах).
 - Подробный follow-up отчёт записан в `.memory-bank/reports/2026-03-18_reaudit_public-surface-and-followup-gaps.md`.
 - 2026-03-18 19:45: выполнен Wave 1 Batch 1C в пределах ownership: `RuntimeFactory` теперь поддерживает legacy fallback для builtin `cli` даже при `registry is None`, при этом семантика создания переиспользует `_create_cli()` из `registry.py` без дублирования constructor logic.
 - Добавлены regression tests на fallback path при `_effective_registry is None` и на registry-backed builtin matrix для `cli`.
-- Проверено: `python -m pytest -q tests/unit/test_runtime_factory.py tests/integration/test_runtime_registry_integration.py` green (`24 passed`), `ruff check src/cognitia/runtime/factory.py src/cognitia/runtime/registry.py tests/unit/test_runtime_factory.py tests/integration/test_runtime_registry_integration.py` green, `mypy --follow-imports=silent src/cognitia/runtime/factory.py src/cognitia/runtime/registry.py` green.
-- 2026-03-18 20:05: выполнен docs-sync batch для runtime surface и optional import narrative: обновлены `README.md`, `docs/runtimes.md`, `docs/api-reference.md`, `docs/why-cognitia.md`, `docs/index.md`, `docs/agent-facade.md`, `docs/advanced.md`, `docs/architecture.md`, `docs/tools-and-skills.md` и docstring в `src/cognitia/runtime/registry.py`.
+- Проверено: `python -m pytest -q tests/unit/test_runtime_factory.py tests/integration/test_runtime_registry_integration.py` green (`24 passed`), `ruff check src/swarmline/runtime/factory.py src/swarmline/runtime/registry.py tests/unit/test_runtime_factory.py tests/integration/test_runtime_registry_integration.py` green, `mypy --follow-imports=silent src/swarmline/runtime/factory.py src/swarmline/runtime/registry.py` green.
+- 2026-03-18 20:05: выполнен docs-sync batch для runtime surface и optional import narrative: обновлены `README.md`, `docs/runtimes.md`, `docs/api-reference.md`, `docs/why-swarmline.md`, `docs/index.md`, `docs/agent-facade.md`, `docs/advanced.md`, `docs/architecture.md`, `docs/tools-and-skills.md` и docstring в `src/swarmline/runtime/registry.py`.
 - Синхронизировано: `cli` добавлен в runtime narrative как subprocess NDJSON light-tier runtime без portable MCP/subagents guarantee; `registry_to_sdk_hooks` теперь описан как fail-fast `ImportError` при отсутствии extras; `skills` narrative переведён на `SkillRegistry` в package root и `YamlSkillLoader` как infrastructure helper/lazy export.
-- Проверено: `git diff --check -- README.md docs/runtimes.md docs/api-reference.md docs/why-cognitia.md docs/index.md docs/agent-facade.md docs/advanced.md docs/architecture.md docs/tools-and-skills.md src/cognitia/runtime/registry.py` green; search-smoke не нашёл старые формулировки про `3` runtimes, `All three runtimes`, старый `YamlSkillLoader + SkillRegistry` package-root narrative или `registry_to_sdk_hooks ... It is None`.
+- Проверено: `git diff --check -- README.md docs/runtimes.md docs/api-reference.md docs/why-swarmline.md docs/index.md docs/agent-facade.md docs/advanced.md docs/architecture.md docs/tools-and-skills.md src/swarmline/runtime/registry.py` green; search-smoke не нашёл старые формулировки про `3` runtimes, `All three runtimes`, старый `YamlSkillLoader + SkillRegistry` package-root narrative или `registry_to_sdk_hooks ... It is None`.
 - 2026-03-18 20:40: выполнен repo-wide ruff cleanup только в первой группе тестов: убраны unused imports/vars и один лишний `f`-prefix в `tests/e2e/test_agent_facade_e2e.py`, `tests/e2e/test_commands_e2e.py`, `tests/e2e/test_generic_workflow_e2e.py`, `tests/e2e/test_mcp_bridge_e2e.py`, `tests/e2e/test_team_orchestration_e2e.py`, `tests/integration/test_code_workflow_dod.py`, `tests/integration/test_deepagents_mcp.py`, `tests/integration/test_mcp_bridge_http.py`, `tests/integration/test_team_orchestration.py`, `tests/integration/test_thin_runtime_tools.py`.
 - Проверено: `ruff check` по указанным файлам green; `git diff --check` по указанным файлам green.
 [2026-03-18] Repo-wide ruff cleanup slice (tests group 2) completed for the allowed file set. Removed unused imports/variables, fixed `E402` smoke-import ordering with minimal `# noqa: E402` on intentional `importorskip` files, and preserved test logic. Verification: `ruff check` passed on the 14 requested test files.
-[2026-03-18] Source typing cleanup slice (first half) completed for the allowed file set: `src/cognitia/tools/sandbox_docker.py`, `src/cognitia/tools/web_providers/tavily.py`, `src/cognitia/tools/web_providers/duckduckgo.py`, `src/cognitia/tools/web_providers/crawl4ai.py`, `src/cognitia/orchestration/workflow_langgraph.py`, `src/cognitia/runtime/deepagents_memory.py`, `src/cognitia/runtime/deepagents_langchain.py`, `src/cognitia/runtime/deepagents_native.py`, `src/cognitia/runtime/ports/deepagents.py`. Applied safe optional-dependency typing boundaries (`# type: ignore[...]` on import sites), localized `deepagents_native` helper imports to avoid transitive `options_builder` analysis, and kept runtime semantics unchanged. Verification: `mypy --follow-imports=silent` green on the 9-file slice; `ruff check` green on the changed source files.
-[2026-03-18 17:49] Source typing cleanup slice (second half) completed for the allowed file set: `src/cognitia/runtime/structured_output.py`, `src/cognitia/memory/sqlite.py`, `src/cognitia/memory/postgres.py`, `src/cognitia/tools/web_providers/searxng.py`, `src/cognitia/tools/web_providers/brave.py`, `src/cognitia/runtime/deepagents_hitl.py`, `src/cognitia/runtime/thin/llm_providers.py`, `src/cognitia/runtime/options_builder.py`. Added a typed protocol for Pydantic-like structured-output models, widened SQL helper row containers to `Sequence[Any]`, replaced SQLAlchemy `rowcount` attribute access with `getattr`, tightened Brave/SearXNG query params to `dict[str, str]`, made DeepAgents HITL request iteration explicit, normalized Google/OpenAI SDK calls with local casts, and used `PermissionMode`/`SettingSource` from `claude_agent_sdk` for `ClaudeOptionsBuilder`. Verification: `ruff check` green on the changed source files; `mypy --follow-imports=silent` green on the 8-file slice.
+[2026-03-18] Source typing cleanup slice (first half) completed for the allowed file set: `src/swarmline/tools/sandbox_docker.py`, `src/swarmline/tools/web_providers/tavily.py`, `src/swarmline/tools/web_providers/duckduckgo.py`, `src/swarmline/tools/web_providers/crawl4ai.py`, `src/swarmline/orchestration/workflow_langgraph.py`, `src/swarmline/runtime/deepagents_memory.py`, `src/swarmline/runtime/deepagents_langchain.py`, `src/swarmline/runtime/deepagents_native.py`, `src/swarmline/runtime/ports/deepagents.py`. Applied safe optional-dependency typing boundaries (`# type: ignore[...]` on import sites), localized `deepagents_native` helper imports to avoid transitive `options_builder` analysis, and kept runtime semantics unchanged. Verification: `mypy --follow-imports=silent` green on the 9-file slice; `ruff check` green on the changed source files.
+[2026-03-18 17:49] Source typing cleanup slice (second half) completed for the allowed file set: `src/swarmline/runtime/structured_output.py`, `src/swarmline/memory/sqlite.py`, `src/swarmline/memory/postgres.py`, `src/swarmline/tools/web_providers/searxng.py`, `src/swarmline/tools/web_providers/brave.py`, `src/swarmline/runtime/deepagents_hitl.py`, `src/swarmline/runtime/thin/llm_providers.py`, `src/swarmline/runtime/options_builder.py`. Added a typed protocol for Pydantic-like structured-output models, widened SQL helper row containers to `Sequence[Any]`, replaced SQLAlchemy `rowcount` attribute access with `getattr`, tightened Brave/SearXNG query params to `dict[str, str]`, made DeepAgents HITL request iteration explicit, normalized Google/OpenAI SDK calls with local casts, and used `PermissionMode`/`SettingSource` from `claude_agent_sdk` for `ClaudeOptionsBuilder`. Verification: `ruff check` green on the changed source files; `mypy --follow-imports=silent` green on the 8-file slice.
 [2026-03-18 21:15] Re-audit remediation program completed end-to-end on the main workspace with subagent-assisted slices (`Euler`, `Faraday`, `Gibbs`, `Parfit`) plus local integration/fixup.
 - Correctness fixes closed: `SessionManager.stream_reply()` now persists canonical `final.new_messages` and preserves final metadata; `BaseRuntimePort` and session runtime path emit `error` on silent EOF instead of synthetic success; `ClaudeCodeRuntime` stops after terminal `error`; DeepAgents portable path round-trips assistant tool-calls + tool results; builtin `cli` works through both registry and legacy `RuntimeFactory` fallback; workflow executor advertises local tools and `MixedRuntimeExecutor` is documented as observability-only.
 - Public surface/docs sync closed: runtime/hooks/ports/skills `__all__` now expose only stable core symbols while explicit optional imports still fail fast; import-isolation tests cover star-import behavior; README and docs now describe 4 runtimes (`cli` included), fail-fast `registry_to_sdk_hooks`, and `skills.loader` as infrastructure helper.
 - Static debt closed: repo-wide `ruff` cleanup on tests, repo-wide `mypy` cleanup on 17 source files, with one post-merge compatibility fix in `GoogleAdapter` so async-mock tests and real SDK paths both work.
-- Final verification on main workspace: `ruff check src/ tests/` green, `mypy src/cognitia/` green (`199` source files), `python -m pytest -q` green (`2366 passed, 16 skipped, 5 deselected`), `git diff --check` green.
+- Final verification on main workspace: `ruff check src/ tests/` green, `mypy src/swarmline/` green (`199` source files), `python -m pytest -q` green (`2366 passed, 16 skipped, 5 deselected`), `git diff --check` green.
 [2026-03-18 21:06] Started a fresh release-risk audit on the clean post-remediation workspace, with mini-subagent output explicitly treated as candidate discovery only; final conclusions were filtered through local reproduction and code inspection.
-- Baseline re-verified before the audit: clean worktree, `python -m pytest -q` green (`2366 passed, 16 skipped, 5 deselected`), `ruff check src/ tests/` green, `mypy src/cognitia/` green.
+- Baseline re-verified before the audit: clean worktree, `python -m pytest -q` green (`2366 passed, 16 skipped, 5 deselected`), `ruff check src/ tests/` green, `mypy src/swarmline/` green.
 - Manual smoke confirmed the public example surface is at least partially healthy: `python examples/17_runtime_switching.py` and `python examples/19_cli_runtime.py` both pass.
 - New read-only report recorded in `.memory-bank/reports/2026-03-18_wave0-wave1_release-risk-audit.md`.
 - Confirmed code defects in this pass: `Conversation` persists partial assistant text after `error`; portable runtime exceptions escape from `Conversation` and `SessionManager.run_turn()`; `_RuntimeEventAdapter` drops `tool_name` for `tool_call_finished`; `SqliteSessionBackend` is not concurrency-safe; `InMemorySessionBackend` aliases saved state; `BaseTeamOrchestrator` marks all-failed/all-cancelled teams as `completed`; `DeepAgentsTeamOrchestrator` drops worker task composition; default `DeepAgentsSubagentOrchestrator` advertises tools without executors.
@@ -175,7 +273,7 @@
   - merge-point portable/session regression pack: `110 passed`
   - orchestration/workflow/storage regression pack: `66 passed`
   - repo-wide `ruff check src/ tests/`: green
-  - repo-wide `mypy src/cognitia/`: green (`199` source files)
+  - repo-wide `mypy src/swarmline/`: green (`199` source files)
   - full offline `pytest -q`: `2396 passed, 16 skipped, 5 deselected`
   - smoke: `python examples/20_workflow_graph.py` green
   - smoke: real `CliAgentRuntime` happy path via temporary `claude` wrapper emits `assistant_delta` + `final`; generic NDJSON without terminal event still fail-fast'ится как `bad_model_output`
@@ -184,6 +282,17 @@
 - Реально исправлено в этом проходе:
   - `Conversation.say()` / `Conversation.stream()` больше не добавляют partial assistant message в history, если turn завершился terminal `error`.
   - portable runtime exceptions в `Conversation._execute_agent_runtime()` и `InMemorySessionManager` нормализуются в typed error path вместо uncaught crash.
+
+[2026-04-12 04:55] Подготовлен и записан подробный comparative/reuse report по развитию `thin` как coding-agent на основе локального анализа `swarmline`, `aura`, `claw-code-agent`, `pi-mono` и трёх параллельных сабагентных проходов.
+- Новый отчёт: `.memory-bank/reports/2026-04-12_analysis_thin-coding-agent-reuse-aura-claw-pi-mono.md`.
+- Зафиксирована итоговая рекомендация: не писать новый runtime, а собрать `ThinRuntime` в отдельный coding-agent profile поверх уже существующих seams (`tools/builtin`, `todo/tools`, `GraphTaskBoard`, `TaskSessionStore`, `context.builder`).
+- Подтверждён legal split по reuse: `aura` подходит как источник осмысленного code reuse (MIT указан в README), `claw-code-agent` пока использовать только как reference до явного license clearance.
+- Сформирован implementation backlog по уровням P0/P1/P2: unified tool pack, task runtime facade, coding-agent policy profile, PathService, bash classifier, file mutation queue, richer context compiler, delegation/verify flows.
+
+[2026-04-12 05:10] На основе comparative/reuse report оформлен отдельный feature plan для следующего tranche: `.memory-bank/plans/2026-04-12_feature_thin-coding-agent-profile.md`.
+- План не переключает текущий активный `plan.md`, а фиксирует follow-on work после/поверх текущего parity направления.
+- В план встроены explicit rule gates из `RULES.md`: TDD-first, contract-first, Clean Architecture, no new deps, fail-fast, phased DoD, targeted + broader verification.
+- Фазы разбиты на low-risk slices: architecture contracts, unified tool pack, task runtime, PathService/execution policy, file mutation queue, coding context compiler, profile wiring, stabilization.
   - `_RuntimeEventAdapter` сохраняет `tool_name` для `tool_call_finished`.
   - `CliAgentRuntime.cancel()` теперь завершает run через `RuntimeEvent.error(kind="cancelled")`, а не `runtime_crash`.
   - `InMemoryMemoryProvider.save_session_state()` / `get_session_state()` переведены на snapshot semantics.
@@ -195,7 +304,7 @@
   - targeted SQL storage pack: `pytest -q tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → `41 passed`
   - repo-wide `pytest -q` → `2397 passed, 16 skipped, 5 deselected`
   - repo-wide `ruff check src/ tests/` → green
-  - repo-wide `mypy src/cognitia/` → green
+  - repo-wide `mypy src/swarmline/` → green
   - `git diff --check` → green
 - Ограничение процесса: попытка распараллелить дополнительный implementation pass через `gpt-5.4` сабагентов сорвалась на usage-limit среды; финальный fix/verification проход выполнен локально без понижения модели.
 [2026-03-18 23:58] Examples release-surface audit completed with one real fix on top of the current workspace.
@@ -263,12 +372,12 @@
 - Public docs surface is now aligned with the current runnable examples and middleware/runtime API:
   - `docs/examples.md` was rewritten from a stale pre-examples catalog into the real `examples/01-27` index with honest live-mode notes.
   - `docs/getting-started.md` and `docs/agent-facade.md` no longer reference nonexistent `CostTracker` attributes like `budget_exceeded`; `agent-facade` also no longer documents unsupported `SecurityGuard(on_blocked=...)`, the wrong `build_middleware_stack()` default budget, or the wrong `after_result` order.
-  - `README.md` no longer advertises the nonexistent `cognitia[cli]` extra; `cli` runtime now points to base `cognitia` install.
+  - `README.md` no longer advertises the nonexistent `swarmline[cli]` extra; `cli` runtime now points to base `swarmline` install.
   - `docs/cli-runtime.md` early snippets now use the real Claude stream-json command shape consistently.
 - Added regression coverage in `tests/integration/test_docs_examples_consistency.py` for:
   - docs examples catalog referencing all runnable `examples/*.py`,
   - absence of nonexistent `CostTracker` API in user-facing docs,
-  - no bogus `cognitia[cli]` install instruction,
+  - no bogus `swarmline[cli]` install instruction,
   - stream-json command consistency in CLI runtime docs,
   - current live-mode claim in `examples/README.md`.
 - Verification:
@@ -280,8 +389,8 @@
   - `resolve_model_name()` no longer collapses explicit provider-prefixed models like `openrouter:anthropic/claude-3.5-haiku` to the registry default; this unblocked real `thin` OpenRouter verification through the facade.
   - `CliAgentRuntime` now normalizes legacy Claude command shapes to the live-compatible form `claude --print --verbose --output-format stream-json -`, upgrades stale `--output` flags, and uses an explicit NDJSON-capable default command. `examples/19_cli_runtime.py`, `docs/cli-runtime.md`, and CLI docs-consistency tests were synced to the same canonical shape.
 - Installed missing optional deps for real `deepagents` verification: `deepagents`, `langchain`, `langgraph`, `langchain-openai` (plus transitive packages). This exposed hidden optional-deps gaps:
-  - `src/cognitia/runtime/deepagents_native.py` now exports lazy wrapper functions for `build_deepagents_chat_model()` and `create_langchain_tool()` so patch-based tests still work when extras are installed.
-  - `src/cognitia/orchestration/workflow_langgraph.py` now type-erases the `StateGraph(dict)` construction point, which avoids mypy failures that only appear when `langgraph` is actually present.
+  - `src/swarmline/runtime/deepagents_native.py` now exports lazy wrapper functions for `build_deepagents_chat_model()` and `create_langchain_tool()` so patch-based tests still work when extras are installed.
+  - `src/swarmline/orchestration/workflow_langgraph.py` now type-erases the `StateGraph(dict)` construction point, which avoids mypy failures that only appear when `langgraph` is actually present.
 - Live verification results:
   - `thin` via OpenRouter-compatible path: `Agent(runtime="thin", model="openrouter:anthropic/claude-3.5-haiku")` with the supplied OpenRouter key returned `OK`.
   - Using that same key as `ANTHROPIC_API_KEY` on the native Anthropic path failed with `401 invalid x-api-key`; this confirms OpenRouter credentials are not a drop-in substitute for direct Anthropic runtime/example paths.
@@ -289,19 +398,19 @@
   - `cli` runtime: direct `CliAgentRuntime()` with the normalized default Claude command returned `assistant_delta("OK")` and `final("OK")`.
   - `deepagents` runtime: verified both direct `DeepAgentsRuntime(RuntimeConfig(... base_url="https://openrouter.ai/api/v1"))` and facade path with `OPENAI_BASE_URL=https://openrouter.ai/api/v1`; both returned `OK`.
 - Important environment note:
-  - Installing the `deepagents` stack upgraded shared packages (`openai`, `anthropic`, `google-auth`) and `pip` reported dependency conflicts with external `aider-chat`. Cognitia itself remains green after the upgrade, but this environment-side effect should be kept in mind outside the repository.
+  - Installing the `deepagents` stack upgraded shared packages (`openai`, `anthropic`, `google-auth`) and `pip` reported dependency conflicts with external `aider-chat`. Swarmline itself remains green after the upgrade, but this environment-side effect should be kept in mind outside the repository.
 - Final verification:
   - `pytest -q tests/unit/test_runtime_types.py tests/unit/test_agent_config.py tests/unit/test_cli_runtime.py tests/integration/test_cli_runtime_integration.py tests/integration/test_examples_smoke.py tests/integration/test_docs_examples_consistency.py tests/unit/test_deepagents_models.py tests/unit/test_deepagents_runtime.py tests/integration/test_deepagents_stage4_surface.py` → `197 passed`
   - `pytest -q tests/unit/test_deepagents_native.py` → `12 passed`
   - `ruff check src/ tests/` → green
-  - `mypy src/cognitia/` → green
+  - `mypy src/swarmline/` → green
   - `pytest -q` → `2517 passed, 11 skipped, 5 deselected`
   - `git diff --check` → green
 
 ## 2026-03-19 00:54 MSK — OpenRouter live examples/runtime verification follow-up
 
 - Fixed the remaining live-path regression in `ThinRuntime` examples and synchronized docs:
-  - `src/cognitia/runtime/thin/modes.py` now recognizes common English planner/react intents (`plan`, `step-by-step`, `list`, `read`, `write`, `execute`, `run`, etc.), which restores the expected `react` path for English tool-oriented prompts like `List the files in /project`.
+  - `src/swarmline/runtime/thin/modes.py` now recognizes common English planner/react intents (`plan`, `step-by-step`, `list`, `read`, `write`, `execute`, `run`, etc.), which restores the expected `react` path for English tool-oriented prompts like `List the files in /project`.
   - `examples/27_nano_claw.py` now suppresses raw streamed JSON envelopes and prints the parsed final text when the model streams a JSON `final` envelope token-by-token, so live CLI output is human-readable again.
   - `examples/README.md` and `docs/examples.md` now reflect that examples `24` and `27` accept either `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` for `--live`.
 - Added regression coverage:
@@ -320,7 +429,7 @@
   - `pytest -q tests/unit/test_thin_modes.py tests/integration/test_thin_runtime_tools.py tests/integration/test_examples_smoke.py tests/integration/test_docs_examples_consistency.py` → `65 passed`
   - `pytest -q tests/integration/test_examples_smoke.py tests/integration/test_docs_examples_consistency.py` → `42 passed`
   - `ruff check src/ tests/ examples/` → green
-  - `mypy src/cognitia/` → green
+  - `mypy src/swarmline/` → green
   - `git diff --check` → green
 
 ## 2026-03-19 01:20 MSK — Final release verification after OpenRouter follow-up
@@ -337,7 +446,7 @@
   - `pytest -q tests/unit/test_thin_modes.py tests/unit/test_thin_runtime.py tests/unit/test_thin_streaming.py tests/integration/test_thin_runtime_tools.py tests/integration/test_examples_smoke.py tests/integration/test_docs_examples_consistency.py` → `101 passed`
   - `ruff check src/ tests/` → green
   - `ruff check examples/24_deep_research.py examples/27_nano_claw.py` → green
-  - `mypy src/cognitia/` → green
+  - `mypy src/swarmline/` → green
   - `pytest -q` → `2524 passed, 11 skipped, 5 deselected`
   - `git diff --check` → green
 
@@ -412,7 +521,7 @@
 - Closed orchestration/task-state bugs: `DefaultGraphOrchestrator.delegate()` checks approval before creating/checking out subtasks; `ThinPlannerMode` and `DeepAgentsPlannerMode` now reject unapproved plans before side effects; graph task boards enforce `IN_PROGRESS -> DONE` only, reject parent cycles, and scope helper/recursive queries by namespace in SQLite/Postgres.
 - Closed concurrency/hardening gaps: `Agent.query_structured()` now uses per-call config without mutating shared `Agent._config`; `YamlSkillLoader` re-resolves and rejects symlinked/out-of-root files before reads; `Scheduler` bounds launched asyncio tasks by `max_concurrent` instead of accumulating an unbounded pending backlog.
 - Testing updated: added SSRF rebinding/redirect regressions, planner/orchestrator denial regressions, `query_structured()` concurrency regression, scheduler bounded-launch regression, sandbox/MCP/serve secure-default regressions, task-board contract/isolation regressions, and converted `tests/unit/test_postgres_backends.py` into smoke-only coverage plus env-gated behavioral Postgres integration harness (`tests/integration/test_postgres_backends_integration.py`).
-- Verification: targeted + broader regressions green (`370 passed, 3 skipped`), `ruff check` green on changed files, targeted `mypy` green on all touched source files. Full repo-wide `mypy src/cognitia/` still reports a pre-existing optional dependency import issue in `src/cognitia/runtime/agent_sdk_adapter.py` when `claude_code_sdk` stubs are absent.
+- Verification: targeted + broader regressions green (`370 passed, 3 skipped`), `ruff check` green on changed files, targeted `mypy` green on all touched source files. Full repo-wide `mypy src/swarmline/` still reports a pre-existing optional dependency import issue in `src/swarmline/runtime/agent_sdk_adapter.py` when `claude_code_sdk` stubs are absent.
 - Not included in this slice: the larger Phase 3 architectural refactor (`AgentConfig` DTO cleanup, `Agent`/`Conversation` split, `SessionManager` split, `BaseRuntimePort` slimming, shared SQLite/Postgres storage core). Those remain separate high-risk refactor work after the secured Phase 1/2 baseline.
 [2026-04-11] Phase 3 low-risk slice: AgentConfig boundary cleanup.
 - `AgentConfig` больше не делает runtime/capability negotiation в `__post_init__`; dataclass оставлен как более чистый DTO с обязательной только проверкой `system_prompt`.
@@ -426,29 +535,29 @@
 - Async hot path (`aget/aregister/aclose/aclose_all/run_turn/stream_reply/aupdate_role`) теперь идёт напрямую в core без sync bridge.
 - Sync API (`get/register/update_role`) остался как legacy bridge поверх core, чтобы не ломать public surface и existing sync callers.
 - Backward-compatible attribute aliases `_sessions/_locks/_ttl_seconds/_backend` сохранены для существующих внутренних caller'ов и тестов.
-- Verification: `pytest -q tests/unit/test_session_manager.py tests/unit/test_concurrency_bugs.py` → `41 passed`; `ruff check src/cognitia/session/manager.py` → green; `mypy src/cognitia/session/manager.py` → green.
+- Verification: `pytest -q tests/unit/test_session_manager.py tests/unit/test_concurrency_bugs.py` → `41 passed`; `ruff check src/swarmline/session/manager.py` → green; `mypy src/swarmline/session/manager.py` → green.
 [2026-04-11] Phase 3 low-risk slice: shared runtime dispatch extraction for Agent/Conversation.
-- Added `src/cognitia/agent/runtime_dispatch.py` with shared `dispatch_runtime()` selection and `run_portable_runtime()` execution helper.
+- Added `src/swarmline/agent/runtime_dispatch.py` with shared `dispatch_runtime()` selection and `run_portable_runtime()` execution helper.
 - `Agent._execute_stream()` and `Conversation._execute()` now route through the shared dispatcher, while private seams (`_execute_stream`, `_execute_claude_sdk`, `_execute_agent_runtime`, `_execute`, `_create_adapter`) remain intact as thin wrappers.
 - Portable runtime execution (`RuntimeFactory` creation, `runtime.run(...)`, cleanup, error adaptation) is centralized in the helper and reused by both `Agent` and `Conversation`.
-- Verification: `pytest -q tests/unit/test_agent_facade.py tests/unit/test_agent_conversation.py` → `77 passed`; `ruff check src/cognitia/agent/agent.py src/cognitia/agent/conversation.py src/cognitia/agent/runtime_dispatch.py` → green; `mypy src/cognitia/agent/agent.py src/cognitia/agent/conversation.py src/cognitia/agent/runtime_dispatch.py` → green.
+- Verification: `pytest -q tests/unit/test_agent_facade.py tests/unit/test_agent_conversation.py` → `77 passed`; `ruff check src/swarmline/agent/agent.py src/swarmline/agent/conversation.py src/swarmline/agent/runtime_dispatch.py` → green; `mypy src/swarmline/agent/agent.py src/swarmline/agent/conversation.py src/swarmline/agent/runtime_dispatch.py` → green.
 [2026-04-11] Phase 3 integration follow-up: SessionManager split + Agent/Conversation dispatch slice integrated and regression-checked together.
-- `src/cognitia/session/manager.py` now uses internal `_AsyncSessionCore` with `InMemorySessionManager` as a sync-compat facade; async paths remain direct, sync paths are bridge-only compatibility shims.
-- `src/cognitia/agent/runtime_dispatch.py` is now the shared runtime helper for `dispatch_runtime()`, portable runtime execution, one-shot `claude_sdk` streaming, and conversation adapter creation; `Agent` and `Conversation` consume it via thin private wrappers.
+- `src/swarmline/session/manager.py` now uses internal `_AsyncSessionCore` with `InMemorySessionManager` as a sync-compat facade; async paths remain direct, sync paths are bridge-only compatibility shims.
+- `src/swarmline/agent/runtime_dispatch.py` is now the shared runtime helper for `dispatch_runtime()`, portable runtime execution, one-shot `claude_sdk` streaming, and conversation adapter creation; `Agent` and `Conversation` consume it via thin private wrappers.
 - Private seam compatibility was preserved for tests and monkeypatch-based callers: `_execute_stream`, `_execute_claude_sdk`, `_execute_agent_runtime`, `_execute`, `_create_adapter`, `_RuntimeEventAdapter`, `_ErrorEvent` all remain available.
 - Verification: targeted unit regression `pytest -q tests/unit/test_session_manager.py tests/unit/test_concurrency_bugs.py tests/unit/test_agent_facade.py tests/unit/test_agent_conversation.py` → `118 passed`; broader regression `pytest -q tests/integration/test_session_backends_integration.py tests/integration/test_agent_facade_wiring.py tests/unit/test_agent_runtime_wiring.py` → `22 passed`; `ruff check` green; targeted `mypy` green for all touched files.
 [2026-04-11] Phase 3 runtime-port slimming slice.
-- Extracted `src/cognitia/runtime/ports/_helpers.py` with the shared history/compaction/prompt assembly/stream terminal handling logic that was previously concentrated in `BaseRuntimePort`.
-- `src/cognitia/runtime/ports/base.py` now keeps the public surface and private seams intact (`_history`, `_rolling_summary`, `_build_system_prompt`, `_maybe_summarize`, `convert_event`, `truncate_long_args`) while delegating the internal work to helper functions.
-- Verification: `pytest -q tests/unit/test_runtime_ports_base_coverage.py tests/unit/test_compaction.py tests/unit/test_runtime_ports_base.py tests/unit/test_cross_session_memory.py tests/unit/test_protocol_contracts.py tests/unit/test_standalone_import.py` → `94 passed`; `ruff check src/cognitia/runtime/ports/base.py src/cognitia/runtime/ports/_helpers.py` → green; `mypy src/cognitia/runtime/ports/base.py src/cognitia/runtime/ports/_helpers.py` → green.
+- Extracted `src/swarmline/runtime/ports/_helpers.py` with the shared history/compaction/prompt assembly/stream terminal handling logic that was previously concentrated in `BaseRuntimePort`.
+- `src/swarmline/runtime/ports/base.py` now keeps the public surface and private seams intact (`_history`, `_rolling_summary`, `_build_system_prompt`, `_maybe_summarize`, `convert_event`, `truncate_long_args`) while delegating the internal work to helper functions.
+- Verification: `pytest -q tests/unit/test_runtime_ports_base_coverage.py tests/unit/test_compaction.py tests/unit/test_runtime_ports_base.py tests/unit/test_cross_session_memory.py tests/unit/test_protocol_contracts.py tests/unit/test_standalone_import.py` → `94 passed`; `ruff check src/swarmline/runtime/ports/base.py src/swarmline/runtime/ports/_helpers.py` → green; `mypy src/swarmline/runtime/ports/base.py src/swarmline/runtime/ports/_helpers.py` → green.
 [2026-04-11] Memory storage DRY slice: shared policy/serialization layer for SQLite/Postgres providers.
-- Added `src/cognitia/memory/_shared.py` with the common storage-normalization helpers: JSON serialize/deserialize, scoped fact merge policy, goal-state normalization, session-state shaping, and phase-state normalization.
-- `src/cognitia/memory/sqlite.py` and `src/cognitia/memory/postgres.py` now delegate the shared policy/serialization logic to the helper module while keeping SQL dialect-specific statements and backend behavior in place.
+- Added `src/swarmline/memory/_shared.py` with the common storage-normalization helpers: JSON serialize/deserialize, scoped fact merge policy, goal-state normalization, session-state shaping, and phase-state normalization.
+- `src/swarmline/memory/sqlite.py` and `src/swarmline/memory/postgres.py` now delegate the shared policy/serialization logic to the helper module while keeping SQL dialect-specific statements and backend behavior in place.
 - Preserved private compatibility aliases inside each provider (`_json_or_none`, `_load_json_or_none`, `_load_json_value`, scoped merge helpers) so existing tests and internal seams do not break.
 - Added focused unit coverage in `tests/unit/test_memory_shared.py` for the shared normalization and merge policy.
-- Verification: `pytest -q tests/unit/test_memory_shared.py tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → `50 passed`; `ruff check src/cognitia/memory/_shared.py src/cognitia/memory/sqlite.py src/cognitia/memory/postgres.py tests/unit/test_memory_shared.py tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → green; `mypy src/cognitia/memory/_shared.py src/cognitia/memory/sqlite.py src/cognitia/memory/postgres.py` → green.
+- Verification: `pytest -q tests/unit/test_memory_shared.py tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → `50 passed`; `ruff check src/swarmline/memory/_shared.py src/swarmline/memory/sqlite.py src/swarmline/memory/postgres.py tests/unit/test_memory_shared.py tests/unit/test_sqlite_memory.py tests/unit/test_postgres_memory.py` → green; `mypy src/swarmline/memory/_shared.py src/swarmline/memory/sqlite.py src/swarmline/memory/postgres.py` → green.
 [2026-04-11] Restored repository instruction files into `main` after user-approved comparison.
-- Restored `AGENTS.public.md`, `CLAUDE.md`, and `RULES.md` from `/tmp/cognitia-switch-backup-20260411-165845/` into the repository root after explicit user approval.
+- Restored `AGENTS.public.md`, `CLAUDE.md`, and `RULES.md` from `/tmp/swarmline-switch-backup-20260411-165845/` into the repository root after explicit user approval.
 - Pre-restore comparison result: `AGENTS.public.md` was byte-identical to current `AGENTS.md`; `CLAUDE.md` and `RULES.md` remained intentionally absent from `main` until the user requested their return.
 - Verification: compared file presence/content before restore and confirmed working tree contains only the three restored files plus this `progress.md` update; no code/runtime paths changed, so no test run was required for this documentation/instructions-only restoration.
 [2026-04-11] Stabilization tranche docs/release sync completed on the owned docs/memory-bank surface.
@@ -458,26 +567,51 @@
 - Verification performed on the owned docs only: targeted `rg` searches for `enable_host_exec`, `allow_host_execution`, `allow_unauthenticated_query`, `LocalSandboxProvider`, `sandboxed execution`, and `/v1/query` to ensure stale wording was removed or replaced where required.
 - No source code or tests were touched in this tranche.
 [2026-04-11] Stabilization tranche implementation completed across observability, release packaging, and validation.
-- Added `src/cognitia/observability/security.py` and wired consistent `security_decision` logs into the deny-paths for `LocalSandboxProvider.execute()`, `exec_code(trusted=False)`, `HttpxWebProvider.fetch()` blocked targets, and `cognitia serve` query denial paths (`query_disabled` vs `missing_or_invalid_bearer_token`).
-- Removed the legacy string-pattern blocklist from `src/cognitia/mcp/_tools_code.py`; the helper is now documented and tested as explicit unsafe host execution behind the trusted gate, not as a pseudo-sandbox.
-- Updated release truth to `v1.4.0`: `pyproject.toml`, `src/cognitia/serve/app.py`, `CHANGELOG.md`, user-facing docs, and `.memory-bank/*` are now aligned.
+- Added `src/swarmline/observability/security.py` and wired consistent `security_decision` logs into the deny-paths for `LocalSandboxProvider.execute()`, `exec_code(trusted=False)`, `HttpxWebProvider.fetch()` blocked targets, and `swarmline serve` query denial paths (`query_disabled` vs `missing_or_invalid_bearer_token`).
+- Removed the legacy string-pattern blocklist from `src/swarmline/mcp/_tools_code.py`; the helper is now documented and tested as explicit unsafe host execution behind the trusted gate, not as a pseudo-sandbox.
+- Updated release truth to `v1.4.0`: `pyproject.toml`, `src/swarmline/serve/app.py`, `CHANGELOG.md`, user-facing docs, and `.memory-bank/*` are now aligned.
 - Fixed the Postgres integration harness loop-scope issue by dropping the async `session_factory` fixture from module scope to per-test scope in `tests/integration/test_postgres_backends_integration.py`.
 - Removed two repo-wide `ruff` blockers from tests (`tests/unit/test_execution_context.py`, `tests/unit/test_namespaced_event_bus.py`) while running the validation matrix.
 - Validation performed:
   - `pytest -q` → `4223 passed, 3 skipped, 5 deselected`
   - `pytest -m integration -q` → `31 passed, 5 skipped, 4195 deselected`
-  - disposable Postgres harness via Docker + `COGNITIA_TEST_POSTGRES_DSN=... pytest tests/integration/test_postgres_backends_integration.py -q` → `3 passed`
+  - disposable Postgres harness via Docker + `SWARMLINE_TEST_POSTGRES_DSN=... pytest tests/integration/test_postgres_backends_integration.py -q` → `3 passed`
   - `python -m pip install ddgs` for the optional live search dependency, then `pytest -m live -q -rs` → `5 passed`
   - `ruff check src/ tests/` → green
-  - `mypy src/cognitia/` → `Success: no issues found in 347 source files`
+  - `mypy src/swarmline/` → `Success: no issues found in 347 source files`
 [2026-04-11] Audit remediation tranche implemented and validated end-to-end.
 - Security hardening shipped: shared namespace-segment validation (`path_safety.py`) now protects filesystem-backed memory/sandbox/todo paths; `A2AServer` and `HealthServer` require auth by default with explicit loopback-only `allow_unauthenticated_local=True`; `CliAgentRuntime` now inherits only an allowlisted host env by default; MCP HTTP/SSE targets are validated against insecure HTTP and private/loopback/link-local/metadata destinations unless explicitly opted in; `PlanStore.load()/update_step()` now respect the active namespace.
 - Public contract/docs truth shipped: root `README.md` quickstarts were rewritten to the real API (`SecurityGuard`, graph agents, knowledge bank, pipeline builder), and `tests/integration/test_docs_examples_consistency.py` now executes root README quickstart Python fences to catch drift.
 - Architecture boundary shipped: added `RuntimeFactoryPort` and shared `runtime_dispatch` seams so `agent/` depends on an abstraction instead of directly on the concrete runtime factory; `AgentConfig.resolved_model` remains only as a deprecated compatibility shim over `resolve_model_name()`.
-- Low-risk phase-4 DRY slice shipped: extracted shared graph task-board serialization/comment helpers into `src/cognitia/multi_agent/graph_task_board_shared.py`, with SQLite/Postgres backends keeping their existing static wrappers and behavior.
+- Low-risk phase-4 DRY slice shipped: extracted shared graph task-board serialization/comment helpers into `src/swarmline/multi_agent/graph_task_board_shared.py`, with SQLite/Postgres backends keeping their existing static wrappers and behavior.
 - Validation performed:
   - targeted security packs green (`201 passed`, plus MCP/docs/runtime targeted packs green)
   - targeted graph task-board regression green (`46 passed, 3 skipped`)
   - repo-wide `ruff check src tests` → green
-  - repo-wide `mypy src/cognitia` → `Success: no issues found in 351 source files`
+  - repo-wide `mypy src/swarmline` → `Success: no issues found in 351 source files`
   - full offline `pytest -q` → `4249 passed, 3 skipped, 5 deselected`
+[2026-04-12 05:35] Detailed spec по `ThinRuntime` как `coding-agent profile` доведён до execution-ready состояния в `.specs/tasks/todo/implement-thin-coding-agent-profile.feature.md`.
+- Спецификация опирается на analysis report `2026-04-12_analysis_thin-coding-agent-reuse-aura-claw-pi-mono.md`, feature plan `2026-04-12_feature_thin-coding-agent-profile.md` и ограничения из `RULES.md`.
+- Зафиксированы: scope/non-goals, acceptance criteria, source-of-truth reuse matrix, architecture seams, compatibility contract, task lifecycle contract, coding context contract, 9 implementation steps, tranche-level verification strategy и final acceptance gate.
+- После judge-review по phase `parallelize` execution section усилена до stage-gated wave contracts: для каждой wave есть `inputs`, `owner`, `write scope`, `tests first`, `exit criteria`, `merge gate` и `fail-fast stop condition`.
+- Отдельно закреплена ownership map для high-conflict файлов (`runtime/thin/runtime.py`, `runtime/ports/thin.py`, `runtime/thin/prompts.py`, `orchestration/**`, `policy/**`) и правило запуска downstream waves только от последнего merged baseline.
+- Зафиксировано, что `claw-code-agent` остаётся `reference-only` до отдельного подтверждения лицензии; прямой reuse ограничен существующими модулями `swarmline` и seam-level adaptation из `aura`.
+- Проверка на этом шаге: итоговый spec-файл существует в `.specs/tasks/todo/`, draft-версия удалена, `progress.md` обновлён. Код и тесты проекта не менялись, поэтому `pytest`/`ruff`/`mypy` не запускались.
+[2026-04-12 06:40] GSD phase-planning для `implement-thin-coding-agent-profile` доведён до blocker-free состояния по фазам 07-10.
+- На основе `.specs/tasks/todo/implement-thin-coding-agent-profile.feature.md`, analysis report `2026-04-12_analysis_thin-coding-agent-reuse-aura-claw-pi-mono.md` и feature plan `2026-04-12_feature_thin-coding-agent-profile.md` оформлены executable GSD plans:
+  - `.planning/phases/07-coding-profile-foundation/07-01-PLAN.md`
+  - `.planning/phases/08-coding-task-runtime-and-persistence/08-01-PLAN.md`
+  - `.planning/phases/09-coding-context-and-compatibility/09-01-PLAN.md`
+  - `.planning/phases/10-coding-subagent-inheritance-and-validation/10-01-PLAN.md`
+- По ходу planning loop обновлены `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md` и phase context-файлы `07-CONTEXT.md`, `08-CONTEXT.md`, `09-CONTEXT.md`, `10-CONTEXT.md` под новый coding-agent tranche.
+- Ключевые post-checker правки:
+  - Phase 07 зафиксирована как foundation-only без протекания persistence/todo runtime из Phase 08; синхронизирован `files_modified`.
+  - Phase 08 переведена на contract-first с ISP-compliant ports вместо монолитного protocol, добавлен explicit allow-list expansion через `runtime/thin/coding_profile.py`, typed snapshot persistence/rehydration и parity-regression для `coding_toolpack`.
+  - Phase 09 получила обязательный RED smoke proof для alias execution на real coding-mode path, continuity links к `TaskSessionStore`, persistence re-check и расширенный broader regression по coding-profile/tool-surface drift.
+  - Phase 10 получила explicit `10-01-GATE.md`, полный canonical `read_first`, links к `context/` и `policy/`, mandatory `LLM-as-Judge` section и hard `CVAL-03` proof через Python AST public-surface audit `HEAD vs working tree`.
+- Верификация planning loop выполнена через несколько раундов `gsd-plan-checker` сабагентов; итоговый статус после последних post-fix sanity checks:
+  - Phase 07: blocker-free, 1 residual warning про плотный scope.
+  - Phase 08: blocker-free, residual warnings только про плотность/derivation, без обязательной ревизии.
+  - Phase 09: blocker-free, tranche-final closure осознанно оставлена на Phase 10 по фазовой границе.
+  - Phase 10: blocker-free после AST-audit fix; sanity-check вернул `Blockers: none`, `Warnings: none`.
+- Код проекта на этом шаге не менялся; это planning-only tranche. Поэтому `pytest`, `ruff` и `mypy` по репозиторию не запускались, а verification performed относится к phase-plan review/subagent checks и structural consistency планов.

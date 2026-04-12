@@ -26,8 +26,8 @@
 **Цель:** Pipeline и orchestrator корректно различают success/failure/timeout/cancel. Task board state всегда отражает реальное состояние.
 
 **Файлы:**
-- `src/cognitia/multi_agent/graph_orchestrator.py` — checkout tasks, mark failed/cancelled on board
-- `src/cognitia/pipeline/pipeline.py` — check wait_for_task result, fail phase on None
+- `src/swarmline/multi_agent/graph_orchestrator.py` — checkout tasks, mark failed/cancelled on board
+- `src/swarmline/pipeline/pipeline.py` — check wait_for_task result, fail phase on None
 
 **Реализация:**
 
@@ -65,7 +65,7 @@
 **Цель:** Per-call RuntimeConfig override корректно применяется к LLM вызову, а не только к guardrails/cost.
 
 **Файлы:**
-- `src/cognitia/runtime/thin/runtime.py` — rebuild llm_call for per-call config
+- `src/swarmline/runtime/thin/runtime.py` — rebuild llm_call for per-call config
 
 **Реализация:**
 
@@ -96,9 +96,9 @@
 **Цель:** Concurrent execution безопасна: no shared mutable state, no event loop blocking, bounded concurrency.
 
 **Файлы:**
-- `src/cognitia/orchestration/workflow_graph.py` — per-execution interrupt tracking
-- `src/cognitia/session/manager.py` — async backend calls
-- `src/cognitia/daemon/scheduler.py` + `types.py` — honor max_concurrent_tasks
+- `src/swarmline/orchestration/workflow_graph.py` — per-execution interrupt tracking
+- `src/swarmline/session/manager.py` — async backend calls
+- `src/swarmline/daemon/scheduler.py` + `types.py` — honor max_concurrent_tasks
 
 **Реализация:**
 
@@ -127,8 +127,8 @@
 **Цель:** SQLite backends thread-safe. Task queue get() scales O(1) instead of O(N).
 
 **Файлы:**
-- `src/cognitia/memory/episodic_sqlite.py` — add threading.Lock or check_same_thread=False
-- `src/cognitia/multi_agent/task_queue.py` — SQL WHERE instead of Python filter
+- `src/swarmline/memory/episodic_sqlite.py` — add threading.Lock or check_same_thread=False
+- `src/swarmline/multi_agent/task_queue.py` — SQL WHERE instead of Python filter
 
 **Реализация:**
 
@@ -154,12 +154,12 @@
 **Цель:** Security defaults safe-by-default. Untrusted input validated. Sandbox isolation enforced.
 
 **Файлы:**
-- `src/cognitia/tools/web_httpx.py` — DNS resolution + per-hop redirect validation
-- `src/cognitia/multi_agent/workspace.py` — slug validation for IDs
-- `src/cognitia/a2a/server.py` — auth middleware hook + request size limit
-- `src/cognitia/tools/sandbox_docker.py` — cap-drop, network=none, memory/cpu limits
-- `src/cognitia/mcp/_tools_code.py` — explicit trusted-only warning + opt-in flag
-- `src/cognitia/daemon/health.py` — wire auth_token through config
+- `src/swarmline/tools/web_httpx.py` — DNS resolution + per-hop redirect validation
+- `src/swarmline/multi_agent/workspace.py` — slug validation for IDs
+- `src/swarmline/a2a/server.py` — auth middleware hook + request size limit
+- `src/swarmline/tools/sandbox_docker.py` — cap-drop, network=none, memory/cpu limits
+- `src/swarmline/mcp/_tools_code.py` — explicit trusted-only warning + opt-in flag
+- `src/swarmline/daemon/health.py` — wire auth_token through config
 
 **Реализация:**
 
@@ -200,8 +200,8 @@
 **Цель:** Observability state bounded. All tests pass. Gates green.
 
 **Файлы:**
-- `src/cognitia/observability/activity_log.py` — retention/max_entries
-- `src/cognitia/observability/tracer.py` — prune ended spans
+- `src/swarmline/observability/activity_log.py` — retention/max_entries
+- `src/swarmline/observability/tracer.py` — prune ended spans
 
 **Реализация:**
 

@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project
 
-**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.0.0, Python 3.10+.
+**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Python 3.10+. Published on [PyPI](https://pypi.org/project/swarmline/).
 
 ## Commands
 
@@ -103,3 +103,15 @@ main (stable, tested, releasable)
 **Rules:**
 - `main` = always green (tests pass, lint clean, can `pip install`)
 - Release: branch `release/vX.Y.Z` → version bump + changelog → merge → tag
+
+### Versioning (Strict SemVer)
+
+| Bump | When | Examples |
+|------|------|----------|
+| **MAJOR** | Breaking public API change | Remove/rename export, change Protocol, incompatible config |
+| **MINOR** | New user-facing feature | New module, runtime, CLI command, deprecation |
+| **PATCH** | Bug/security/perf fix | Bug fix, dependency bump |
+
+**NOT a version bump**: refactoring, tests, CI, docs, lint fixes, dev tooling.
+
+See `docs/releasing.md` for full release workflow.

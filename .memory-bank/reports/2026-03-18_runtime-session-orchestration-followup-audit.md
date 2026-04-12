@@ -11,7 +11,7 @@ Scope: read-only audit after the 4 confirmed review findings, focused on runtime
   - `26` `F401`
   - `6` `F841`
   - `1` `F541`
-- `mypy src/cognitia/`: `27` errors in `17` files
+- `mypy src/swarmline/`: `27` errors in `17` files
 - Additional manual reproductions were run for terminal-contract, history-roundtrip and workflow-runtime seams.
 
 This report intentionally does **not** repeat the 4 already-confirmed review findings recorded separately in:
@@ -22,8 +22,8 @@ This report intentionally does **not** repeat the 4 already-confirmed review fin
 ### P1 — legacy runtime wrappers still synthesize success on silent EOF
 
 Files:
-- `src/cognitia/runtime/ports/base.py:275-308`
-- `src/cognitia/session/manager.py:317-343`
+- `src/swarmline/runtime/ports/base.py:275-308`
+- `src/swarmline/session/manager.py:317-343`
 
 Problem:
 - `BaseRuntimePort.stream_reply()` and the runtime branch of `InMemorySessionManager.stream_reply()` still emit `done` even when the underlying `AgentRuntime` never produced terminal `final` or `error`.
@@ -41,7 +41,7 @@ Impact:
 ### P1 — ClaudeCodeRuntime emits both `error` and `final` for the same failed turn
 
 File:
-- `src/cognitia/runtime/claude_code.py:125-177`
+- `src/swarmline/runtime/claude_code.py:125-177`
 
 Problem:
 - If the underlying adapter yields `StreamEvent(type="error")`, `ClaudeCodeRuntime.run()` forwards it as `RuntimeEvent.error(...)` but then still falls through to the finalization block and emits `RuntimeEvent.final(...)`.
@@ -58,8 +58,8 @@ Why this is a bug:
 ### P1 — DeepAgents portable path cannot round-trip tool history across turns
 
 Files:
-- `src/cognitia/runtime/deepagents_langchain.py:41-48`
-- `src/cognitia/runtime/deepagents.py:221-226`
+- `src/swarmline/runtime/deepagents_langchain.py:41-48`
+- `src/swarmline/runtime/deepagents.py:221-226`
 
 Problem:
 - `build_langchain_messages()` drops `tool` role messages entirely.
@@ -75,7 +75,7 @@ Why this is a bug:
 ### P2 — ThinWorkflowExecutor wires tools and MCP servers into the runtime but never advertises them
 
 File:
-- `src/cognitia/orchestration/workflow_executor.py:43-55`
+- `src/swarmline/orchestration/workflow_executor.py:43-55`
 
 Problem:
 - `ThinWorkflowExecutor` accepts `local_tools` and `mcp_servers`, passes them into `ThinRuntime(...)`, but hardcodes `active_tools=[]` in `runtime.run(...)`.
@@ -90,7 +90,7 @@ Impact:
 ### P2 — MixedRuntimeExecutor does not perform runtime routing at all
 
 File:
-- `src/cognitia/orchestration/workflow_executor.py:88-95`
+- `src/swarmline/orchestration/workflow_executor.py:88-95`
 
 Problem:
 - `MixedRuntimeExecutor` claims per-node runtime routing, but `_routed_interceptor()` just calls `wf._execute_node(node_id, state)` directly and records `runtime_name` into metadata.
@@ -105,7 +105,7 @@ Impact:
 ### P2 — RuntimePort tool result events lose the tool identity
 
 File:
-- `src/cognitia/runtime/ports/base.py:59-63`
+- `src/swarmline/runtime/ports/base.py:59-63`
 
 Problem:
 - `convert_event(RuntimeEvent.tool_call_finished(...))` maps only `result_summary` into `StreamEvent.tool_result` and leaves `tool_name=""`.
@@ -124,8 +124,8 @@ These items are real gaps, but not all of them are framed as immediate defects a
 ### 1. Runtime/session migration still keeps two execution models alive
 
 Files:
-- `src/cognitia/session/types.py:31-41`
-- `src/cognitia/session/manager.py:210-350`
+- `src/swarmline/session/types.py:31-41`
+- `src/swarmline/session/manager.py:210-350`
 
 Observations:
 - `SessionState` still carries both `adapter: RuntimePort | None` and `runtime: AgentRuntime | None`, plus `runtime_messages` for the legacy path.
@@ -137,8 +137,8 @@ Why it matters:
 ### 2. ClaudeCodeRuntime still violates the declared input-ownership model
 
 Files:
-- `src/cognitia/runtime/claude_code.py:3-10`
-- `src/cognitia/runtime/claude_code.py:103-116`
+- `src/swarmline/runtime/claude_code.py:3-10`
+- `src/swarmline/runtime/claude_code.py:103-116`
 
 Observations:
 - The docstring says canonical history lives outside the runtime, but implementation still extracts only the last user message and relies on hidden SDK session state.
@@ -161,8 +161,8 @@ Why it matters:
 ### 4. DeepAgents subagent default path appears tool-incomplete
 
 Files:
-- `src/cognitia/orchestration/deepagents_subagent.py:32-37`
-- `src/cognitia/runtime/deepagents_tools.py:22-39`
+- `src/swarmline/orchestration/deepagents_subagent.py:32-37`
+- `src/swarmline/runtime/deepagents_tools.py:22-39`
 
 Observations:
 - Default `DeepAgentsSubagentOrchestrator` creates `DeepAgentsRuntime(..., tool_executors={})`.
@@ -174,8 +174,8 @@ Why it matters:
 ### 5. `Agent.cleanup()` remains mostly ceremonial
 
 Files:
-- `src/cognitia/agent/agent.py:94-105`
-- `src/cognitia/agent/agent.py:176-197`
+- `src/swarmline/agent/agent.py:94-105`
+- `src/swarmline/agent/agent.py:176-197`
 
 Observations:
 - Real runtimes are instantiated as local variables inside execution methods and cleaned up in local `finally`.

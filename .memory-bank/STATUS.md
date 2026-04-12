@@ -2,17 +2,24 @@
 
 ## Текущий фокус
 
-**Audit Remediation Tranche** (2026-04-11) — security boundaries hardened, root README quickstarts made executable/truthful, application/runtime boundary moved behind `RuntimeFactoryPort`, graph task-board shared serialization extracted, and phase-4 low-risk seams landed for `ThinRuntime`, `DefaultGraphOrchestrator`, plus both `SessionManager` runtime bridging and snapshot codec/store. Full offline validation gate is green on the remediated tree.
+**ThinRuntime Claude Code Parity** (2026-04-12) — доработка ThinRuntime до полноценного runtime с системой хуков, LLM-initiated субагентов, slash-команд и tool policy. Plan: `plans/2026-04-12_feature_thin-runtime-claude-code-parity.md`. Аудит: `reports/2026-04-12_audit_thin-runtime-gaps.md`.
 
-**v1.4.0 Stabilization Tranche** (2026-04-11) — secure-by-default defaults задокументированы, structured security observability добавлена, validation gate полностью пройден, release candidate готов на `main`.
+5 критических gap'ов выявлено аудитом:
+1. Hooks не подключены (SecurityGuard молча не работает)
+2. LLM не может spawn'ить субагентов (только Python API)
+3. Commands не активированы (registry есть, не wired)
+4. Pseudo tool-calling вместо native API
+5. Tool policy не enforcement
 
-Включает: audit hardening, secure-by-default docs, migration recipes, changelog sync, memory-bank sync, security decision logging, Postgres/live validation.
-
-Full validation gate завершён: offline `pytest -q`, explicit `integration`, disposable Postgres harness, live suite, repo-wide `ruff`, repo-wide `mypy`.
+**Предыдущие транши завершены**:
+- v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
+- v1.4.1 Rename (2026-04-11) — cognitia → swarmline, PyPI published, deprecated wrapper
+- Repo housekeeping (2026-04-12) — remotes, docs, memory bank aligned
 
 ## Версии
 
-- cognitia: 1.4.0 (release candidate prepared on main)
+- swarmline: 1.4.1 (published on PyPI)
+- cognitia: 1.5.0 (deprecated wrapper → swarmline)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
 
 ## Roadmap
@@ -49,7 +56,7 @@ Full validation gate завершён: offline `pytest -q`, explicit `integratio
 
 *Platform:*
 - ✅ Phase 10A: CLI Agent Runtime (CliAgentRuntime, NdjsonParser, registry integration)
-- ⬜ Phase 10 rest: MCP, credential proxy, OAuth, RTK, `cognitia init`, LiteLLM
+- ⬜ Phase 10 rest: MCP, credential proxy, OAuth, RTK, `swarmline init`, LiteLLM
 
 *Ecosystem:*
 - ⬜ Phase 11: OpenAI Agents SDK (4-й runtime + bridges, gated on SDK ≥ v1.0)
@@ -96,7 +103,7 @@ Full validation gate завершён: offline `pytest -q`, explicit `integratio
 
 - Full offline `pytest -q` green after audit-remediation tranche (`4249 passed, 3 skipped, 5 deselected`)
 - Repo-wide `ruff check src/ tests/` green after audit-remediation tranche
-- Repo-wide `mypy src/cognitia/` green after audit-remediation tranche (`351 source files`)
+- Repo-wide `mypy src/swarmline/` green after audit-remediation tranche (`351 source files`)
 - Full offline `pytest -q` green after stabilization + release hardening (`4223 passed, 3 skipped, 5 deselected`)
 - Explicit integration gate green (`31 passed, 5 skipped`)
 - Disposable Postgres integration harness green (`3 passed`)
@@ -111,14 +118,14 @@ Full validation gate завершён: offline `pytest -q`, explicit `integratio
 - Targeted `ruff check` on changed files green
 - Targeted `mypy --follow-imports=silent` on changed source modules green
 - Repo-wide `ruff check src/ tests/` green
-- Repo-wide `mypy src/cognitia/` green
+- Repo-wide `mypy src/swarmline/` green
 - Smoke verification green: `python examples/20_workflow_graph.py`, real `CliAgentRuntime` success path via temporary `claude` wrapper, and generic NDJSON fail-fast path (`bad_model_output`)
 
 ## Ключевые решения
 
 - Portable path ОСТАЁТСЯ (fallback без backend, multi-provider)
 - ThinRuntime → multi-provider (Anthropic + OpenAI-compat + Google)
-- `cognitia[thin]` = canonical multi-provider install
+- `swarmline[thin]` = canonical multi-provider install
 - SqliteSessionBackend uses asyncio.to_thread() for non-blocking IO
 - EventBus wired into ThinRuntime via llm_call wrapper + tool_call event forwarding
 - TracingSubscriber uses correlation_id for concurrent tool call span tracking

@@ -1,7 +1,7 @@
 # Competitive Analysis: Swarmline vs Swarms vs LangGraph Swarm
 
 **Date:** 2026-03-30
-**Context:** Rebranding cognitia → swarmline, positioning analysis
+**Context:** Rebranding swarmline → swarmline, positioning analysis
 
 ## Summary
 

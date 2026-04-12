@@ -1,5 +1,49 @@
 # Checklist
 
+## ThinRuntime Claude Code Parity (2026-04-12) — v1.5.0
+
+### Phase 1: Hook Dispatch (P0 — security) ✅ DONE
+- ✅ 1.1 HookDispatcher Protocol + DefaultHookDispatcher + 27 unit tests (100% coverage)
+- ✅ 1.2 Интеграция hooks в ToolExecutor (pre/post) + 7 unit tests
+- ✅ 1.3 Интеграция hooks в ThinRuntime.run() (stop/user_prompt) + 7 unit + 3 wiring + 2 integration tests
+- ✅ 1.4 Прокидывание hooks Agent → RuntimeFactory → ThinRuntime (via merge_hooks in create_kwargs)
+
+### Phase 2: Tool Policy Enforcement (P0 — security) ✅ DONE
+- ✅ 2.1 DefaultToolPolicy в ToolExecutor + 8 unit tests (6 original + 2 edge cases)
+- ✅ 2.2 Прокидывание policy Agent → ThinRuntime + 2 wiring tests
+
+### Phase 3: LLM-Initiated Subagents (P1) ✅ DONE
+- ✅ 3.1 SubagentTool spec + types + executor + 25 unit tests (100% coverage)
+- ✅ 3.2 Wire into ThinRuntime + 4 unit + 4 integration tests
+
+### Phase 4: Command Routing (P2) ✅ DONE
+- ✅ 4.1 CommandInterceptor + ThinRuntime integration + 11 unit tests + 2 wiring tests
+- ✅ 4.2 Integration tests (Agent → ThinRuntime → CommandRegistry) + 2 integration tests
+
+### Phase 5: Native Tool Calling (P2) ✅ DONE
+- ✅ 5.1 NativeToolCallAdapter Protocol + types + 3 adapters + 18 unit tests
+- ✅ 5.2 React strategy integration + parallel execution + fallback + 8 strategy tests
+- ✅ 5.3 Integration tests (ThinRuntime e2e + backward compat) + 3 integration tests
+
+### Phase 6: Integration Validation (P3) ✅ DONE
+- ✅ 6.1 Cross-feature integration tests (hooks+commands, stop hook, backward compat) + 5 tests
+- ✅ 6.2 mypy fix (variable shadowing in native tool path)
+- ✅ 6.3 Quality gates: 4394 tests pass, ruff clean, mypy clean, coverage 86%
+
+### Phase 7: Coding Profile Foundation ✅ DONE
+- ✅ 7.1 CodingProfileConfig contract + canonical tool pack + policy wiring
+- ✅ 7.2 Shared builtin tools (read/write/edit/bash/glob/grep) + ThinRuntime integration
+- ✅ 7.3 Profile-scoped regressions + backward compat tests (155 tests, Judge 4.40/5.0)
+
+### Phase 8: Coding Task Runtime and Persistence ✅ DONE
+- ✅ 8.1 Coding task runtime facade + persistent task/todo/session adapters (83 tests, Judge 4.33/5.0)
+
+### Phase 9: Coding Context and Compatibility ✅ DONE
+- ✅ 9.1 Coding context assembler + compatibility/fail-fast wiring (329 tests, Judge 4.34/5.0)
+
+### Phase 10: Coding Subagent Inheritance and Validation ✅ DONE
+- ✅ 10.1 Coding-profile subagent inheritance + tranche-level validation closure (341 tests, Judge 4.38/5.0)
+
 ## Audit remediation tranche (2026-04-11)
 
 - ✅ Security hardening: namespace segment validation, A2A/daemon auth defaults, CLI env redaction, MCP target validation, plan-store namespace-aware load/update
@@ -50,7 +94,7 @@
 - ✅ #9: DRY — _filter_chat_messages + _prepare в адаптерах
 - ✅ #14: truncate_long_args — только tool/function roles
 - ✅ #15: тест builtin_compaction capability
-- ✅ RF1: `cognitia[thin]` bundle'ит openai + google-genai, docs синхронизированы
+- ✅ RF1: `swarmline[thin]` bundle'ит openai + google-genai, docs синхронизированы
 - ✅ RF2: `AnthropicAdapter.call()` снова конкатенирует все text blocks
 - ✅ RF3: `deepagents` больше не рекламирует `hitl` через runtime-level capabilities
 - ✅ RF4: Native/hybrid memory больше не дублируется в `<agent_memory>` prompt injection

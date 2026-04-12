@@ -6,27 +6,27 @@
 ---
 
 ```
-# ЗАДАЧА: Реализовать Phases 6, 7, 8 мастер-плана Cognitia (v0.5.0 → v1.0.0-core)
+# ЗАДАЧА: Реализовать Phases 6, 7, 8 мастер-плана Swarmline (v0.5.0 → v1.0.0-core)
 
-Ты — senior engineer, реализующий core roadmap библиотеки Cognitia.
+Ты — senior engineer, реализующий core roadmap библиотеки Swarmline.
 Перед тобой три фазы. Каждая содержит sub-phases. Работу делаешь строго по порядку,
 каждую sub-phase завершая полностью (код + тесты + ревью + исправления) прежде чем перейти к следующей.
 
 ## КОНТЕКСТ ПРОЕКТА
 
-**Cognitia** — Python-библиотека (не фреймворк) для AI-агентов. Multi-runtime, protocol-first.
+**Swarmline** — Python-библиотека (не фреймворк) для AI-агентов. Multi-runtime, protocol-first.
 - Версия: 0.5.0. Python ≥3.10. Pydantic ≥2.0.
-- Пакет: `src/cognitia/`. Тесты: `tests/{unit,integration,e2e}/`.
+- Пакет: `src/swarmline/`. Тесты: `tests/{unit,integration,e2e}/`.
 - 3 runtime'а: `claude_sdk`, `deepagents`, `thin` (ThinRuntime — собственный loop с 3 LLM адаптерами).
 - Ключевые файлы:
-  - `src/cognitia/protocols.py` — все Protocol'ы (ISP ≤5 методов)
-  - `src/cognitia/runtime/base.py` — `AgentRuntime` Protocol (run + cleanup)
-  - `src/cognitia/runtime/types.py` — `RuntimeConfig`, `RuntimeEvent`, `ToolSpec`, `Message`, `TurnMetrics`
-  - `src/cognitia/runtime/factory.py` — `RuntimeFactory` (if/elif → будет register/get)
-  - `src/cognitia/runtime/structured_output.py` — existing helpers (append instruction, extract JSON)
-  - `src/cognitia/runtime/thin/` — ThinRuntime, llm_providers.py (3 адаптера), strategies
-  - `src/cognitia/runtime/ports/` — deprecated RuntimePort (удаляем в 6D)
-  - `src/cognitia/session/manager.py` — SessionManager (in-memory)
+  - `src/swarmline/protocols.py` — все Protocol'ы (ISP ≤5 методов)
+  - `src/swarmline/runtime/base.py` — `AgentRuntime` Protocol (run + cleanup)
+  - `src/swarmline/runtime/types.py` — `RuntimeConfig`, `RuntimeEvent`, `ToolSpec`, `Message`, `TurnMetrics`
+  - `src/swarmline/runtime/factory.py` — `RuntimeFactory` (if/elif → будет register/get)
+  - `src/swarmline/runtime/structured_output.py` — existing helpers (append instruction, extract JSON)
+  - `src/swarmline/runtime/thin/` — ThinRuntime, llm_providers.py (3 адаптера), strategies
+  - `src/swarmline/runtime/ports/` — deprecated RuntimePort (удаляем в 6D)
+  - `src/swarmline/session/manager.py` — SessionManager (in-memory)
   - `pyproject.toml` — hatchling build, deps: structlog, pyyaml, pydantic
 
 ## ПРИНЦИПЫ (ОБЯЗАТЕЛЬНО)
@@ -144,7 +144,7 @@
 
 **Что делать**: `@tool` декоратор → auto `ToolSpec`.
 
-1. `@tool` декоратор в новом файле `src/cognitia/tools/decorator.py`
+1. `@tool` декоратор в новом файле `src/swarmline/tools/decorator.py`
 2. Type hints → JSON Schema: `str→string`, `int→integer`, `float→number`, `bool→boolean`, `list[X]→array`, `dict→object`, `Optional[X]→nullable`
 3. Docstring parsing (Google style) → parameter descriptions
 4. Return: `ToolSpec(name=func.__name__, description=first_line_of_docstring, parameters=schema, is_local=True)`
@@ -174,7 +174,7 @@
 1. `RuntimeFactory.register(name: str, factory_fn: Callable)` — регистрация
 2. `RuntimeFactory.unregister(name: str)` — удаление
 3. `RuntimeFactory.list_available() -> list[str]` — список
-4. Entry points: `[project.entry-points."cognitia.runtimes"]` для plugin auto-discovery
+4. Entry points: `[project.entry-points."swarmline.runtimes"]` для plugin auto-discovery
 5. Встроенные (claude_sdk, deepagents, thin) через тот же `register()` при import
 6. `create()` → lookup в registry вместо if/elif
 7. Backward compat: `RuntimeFactory().create(config)` работает как раньше
@@ -223,7 +223,7 @@
    - `async with runtime:` pattern
 
 4. **protocols.py split** (рефакторинг, Strangler Fig):
-   - Создать `src/cognitia/protocols/` package
+   - Создать `src/swarmline/protocols/` package
    - Разнести: `memory.py`, `session.py`, `routing.py`, `tools.py`, `runtime.py`
    - `protocols/__init__.py` — re-export всего для backward compat
    - Удалить старый `protocols.py`
@@ -236,7 +236,7 @@
    - Удалить `RuntimePort` из protocols
 
 6. **Version dynamic** + **Error messages English**:
-   - `__init__.py`: version из `importlib.metadata.version("cognitia")`
+   - `__init__.py`: version из `importlib.metadata.version("swarmline")`
    - Все RuntimeConfig/Factory error messages → English
 
 **Тесты (unit 12+)**:
@@ -266,7 +266,7 @@
 
 1. `CostBudget` dataclass: `max_cost_usd`, `max_total_tokens`, `action_on_exceed` (pause/error/warn)
 2. `CostTracker`: аккумулирует usage per-session из `TurnMetrics`
-3. Pricing table: JSON файл `src/cognitia/runtime/pricing.json` (model → cost per 1M input/output)
+3. Pricing table: JSON файл `src/swarmline/runtime/pricing.json` (model → cost per 1M input/output)
 4. `RuntimeConfig.cost_budget: CostBudget | None`
 5. Pre-call check в ThinRuntime: budget exceeded → `RuntimeEvent.error(kind="budget_exceeded")`
 6. Coexistence с существующим `ContextBudget` — разные concerns
@@ -336,7 +336,7 @@
 1. `SessionBackend` Protocol: `save(key, state)` / `load(key)` / `delete(key)` / `list()`
 2. `InMemorySessionBackend` — default (wrap existing behavior)
 3. `SqliteSessionBackend` — zero-config, файловый
-4. `RedisSessionBackend` — optional `cognitia[redis]`
+4. `RedisSessionBackend` — optional `swarmline[redis]`
 5. `EncryptedSessionBackend` — overlay (AES-256 через `cryptography` optional dep)
 6. `SessionManager(backend=...)` — inject, default = InMemory
 7. `MemoryScope` enum: `global_`, `agent`, `shared` — namespace prefix keys
@@ -403,7 +403,7 @@
 
 2. **Coverage check**:
    ```bash
-   python -m pytest tests/ --cov=cognitia --cov-report=term-missing -q
+   python -m pytest tests/ --cov=swarmline --cov-report=term-missing -q
    ```
    Общий ≥85%, core ≥95%.
 

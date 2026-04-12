@@ -98,7 +98,7 @@ They now explicitly state that examples `24` and `27` accept either:
 - `pytest -q tests/integration/test_examples_smoke.py tests/integration/test_docs_examples_consistency.py` → `42 passed`
 - `pytest -q tests/unit/test_thin_modes.py tests/integration/test_thin_runtime_tools.py tests/integration/test_examples_smoke.py tests/integration/test_docs_examples_consistency.py` → `65 passed`
 - `ruff check src/ tests/ examples/` → green
-- `mypy src/cognitia/` → green
+- `mypy src/swarmline/` → green
 - `git diff --check` → green
 
 ## Release takeaway

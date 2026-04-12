@@ -59,8 +59,8 @@ cost = pricing.input_per_1m * input_tokens / 1_000_000
 ### Пример использования
 
 ```python
-from cognitia.runtime.cost import CostBudget, CostTracker, load_pricing
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.runtime.cost import CostBudget, CostTracker, load_pricing
+from swarmline.runtime.types import RuntimeConfig
 
 budget = CostBudget(max_cost_usd=5.0, action_on_exceed="warn")
 config = RuntimeConfig(runtime_name="thin", cost_budget=budget)
@@ -117,8 +117,8 @@ output guardrails — после получения ответа. Провал g
 ### Пример использования
 
 ```python
-from cognitia.guardrails import ContentLengthGuardrail, RegexGuardrail
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.guardrails import ContentLengthGuardrail, RegexGuardrail
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -177,8 +177,8 @@ for f in config.input_filters:
 ### Пример использования
 
 ```python
-from cognitia.input_filters import MaxTokensFilter, SystemPromptInjector
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",
@@ -230,8 +230,8 @@ Pluggable политики повтора и fallback для LLM-вызовов 
 ### Пример использования
 
 ```python
-from cognitia.retry import ExponentialBackoff, ModelFallbackChain
-from cognitia.runtime.types import RuntimeConfig
+from swarmline.retry import ExponentialBackoff, ModelFallbackChain
+from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
     runtime_name="thin",

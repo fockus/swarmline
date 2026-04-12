@@ -44,9 +44,9 @@
 - закрыть silent-success и double-terminal behaviour в compatibility слоях.
 
 **Scope**
-- `src/cognitia/runtime/ports/base.py`
-- `src/cognitia/session/manager.py`
-- `src/cognitia/runtime/claude_code.py`
+- `src/swarmline/runtime/ports/base.py`
+- `src/swarmline/session/manager.py`
+- `src/swarmline/runtime/claude_code.py`
 - tests:
   - `tests/unit/test_runtime_ports_base_coverage.py`
   - `tests/unit/test_session_manager.py`
@@ -85,9 +85,9 @@
 - довести canonical history contract до portable runtimes и session path.
 
 **Scope**
-- `src/cognitia/session/manager.py`
-- `src/cognitia/runtime/deepagents_langchain.py`
-- `src/cognitia/runtime/deepagents.py`
+- `src/swarmline/session/manager.py`
+- `src/swarmline/runtime/deepagents_langchain.py`
+- `src/swarmline/runtime/deepagents.py`
 - tests:
   - `tests/unit/test_session_manager.py`
   - `tests/integration/test_runtime_portable_matrix.py`
@@ -123,8 +123,8 @@
 - выровнять builtin `cli` с fallback semantics.
 
 **Scope**
-- `src/cognitia/runtime/factory.py`
-- `src/cognitia/runtime/registry.py`
+- `src/swarmline/runtime/factory.py`
+- `src/swarmline/runtime/registry.py`
 - `tests/unit/test_runtime_factory.py`
 - `tests/integration/test_runtime_registry_integration.py`
 
@@ -150,7 +150,7 @@
 - довести workflow runtime layer до честно интегрированного состояния.
 
 **Scope**
-- `src/cognitia/orchestration/workflow_executor.py`
+- `src/swarmline/orchestration/workflow_executor.py`
 - tests:
   - `tests/unit/test_workflow_executor.py`
   - `tests/integration/test_workflow_runtime.py`
@@ -183,9 +183,9 @@
 - выровнять docs/tests/public surface вокруг lazy fail-fast exports.
 
 **Scope**
-- `src/cognitia/runtime/__init__.py`
-- `src/cognitia/hooks/__init__.py`
-- `src/cognitia/skills/__init__.py`
+- `src/swarmline/runtime/__init__.py`
+- `src/swarmline/hooks/__init__.py`
+- `src/swarmline/skills/__init__.py`
 - `tests/unit/test_import_isolation.py`
 - docs:
   - `docs/advanced.md`
@@ -217,7 +217,7 @@
 - `README.md`
 - `docs/api-reference.md`
 - `docs/runtimes.md`
-- `docs/why-cognitia.md`
+- `docs/why-swarmline.md`
 - возможно `mkdocs.yml` если нужен nav sync
 
 **Шаги**
@@ -242,9 +242,9 @@
 - продолжить migration cleanup вокруг dual-path session/runtime state.
 
 **Scope**
-- `src/cognitia/session/types.py`
-- `src/cognitia/session/manager.py`
-- `src/cognitia/agent/agent.py`
+- `src/swarmline/session/types.py`
+- `src/swarmline/session/manager.py`
+- `src/swarmline/agent/agent.py`
 - related tests
 
 **Шаги**

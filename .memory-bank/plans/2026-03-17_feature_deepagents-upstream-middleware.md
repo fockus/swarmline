@@ -2,7 +2,7 @@
 
 **Тип:** feature
 **Дата:** 2026-03-17
-**Цель:** Пробросить upstream middleware (memory, summarization, todo) через `create_deep_agent()`, портировать ключевые фичи в portable path, сделать ThinRuntime multi-provider. cognitia = универсальный фреймворк: любой runtime, любой провайдер, одинаковые фичи.
+**Цель:** Пробросить upstream middleware (memory, summarization, todo) через `create_deep_agent()`, портировать ключевые фичи в portable path, сделать ThinRuntime multi-provider. swarmline = универсальный фреймворк: любой runtime, любой провайдер, одинаковые фичи.
 
 ---
 
@@ -28,7 +28,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│                     cognitia                          │
+│                     swarmline                          │
 │                                                       │
 │  Shared: ProviderResolver, MCP, Memory (portable),    │
 │          Compaction (token-aware), Todo, StructuredOut │
@@ -88,7 +88,7 @@ Phase 0C (ProviderResolver) → Phase 0B (ThinRuntime multi-provider) → Phase 
 
 ### Задачи
 
-- 0C.1. Создать `src/cognitia/runtime/provider_resolver.py`
+- 0C.1. Создать `src/swarmline/runtime/provider_resolver.py`
 - 0C.2. Dataclass `ResolvedProvider(model_id, provider, base_url, sdk_type)` где `sdk_type` = "anthropic" | "openai_compat" | "google"
 - 0C.3. Функция `resolve_provider(raw_model, base_url=None) -> ResolvedProvider`
 - 0C.4. Маппинг провайдер → sdk_type:
@@ -173,7 +173,7 @@ def test_resolve_unknown_model_raises():
 
 ### Задачи
 
-- 0B.1. Создать `src/cognitia/runtime/thin/llm_providers.py` — provider adapters
+- 0B.1. Создать `src/swarmline/runtime/thin/llm_providers.py` — provider adapters
 - 0B.2. `AnthropicAdapter` — обёртка над текущим кодом `default_llm_call()`
 - 0B.3. `OpenAICompatAdapter` — через `openai.AsyncOpenAI` SDK (покрывает OpenAI, OpenRouter, Ollama, vLLM, LMStudio, Together, Groq, Fireworks, DeepSeek)
 - 0B.4. `GoogleAdapter` — через `google-genai` SDK (optional dep)
@@ -234,7 +234,7 @@ def create_llm_adapter(resolved: ResolvedProvider) -> LlmAdapter:
 - [ ] Unit-тест: `OpenAICompatAdapter.call()` вызывает `client.chat.completions.create()`
 - [ ] Unit-тест: `OpenAICompatAdapter` с custom base_url → передаёт в конструктор
 - [ ] Unit-тест: `GoogleAdapter.call()` вызывает `genai` API
-- [ ] Unit-тест: missing provider package → понятная ошибка "pip install cognitia[thin]"
+- [ ] Unit-тест: missing provider package → понятная ошибка "pip install swarmline[thin]"
 - [ ] Интеграционный тест: ThinRuntime + `model="openai:gpt-4o"` → корректный вызов
 - [ ] Интеграционный тест: ThinRuntime + `model="ollama:llama3"` + `base_url` → корректный вызов
 
@@ -343,7 +343,7 @@ Portable path (DeepAgentsRuntime LangChain) и ThinRuntime не имеют upstr
   - Token-aware trigger вместо message count (используем `tiktoken` или approximate: ~4 chars/token)
   - Configurable trigger: `("tokens", 100000)` | `("messages", 20)` | `("fraction", 0.85)`
   - Argument truncation: обрезать длинные tool_calls.args в старых сообщениях
-- 0A.2. Создать `src/cognitia/runtime/portable_memory.py` — lightweight AGENTS.md support:
+- 0A.2. Создать `src/swarmline/runtime/portable_memory.py` — lightweight AGENTS.md support:
   - `load_agents_md(paths: list[str]) -> str` — читает файлы, возвращает merged content
   - `inject_memory_into_prompt(system_prompt, memory_content) -> str` — добавляет `<agent_memory>` блок
   - Не требует backend — прямой `pathlib.Path.read_text()`
@@ -355,7 +355,7 @@ Portable path (DeepAgentsRuntime LangChain) и ThinRuntime не имеют upstr
 - [ ] `_maybe_summarize()` использует token-aware trigger (не только message count)
 - [ ] Configurable: `BaseRuntimePort(compaction_trigger=("tokens", 100000))`
 - [ ] Argument truncation: tool_calls.args > 2000 chars → обрезаны в старых сообщениях
-- [ ] `load_agents_md(["./AGENTS.md", "~/.cognitia/AGENTS.md"])` → merged string
+- [ ] `load_agents_md(["./AGENTS.md", "~/.swarmline/AGENTS.md"])` → merged string
 - [ ] `inject_memory_into_prompt()` добавляет `<agent_memory>...</agent_memory>` блок
 - [ ] Несуществующие AGENTS.md → silently skipped (аналогично upstream)
 - [ ] `BaseRuntimePort(memory_sources=["./AGENTS.md"])` → memory injected в system prompt
@@ -647,9 +647,9 @@ Structural alignment, при котором `deepagents` сможет честн
 
 | Файл | Phase | Назначение |
 |------|-------|-----------|
-| `src/cognitia/runtime/provider_resolver.py` | 0C | Shared provider resolution |
-| `src/cognitia/runtime/thin/llm_providers.py` | 0B | LlmAdapter protocol + 3 адаптера |
-| `src/cognitia/runtime/portable_memory.py` | 0A | Lightweight AGENTS.md read + inject |
+| `src/swarmline/runtime/provider_resolver.py` | 0C | Shared provider resolution |
+| `src/swarmline/runtime/thin/llm_providers.py` | 0B | LlmAdapter protocol + 3 адаптера |
+| `src/swarmline/runtime/portable_memory.py` | 0A | Lightweight AGENTS.md read + inject |
 | `tests/unit/test_provider_resolver.py` | 0C | Provider resolution тесты |
 | `tests/unit/test_llm_providers.py` | 0B | LLM adapter тесты |
 | `tests/unit/test_portable_memory.py` | 0A | Portable memory тесты |

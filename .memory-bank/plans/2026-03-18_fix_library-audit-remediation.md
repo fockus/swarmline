@@ -18,7 +18,7 @@
    - coexistence `RuntimePort` и `AgentRuntime` осталось в hot path.
 2. repo-wide quality debt:
    - `ruff check src/ tests/` не зелёный;
-   - `mypy src/cognitia/` не зелёный;
+   - `mypy src/swarmline/` не зелёный;
    - optional import surface экспортирует `None`;
    - docs/examples дрейфуют от каноничных runtime event names;
    - часть public protocols не имеет явных contract tests.
@@ -72,9 +72,9 @@ DoD:
 
 Шаги:
 1. Нормализовать terminal behavior в:
-   - `src/cognitia/runtime/sdk_query.py`
-   - `src/cognitia/runtime/adapter.py`
-   - `src/cognitia/orchestration/runtime_helpers.py`
+   - `src/swarmline/runtime/sdk_query.py`
+   - `src/swarmline/runtime/adapter.py`
+   - `src/swarmline/orchestration/runtime_helpers.py`
 2. `collect_runtime_output()` сделать fail-fast при отсутствии terminal `final`/`error`.
 3. В `BaseRuntimePort.stream_reply()` и `SessionManager.stream_reply()` переносить final metadata (`session_id`, `cost`, `usage`, `structured_output`, `native_metadata`) в `done` event.
 4. Сохранить не более одного terminal event на run.
@@ -87,13 +87,13 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/runtime/sdk_query.py`
-  - `src/cognitia/runtime/adapter.py`
+  - `src/swarmline/runtime/sdk_query.py`
+  - `src/swarmline/runtime/adapter.py`
 - Worker B ownership:
-  - `src/cognitia/runtime/ports/base.py`
-  - `src/cognitia/session/manager.py`
+  - `src/swarmline/runtime/ports/base.py`
+  - `src/swarmline/session/manager.py`
 - Worker C ownership:
-  - `src/cognitia/orchestration/runtime_helpers.py`
+  - `src/swarmline/orchestration/runtime_helpers.py`
 
 ### Phase 2 — Portable runtime wiring and tool surface
 
@@ -114,13 +114,13 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/agent/agent.py`
-  - `src/cognitia/agent/conversation.py`
+  - `src/swarmline/agent/agent.py`
+  - `src/swarmline/agent/conversation.py`
 - Worker B ownership:
-  - `src/cognitia/runtime/ports/thin.py`
+  - `src/swarmline/runtime/ports/thin.py`
 - Worker C ownership:
-  - `src/cognitia/orchestration/thin_team.py`
-  - `src/cognitia/orchestration/thin_subagent.py`
+  - `src/swarmline/orchestration/thin_team.py`
+  - `src/swarmline/orchestration/thin_subagent.py`
 
 ### Phase 3 — History ownership and canonical runtime contract
 
@@ -142,13 +142,13 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/agent/agent.py`
-  - `src/cognitia/agent/conversation.py`
+  - `src/swarmline/agent/agent.py`
+  - `src/swarmline/agent/conversation.py`
 - Worker B ownership:
-  - `src/cognitia/session/manager.py`
+  - `src/swarmline/session/manager.py`
 - Shared review point:
-  - `src/cognitia/runtime/base.py`
-  - `src/cognitia/runtime/types.py`
+  - `src/swarmline/runtime/base.py`
+  - `src/swarmline/runtime/types.py`
 
 ### Phase 4 — Retry normalization in ThinRuntime
 
@@ -173,10 +173,10 @@ DoD:
 
 Параллелизация:
 - Single-owner slice:
-  - `src/cognitia/runtime/thin/runtime.py`
-  - `src/cognitia/runtime/thin/helpers.py`
-  - `src/cognitia/runtime/thin/conversational.py`
-  - `src/cognitia/runtime/thin/react_strategy.py`
+  - `src/swarmline/runtime/thin/runtime.py`
+  - `src/swarmline/runtime/thin/helpers.py`
+  - `src/swarmline/runtime/thin/conversational.py`
+  - `src/swarmline/runtime/thin/react_strategy.py`
 
 ### Phase 5 — Runtime/session migration cleanup
 
@@ -209,13 +209,13 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/agent/agent.py`
-  - `src/cognitia/agent/conversation.py`
+  - `src/swarmline/agent/agent.py`
+  - `src/swarmline/agent/conversation.py`
 - Worker B ownership:
-  - `src/cognitia/session/types.py`
-  - `src/cognitia/session/manager.py`
+  - `src/swarmline/session/types.py`
+  - `src/swarmline/session/manager.py`
 - Worker C ownership:
-  - new shared composition helper/module in `src/cognitia/agent/` or `src/cognitia/runtime/`
+  - new shared composition helper/module in `src/swarmline/agent/` or `src/swarmline/runtime/`
 
 ### Phase 6 — Factory/registry and optional surface hardening
 
@@ -240,15 +240,15 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/runtime/factory.py`
-  - `src/cognitia/runtime/registry.py`
+  - `src/swarmline/runtime/factory.py`
+  - `src/swarmline/runtime/registry.py`
 - Worker B ownership:
-  - `src/cognitia/runtime/__init__.py`
-  - `src/cognitia/runtime/ports/__init__.py`
-  - `src/cognitia/hooks/__init__.py`
+  - `src/swarmline/runtime/__init__.py`
+  - `src/swarmline/runtime/ports/__init__.py`
+  - `src/swarmline/hooks/__init__.py`
 - Worker C ownership:
-  - `src/cognitia/memory/__init__.py`
-  - `src/cognitia/skills/__init__.py`
+  - `src/swarmline/memory/__init__.py`
+  - `src/swarmline/skills/__init__.py`
 
 ### Phase 7 — Type system and static gates
 
@@ -281,13 +281,13 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/runtime/structured_output.py`
-  - `src/cognitia/runtime/sdk_query.py`
-  - `src/cognitia/runtime/options_builder.py`
-  - `src/cognitia/runtime/adapter.py`
+  - `src/swarmline/runtime/structured_output.py`
+  - `src/swarmline/runtime/sdk_query.py`
+  - `src/swarmline/runtime/options_builder.py`
+  - `src/swarmline/runtime/adapter.py`
 - Worker B ownership:
-  - `src/cognitia/memory/sqlite.py`
-  - `src/cognitia/memory/postgres.py`
+  - `src/swarmline/memory/sqlite.py`
+  - `src/swarmline/memory/postgres.py`
 - Worker C ownership:
   - `tests/` ruff cleanup
   - `pyproject.toml`
@@ -312,7 +312,7 @@ DoD:
 
 Параллелизация:
 - Worker A ownership:
-  - `src/cognitia/protocols/*`
+  - `src/swarmline/protocols/*`
 - Worker B ownership:
   - `README.md`
   - `docs/*.md`
@@ -360,8 +360,8 @@ DoD:
 ### Worker 1 — Facade + portable runtime wiring
 
 Ownership:
-- `src/cognitia/agent/agent.py`
-- `src/cognitia/agent/conversation.py`
+- `src/swarmline/agent/agent.py`
+- `src/swarmline/agent/conversation.py`
 - related tests in `tests/unit/test_agent_*`, `tests/integration/test_runtime_portable_matrix.py`
 
 Задачи:
@@ -376,10 +376,10 @@ Ownership:
 ### Worker 2 — Session + RuntimePort legacy containment
 
 Ownership:
-- `src/cognitia/session/types.py`
-- `src/cognitia/session/manager.py`
-- `src/cognitia/runtime/ports/base.py`
-- `src/cognitia/runtime/ports/thin.py`
+- `src/swarmline/session/types.py`
+- `src/swarmline/session/manager.py`
+- `src/swarmline/runtime/ports/base.py`
+- `src/swarmline/runtime/ports/thin.py`
 
 Задачи:
 - metadata preservation;
@@ -393,11 +393,11 @@ Ownership:
 ### Worker 3 — SDK/runtime completion contract + orchestration
 
 Ownership:
-- `src/cognitia/runtime/sdk_query.py`
-- `src/cognitia/runtime/adapter.py`
-- `src/cognitia/orchestration/runtime_helpers.py`
-- `src/cognitia/orchestration/thin_team.py`
-- `src/cognitia/orchestration/thin_subagent.py`
+- `src/swarmline/runtime/sdk_query.py`
+- `src/swarmline/runtime/adapter.py`
+- `src/swarmline/orchestration/runtime_helpers.py`
+- `src/swarmline/orchestration/thin_team.py`
+- `src/swarmline/orchestration/thin_subagent.py`
 
 Задачи:
 - terminal-event enforcement;
@@ -411,10 +411,10 @@ Ownership:
 ### Worker 4 — ThinRuntime retry normalization
 
 Ownership:
-- `src/cognitia/runtime/thin/runtime.py`
-- `src/cognitia/runtime/thin/helpers.py`
-- `src/cognitia/runtime/thin/conversational.py`
-- `src/cognitia/runtime/thin/react_strategy.py`
+- `src/swarmline/runtime/thin/runtime.py`
+- `src/swarmline/runtime/thin/helpers.py`
+- `src/swarmline/runtime/thin/conversational.py`
+- `src/swarmline/runtime/thin/react_strategy.py`
 
 Задачи:
 - single retry layer;
@@ -427,11 +427,11 @@ Ownership:
 ### Worker 5 — Static gates + public surface cleanup
 
 Ownership:
-- `src/cognitia/runtime/__init__.py`
-- `src/cognitia/runtime/ports/__init__.py`
-- `src/cognitia/hooks/__init__.py`
-- `src/cognitia/memory/__init__.py`
-- `src/cognitia/skills/__init__.py`
+- `src/swarmline/runtime/__init__.py`
+- `src/swarmline/runtime/ports/__init__.py`
+- `src/swarmline/hooks/__init__.py`
+- `src/swarmline/memory/__init__.py`
+- `src/swarmline/skills/__init__.py`
 - `pyproject.toml`
 - repo-wide lint/type cleanup in `tests/`
 

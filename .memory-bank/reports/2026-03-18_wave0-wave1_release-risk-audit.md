@@ -13,7 +13,7 @@ Important note:
 - `git status --short` → clean worktree
 - `python -m pytest -q` → `2366 passed, 16 skipped, 5 deselected, 19 warnings`
 - `ruff check src/ tests/` → green
-- `mypy src/cognitia/` → green
+- `mypy src/swarmline/` → green
 - additional manual smoke:
   - `python examples/17_runtime_switching.py` → passes
   - `python examples/19_cli_runtime.py` → passes
@@ -23,8 +23,8 @@ Important note:
 ### P1 — `Conversation` persists partial assistant text even when the turn fails
 
 Files:
-- `src/cognitia/agent/conversation.py:63-67`
-- `src/cognitia/agent/conversation.py:96-116`
+- `src/swarmline/agent/conversation.py:63-67`
+- `src/swarmline/agent/conversation.py:96-116`
 
 Problem:
 - `Conversation.say()` and `Conversation.stream()` append assistant text to `_history` whenever text deltas were seen, even if the terminal event is `error`.
@@ -43,9 +43,9 @@ Why this is a bug:
 ### P1 — portable runtime exceptions escape instead of becoming typed runtime failures
 
 Files:
-- `src/cognitia/agent/conversation.py:166-180`
-- `src/cognitia/session/manager.py:274-283`
-- `src/cognitia/session/manager.py:305-310`
+- `src/swarmline/agent/conversation.py:166-180`
+- `src/swarmline/session/manager.py:274-283`
+- `src/swarmline/session/manager.py:305-310`
 
 Problem:
 - portable runtime paths iterate `runtime.run(...)` directly and do not normalize unexpected runtime exceptions into `Result(error=...)`, `RuntimeEvent.error(...)`, or `StreamEvent(type="error")`.
@@ -62,7 +62,7 @@ Why this is a bug:
 ### P1 — `SqliteSessionBackend` is not safe for concurrent use
 
 File:
-- `src/cognitia/session/backends.py:72-120`
+- `src/swarmline/session/backends.py:72-120`
 
 Problem:
 - one shared `sqlite3.Connection(check_same_thread=False)` is used across multiple `asyncio.to_thread()` calls with no internal lock or serialized access.
@@ -77,8 +77,8 @@ Why this is a bug:
 ### P1 — `SessionKey` string serialization is collision-prone
 
 Files:
-- `src/cognitia/session/types.py:23-24`
-- `src/cognitia/session/manager.py:54-55`
+- `src/swarmline/session/types.py:23-24`
+- `src/swarmline/session/manager.py:54-55`
 
 Problem:
 - `SessionKey.__str__()` serializes keys as `"user_id:topic_id"`, and `SessionManager` uses that raw string as the storage key for `_sessions`, `_locks`, and backend persistence.
@@ -95,7 +95,7 @@ Why this is a bug:
 ### P2 — `InMemorySessionBackend` stores mutable state by reference instead of snapshotting it
 
 File:
-- `src/cognitia/session/backends.py:50-54`
+- `src/swarmline/session/backends.py:50-54`
 
 Problem:
 - `save()` stores the original dict object, and `load()` returns the same underlying object.
@@ -112,7 +112,7 @@ Why this is a bug:
 ### P2 — portable event adapter drops tool identity on `tool_call_finished`
 
 File:
-- `src/cognitia/agent/agent.py:402-405`
+- `src/swarmline/agent/agent.py:402-405`
 
 Problem:
 - `_RuntimeEventAdapter` maps `tool_call_finished` into `tool_use_result` but never copies `data["name"]` into `tool_name`.
@@ -127,7 +127,7 @@ Why this is a bug:
 ### P2 — team status reports `completed` even when all workers failed or were cancelled
 
 File:
-- `src/cognitia/orchestration/base_team.py:55-58`
+- `src/swarmline/orchestration/base_team.py:55-58`
 
 Problem:
 - `get_team_status()` treats any all-terminal set of workers as `completed`, including `failed` and `cancelled`.
@@ -142,12 +142,12 @@ Why this is a bug:
 ### P2 — `DeepAgentsTeamOrchestrator` does not wire actual team semantics at start
 
 Files:
-- `src/cognitia/orchestration/deepagents_team.py:30-32`
-- `src/cognitia/orchestration/deepagents_team.py:43-45`
+- `src/swarmline/orchestration/deepagents_team.py:30-32`
+- `src/swarmline/orchestration/deepagents_team.py:43-45`
 
 Reference behavior:
-- `src/cognitia/orchestration/claude_team.py:35-39`
-- `src/cognitia/orchestration/thin_team.py:86-116`
+- `src/swarmline/orchestration/claude_team.py:35-39`
+- `src/swarmline/orchestration/thin_team.py:86-116`
 
 Problem:
 - deepagents team start passes the raw shared `task` to each worker instead of `compose_worker_task(...)`
@@ -165,8 +165,8 @@ Why this is a bug:
 ### P2 — default deepagents subagent path advertises tools but cannot execute them
 
 Files:
-- `src/cognitia/orchestration/deepagents_subagent.py:32-37`
-- `src/cognitia/runtime/deepagents_tools.py:22-27`
+- `src/swarmline/orchestration/deepagents_subagent.py:32-37`
+- `src/swarmline/runtime/deepagents_tools.py:22-27`
 
 Problem:
 - `DeepAgentsSubagentOrchestrator` creates `DeepAgentsRuntime(..., tool_executors={})` by default

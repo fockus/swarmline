@@ -10,7 +10,7 @@
 ## Серьёзное
 
 ### S1. `list_active()` в LocalWorkspace не берёт lock
-**Файл**: `src/cognitia/multi_agent/workspace.py:83`
+**Файл**: `src/swarmline/multi_agent/workspace.py:83`
 ```python
 async def list_active(self) -> list[WorkspaceHandle]:
     return list(self._active.values())
@@ -19,12 +19,12 @@ async def list_active(self) -> list[WorkspaceHandle]:
 **Рекомендация**: обернуть в `async with self._lock`.
 
 ### S2. EventBus method mismatch в TaskSessionStore
-**Файл**: `src/cognitia/session/task_session_store.py:64,85,199,213`
-InMemoryTaskSessionStore и SqliteTaskSessionStore вызывают `self._event_bus.publish(...)`, но стандартный `EventBus` protocol в Cognitia использует метод `emit()`, а не `publish()`. Это приведёт к `AttributeError` при подключении реального EventBus.
+**Файл**: `src/swarmline/session/task_session_store.py:64,85,199,213`
+InMemoryTaskSessionStore и SqliteTaskSessionStore вызывают `self._event_bus.publish(...)`, но стандартный `EventBus` protocol в Swarmline использует метод `emit()`, а не `publish()`. Это приведёт к `AttributeError` при подключении реального EventBus.
 **Рекомендация**: заменить `.publish(` на `.emit(` (4 вхождения).
 
 ### S3. RoutineBridge.dedup загружает ВСЕ задачи
-**Файл**: `src/cognitia/daemon/routine_bridge.py:101`
+**Файл**: `src/swarmline/daemon/routine_bridge.py:101`
 ```python
 existing_tasks = await self._task_board.list_tasks()
 ```
@@ -38,22 +38,22 @@ Dedup check вызывает `list_tasks()` без фильтра — загру
 **Рекомендация**: Не блокирует мерж. Potential refactor на будущее.
 
 ### M2. `_worker_shim.py` не логирует в stderr при ошибках dispatch'а
-**Файл**: `src/cognitia/plugins/_worker_shim.py:109`
+**Файл**: `src/swarmline/plugins/_worker_shim.py:109`
 При `except Exception` ошибка уходит только в JSON-RPC response, но не в stderr. Для debugging в production полезно дублировать в stderr.
 **Рекомендация**: добавить `sys.stderr.write(f"Plugin error in {method}: {exc}\n")` перед response.
 
 ### M3. SubprocessPluginRunner не делает cleanup при GC
-**Файл**: `src/cognitia/plugins/runner.py`
+**Файл**: `src/swarmline/plugins/runner.py`
 Нет `__del__` или context manager. Если runner GC'ится без явного `stop()`, subprocesses остаются zombie.
 **Рекомендация**: добавить `async def close(self)` + warning в `__del__` (match SessionManager pattern). Не блокирует мерж.
 
 ### M4. `_generate_id` экспортируется из budget_types (private convention)
-**Файл**: `src/cognitia/pipeline/budget_types.py`
+**Файл**: `src/swarmline/pipeline/budget_types.py`
 Функция `_generate_id` с underscore prefix импортируется в `budget_store.py`. По Python convention underscore = private.
 **Рекомендация**: переименовать в `generate_id` или сделать inline `uuid.uuid4().hex[:12]`.
 
 ### M5. ActivityLogSubscriber жёстко привязан к 9 дефолтным топикам
-**Файл**: `src/cognitia/observability/activity_subscriber.py`
+**Файл**: `src/swarmline/observability/activity_subscriber.py`
 Default topic map захардкожен. Если добавятся новые EventBus topics (workspace.created, plugin.started, etc.), подписчик их не увидит.
 **Рекомендация**: Приемлемо — custom_topic_map уже поддерживается. Документировать необходимость расширения.
 

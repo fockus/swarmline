@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project
 
-**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.0.0, Python 3.10+.
+**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Python 3.10+. Published on [PyPI](https://pypi.org/project/swarmline/).
 
 ## Commands
 
@@ -89,9 +89,17 @@ Tests mirror source: `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/s
 - **Model registry**: aliases like `"sonnet"` → resolved via `runtime/models.yaml`.
 - **Contract-first**: Protocol/ABC → contract tests → implementation. Tests must pass for ANY correct implementation.
 
-## Contributing
+## Git Workflow & Releasing
 
-GitHub Flow: feature branches → PR → merge to main.
+Two-repo model: private development + public release. Full process in `docs/releasing.md`.
+
+```
+swarmline-dev (private)  ──sync──  swarmline (public)  ──CI──  PyPI
+  all branches                      main only                   package
+  + Memory Bank, specs              filtered (no private files)
+```
+
+### Branching
 
 ```
 main (stable, tested, releasable)
@@ -100,6 +108,28 @@ main (stable, tested, releasable)
   └── release/vX.Y.Z   ← version bump + changelog before tag
 ```
 
-**Rules:**
-- `main` = always green (tests pass, lint clean, can `pip install`)
-- Release: branch `release/vX.Y.Z` → version bump + changelog → merge → tag
+### Versioning (Strict SemVer)
+
+| Bump | When | Examples |
+|------|------|----------|
+| **MAJOR** | Breaking public API change | Remove/rename export, change Protocol, incompatible config |
+| **MINOR** | New user-facing feature | New module, runtime, CLI command, deprecation |
+| **PATCH** | Bug/security/perf fix | Bug fix, dependency bump |
+
+**NOT a version bump**: refactoring, tests, CI, docs, Memory Bank, lint fixes, dev tooling.
+
+**Batching**: 1-2 minor releases per month max. Group features. Patches ship immediately.
+
+### Release flow
+
+1. Develop on feature branches → merge to `main` (must be green)
+2. `release/vX.Y.Z` branch → bump `pyproject.toml` + CHANGELOG → merge → tag
+3. `./scripts/sync-public.sh --tags` → filters private files → pushes to public → GitHub Actions → PyPI
+
+### Private vs Public
+
+| Content | Private | Public |
+|---------|---------|--------|
+| Source code | all branches | main only |
+| `.memory-bank/`, `CLAUDE.md`, `RULES.md`, `.specs/`, `.planning/`, `.factory/` | tracked | **excluded** |
+| `AGENTS.md` | full version | replaced with `AGENTS.public.md` |

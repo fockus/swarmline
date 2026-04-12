@@ -1,4 +1,4 @@
-# Full Library Audit — cognitia v1.1.0
+# Full Library Audit — swarmline v1.1.0
 
 **Date:** 2026-03-29
 **Scope:** Entire library (~37,600 LOC, 306 source files, 262 test files)

@@ -24,7 +24,7 @@ Problem:
 - This silently routed `thin` requests to Anthropic instead of the intended OpenRouter-compatible provider.
 
 Fix:
-- `src/cognitia/runtime/types.py` now preserves recognized `provider:model` strings.
+- `src/swarmline/runtime/types.py` now preserves recognized `provider:model` strings.
 - Added regression coverage in:
   - `tests/unit/test_runtime_types.py`
   - `tests/unit/test_agent_config.py`
@@ -37,13 +37,13 @@ Problem:
 - `CliConfig.output_format` existed but runtime execution ignored it.
 
 Fix:
-- `src/cognitia/runtime/cli/runtime.py` now normalizes Claude commands:
+- `src/swarmline/runtime/cli/runtime.py` now normalizes Claude commands:
   - upgrades legacy `--output` to `--output-format`
   - injects `--output-format <fmt>` when absent
   - injects `--verbose` for `stream-json`
   - uses an explicit NDJSON-capable default Claude command
 - Synced:
-  - `src/cognitia/runtime/cli/types.py`
+  - `src/swarmline/runtime/cli/types.py`
   - `examples/19_cli_runtime.py`
   - `docs/cli-runtime.md`
   - CLI-related tests
@@ -56,10 +56,10 @@ Problem:
   - `mypy` started type-checking the real `langgraph` integration and failed in `workflow_langgraph.py`
 
 Fix:
-- `src/cognitia/runtime/deepagents_native.py`
+- `src/swarmline/runtime/deepagents_native.py`
   - added lazy wrapper exports for `build_deepagents_chat_model()` and `create_langchain_tool()`
   - preserves lazy import behavior while remaining patchable in tests
-- `src/cognitia/orchestration/workflow_langgraph.py`
+- `src/swarmline/orchestration/workflow_langgraph.py`
   - type-erased the concrete `StateGraph(dict)` construction point
   - prevents optional-dependency mypy breakage without changing runtime behavior
 
@@ -140,7 +140,7 @@ Installing `deepagents` extras upgraded shared packages, including:
 
 `pip` reported dependency conflicts with external `aider-chat`.
 
-This did not break Cognitia:
+This did not break Swarmline:
 - repo tests passed afterward
 - live runtime verification succeeded afterward
 
@@ -149,7 +149,7 @@ But the environment impact is real and should be considered separately from repo
 ## Final Gates
 
 - `ruff check src/ tests/` -> green
-- `mypy src/cognitia/` -> green
+- `mypy src/swarmline/` -> green
 - `pytest -q` -> `2517 passed, 11 skipped, 5 deselected`
 - `git diff --check` -> green
 

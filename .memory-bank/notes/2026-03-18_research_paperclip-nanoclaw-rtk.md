@@ -15,7 +15,7 @@
 - **Config versioning**: snapshot before/after каждого изменения, rollback
 - **Budget**: monthly cents, auto-pause при превышении
 
-## NanoClaw — уникальные идеи для cognitia
+## NanoClaw — уникальные идеи для swarmline
 1. **Credential Proxy** → IDEA-020: секреты не в runtime, placeholder → injection
 2. **Memory Scopes** → IDEA-021: global/agent/shared три уровня
 3. **CallerPolicy** → IDEA-022: sender allowlist, первая линия до guardrails

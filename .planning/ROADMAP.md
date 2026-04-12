@@ -188,7 +188,7 @@ Note: Phases 4 and 5 were independent. Phases 7-10 are sequential (each depends 
 | 4. Command Routing | 1/1 | Complete | 2026-04-12 |
 | 5. Native Tool Calling | 1/1 | Complete | 2026-04-12 |
 | 6. Integration Validation | 1/1 | Complete | 2026-04-12 |
-| 7. Coding Profile Foundation | 0/1 | Not started | - |
-| 8. Coding Task Runtime and Persistence | 0/1 | Not started | - |
-| 9. Coding Context and Compatibility | 0/1 | Not started | - |
-| 10. Coding Subagent Inheritance and Validation | 0/1 | Not started | - |
+| 7. Coding Profile Foundation | 1/1 | Complete | 2026-04-12 |
+| 8. Coding Task Runtime and Persistence | 1/1 | Complete | 2026-04-12 |
+| 9. Coding Context and Compatibility | 1/1 | Complete | 2026-04-13 |
+| 10. Coding Subagent Inheritance and Validation | 1/1 | Complete | 2026-04-13 |

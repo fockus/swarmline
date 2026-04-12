@@ -267,7 +267,7 @@ mcp>=1.19.0,<2            # MCP protocol (Python 3.10+)
 
 ## Сравнение с deepagents
 
-**deepagents 0.4.11** — LangChain/LangGraph-based agent harness, используется в cognitia как `DeepAgentsRuntime`.
+**deepagents 0.4.11** — LangChain/LangGraph-based agent harness, используется в swarmline как `DeepAgentsRuntime`.
 
 ### Табличное сравнение
 
@@ -313,9 +313,9 @@ mcp>=1.19.0,<2            # MCP protocol (Python 3.10+)
 
 ## Выводы: пригодность для интеграции
 
-### Контекст cognitia
+### Контекст swarmline
 
-Cognitia уже имеет:
+Swarmline уже имеет:
 - `AgentRuntime` Protocol (base.py) — абстракция, за которой может жить любой runtime
 - `DeepAgentsRuntime` через `RuntimeFactory`
 - `ThinRuntime` — собственный loop
@@ -352,18 +352,18 @@ Cognitia уже имеет:
 
 **Не интегрировать openai-agents как runtime сейчас** по следующим причинам:
 
-1. **Архитектурный конфликт**: cognitia уже решила задачи guardrails, sessions, MCP через свои абстракции. openai-agents дублирует их с другим API.
+1. **Архитектурный конфликт**: swarmline уже решила задачи guardrails, sessions, MCP через свои абстракции. openai-agents дублирует их с другим API.
 
 2. **Нестабильность API**: pre-1.0 с 13+ релизами за 3 недели — высокий риск breaking changes при апгрейде.
 
-3. **Tracing lock-in**: встроенный трейсинг завязан на OpenAI Traces — не вписывается в multi-provider архитектуру cognitia.
+3. **Tracing lock-in**: встроенный трейсинг завязан на OpenAI Traces — не вписывается в multi-provider архитектуру swarmline.
 
 4. **Граф-оркестрация**: openai-agents не заменяет LangGraph для сложных workflow. deepagents остаётся лучше для graph-based orchestration.
 
 **Что стоит рассмотреть точечно:**
 
 - **Session backends** (RedisSession, DaprSession) — если понадобится production-grade persistence без написания своего
-- **MCP transport классы** (`MCPServerStreamableHttp`, `MCPServerStdio`) — как reference реализации при улучшении MCP слоя в cognitia
+- **MCP transport классы** (`MCPServerStreamableHttp`, `MCPServerStdio`) — как reference реализации при улучшении MCP слоя в swarmline
 - **Schema generation** из `griffe` (docstring parsing) — если захочется улучшить автогенерацию ToolSpec
 
 **Переоценить в**: после выхода v1.0 или когда deepagents 0.5.0 окажется недостаточным для требуемых сценариев.

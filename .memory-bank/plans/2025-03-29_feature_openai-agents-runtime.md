@@ -1,4 +1,4 @@
-# Plan: OpenAI Agents Runtime для Cognitia
+# Plan: OpenAI Agents Runtime для Swarmline
 
 **Тип:** feature
 **Дата:** 2025-03-29
@@ -7,7 +7,7 @@
 
 ## Контекст
 
-Cognitia имеет 4 runtime'а: `claude_sdk`, `thin`, `deepagents`, `cli`.
+Swarmline имеет 4 runtime'а: `claude_sdk`, `thin`, `deepagents`, `cli`.
 Нужен 5-й runtime `openai_agents` — обёртка над OpenAI Agents SDK (`openai-agents`).
 Это даст нативную интеграцию с Codex (как MCP server внутри агента),
 handoffs между агентами, traces, и Runner API.
@@ -15,20 +15,20 @@ handoffs между агентами, traces, и Runner API.
 ## Аналог для изучения
 
 Реализация `claude_sdk` runtime:
-- `src/cognitia/runtime/adapter.py` — ClaudeSDKClient wrapper
-- `src/cognitia/runtime/claude_code.py` — AgentRuntime implementation
-- `src/cognitia/runtime/options_builder.py` — Options factory
-- `src/cognitia/runtime/sdk_tools.py` — MCP tool bridge
+- `src/swarmline/runtime/adapter.py` — ClaudeSDKClient wrapper
+- `src/swarmline/runtime/claude_code.py` — AgentRuntime implementation
+- `src/swarmline/runtime/options_builder.py` — Options factory
+- `src/swarmline/runtime/sdk_tools.py` — MCP tool bridge
 
 ## Архитектура
 
 ```
-src/cognitia/runtime/
+src/swarmline/runtime/
 ├── openai_agents/
 │   ├── __init__.py          # Public exports
 │   ├── runtime.py           # OpenAIAgentsRuntime (implements AgentRuntime)
 │   ├── event_mapper.py      # Map OpenAI events → RuntimeEvent
-│   ├── tool_bridge.py       # Cognitia tools → OpenAI Agent tools
+│   ├── tool_bridge.py       # Swarmline tools → OpenAI Agent tools
 │   └── types.py             # OpenAI-specific config types
 ```
 
@@ -53,10 +53,10 @@ src/cognitia/runtime/
 - **DoD:** Unit тесты на каждый маппинг
 
 ### Этап 3: Tool bridge (0.5 дня)
-- Конвертация Cognitia `ToolSpec` → OpenAI `FunctionTool`
-- Конвертация Cognitia `@tool` → OpenAI `@function_tool`
+- Конвертация Swarmline `ToolSpec` → OpenAI `FunctionTool`
+- Конвертация Swarmline `@tool` → OpenAI `@function_tool`
 - MCP server pass-through (Codex)
-- **DoD:** Cognitia tools работают в OpenAI Agent
+- **DoD:** Swarmline tools работают в OpenAI Agent
 
 ### Этап 4: Runtime implementation (1 день)
 - `OpenAIAgentsRuntime.run()` → `async for event in Runner.run_streamed()`

@@ -1,4 +1,4 @@
-# Master Plan v1.0 — Cognitia Roadmap
+# Master Plan v1.0 — Swarmline Roadmap
 
 > Создан: 2026-03-17
 > Базовая версия: 0.5.0 (multi-provider ThinRuntime + upstream middleware)
@@ -81,7 +81,7 @@ IDEA-001 (OAuth) — независим
 
 **Scope**:
 1. `RuntimeFactory.register(name, factory_fn)` / `unregister(name)`
-2. Entry points (`pyproject.toml [project.entry-points."cognitia.runtimes"]`) для auto-discovery
+2. Entry points (`pyproject.toml [project.entry-points."swarmline.runtimes"]`) для auto-discovery
 3. Валидация: factory_fn возвращает объект, реализующий `AgentRuntime` Protocol
 4. Встроенные runtime'ы регистрируются через тот же механизм (dog-fooding)
 5. `RuntimeFactory.list_available()` — все зарегистрированные runtime'ы
@@ -165,7 +165,7 @@ IDEA-001 (OAuth) — независим
 **Scope**:
 1. `SessionBackend` Protocol: `save(key, state)` / `load(key)` / `delete(key)` / `list()`
 2. `SqliteSessionBackend` — zero-config, для dev/single-node
-3. `RedisSessionBackend` (optional `cognitia[redis]`)
+3. `RedisSessionBackend` (optional `swarmline[redis]`)
 4. `EncryptedSessionBackend` — overlay (AES-256-GCM)
 5. Сериализация: history, rolling_summary, session_id, turn_count, metadata
 6. `SessionManager(backend=...)` — inject через конструктор
@@ -280,7 +280,7 @@ AgentScheduler
 
 **State & Persistence**:
 1. Job config → SQLite через `SessionBackend` (Phase 8A)
-2. Run history → JSONL append-only (`~/.cognitia/scheduler/runs/<job_id>.jsonl`)
+2. Run history → JSONL append-only (`~/.swarmline/scheduler/runs/<job_id>.jsonl`)
 3. Persistent: last_run, next_run, run_count, total_tokens, total_cost
 4. No catch-up: пропущенный fire = пропущен (как в Claude Code, OpenClaw)
 
@@ -438,7 +438,7 @@ CliAgentRuntime implements AgentRuntime
 1. OAuth token в `RuntimeConfig` (наряду с API key)
 2. Token refresh (Claude: 8h TTL + refresh token)
 3. `AnthropicAdapter` / `OpenAICompatAdapter` → Bearer вместо API key
-4. CLI flow: `cognitia auth login --provider claude`
+4. CLI flow: `swarmline auth login --provider claude`
 5. Token storage: keyring или encrypted file
 
 **Ограничения OAuth-пути**: нет prompt caching, нет 1M context, нет service_tier
@@ -447,7 +447,7 @@ CliAgentRuntime implements AgentRuntime
 - [ ] Contract: `AuthProvider` Protocol (get_token, refresh)
 - [ ] Unit: token refresh, expiry, storage — 10+ тестов
 - [ ] Integration: OAuth token используется для LLM вызова — 3+ тестов
-- [ ] CLI: `cognitia auth login` работает end-to-end
+- [ ] CLI: `swarmline auth login` работает end-to-end
 
 ---
 
@@ -487,7 +487,7 @@ Week 13-15: 11A (base) → 11B + 11C (параллельно) → 11D ← OpenAI
 
 ## Phase 11: OpenAI Agents SDK Integration
 
-**Цель**: 4-й runtime на базе OpenAI Agents SDK. Мост между cognitia абстракциями и openai-agents примитивами.
+**Цель**: 4-й runtime на базе OpenAI Agents SDK. Мост между swarmline абстракциями и openai-agents примитивами.
 
 > **Контекст**: ADR-001 (2026-03-17) отклонил немедленную интеграцию — pre-1.0, API нестабилен, tracing lock-in.
 > **Условие старта**: OpenAI Agents SDK ≥ v1.0 (стабильный API) ИЛИ наша архитектура достаточно зрелая (Phase 6-10 done) чтобы абсорбировать breaking changes.
@@ -502,14 +502,14 @@ Week 13-15: 11A (base) → 11B + 11C (параллельно) → 11D ← OpenAI
 **Scope**:
 1. `OpenAIAgentsRuntime` implements `AgentRuntime` Protocol
 2. Mapping: `RuntimeConfig` → openai-agents `Agent` + `RunConfig`
-3. Model routing: cognitia model_id → openai-agents model config
-4. Tool bridge: cognitia `ToolSpec` ↔ openai-agents `FunctionTool`
-5. Event mapping: openai-agents `RunResult` → cognitia `RuntimeEvent` stream
+3. Model routing: swarmline model_id → openai-agents model config
+4. Tool bridge: swarmline `ToolSpec` ↔ openai-agents `FunctionTool`
+5. Event mapping: openai-agents `RunResult` → swarmline `RuntimeEvent` stream
 6. Регистрация через adapter registry (IDEA-002)
 
 **Ключевые решения**:
 - НЕ используем openai tracing — подключаем наш `Tracer` (Phase 8B) через custom `TracingProcessor`
-- НЕ дублируем guardrails — bridge cognitia `Guardrail` → openai-agents `InputGuardrail`/`OutputGuardrail`
+- НЕ дублируем guardrails — bridge swarmline `Guardrail` → openai-agents `InputGuardrail`/`OutputGuardrail`
 - LiteLLM multi-provider: используем для доступа к Anthropic/Google через openai-agents
 
 **DoD**:
@@ -525,10 +525,10 @@ Week 13-15: 11A (base) → 11B + 11C (параллельно) → 11D ← OpenAI
 **Зависит от**: 8A (session backends), 11A
 
 **Scope**:
-1. Адаптер: cognitia `SessionBackend` → openai-agents session storage
+1. Адаптер: swarmline `SessionBackend` → openai-agents session storage
 2. Поддержка 9 openai-agents backends (SQLite, Redis, PostgreSQL, Dapr, encrypted, DynamoDB, CosmosDB)
-3. Импорт: `cognitia[openai-sessions]` — optional extra
-4. Двунаправленный bridge: sessions созданные в openai-agents доступны в cognitia и наоборот
+3. Импорт: `swarmline[openai-sessions]` — optional extra
+4. Двунаправленный bridge: sessions созданные в openai-agents доступны в swarmline и наоборот
 
 **DoD**:
 - [ ] Contract: `OpenAISessionBridge` adapts SessionBackend
@@ -542,10 +542,10 @@ Week 13-15: 11A (base) → 11B + 11C (параллельно) → 11D ← OpenAI
 **Зависит от**: 6A (structured output), 7B (guardrails), 11A
 
 **Scope**:
-1. Structured output: cognitia `output_type` → openai-agents `Agent(output_type=...)` → Pydantic validated
-2. Guardrails bridge: cognitia `Guardrail` → openai-agents `InputGuardrail` / `OutputGuardrail`
-3. Tripwire mapping: openai-agents guardrail failure → cognitia `RuntimeEvent.error(kind="guardrail_tripwire")`
-4. Handoffs: cognitia multi-agent delegation (IDEA-006) → openai-agents `Handoff` primitive
+1. Structured output: swarmline `output_type` → openai-agents `Agent(output_type=...)` → Pydantic validated
+2. Guardrails bridge: swarmline `Guardrail` → openai-agents `InputGuardrail` / `OutputGuardrail`
+3. Tripwire mapping: openai-agents guardrail failure → swarmline `RuntimeEvent.error(kind="guardrail_tripwire")`
+4. Handoffs: swarmline multi-agent delegation (IDEA-006) → openai-agents `Handoff` primitive
 
 **DoD**:
 - [ ] Unit: output bridge, guardrail bridge, handoff bridge — 12+ тестов
@@ -559,11 +559,11 @@ Week 13-15: 11A (base) → 11B + 11C (параллельно) → 11D ← OpenAI
 **Зависит от**: 10B (MCP multi-transport), 10C (MCP approval), 11A
 
 **Scope**:
-1. MCP bridge: cognitia `McpBridge` → openai-agents MCP (5 транспортов)
+1. MCP bridge: swarmline `McpBridge` → openai-agents MCP (5 транспортов)
 2. Использовать openai-agents native MCP где доступен (Streamable HTTP, SSE, Stdio)
-3. Approval policies bridge: cognitia → openai-agents approval
+3. Approval policies bridge: swarmline → openai-agents approval
 4. griffe tool schema: интеграция IDEA-016 с openai-agents `@function_tool` (reference impl)
-5. Agent-as-tool bridge: cognitia `as_tool()` → openai-agents `agent.as_tool()`
+5. Agent-as-tool bridge: swarmline `as_tool()` → openai-agents `agent.as_tool()`
 
 **DoD**:
 - [ ] Unit: MCP bridge, approval bridge, tool bridge — 10+ тестов
@@ -593,5 +593,5 @@ Week 13-15: 11A (base) → 11B + 11C (параллельно) → 11D ← OpenAI
 | OAuth tokens revoked/changed | Low | Refresh flow + fallback на API key |
 | Multi-agent deadlocks | High | Timeout + task lock + cycle detection |
 | OpenAI Agents SDK pre-1.0 breaking changes | High | Adapter layer изолирует, pin version, integration tests |
-| LiteLLM transitive deps bloat | Medium | Optional extra `cognitia[openai-agents]`, не в core |
+| LiteLLM transitive deps bloat | Medium | Optional extra `swarmline[openai-agents]`, не в core |
 | OpenAI tracing lock-in | Low | Custom TracingProcessor → наш Tracer, не используем openai traces |

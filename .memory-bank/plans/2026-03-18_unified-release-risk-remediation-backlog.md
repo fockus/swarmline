@@ -60,12 +60,12 @@ Each batch ends with targeted verification. Broader regression happens after Bat
 ### Worker A — runtime/session contract
 
 Ownership:
-- `src/cognitia/agent/conversation.py`
-- `src/cognitia/session/manager.py`
-- `src/cognitia/runtime/cli/runtime.py`
-- `src/cognitia/runtime/adapter.py`
-- `src/cognitia/runtime/claude_code.py`
-- `src/cognitia/agent/agent.py`
+- `src/swarmline/agent/conversation.py`
+- `src/swarmline/session/manager.py`
+- `src/swarmline/runtime/cli/runtime.py`
+- `src/swarmline/runtime/adapter.py`
+- `src/swarmline/runtime/claude_code.py`
+- `src/swarmline/agent/agent.py`
 
 Responsibilities:
 - error-path history integrity
@@ -77,8 +77,8 @@ Responsibilities:
 ### Worker B — session persistence + keying
 
 Ownership:
-- `src/cognitia/session/types.py`
-- `src/cognitia/session/backends.py`
+- `src/swarmline/session/types.py`
+- `src/swarmline/session/backends.py`
 
 Responsibilities:
 - collision-proof session key serialization
@@ -88,8 +88,8 @@ Responsibilities:
 ### Worker C — runtime wiring + MCP config normalization
 
 Ownership:
-- `src/cognitia/agent/runtime_wiring.py`
-- `src/cognitia/runtime/thin/mcp_client.py`
+- `src/swarmline/agent/runtime_wiring.py`
+- `src/swarmline/runtime/thin/mcp_client.py`
 - related portable runtime wiring tests
 
 Responsibilities:
@@ -99,9 +99,9 @@ Responsibilities:
 ### Worker D — orchestration/team correctness
 
 Ownership:
-- `src/cognitia/orchestration/base_team.py`
-- `src/cognitia/orchestration/deepagents_team.py`
-- `src/cognitia/orchestration/deepagents_subagent.py`
+- `src/swarmline/orchestration/base_team.py`
+- `src/swarmline/orchestration/deepagents_team.py`
+- `src/swarmline/orchestration/deepagents_subagent.py`
 
 Responsibilities:
 - aggregate team state correctness
@@ -112,12 +112,12 @@ Responsibilities:
 ### Worker E — workflow semantics + memory provider parity
 
 Ownership:
-- `src/cognitia/orchestration/workflow_graph.py`
-- `src/cognitia/orchestration/workflow_langgraph.py`
-- `src/cognitia/orchestration/workflow_executor.py`
-- `src/cognitia/memory/inmemory.py`
-- `src/cognitia/memory/sqlite.py`
-- `src/cognitia/memory/postgres.py`
+- `src/swarmline/orchestration/workflow_graph.py`
+- `src/swarmline/orchestration/workflow_langgraph.py`
+- `src/swarmline/orchestration/workflow_executor.py`
+- `src/swarmline/memory/inmemory.py`
+- `src/swarmline/memory/sqlite.py`
+- `src/swarmline/memory/postgres.py`
 
 Responsibilities:
 - checkpoint/resume semantics
@@ -275,7 +275,7 @@ The unified remediation program is considered complete when all of the following
 2. All new defects were covered by failing tests before implementation.
 3. No remaining known reproduction from either audit report still reproduces.
 4. `ruff check src/ tests/` is green.
-5. `mypy src/cognitia/` is green.
+5. `mypy src/swarmline/` is green.
 6. `python -m pytest -q` is green.
 7. Representative example smoke remains green for the touched surfaces:
    - `examples/10_sessions.py`

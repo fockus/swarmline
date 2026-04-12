@@ -17,8 +17,8 @@
 При создании агента задаётся 6 аспектов:
 
 ```python
-from cognitia.multi_agent.graph_builder import GraphBuilder
-from cognitia.multi_agent.graph_types import AgentCapabilities
+from swarmline.multi_agent.graph_builder import GraphBuilder
+from swarmline.multi_agent.graph_types import AgentCapabilities
 
 graph = (
     GraphBuilder()
@@ -112,7 +112,7 @@ async def my_runner(agent_id: str, task_id: str, goal: str, system_prompt: str) 
 
 **Context-Aware (новый):**
 ```python
-from cognitia.multi_agent.graph_execution_context import AgentExecutionContext
+from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
 async def my_runner(ctx: AgentExecutionContext) -> str:
     # Получает полный контекст
@@ -251,8 +251,8 @@ KnowledgeStore  ←  wraps  →  MemoryBankProvider (5-method Protocol)
 
 **Filesystem** — файлы на диске (relative/absolute path):
 ```python
-from cognitia.memory_bank.fs_provider import FilesystemMemoryBankProvider
-from cognitia.memory_bank.types import MemoryBankConfig
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
 
 config = MemoryBankConfig(root_path="/data/knowledge")
 provider = FilesystemMemoryBankProvider(config, user_id="u1", topic_id="project-x")
@@ -260,7 +260,7 @@ provider = FilesystemMemoryBankProvider(config, user_id="u1", topic_id="project-
 
 **Database** — SQLite/Postgres через SQLAlchemy:
 ```python
-from cognitia.memory_bank.db_provider import DatabaseMemoryBankProvider
+from swarmline.memory_bank.db_provider import DatabaseMemoryBankProvider
 
 provider = DatabaseMemoryBankProvider(session_factory, user_id="u1", topic_id="project-x")
 ```
@@ -270,9 +270,9 @@ provider = DatabaseMemoryBankProvider(session_factory, user_id="u1", topic_id="p
 ### Использование
 
 ```python
-from cognitia.memory_bank.knowledge_store import DefaultKnowledgeStore
-from cognitia.memory_bank.knowledge_search import DefaultKnowledgeSearcher
-from cognitia.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
+from swarmline.memory_bank.knowledge_store import DefaultKnowledgeStore
+from swarmline.memory_bank.knowledge_search import DefaultKnowledgeSearcher
+from swarmline.memory_bank.knowledge_types import DocumentMeta, KnowledgeEntry
 
 # Создать store поверх любого provider
 store = DefaultKnowledgeStore(provider)
@@ -291,15 +291,15 @@ results = await searcher.search("architecture patterns")
 results = await searcher.search_by_tags(["architecture"])
 
 # Checklist
-from cognitia.memory_bank.knowledge_checklist import DefaultChecklistManager
-from cognitia.memory_bank.knowledge_types import ChecklistItem
+from swarmline.memory_bank.knowledge_checklist import DefaultChecklistManager
+from swarmline.memory_bank.knowledge_types import ChecklistItem
 
 checklist = DefaultChecklistManager(provider)
 await checklist.add_item(ChecklistItem(text="Implement API"))
 await checklist.toggle_item("Implement")  # → done=True
 
 # Progress log
-from cognitia.memory_bank.knowledge_progress import DefaultProgressLog
+from swarmline.memory_bank.knowledge_progress import DefaultProgressLog
 
 log = DefaultProgressLog(provider)
 await log.append("Completed architecture review")
@@ -310,7 +310,7 @@ recent = await log.get_recent(5)
 
 3 инструмента для агентов:
 ```python
-from cognitia.memory_bank.tools import create_knowledge_tools
+from swarmline.memory_bank.tools import create_knowledge_tools
 
 specs, executors = create_knowledge_tools(store, searcher)
 # knowledge_search — поиск по тексту
@@ -321,7 +321,7 @@ specs, executors = create_knowledge_tools(store, searcher)
 ### Consolidation (Episodes → Knowledge)
 
 ```python
-from cognitia.memory_bank.knowledge_consolidation import KnowledgeConsolidator
+from swarmline.memory_bank.knowledge_consolidation import KnowledgeConsolidator
 
 consolidator = KnowledgeConsolidator()
 entries = consolidator.consolidate(episodes, min_episodes=3)
@@ -354,7 +354,7 @@ entries = consolidator.consolidate(episodes, min_episodes=3)
 
 ### Graph Agents
 ```
-src/cognitia/multi_agent/
+src/swarmline/multi_agent/
 ├── graph_types.py              # AgentNode, AgentCapabilities, GraphEdge
 ├── graph_execution_context.py  # AgentExecutionContext (tools/skills/MCP)
 ├── graph_governance.py         # GraphGovernanceConfig, check_hire/delegate
@@ -369,7 +369,7 @@ src/cognitia/multi_agent/
 
 ### Knowledge Bank
 ```
-src/cognitia/memory_bank/
+src/swarmline/memory_bank/
 ├── knowledge_types.py          # 9 domain types + DocumentKind
 ├── knowledge_protocols.py      # 5 ISP protocols (Store/Search/Progress/Checklist/Verify)
 ├── knowledge_inmemory.py       # InMemory implementations

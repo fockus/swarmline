@@ -31,7 +31,7 @@ There was no single canonical place that answered:
 
 1. `AgentConfig.env` is primarily a `claude_sdk` runtime facility. Portable runtime facade paths (`thin`, `deepagents`) still read provider credentials from process environment.
 2. `RuntimeConfig.base_url` exists on direct runtime construction, but the high-level `AgentConfig` facade does not expose `base_url`.
-3. OpenRouter is documented as an OpenAI-compatible path in Cognitia:
+3. OpenRouter is documented as an OpenAI-compatible path in Swarmline:
    - `thin` can use `openrouter:*`
    - `deepagents` must use the OpenAI provider path, e.g. `openai:anthropic/claude-3.5-haiku`
 4. `cli` runtime credentials are always whatever the wrapped CLI expects, passed via inherited env or `CliConfig.env`.
