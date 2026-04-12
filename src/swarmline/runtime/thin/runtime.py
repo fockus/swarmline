@@ -59,6 +59,7 @@ class ThinRuntime:
         sandbox: Any | None = None,
         hook_registry: HookRegistry | None = None,
         tool_policy: DefaultToolPolicy | None = None,
+        subagent_config: Any | None = None,
     ) -> None:
         self._config = config or RuntimeConfig(runtime_name="thin")
         self._auto_wrap_retriever()
@@ -83,6 +84,34 @@ class ThinRuntime:
             # User tools take priority over built-ins
             if name not in merged_local_tools:
                 merged_local_tools[name] = executor
+
+        # Subagent tool wiring (spawn_agent)
+        self._subagent_tool_spec: ToolSpec | None = None
+        self._subagent_orchestrator: Any | None = None
+        self._subagent_config_obj: Any | None = None
+        if subagent_config is not None:
+            from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
+            from swarmline.runtime.thin.subagent_tool import (
+                SUBAGENT_TOOL_SPEC,
+                create_subagent_executor,
+            )
+
+            self._subagent_orchestrator = ThinSubagentOrchestrator(
+                max_concurrent=subagent_config.max_concurrent,
+                llm_call=raw_llm_call,
+                local_tools=merged_local_tools,
+                mcp_servers=mcp_servers,
+                runtime_config=self._config,
+            )
+            self._subagent_config_obj = subagent_config
+            # Initial executor with builtin specs only; run() updates with actual active_tools
+            initial_tool_specs = list(_builtin_specs.values())
+            subagent_executor = create_subagent_executor(
+                self._subagent_orchestrator, subagent_config,
+                initial_tool_specs, current_depth=0,
+            )
+            merged_local_tools["spawn_agent"] = subagent_executor
+            self._subagent_tool_spec = SUBAGENT_TOOL_SPEC
 
         self._executor = ToolExecutor(
             local_tools=merged_local_tools,
@@ -178,6 +207,19 @@ class ThinRuntime:
 
 
         user_text = self._extract_last_user_text(messages)
+
+        # --- Subagent tool: append spec to active_tools + update executor with full tool list ---
+        if self._subagent_tool_spec is not None:
+            active_tools = [*active_tools, self._subagent_tool_spec]
+            # Update executor with actual active_tools for correct tool inheritance
+            if self._subagent_orchestrator is not None and self._subagent_config_obj is not None:
+                from swarmline.runtime.thin.subagent_tool import create_subagent_executor
+
+                updated_executor = create_subagent_executor(
+                    self._subagent_orchestrator, self._subagent_config_obj,
+                    active_tools, current_depth=0,
+                )
+                self._executor._local_tools["spawn_agent"] = updated_executor
 
         # --- UserPromptSubmit hook ---
         if self._hook_dispatcher is not None:

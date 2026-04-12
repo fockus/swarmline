@@ -67,6 +67,10 @@ def build_portable_runtime_plan(
     if agent_config.tool_policy is not None:
         create_kwargs["tool_policy"] = agent_config.tool_policy
 
+    # Subagent configuration
+    if agent_config.subagent_config is not None:
+        create_kwargs["subagent_config"] = agent_config.subagent_config
+
     active_tools = [tool_definition.to_tool_spec() for tool_definition in agent_config.tools]
     return PortableRuntimePlan(
         config=runtime_config,

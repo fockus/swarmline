@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
+    from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,9 @@ class AgentConfig:
 
     # Tool policy (default-deny enforcement)
     tool_policy: DefaultToolPolicy | None = None
+
+    # Subagent configuration (spawn_agent tool)
+    subagent_config: SubagentToolConfig | None = None
 
     # Runtime convergence / capability negotiation
     feature_mode: str = "portable"

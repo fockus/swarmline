@@ -1,0 +1,56 @@
+evaluation_specification:
+  task: 'Phase 3: LLM-Initiated Subagents'
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: 'spawn_agent tool works end-to-end. All SUBA-01..08 satisfied.'
+      checklist:
+        - 'spawn_agent registered as tool when subagent_config provided'
+        - 'Child spawns via ThinSubagentOrchestrator in separate ThinRuntime'
+        - 'Result returned as structured JSON to parent'
+        - 'max_depth enforced — returns JSON error at limit'
+        - 'max_concurrent enforced — returns JSON error at limit'
+        - 'Timeout enforced — cancels child, returns JSON error'
+        - 'Tool inheritance — child gets subset of parent tools'
+        - 'All errors → JSON, never crash parent'
+        - 'Without subagent_config → no spawn_agent (backward compat)'
+        - 'All 4323+ existing tests pass'
+
+    - name: architecture
+      weight: 0.25
+      rubric: 'Clean Architecture, frozen dataclass config, no circular imports.'
+      checklist:
+        - 'SubagentToolConfig is frozen dataclass with defaults'
+        - 'subagent_tool.py depends on domain/application types only'
+        - 'No circular imports'
+        - 'Constructor injection for orchestrator'
+        - 'File under 300 lines'
+
+    - name: test_quality
+      weight: 0.20
+      rubric: 'TDD, 15+ tests, error paths covered, real orchestrator or controlled mocks.'
+      checklist:
+        - '10+ unit tests for subagent_tool.py'
+        - '3+ integration/wiring tests'
+        - 'Edge cases: max_depth, timeout, concurrent, missing task'
+        - 'AAA pattern, test naming convention'
+        - 'No existing tests modified'
+
+    - name: code_quality
+      weight: 0.15
+      rubric: 'Production-ready, type hints, no TODOs, ruff+mypy clean.'
+      checklist:
+        - 'Complete type hints'
+        - 'No TODO/placeholder'
+        - 'ruff + mypy clean'
+        - 'Async-first APIs'
+
+    - name: security
+      weight: 0.10
+      rubric: 'Fail-safe error containment, resource exhaustion prevention.'
+      checklist:
+        - 'All exceptions caught → JSON error'
+        - 'max_depth prevents fork-bomb recursion'
+        - 'max_concurrent prevents coroutine exhaustion'
+        - 'Timeout prevents hung children'
+        - 'Child tools are subset of parent (no privilege escalation)'
