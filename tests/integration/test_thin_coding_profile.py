@@ -320,3 +320,74 @@ class TestCodingProfileEndToEnd:
         policy = plan.create_kwargs["tool_policy"]
         result = policy.can_use_tool(tool_name, {}, _make_state())
         assert isinstance(result, PermissionAllow)
+
+
+# ---------------------------------------------------------------------------
+# Phase 9: Alias execution on coding-mode path
+# ---------------------------------------------------------------------------
+
+
+class TestCodingAliasExecutionIntegration:
+    """Integration: legacy alias names execute via canonical coding tools."""
+
+    @pytest.mark.asyncio
+    async def test_read_file_alias_executes_via_read(self, tmp_path: Path) -> None:
+        """read_file alias resolves to 'read' and executes on real sandbox."""
+        from swarmline.runtime.thin.coding_toolpack import (
+            CODING_ALIAS_MAP,
+            build_alias_specs,
+        )
+
+        sandbox = _make_sandbox(tmp_path)
+        workspace = Path(sandbox._config.workspace_path)
+        test_file = workspace / "alias_test.txt"
+        test_file.write_text("alias content", encoding="utf-8")
+
+        pack = build_coding_toolpack(sandbox)
+        alias_specs = build_alias_specs(pack)
+
+        assert "read_file" in alias_specs
+        canonical = CODING_ALIAS_MAP["read_file"]
+        result = await pack.executors[canonical]({"path": "alias_test.txt"})
+        parsed = json.loads(result)
+
+        assert parsed["status"] == "ok"
+        assert "alias content" in parsed["content"]
+
+    @pytest.mark.asyncio
+    async def test_write_file_alias_executes_via_write(self, tmp_path: Path) -> None:
+        """write_file alias resolves to 'write' and executes on real sandbox."""
+        from swarmline.runtime.thin.coding_toolpack import (
+            CODING_ALIAS_MAP,
+            build_alias_specs,
+        )
+
+        sandbox = _make_sandbox(tmp_path)
+        pack = build_coding_toolpack(sandbox)
+        alias_specs = build_alias_specs(pack)
+
+        assert "write_file" in alias_specs
+        canonical = CODING_ALIAS_MAP["write_file"]
+        result = await pack.executors[canonical](
+            {"path": "via_alias.txt", "content": "written via alias"},
+        )
+        parsed = json.loads(result)
+        assert parsed["status"] == "ok"
+
+    @pytest.mark.asyncio
+    async def test_execute_alias_executes_via_bash(self, tmp_path: Path) -> None:
+        """execute alias resolves to 'bash' and executes on real sandbox."""
+        from swarmline.runtime.thin.coding_toolpack import (
+            CODING_ALIAS_MAP,
+            build_alias_specs,
+        )
+
+        sandbox = _make_sandbox(tmp_path)
+        pack = build_coding_toolpack(sandbox)
+        alias_specs = build_alias_specs(pack)
+
+        assert "execute" in alias_specs
+        canonical = CODING_ALIAS_MAP["execute"]
+        result = await pack.executors[canonical]({"command": "echo alias_test"})
+        parsed = json.loads(result)
+        assert "alias_test" in parsed.get("stdout", "")

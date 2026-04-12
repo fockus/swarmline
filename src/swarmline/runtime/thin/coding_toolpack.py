@@ -30,6 +30,82 @@ CODING_TODO_TOOL_NAMES: frozenset[str] = frozenset(
 CODING_TOOL_NAMES: frozenset[str] = CODING_SANDBOX_TOOL_NAMES | CODING_TODO_TOOL_NAMES
 
 
+# ---------------------------------------------------------------------------
+# COMP-01: Legacy alias → canonical coding tool mapping
+# ---------------------------------------------------------------------------
+
+CODING_ALIAS_MAP: dict[str, str] = {
+    "read_file": "read",
+    "write_file": "write",
+    "edit_file": "edit",
+    "execute": "bash",
+    "write_todos": "todo_write",
+}
+
+
+def resolve_coding_alias(name: str | None) -> str:
+    """Resolve a tool name: alias → canonical, canonical → passthrough.
+
+    Args:
+        name: Tool name to resolve. May be a legacy alias or canonical name.
+
+    Returns:
+        Canonical tool name.
+
+    Raises:
+        ValueError: If name is None, empty, or not a known alias/canonical.
+        TypeError: If name is not a string.
+    """
+    if name is None:
+        raise TypeError("Tool name must be a string, got None")
+    if not isinstance(name, str):
+        raise TypeError(f"Tool name must be a string, got {type(name).__name__}")
+    if not name.strip():
+        raise ValueError("Tool name must not be empty")
+
+    # Direct alias hit
+    if name in CODING_ALIAS_MAP:
+        return CODING_ALIAS_MAP[name]
+
+    # Canonical name passthrough (includes alias targets for forward-compat)
+    all_canonical = CODING_TOOL_NAMES | set(CODING_ALIAS_MAP.values())
+    if name in all_canonical:
+        return name
+
+    raise ValueError(
+        f"Unsupported alias or unknown tool: '{name}'. "
+        f"Known aliases: {sorted(CODING_ALIAS_MAP.keys())}. "
+        f"Known canonical: {sorted(CODING_TOOL_NAMES)}"
+    )
+
+
+def build_alias_specs(pack: "CodingToolPack") -> dict[str, ToolSpec]:
+    """Build ToolSpec objects for legacy alias names that delegate to canonical.
+
+    Each alias spec has the same description and parameters as the canonical
+    tool it maps to, ensuring COMP-03 (no second implementation path).
+
+    Only produces aliases whose canonical target exists in the pack.
+
+    Args:
+        pack: CodingToolPack with canonical specs.
+
+    Returns:
+        Dict mapping alias name → ToolSpec (alias name, canonical description).
+    """
+    alias_specs: dict[str, ToolSpec] = {}
+    for alias_name, canonical_name in CODING_ALIAS_MAP.items():
+        if canonical_name in pack.specs:
+            canonical_spec = pack.specs[canonical_name]
+            alias_specs[alias_name] = ToolSpec(
+                name=alias_name,
+                description=canonical_spec.description,
+                parameters=canonical_spec.parameters,
+                is_local=True,
+            )
+    return alias_specs
+
+
 def _freeze_mapping(d: dict[str, Any]) -> Mapping[str, Any]:
     """Wrap a dict as a read-only MappingProxy."""
     return MappingProxyType(d)
