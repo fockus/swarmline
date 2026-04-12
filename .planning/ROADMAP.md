@@ -2,7 +2,7 @@
 
 ## Overview
 
-Transform ThinRuntime from a lightweight LLM loop into a full-featured runtime with hook dispatch, tool policy enforcement, LLM-initiated subagents, slash-command routing, and native tool calling API -- achieving feature parity with Claude Code while remaining multi-provider. Six phases deliver incremental, independently verifiable capabilities on top of the existing swarmline codebase (v1.4.1 -> v1.5.0), with each phase maintaining backward compatibility across all 4263+ existing tests.
+Transform ThinRuntime from a lightweight LLM loop into a full-featured runtime with hook dispatch, tool policy enforcement, LLM-initiated subagents, slash-command routing, and native tool calling API -- achieving feature parity with Claude Code while remaining multi-provider. After parity, extend ThinRuntime with an opt-in coding-agent profile that assembles canonical coding tools, persistent task/todo semantics, richer coding context, and inherited coding behavior for thin subagents. Ten phases deliver incremental, independently verifiable capabilities on top of the existing swarmline codebase, with each phase maintaining backward compatibility across the existing offline suite.
 
 ## Phases
 
@@ -12,12 +12,16 @@ Transform ThinRuntime from a lightweight LLM loop into a full-featured runtime w
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Hook Dispatch** - Wire HookRegistry into ThinRuntime/ToolExecutor for PreToolUse, PostToolUse, Stop, and UserPromptSubmit lifecycle events
-- [ ] **Phase 2: Tool Policy Enforcement** - Enforce DefaultToolPolicy in ToolExecutor after hook dispatch, blocking denied tools with error responses
-- [ ] **Phase 3: LLM-Initiated Subagents** - Register spawn_agent tool in ThinRuntime so LLM can delegate tasks to child agents with depth/concurrency/timeout limits
+- [x] **Phase 1: Hook Dispatch** - Wire HookRegistry into ThinRuntime/ToolExecutor for PreToolUse, PostToolUse, Stop, and UserPromptSubmit lifecycle events
+- [x] **Phase 2: Tool Policy Enforcement** - Enforce DefaultToolPolicy in ToolExecutor after hook dispatch, blocking denied tools with error responses
+- [x] **Phase 3: LLM-Initiated Subagents** - Register spawn_agent tool in ThinRuntime so LLM can delegate tasks to child agents with depth/concurrency/timeout limits
 - [ ] **Phase 4: Command Routing** - Intercept /commands in user input before LLM, routing to CommandRegistry for immediate execution
 - [ ] **Phase 5: Native Tool Calling** - Opt-in native tool calling API for Anthropic/OpenAI/Google with parallel execution and Strangler Fig fallback
 - [ ] **Phase 6: Integration Validation** - Full-stack integration tests, cross-feature interaction validation, lint/type/coverage gates
+- [ ] **Phase 7: Coding Profile Foundation** - Opt-in coding-agent profile, canonical coding tool pack, and profile-scoped policy without changing non-coding ThinRuntime behavior
+- [ ] **Phase 8: Coding Task Runtime and Persistence** - Persistent task/todo/session semantics for coding runs using existing GraphTaskBoard and TaskSessionStore seams
+- [ ] **Phase 9: Coding Context and Compatibility** - Budgeted coding-context slices plus legacy alias compatibility and fail-fast wiring
+- [ ] **Phase 10: Coding Subagent Inheritance and Validation** - Coding-profile inheritance for thin subagents plus tranche-level regression and quality closure
 
 ## Phase Details
 
@@ -110,6 +114,66 @@ Plans:
 Plans:
 - [ ] 06-01: Full-stack integration tests and final quality gate validation
 
+### Phase 7: Coding Profile Foundation
+**Goal**: Developers can opt into a `coding-agent profile` on top of `ThinRuntime`, receiving one canonical coding tool surface and explicit coding-only policy without changing the default secure posture of non-coding runs
+**Depends on**: Phase 2, Phase 3, Phase 6
+**Requirements**: CADG-01, CADG-02, CADG-03, CADG-04, CADG-05
+**Success Criteria** (what must be TRUE):
+  1. `ThinRuntime` accepts an opt-in coding profile without introducing a new runtime hierarchy
+  2. Visible tool surface in coding mode matches executable tool surface exactly
+  3. `read/write/edit/multi_edit/bash/ls/glob/grep` are sourced from shared builtin implementations rather than a parallel thin-only implementation path
+  4. Coding policy explicitly allows only the declared coding tool set
+  5. Default-deny behavior outside coding profile remains unchanged
+**Plans**: 1 plan
+
+Plans:
+- [ ] 07-01-PLAN.md — Coding profile contracts, canonical tool pack, ThinRuntime wiring, and policy-scoped regressions
+
+### Phase 8: Coding Task Runtime and Persistence
+**Goal**: Coding runs get persistent task, todo, and session semantics built from existing Swarmline seams instead of shims or markdown placeholders
+**Depends on**: Phase 7
+**Requirements**: CTSK-01, CTSK-02, CTSK-03, CTSK-04, CTSK-05
+**Success Criteria** (what must be TRUE):
+  1. Coding-task lifecycle is backed by `GraphTaskBoard` rather than a parallel task engine
+  2. `todo_read/todo_write` are provider-backed in coding mode
+  3. Task state and session-to-task binding survive restart/resume in supported persistence modes
+  4. Typed persistence snapshots roundtrip cleanly
+  5. Missing provider or missing binding paths fail fast instead of degrading silently
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01: Coding task runtime facade and persistent task/todo/session adapters
+
+### Phase 9: Coding Context and Compatibility
+**Goal**: Coding runs get bounded task-aware context and backward-compatible legacy tool aliases, with deterministic truncation and explicit fail-fast semantics
+**Depends on**: Phase 7, Phase 8
+**Requirements**: CCTX-01, CCTX-02, COMP-01, COMP-02, COMP-03
+**Success Criteria** (what must be TRUE):
+  1. Coding mode assembles task/board/workspace/search/session/skill-profile context slices and non-coding mode does not
+  2. Budget pressure results in deterministic omission/truncation rather than unstable context drift
+  3. Legacy aliases map to canonical implementations in coding mode with equivalent behavior
+  4. Unsupported alias/profile/wiring states return explicit errors
+  5. Compatibility layer does not become a second implementation path
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: Coding context assembler and compatibility/fail-fast wiring
+
+### Phase 10: Coding Subagent Inheritance and Validation
+**Goal**: Thin subagents inherit the coding-agent profile correctly, and the full coding-agent tranche closes with no regression to non-coding ThinRuntime behavior
+**Depends on**: Phase 7, Phase 8, Phase 9
+**Requirements**: CSUB-01, CSUB-02, CSUB-03, CVAL-01, CVAL-02, CVAL-03
+**Success Criteria** (what must be TRUE):
+  1. Thin subagents inherit coding profile, coding tool surface, policy, and task context from their parent run
+  2. Incompatible inheritance state fails fast rather than degrading to generic thin behavior
+  3. Non-coding thin runs remain behaviorally unchanged
+  4. Targeted packs, broader regression, `ruff`, and `mypy` are green for the coding-agent tranche
+  5. New interfaces remain contract-first, dependency-safe, and within project interface limits
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: Coding-profile subagent inheritance and tranche-level validation closure
+
 ## Progress
 
 **Execution Order:**
@@ -118,9 +182,13 @@ Note: Phases 4 and 5 are independent after their prerequisites and could execute
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Hook Dispatch | 0/3 | Not started | - |
-| 2. Tool Policy Enforcement | 0/1 | Not started | - |
-| 3. LLM-Initiated Subagents | 0/2 | Not started | - |
-| 4. Command Routing | 0/1 | Not started | - |
+| 1. Hook Dispatch | 3/3 | Complete | 2026-04-12 |
+| 2. Tool Policy Enforcement | 1/1 | Complete | 2026-04-12 |
+| 3. LLM-Initiated Subagents | 2/2 | Complete | 2026-04-12 |
+| 4. Command Routing | 1/1 | Complete | 2026-04-12 |
 | 5. Native Tool Calling | 0/3 | Not started | - |
 | 6. Integration Validation | 0/1 | Not started | - |
+| 7. Coding Profile Foundation | 0/1 | Not started | - |
+| 8. Coding Task Runtime and Persistence | 0/1 | Not started | - |
+| 9. Coding Context and Compatibility | 0/1 | Not started | - |
+| 10. Coding Subagent Inheritance and Validation | 0/1 | Not started | - |
