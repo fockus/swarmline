@@ -7,7 +7,11 @@ import re
 import time
 from collections.abc import AsyncIterator, Callable
 from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from swarmline.hooks.dispatcher import HookDispatcher
+    from swarmline.hooks.registry import HookRegistry
 
 from swarmline.runtime.cost import CostTracker, load_pricing
 from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
@@ -52,6 +56,7 @@ class ThinRuntime:
         react_patterns: list[re.Pattern[str]] | None = None,
         planner_patterns: list[re.Pattern[str]] | None = None,
         sandbox: Any | None = None,
+        hook_registry: HookRegistry | None = None,
     ) -> None:
         self._config = config or RuntimeConfig(runtime_name="thin")
         self._auto_wrap_retriever()
@@ -66,6 +71,9 @@ class ThinRuntime:
         self._react_patterns = react_patterns
         self._planner_patterns = planner_patterns
 
+        # Hook dispatch (optional)
+        self._hook_dispatcher = self._build_hook_dispatcher(hook_registry)
+
         # Merge user local_tools with sandbox built-in executors
         merged_local_tools = dict(local_tools or {})
         _builtin_specs, builtin_executors = create_thin_builtin_tools(sandbox)
@@ -77,6 +85,7 @@ class ThinRuntime:
         self._executor = ToolExecutor(
             local_tools=merged_local_tools,
             mcp_servers=mcp_servers,
+            hook_dispatcher=self._hook_dispatcher,
         )
 
         # Cost tracking
@@ -86,6 +95,15 @@ class ThinRuntime:
                 budget=self._config.cost_budget,
                 pricing=load_pricing(),
             )
+
+    @staticmethod
+    def _build_hook_dispatcher(hook_registry: HookRegistry | None) -> HookDispatcher | None:
+        """Build HookDispatcher from HookRegistry if provided."""
+        if hook_registry is None:
+            return None
+        from swarmline.hooks.dispatcher import DefaultHookDispatcher
+
+        return DefaultHookDispatcher(hook_registry)
 
     def _auto_wrap_retriever(self) -> None:
         """Auto-wrap config.retriever into input_filters if not already present."""
@@ -158,6 +176,15 @@ class ThinRuntime:
 
         user_text = self._extract_last_user_text(messages)
 
+        # --- UserPromptSubmit hook ---
+        if self._hook_dispatcher is not None:
+            transformed = await self._hook_dispatcher.dispatch_user_prompt(user_text)
+            if transformed != user_text:
+                user_text = transformed
+                if messages and messages[-1].role == "user":
+                    messages = list(messages)
+                    messages[-1] = Message(role="user", content=user_text)
+
         # --- Input guardrails ---
         if effective_config.input_guardrails:
             guard_error = await self._run_guardrails(
@@ -187,6 +214,7 @@ class ThinRuntime:
         self._retry_events.clear()
         buffered_postprocessing = _should_buffer_postprocessing(effective_config)
         emitted_text_delta = False
+        last_result_text = ""
 
         async def checkpoint() -> RuntimeEvent | None:
             return self._cancelled_event(effective_config.cancellation_token)
@@ -252,6 +280,10 @@ class ThinRuntime:
                 if event.type == "assistant_delta":
                     emitted_text_delta = True
 
+                # Track last result text for Stop hook
+                if event.is_final:
+                    last_result_text = event.data.get("text", "")
+
                 if event.type in {
                     "assistant_delta",
                     "tool_call_started",
@@ -315,6 +347,10 @@ class ThinRuntime:
 
                 yield event
 
+            # --- Stop hook on normal completion ---
+            if self._hook_dispatcher is not None:
+                await self._hook_dispatcher.dispatch_stop(result_text=last_result_text)
+
         except ThinLlmError as exc:
             # Emit any buffered retry events before the final error
             if self._retry_events:
@@ -322,6 +358,8 @@ class ThinRuntime:
                     yield retry_evt
                 self._retry_events.clear()
             yield RuntimeEvent.error(exc.error)
+            if self._hook_dispatcher is not None:
+                await self._hook_dispatcher.dispatch_stop(result_text=str(exc.error.message))
         except Exception as e:
             yield RuntimeEvent.error(
                 RuntimeErrorData(
@@ -330,6 +368,8 @@ class ThinRuntime:
                     recoverable=False,
                 )
             )
+            if self._hook_dispatcher is not None:
+                await self._hook_dispatcher.dispatch_stop(result_text=str(e))
 
     @staticmethod
     def _extract_last_user_text(messages: list[Message]) -> str:

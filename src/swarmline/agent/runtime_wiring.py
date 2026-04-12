@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from swarmline.agent.config import AgentConfig
+from swarmline.agent.runtime_dispatch import merge_hooks
 from swarmline.agent.runtime_factory_port import RuntimeFactoryPort, build_runtime_factory
 from swarmline.runtime.types import RuntimeConfig, ToolSpec
 
@@ -56,6 +57,11 @@ def build_portable_runtime_plan(
     }
     if runtime_name in _PORTABLE_MCP_RUNTIMES and agent_config.mcp_servers:
         create_kwargs["mcp_servers"] = agent_config.mcp_servers
+
+    # Merge hooks from config + middleware for portable runtimes
+    merged_hooks = merge_hooks(agent_config.hooks, agent_config.middleware)
+    if merged_hooks is not None:
+        create_kwargs["hook_registry"] = merged_hooks
 
     active_tools = [tool_definition.to_tool_spec() for tool_definition in agent_config.tools]
     return PortableRuntimePlan(

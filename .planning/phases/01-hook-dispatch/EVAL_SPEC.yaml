@@ -1,0 +1,101 @@
+evaluation_specification:
+  task: 'Phase 1: Hook Dispatch'
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: >
+        All 10 requirements (HOOK-01 through HOOK-10) are fully implemented and functional.
+        HookDispatcher Protocol dispatches PreToolUse, PostToolUse, Stop, and UserPromptSubmit
+        lifecycle events at the correct points. HookResult frozen dataclass carries action/modified_input/message.
+        DefaultHookDispatcher correctly iterates hooks, applies matcher filtering, and short-circuits on block.
+        ToolExecutor.execute() fires PreToolUse before and PostToolUse after every tool call (local and MCP).
+        PreToolUse block decision prevents tool execution and returns JSON error.
+        PostToolUse output override replaces the original result.
+        ThinRuntime.run() fires Stop hook on completion and UserPromptSubmit before processing.
+        Agent->RuntimeFactory->ThinRuntime wiring passes HookRegistry through to ThinRuntime constructor.
+        SecurityGuard middleware actually blocks tools in ThinRuntime (end-to-end).
+        All 4263+ existing tests still pass with zero regressions.
+      checklist:
+        - 'HookDispatcher Protocol defined with exactly 4 methods — ISP compliant (<=5)'
+        - 'HookResult is a frozen dataclass with action, modified_input, message fields'
+        - 'DefaultHookDispatcher implements HookDispatcher Protocol and iterates HookRegistry entries'
+        - 'Matcher filtering works: hook with matcher fires only for matching tool_name'
+        - 'PreToolUse short-circuit: first hook returning block stops iteration'
+        - 'PostToolUse output override: hook returning string replaces original tool output'
+        - 'ToolExecutor.execute() calls dispatch_pre_tool before executing any tool (local and MCP)'
+        - 'ToolExecutor.execute() calls dispatch_post_tool after executing any tool with the result'
+        - 'When PreToolUse returns block, ToolExecutor skips execution and returns JSON error'
+        - 'ThinRuntime.run() calls dispatch_stop on completion (normal + error)'
+        - 'ThinRuntime.run() calls dispatch_user_prompt at the start of run() with user text'
+        - 'Hooks propagate through Agent -> RuntimeFactory -> ThinRuntime -> ToolExecutor'
+        - 'SecurityGuard middleware blocking pattern prevents tool execution in ThinRuntime end-to-end'
+        - 'All 4263+ existing tests pass'
+        - 'New fields on ToolExecutor/ThinRuntime are optional with None defaults — backward compatible'
+
+    - name: architecture
+      weight: 0.25
+      rubric: >
+        Strict Clean Architecture: domain types (HookResult, HookDispatcher Protocol) have zero
+        external dependencies. DefaultHookDispatcher is application/infrastructure layer.
+        Hook integration follows dependency inversion — ToolExecutor and ThinRuntime depend on
+        HookDispatcher Protocol abstraction, never the concrete DefaultHookDispatcher.
+        ISP compliance: HookDispatcher Protocol has <=5 methods.
+      checklist:
+        - 'HookDispatcher Protocol lives in hooks/ layer — zero external deps beyond stdlib'
+        - 'HookResult frozen dataclass — zero external deps beyond stdlib'
+        - 'ToolExecutor depends on HookDispatcher Protocol, not DefaultHookDispatcher concrete class'
+        - 'ThinRuntime depends on HookDispatcher Protocol or HookRegistry, not concrete dispatcher'
+        - 'HookDispatcher Protocol has exactly 4 methods (<=5 ISP threshold) and is @runtime_checkable'
+        - 'No circular imports introduced'
+        - 'Constructor injection: hooks passed via constructor parameters'
+        - 'New code does not add external dependencies to domain layer'
+
+    - name: test_quality
+      weight: 0.20
+      rubric: >
+        TDD discipline: tests written first. Contract-first: Protocol has contract tests.
+        Test naming follows test_<what>_<condition>_<result>. Arrange-Act-Assert structure.
+        @parametrize used instead of copy-paste. Coverage on new files >= 95%.
+        No test tampering. Integration tests use real components.
+      checklist:
+        - '~14 unit tests for HookDispatcher/DefaultHookDispatcher'
+        - '~7 unit tests for ToolExecutor hook integration'
+        - '~7 unit tests for ThinRuntime hook integration'
+        - '~3 wiring tests for Agent -> RuntimeFactory -> ThinRuntime chain'
+        - '~2 integration tests for SecurityGuard end-to-end blocking'
+        - 'Test names follow pattern test_<what>_<condition>_<result>'
+        - 'All tests use Arrange-Act-Assert structure'
+        - 'Coverage on new files >= 95%'
+        - 'No existing tests modified, skipped, or deleted'
+        - 'Mock usage <= 5 per test; integration tests use real components'
+
+    - name: code_quality
+      weight: 0.15
+      rubric: >
+        Code is production-ready: no TODOs, no placeholders. Full type hints.
+        Frozen dataclasses for immutable domain objects. Async-first.
+        ruff check passes. mypy passes on new modules.
+      checklist:
+        - 'All new public APIs have complete type hints'
+        - 'HookResult is a frozen dataclass'
+        - 'All dispatch methods are async'
+        - 'No TODO, FIXME, XXX, placeholder in new files'
+        - 'ruff check passes on touched files'
+        - 'mypy passes on new modules'
+        - '__all__ exports defined in modified __init__.py'
+        - 'No files exceed 300 lines (SRP threshold)'
+
+    - name: security
+      weight: 0.10
+      rubric: >
+        Hook dispatch is secure: PreToolUse block cannot be bypassed.
+        Hook callback exceptions caught and logged (fail-open).
+        SecurityGuard integration test proves blocking works.
+        None dispatcher means passthrough (no accidental blocking).
+      checklist:
+        - 'PreToolUse block is authoritative — tool not executed after block'
+        - 'Hook callback exceptions caught and logged, not propagated'
+        - 'Malicious/unexpected hook return values handled gracefully'
+        - 'SecurityGuard integration test proves end-to-end blocking'
+        - 'hook_dispatcher=None means passthrough (no accidental blocking)'
+        - 'No new secrets or credential handling introduced'

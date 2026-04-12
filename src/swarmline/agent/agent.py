@@ -12,6 +12,7 @@ from swarmline.agent.result import Result
 from swarmline.agent.runtime_factory_port import RuntimeFactoryPort, build_runtime_factory
 from swarmline.agent.runtime_dispatch import (
     dispatch_runtime,
+    merge_hooks,
     run_portable_runtime,
     stream_claude_one_shot,
 )
@@ -344,33 +345,6 @@ def build_tools_mcp_server(tools: tuple[Any, ...]) -> Any:
     return create_mcp_server("agent_tools", tools=sdk_tools)
 
 
-def merge_hooks(config_hooks: Any, middleware: tuple[Any, ...]) -> Any:
-    """Merge hooks from config and middleware.get_hooks()."""
-    from swarmline.hooks.registry import HookRegistry
-
-    registries: list[HookRegistry] = []
-
-    if config_hooks:
-        registries.append(config_hooks)
-
-    for mw in middleware:
-        hooks = mw.get_hooks()
-        if hooks is not None:
-            registries.append(hooks)
-
-    if not registries:
-        return None
-
-    if len(registries) == 1:
-        return registries[0]
-
-    merged = HookRegistry()
-    for reg in registries:
-        for event_name in reg.list_events():
-            for entry in reg.get_hooks(event_name):
-                merged._add(event_name, entry.callback, entry.matcher)
-
-    return merged
 
 
 def _adapt_handler(handler: Any) -> Any:

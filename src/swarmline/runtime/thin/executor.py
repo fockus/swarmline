@@ -6,13 +6,16 @@ import asyncio
 import inspect
 import json
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from swarmline.runtime.thin.mcp_client import (
     McpClient,
     parse_mcp_tool_name,
     resolve_mcp_server_url,
 )
+
+if TYPE_CHECKING:
+    from swarmline.hooks.dispatcher import HookDispatcher
 
 
 class ToolExecutor:
@@ -24,26 +27,47 @@ class ToolExecutor:
         mcp_servers: dict[str, Any] | None = None,
         mcp_client: McpClient | None = None,
         timeout_seconds: float = 30.0,
+        hook_dispatcher: HookDispatcher | None = None,
     ) -> None:
         self._local_tools = local_tools or {}
         self._mcp_servers = mcp_servers or {}
         self._timeout = timeout_seconds
         self._mcp_client = mcp_client or McpClient(timeout_seconds=timeout_seconds)
+        self._hook_dispatcher = hook_dispatcher
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> str:
         """Execute."""
+        # Pre-tool hooks
+        if self._hook_dispatcher is not None:
+            hook_result = await self._hook_dispatcher.dispatch_pre_tool(tool_name, args)
+            if hook_result.action == "block":
+                return json.dumps(
+                    {"error": f"Hook blocked: {hook_result.message}"},
+                    ensure_ascii=False,
+                )
+            if hook_result.action == "modify" and hook_result.modified_input is not None:
+                args = hook_result.modified_input
+
         # Local tool
         if tool_name in self._local_tools:
-            return await self._execute_local(tool_name, args)
+            result = await self._execute_local(tool_name, args)
+        elif tool_name.startswith("mcp__"):
+            result = await self._execute_mcp(tool_name, args)
+        else:
+            return json.dumps(
+                {"error": f"Инструмент '{tool_name}' не найден"},
+                ensure_ascii=False,
+            )
 
+        # Post-tool hooks
+        if self._hook_dispatcher is not None:
+            modified = await self._hook_dispatcher.dispatch_post_tool(
+                tool_name, args, result
+            )
+            if modified is not None:
+                result = modified
 
-        if tool_name.startswith("mcp__"):
-            return await self._execute_mcp(tool_name, args)
-
-        return json.dumps(
-            {"error": f"Инструмент '{tool_name}' не найден"},
-            ensure_ascii=False,
-        )
+        return result
 
     async def _execute_local(self, tool_name: str, args: dict[str, Any]) -> str:
         """Execute local tool."""

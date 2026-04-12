@@ -5,9 +5,17 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
+from swarmline.hooks.dispatcher import DefaultHookDispatcher, HookDispatcher, HookResult
 from swarmline.hooks.registry import HookCallback, HookEntry, HookRegistry
 
-__all__ = ["HookCallback", "HookEntry", "HookRegistry"]
+__all__ = [
+    "DefaultHookDispatcher",
+    "HookCallback",
+    "HookDispatcher",
+    "HookEntry",
+    "HookRegistry",
+    "HookResult",
+]
 
 
 def __getattr__(name: str) -> Any:
