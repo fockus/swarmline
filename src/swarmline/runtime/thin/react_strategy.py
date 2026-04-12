@@ -92,7 +92,7 @@ async def run_react(  # noqa: C901
                     # Parallel if >1, sequential otherwise
                     if len(native_result.tool_calls) > 1:
                         raw_results = await asyncio.gather(
-                            *[executor.execute(tc.name, tc.args) for tc in native_result.tool_calls],
+                            *[executor.execute(ntc.name, ntc.args) for ntc in native_result.tool_calls],
                             return_exceptions=True,
                         )
                         # Convert exceptions to JSON error strings
@@ -111,9 +111,9 @@ async def run_react(  # noqa: C901
                         ]
 
                     # Emit tool_call_started/finished events and count
-                    for tc, result in zip(native_result.tool_calls, results):
+                    for ntc, result in zip(native_result.tool_calls, results):
                         yield RuntimeEvent.tool_call_started(
-                            name=tc.name, args=tc.args, correlation_id=tc.id,
+                            name=ntc.name, args=ntc.args, correlation_id=ntc.id,
                         )
                         tool_ok = True
                         try:
@@ -123,8 +123,8 @@ async def run_react(  # noqa: C901
                         except (json.JSONDecodeError, TypeError):
                             pass
                         yield RuntimeEvent.tool_call_finished(
-                            name=tc.name,
-                            correlation_id=tc.id,
+                            name=ntc.name,
+                            correlation_id=ntc.id,
                             ok=tool_ok,
                             result_summary=result[:200],
                         )
@@ -133,10 +133,10 @@ async def run_react(  # noqa: C901
                     # Append messages for next turn
                     if native_result.text:
                         lm_messages.append({"role": "assistant", "content": native_result.text})
-                    for tc, result in zip(native_result.tool_calls, results):
+                    for ntc, result in zip(native_result.tool_calls, results):
                         lm_messages.append({
                             "role": "user",
-                            "content": f"Result {tc.name}: {result}",
+                            "content": f"Result {ntc.name}: {result}",
                         })
                     new_messages.append(
                         Message(role="assistant", content=native_result.text or "")
