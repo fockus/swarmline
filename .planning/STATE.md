@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-12)
+See: .planning/PROJECT.md (updated 2026-04-13)
 
-**Core value:** ThinRuntime provides safe, full-featured agent execution with tool control via hooks and policy, task delegation via subagents, and native tool calling API support
-**Current focus:** ThinRuntime Claude Code Parity COMPLETE. Ready for v1.5.0 release.
+**Core value:** ThinRuntime provides safe, full-featured agent execution with tool control via hooks and policy, task delegation via subagents, native tool calling API support, and advanced coding agent capabilities
+**Current focus:** v1.5.0 Parity v2 — closing remaining Claude Code capability gaps
 
 ## Current Position
 
-Phase: 10 of 10 — ALL PHASES COMPLETE
-Plan: 1 of 1 in final phase
-Status: Complete
-Last activity: 2026-04-13 -- Phase 10 complete (Judge: 4.38/5.0)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for Parity v2
+Last activity: 2026-04-13 — Milestone v1.5.0 Parity v2 started
 
-Progress: [████████████████████] 100% (10/10 phases)
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -47,6 +47,9 @@ Recent decisions affecting current work:
 - Strangler Fig for native tools (JSON-in-text default, native opt-in)
 - SubagentTool max_depth=3 default (recursion protection)
 - Commands intercept before LLM (immediate response, no LLM call)
+- Versioning: v1.5.0 = Parity v1 + v2 combined release (patch versions for incremental, minor only for big batches)
+- Out of scope: Interactive permissions (auto/default/plan) and Plan mode review gate — binary policy sufficient for library
+- Project instructions: universal format support (CLAUDE.md + AGENTS.md + GEMINI.md + RULES.md)
 
 ### Pending Todos
 
@@ -59,5 +62,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-13
-Stopped at: All 10 phases complete, ready for v1.5.0 release
+Stopped at: Milestone v1.5.0 Parity v2 initialized, defining requirements
 Resume file: None

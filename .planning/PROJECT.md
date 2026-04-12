@@ -2,11 +2,27 @@
 
 ## What This Is
 
-Доработка ThinRuntime модуля в swarmline (Python LLM-agnostic agent framework) до полноценного runtime, сравнимого по возможностям с Claude Code. Включает систему хуков (PreToolUse/PostToolUse/Stop/UserPromptSubmit), LLM-initiated субагентов, slash-команд, tool policy enforcement и native tool calling API. Целевая аудитория — разработчики, использующие swarmline с thin runtime для multi-provider AI агентов.
+Доработка ThinRuntime модуля в swarmline (Python LLM-agnostic agent framework) до полноценного runtime, сравнимого по возможностям с Claude Code. Parity v1 (завершён): hooks, policy, subagents, commands, native tools, coding profile. Parity v2 (текущий): compaction, project instructions, session resume, web tools, multimodal, MCP resources, system reminders, worktree isolation, thinking events, background agents.
 
 ## Core Value
 
-ThinRuntime должен обеспечивать безопасное и полнофункциональное выполнение агентов с контролем инструментов через hooks и policy, возможностью делегирования задач через субагентов, и поддержкой native tool calling API провайдеров.
+ThinRuntime должен обеспечивать безопасное и полнофункциональное выполнение агентов с контролем инструментов через hooks и policy, возможностью делегирования задач через субагентов, поддержкой native tool calling API провайдеров, и продвинутыми возможностями coding agent (context management, session persistence, multimodal input).
+
+## Current Milestone: v1.5.0 ThinRuntime Parity v2
+
+**Goal:** Закрыть оставшиеся capability gaps между ThinRuntime и Claude Code — compaction, project instructions, session resume, web tools, multimodal input, и инфраструктура для production coding agent.
+
+**Target features:**
+- Conversation Compaction (LLM-summarization вместо truncation)
+- Project Instructions Loading (CLAUDE.md / AGENTS.md / GEMINI.md / RULES.md)
+- Session Resume (conversation history persistence)
+- Web Tools (WebSearch / WebFetch built-in)
+- Multimodal Input (images, PDF, Jupyter notebooks)
+- MCP Resource Reading
+- System Reminders (dynamic context injection)
+- Git Worktree Isolation for subagents
+- Thinking Events (separate reasoning stream)
+- Background Agents + Monitor Tool
 
 ## Requirements
 
@@ -26,23 +42,36 @@ ThinRuntime должен обеспечивать безопасное и пол
 - ✓ CommandRegistry (parsing, YAML loader, aliases) — existing
 - ✓ ThinSubagentOrchestrator (Python API, spawn/wait/cancel) — existing
 - ✓ DefaultToolPolicy (4-step allow/deny logic) — existing
+- ✓ Hook dispatch в ThinRuntime — Parity v1 Phase 1
+- ✓ Tool policy enforcement в ToolExecutor — Parity v1 Phase 2
+- ✓ LLM-initiated subagent tool (spawn_agent) — Parity v1 Phase 3
+- ✓ Command routing (/commands before LLM) — Parity v1 Phase 4
+- ✓ Native tool calling API (3 providers) — Parity v1 Phase 5
+- ✓ Coding profile foundation (10 canonical tools) — Parity v1 Phase 7
+- ✓ Coding task runtime (persistent snapshots) — Parity v1 Phase 8
+- ✓ Coding context assembly (budget-aware 6 slices) — Parity v1 Phase 9
+- ✓ Coding subagent inheritance — Parity v1 Phase 10
 
 ### Active
 
-- [ ] Hook dispatch в ThinRuntime (PreToolUse/PostToolUse в ToolExecutor, Stop/UserPromptSubmit в run())
-- [ ] Tool policy enforcement в ToolExecutor (allow/deny перед выполнением)
-- [ ] LLM-initiated subagent tool (spawn_agent ToolSpec + executor)
-- [ ] Command routing (intercept /commands перед LLM)
-- [ ] Native tool calling API (Anthropic/OpenAI/Google native tools parameter)
-- [ ] Parallel tool calls (batch multiple tool_use в одном ходе)
+- [ ] Conversation Compaction (LLM-суммаризация вместо truncation)
+- [ ] Project Instructions Loading (CLAUDE.md / AGENTS.md / GEMINI.md / RULES.md)
+- [ ] Session Resume (conversation history persistence between run() calls)
+- [ ] Web Tools (WebSearch / WebFetch built-in)
+- [ ] Multimodal Input (images, PDF, Jupyter notebooks)
+- [ ] MCP Resource Reading (resources protocol, not just tools)
+- [ ] System Reminders (dynamic conditional context injection)
+- [ ] Git Worktree Isolation for subagents
+- [ ] Thinking Events (separate reasoning stream, extended thinking)
+- [ ] Background Agents + Monitor Tool (async notification, stdout streaming)
 
 ### Out of Scope
 
-- MCP stdio/SSE transport — HTTP достаточно для v1.5, stdio сложнее и менее portable
-- Persistent subagent state — субагенты stateless, state persistence в v2
-- Custom hook types — 4 типа покрывают все use cases Claude Code
+- Interactive permission modes (auto/default/plan) — binary policy sufficient for library
+- Plan mode review gate — planner strategy exists, interactive review is UI concern
+- MCP stdio/SSE transport — HTTP достаточно для v1.5
 - Breaking changes в AgentConfig — все новые поля optional с None default
-- Замена pseudo tool-calling — native tools opt-in, JSON-in-text остаётся default (Strangler Fig)
+- Custom hook types — 4 типа покрывают все use cases
 
 ## Context
 
