@@ -7,7 +7,7 @@ import contextlib
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from swarmline.orchestration.runtime_helpers import collect_runtime_output
 from swarmline.orchestration.subagent_types import (
@@ -18,19 +18,24 @@ from swarmline.orchestration.subagent_types import (
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig
 
+if TYPE_CHECKING:
+    from swarmline.hooks.registry import HookRegistry
+    from swarmline.policy.tool_policy import DefaultToolPolicy
+    from swarmline.runtime.thin.coding_profile import CodingProfileConfig
+
 
 class _SubagentRuntime(Protocol):
-    """Mandandmal interface runtime for subagent."""
+    """Minimal runtime interface for subagent execution."""
 
     async def run(self, task: str) -> str: ...
 
 
 class ThinSubagentOrchestrator:
-    """Ortoestrator subagent'oin on asyncio.Task.
+    """Orchestrate subagents as asyncio.Tasks.
 
-  SRP: manages lifecycle (spawn/cancel/wait), not LLM-logandtoy.
-  Prand onlandandand LLM_call - creates a per-worker ThinRuntime aintomatandchestoand.
-  """
+    SRP: manages lifecycle (spawn/cancel/wait), delegates LLM execution
+    to per-worker ThinRuntime instances.
+    """
 
     def __init__(
         self,
@@ -40,12 +45,18 @@ class ThinSubagentOrchestrator:
         local_tools: dict[str, Callable[..., Any]] | None = None,
         mcp_servers: dict[str, Any] | None = None,
         runtime_config: RuntimeConfig | None = None,
+        coding_profile: CodingProfileConfig | None = None,
+        tool_policy: DefaultToolPolicy | None = None,
+        hook_registry: HookRegistry | None = None,
     ) -> None:
         self._max_concurrent = max_concurrent
         self._llm_call = llm_call
         self._local_tools: dict[str, Callable[..., Any]] = dict(local_tools or {})
         self._mcp_servers = mcp_servers
         self._runtime_config = runtime_config or RuntimeConfig(runtime_name="thin")
+        self._coding_profile = coding_profile
+        self._tool_policy = tool_policy
+        self._hook_registry = hook_registry
         self._tasks: dict[str, asyncio.Task[str]] = {}
         self._specs: dict[str, SubagentSpec] = {}
         self._results: dict[str, SubagentResult] = {}
@@ -55,13 +66,30 @@ class ThinSubagentOrchestrator:
         self._local_tools[name] = executor
 
     def _create_runtime(self, spec: SubagentSpec) -> _SubagentRuntime:
-        """Create runtime."""
+        """Create runtime.
+
+        When parent has an active coding_profile, validates that the child
+        spec has a sandbox_config (CSUB-03: fail fast on incompatible state).
+        """
+        if (
+            self._coding_profile is not None
+            and self._coding_profile.enabled
+            and spec.sandbox_config is None
+        ):
+            raise ValueError(
+                f"Subagent '{spec.name}' cannot inherit coding profile: "
+                "sandbox_config is required but not provided in SubagentSpec. "
+                "Either provide sandbox_config or disable the coding profile."
+            )
+
         return _ThinWorkerRuntime(
             spec=spec,
             llm_call=self._llm_call,
             local_tools=self._local_tools,
             mcp_servers=self._mcp_servers,
             runtime_config=self._runtime_config,
+            tool_policy=self._tool_policy,
+            hook_registry=self._hook_registry,
         )
 
     async def spawn(self, spec: SubagentSpec, task: str) -> str:
@@ -173,12 +201,16 @@ class _ThinWorkerRuntime:
         local_tools: dict[str, Callable[..., Any]],
         mcp_servers: dict[str, Any] | None,
         runtime_config: RuntimeConfig,
+        tool_policy: DefaultToolPolicy | None = None,
+        hook_registry: HookRegistry | None = None,
     ) -> None:
         self._spec = spec
         self._llm_call = llm_call
         self._local_tools = local_tools
         self._mcp_servers = mcp_servers
         self._runtime_config = runtime_config
+        self._tool_policy = tool_policy
+        self._hook_registry = hook_registry
 
     async def run(self, task: str) -> str:
         """Run."""
@@ -189,6 +221,10 @@ class _ThinWorkerRuntime:
         }
         if self._llm_call is not None:
             kwargs["llm_call"] = self._llm_call
+        if self._tool_policy is not None:
+            kwargs["tool_policy"] = self._tool_policy
+        if self._hook_registry is not None:
+            kwargs["hook_registry"] = self._hook_registry
         runtime = ThinRuntime(**kwargs)
         return await collect_runtime_output(
             runtime.run(
