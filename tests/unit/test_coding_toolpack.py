@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from swarmline.runtime.thin.coding_toolpack import (
+    CODING_SANDBOX_TOOL_NAMES,
     CODING_TOOL_NAMES,
     CodingToolPack,
     build_coding_toolpack,
@@ -24,11 +25,20 @@ from swarmline.runtime.types import ToolSpec
 class TestCodingToolPackContract:
     """CodingToolPack guarantees spec/executor name parity."""
 
-    def test_tool_names_constant_has_8_tools(self) -> None:
-        """Canonical set = read, write, edit, multi_edit, bash, ls, glob, grep."""
-        assert len(CODING_TOOL_NAMES) == 8
-        expected = {"read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep"}
+    def test_tool_names_constant_has_10_tools(self) -> None:
+        """Canonical set = 8 sandbox + 2 todo tools."""
+        assert len(CODING_TOOL_NAMES) == 10
+        expected = {
+            "read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep",
+            "todo_read", "todo_write",
+        }
         assert CODING_TOOL_NAMES == expected
+
+    def test_sandbox_tool_names_has_8_tools(self) -> None:
+        """Sandbox subset = read, write, edit, multi_edit, bash, ls, glob, grep."""
+        assert len(CODING_SANDBOX_TOOL_NAMES) == 8
+        expected = {"read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep"}
+        assert CODING_SANDBOX_TOOL_NAMES == expected
 
     def test_pack_tool_names_match_specs_and_executors(self) -> None:
         """CodingToolPack.tool_names reflects specs keys."""
@@ -68,11 +78,11 @@ class TestBuildCodingToolpack:
             build_coding_toolpack(None)
 
     def test_returns_coding_tool_pack(self, coding_sandbox) -> None:
-        """build_coding_toolpack returns CodingToolPack with 8 tools."""
+        """build_coding_toolpack(sandbox) returns CodingToolPack with 8 sandbox tools."""
         pack = build_coding_toolpack(coding_sandbox)
 
         assert isinstance(pack, CodingToolPack)
-        assert pack.tool_names == CODING_TOOL_NAMES
+        assert pack.tool_names == CODING_SANDBOX_TOOL_NAMES
 
     def test_spec_executor_name_parity(self, coding_sandbox) -> None:
         """Spec keys == executor keys (CADG-02)."""
@@ -95,10 +105,10 @@ class TestBuildCodingToolpack:
             assert callable(executor), f"{name} is not callable"
 
     def test_no_extra_tools_beyond_canonical(self, coding_sandbox) -> None:
-        """Pack contains exactly CODING_TOOL_NAMES — no extras."""
+        """Pack contains exactly CODING_SANDBOX_TOOL_NAMES — no extras."""
         pack = build_coding_toolpack(coding_sandbox)
 
-        assert pack.tool_names == CODING_TOOL_NAMES
+        assert pack.tool_names == CODING_SANDBOX_TOOL_NAMES
         # No thin-specific aliases (read_file, write_file, execute, etc.)
         assert "read_file" not in pack.specs
         assert "execute" not in pack.specs

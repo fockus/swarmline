@@ -25,6 +25,7 @@ from swarmline.policy.tool_policy import (
 )
 from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 from swarmline.runtime.thin.coding_toolpack import (
+    CODING_SANDBOX_TOOL_NAMES,
     CODING_TOOL_NAMES,
     build_coding_toolpack,
 )
@@ -67,7 +68,7 @@ class TestCodingToolPackIntegration:
         sandbox = _make_sandbox(tmp_path)
         pack = build_coding_toolpack(sandbox)
 
-        assert pack.tool_names == CODING_TOOL_NAMES
+        assert pack.tool_names == CODING_SANDBOX_TOOL_NAMES
         assert set(pack.specs.keys()) == set(pack.executors.keys())
 
     @pytest.mark.asyncio
@@ -222,9 +223,9 @@ class TestNonCodingAgentSafety:
 class TestCodingProfileEndToEnd:
     """End-to-end: coding profile on AgentConfig → wiring → plan."""
 
-    @pytest.mark.parametrize("tool_name", sorted(CODING_TOOL_NAMES))
+    @pytest.mark.parametrize("tool_name", sorted(CODING_SANDBOX_TOOL_NAMES))
     def test_coding_profile_active_tool_present(self, tool_name: str) -> None:
-        """active_tools in the plan include each coding tool spec."""
+        """active_tools in the plan include each sandbox coding tool spec."""
         cfg = AgentConfig(
             system_prompt="code assistant",
             runtime="thin",
@@ -236,9 +237,9 @@ class TestCodingProfileEndToEnd:
         active_tool_names = {t.name for t in plan.active_tools}
         assert tool_name in active_tool_names
 
-    @pytest.mark.parametrize("tool_name", sorted(CODING_TOOL_NAMES))
+    @pytest.mark.parametrize("tool_name", sorted(CODING_SANDBOX_TOOL_NAMES))
     def test_coding_profile_executor_present(self, tool_name: str) -> None:
-        """tool_executors in create_kwargs include each coding executor."""
+        """tool_executors in create_kwargs include each sandbox coding executor."""
         cfg = AgentConfig(
             system_prompt="code assistant",
             runtime="thin",
@@ -275,7 +276,7 @@ class TestCodingProfileEndToEnd:
 
         active_tool_names = {t.name for t in plan.active_tools}
         assert "my_custom_tool" in active_tool_names
-        for tool_name in CODING_TOOL_NAMES:
+        for tool_name in CODING_SANDBOX_TOOL_NAMES:
             assert tool_name in active_tool_names
 
     @pytest.mark.parametrize("tool_name", sorted(CODING_TOOL_NAMES))

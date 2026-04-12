@@ -3,6 +3,9 @@
 Single builder that produces both ToolSpecs and executors for the
 coding profile. The visible tool surface == executable tool surface
 (CADG-02: name parity from one builder).
+
+Phase 8 expansion: CODING_TOOL_NAMES includes todo_read/todo_write.
+build_coding_toolpack optionally wires todo tools when a TodoProvider is given.
 """
 
 from __future__ import annotations
@@ -14,10 +17,17 @@ from typing import Any
 
 from swarmline.runtime.types import ToolSpec
 
-# Canonical coding tool names — the ONLY names exposed and allowed.
-CODING_TOOL_NAMES: frozenset[str] = frozenset(
+# Canonical tool name sets — used by policy and builder.
+CODING_SANDBOX_TOOL_NAMES: frozenset[str] = frozenset(
     {"read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep"}
 )
+
+CODING_TODO_TOOL_NAMES: frozenset[str] = frozenset(
+    {"todo_read", "todo_write"}
+)
+
+# Full canonical coding tool surface (sandbox + todo).
+CODING_TOOL_NAMES: frozenset[str] = CODING_SANDBOX_TOOL_NAMES | CODING_TODO_TOOL_NAMES
 
 
 def _freeze_mapping(d: dict[str, Any]) -> Mapping[str, Any]:
@@ -29,7 +39,7 @@ def _freeze_mapping(d: dict[str, Any]) -> Mapping[str, Any]:
 class CodingToolPack:
     """Bundle of specs + executors with name parity guarantee.
 
-    Invariant: set(specs.keys()) == set(executors.keys()) == CODING_TOOL_NAMES
+    Invariant: set(specs.keys()) == set(executors.keys())
     specs and executors are read-only after construction.
     """
 
@@ -42,15 +52,24 @@ class CodingToolPack:
         return frozenset(self.specs.keys())
 
 
-def build_coding_toolpack(sandbox: Any) -> CodingToolPack:
+def build_coding_toolpack(
+    sandbox: Any, *, todo_provider: Any = None,
+) -> CodingToolPack:
     """Build the canonical coding tool pack from a SandboxProvider.
 
     Uses create_sandbox_tools() as the single source of truth for
-    both specs and executors (CADG-03).
+    sandbox specs and executors (CADG-03).
+
+    When todo_provider is given, also includes todo_read/todo_write from
+    create_todo_tools() (CTSK-02).
+
+    Args:
+        sandbox: SandboxProvider for file/shell tools. Required.
+        todo_provider: Optional TodoProvider for todo_read/todo_write.
 
     Raises:
         ValueError: If sandbox is None.
-        RuntimeError: If built tool set doesn't match CODING_TOOL_NAMES.
+        RuntimeError: If built tool set doesn't match expected names.
     """
     if sandbox is None:
         raise ValueError("sandbox is required for coding tool pack")
@@ -59,11 +78,11 @@ def build_coding_toolpack(sandbox: Any) -> CodingToolPack:
 
     raw_specs, raw_executors = create_sandbox_tools(sandbox)
 
-    # Filter to only canonical coding tool names
     specs: dict[str, ToolSpec] = {}
     executors: dict[str, Callable[..., Any]] = {}
 
-    for name in CODING_TOOL_NAMES:
+    # Sandbox tools (always built)
+    for name in CODING_SANDBOX_TOOL_NAMES:
         if name not in raw_specs:
             raise RuntimeError(
                 f"Coding tool '{name}' not found in create_sandbox_tools output. "
@@ -72,12 +91,19 @@ def build_coding_toolpack(sandbox: Any) -> CodingToolPack:
         specs[name] = raw_specs[name]
         executors[name] = raw_executors[name]
 
-    built_names = frozenset(specs.keys())
-    if built_names != CODING_TOOL_NAMES:  # pragma: no cover — defense-in-depth after loop
-        raise RuntimeError(
-            f"Tool set drift: built={sorted(built_names)}, "
-            f"expected={sorted(CODING_TOOL_NAMES)}"
-        )
+    # Todo tools (when provider is given)
+    if todo_provider is not None:
+        from swarmline.todo.tools import create_todo_tools
+
+        todo_specs, todo_executors = create_todo_tools(todo_provider)
+        for name in CODING_TODO_TOOL_NAMES:
+            if name not in todo_specs:
+                raise RuntimeError(
+                    f"Todo tool '{name}' not found in create_todo_tools output. "
+                    f"Available: {sorted(todo_specs.keys())}"
+                )
+            specs[name] = todo_specs[name]
+            executors[name] = todo_executors[name]
 
     return CodingToolPack(
         specs=_freeze_mapping(specs),
