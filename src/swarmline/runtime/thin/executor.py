@@ -16,6 +16,7 @@ from swarmline.runtime.thin.mcp_client import (
 
 if TYPE_CHECKING:
     from swarmline.hooks.dispatcher import HookDispatcher
+    from swarmline.policy.tool_policy import DefaultToolPolicy
 
 
 class ToolExecutor:
@@ -28,12 +29,14 @@ class ToolExecutor:
         mcp_client: McpClient | None = None,
         timeout_seconds: float = 30.0,
         hook_dispatcher: HookDispatcher | None = None,
+        tool_policy: DefaultToolPolicy | None = None,
     ) -> None:
         self._local_tools = local_tools or {}
         self._mcp_servers = mcp_servers or {}
         self._timeout = timeout_seconds
         self._mcp_client = mcp_client or McpClient(timeout_seconds=timeout_seconds)
         self._hook_dispatcher = hook_dispatcher
+        self._tool_policy = tool_policy
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> str:
         """Execute."""
@@ -47,6 +50,26 @@ class ToolExecutor:
                 )
             if hook_result.action == "modify" and hook_result.modified_input is not None:
                 args = hook_result.modified_input
+
+        # Policy check (after hooks, before execution)
+        if self._tool_policy is not None:
+            from swarmline.policy.tool_policy import (
+                PermissionAllow,
+                PermissionDeny,
+                ToolPolicyInput,
+            )
+
+            state = ToolPolicyInput(
+                tool_name=tool_name,
+                input_data=args,
+                active_skill_ids=list(self._mcp_servers.keys()),
+                allowed_local_tools=set(self._local_tools.keys()),
+            )
+            decision = self._tool_policy.can_use_tool(tool_name, args, state)
+            if isinstance(decision, PermissionDeny):
+                return json.dumps({"error": decision.message}, ensure_ascii=False)
+            if isinstance(decision, PermissionAllow) and decision.updated_input is not None:
+                args = decision.updated_input
 
         # Local tool
         if tool_name in self._local_tools:

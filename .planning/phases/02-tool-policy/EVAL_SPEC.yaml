@@ -1,0 +1,56 @@
+evaluation_specification:
+  task: 'Phase 2: Tool Policy Enforcement'
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: 'DefaultToolPolicy enforced in ToolExecutor after hook dispatch. All PLCY-01..04 satisfied.'
+      checklist:
+        - 'Policy 4-step cascade: always_denied → local_tools → mcp_active_skill → default deny'
+        - 'Policy runs AFTER PreToolUse hooks (uses hook-modified args)'
+        - 'Denied tools return JSON error with reason, tool NOT executed'
+        - 'Allowed tools proceed to normal execution'
+        - 'Policy propagates Agent → RuntimeFactory → ThinRuntime → ToolExecutor'
+        - 'None policy = skip check entirely (backward compat)'
+        - 'All 4313+ existing tests pass'
+        - 'All new fields optional with None default'
+
+    - name: architecture
+      weight: 0.25
+      rubric: 'Clean Architecture, DIP compliance, no circular imports.'
+      checklist:
+        - 'ToolExecutor depends on abstraction (Any type hint), not concrete DefaultToolPolicy'
+        - 'No circular imports'
+        - 'Policy check cleanly separated in execute pipeline: hooks → policy → execute'
+        - 'Wiring follows existing patterns for optional component injection'
+        - 'No file exceeds 300 lines'
+
+    - name: test_quality
+      weight: 0.20
+      rubric: 'TDD discipline, 8 tests, AAA pattern, real DefaultToolPolicy.'
+      checklist:
+        - '6 executor policy tests covering allow/deny/hook-order/mcp/not-called'
+        - '2 wiring tests covering config propagation'
+        - 'test_<what>_<condition>_<result> naming'
+        - 'Arrange-Act-Assert structure'
+        - 'Real DefaultToolPolicy used (not mocks)'
+        - 'No existing tests modified or skipped'
+
+    - name: code_quality
+      weight: 0.15
+      rubric: 'Production-ready, type hints, lazy imports, ruff+mypy clean.'
+      checklist:
+        - 'Complete type hints on public APIs'
+        - 'Lazy imports for policy types (inside execute method)'
+        - 'No TODO/placeholder'
+        - 'ruff + mypy clean'
+        - 'JSON error schema consistent with hook block errors'
+
+    - name: security
+      weight: 0.10
+      rubric: 'Default-deny enforced, always_denied takes precedence, policy not bypassable.'
+      checklist:
+        - 'Default-deny: unmatched tools are denied'
+        - 'always_denied takes absolute precedence'
+        - 'Policy checks tool_name (not modifiable by hooks)'
+        - 'ToolPolicyInput constructed by trusted code (ToolExecutor)'
+        - 'Deny messages do not leak internal state'

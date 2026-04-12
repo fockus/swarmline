@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from swarmline.agent.middleware import Middleware
     from swarmline.agent.tool import ToolDefinition
     from swarmline.hooks.registry import HookRegistry
+    from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
 
 
@@ -70,6 +71,9 @@ class AgentConfig:
     fallback_model: str | None = None
     permission_mode: str = "bypassPermissions"
     setting_sources: tuple[str, ...] = ()
+
+    # Tool policy (default-deny enforcement)
+    tool_policy: DefaultToolPolicy | None = None
 
     # Runtime convergence / capability negotiation
     feature_mode: str = "portable"

@@ -63,6 +63,10 @@ def build_portable_runtime_plan(
     if merged_hooks is not None:
         create_kwargs["hook_registry"] = merged_hooks
 
+    # Tool policy enforcement
+    if agent_config.tool_policy is not None:
+        create_kwargs["tool_policy"] = agent_config.tool_policy
+
     active_tools = [tool_definition.to_tool_spec() for tool_definition in agent_config.tools]
     return PortableRuntimePlan(
         config=runtime_config,

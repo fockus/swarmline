@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from swarmline.hooks.dispatcher import HookDispatcher
     from swarmline.hooks.registry import HookRegistry
+    from swarmline.policy.tool_policy import DefaultToolPolicy
 
 from swarmline.runtime.cost import CostTracker, load_pricing
 from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
@@ -57,6 +58,7 @@ class ThinRuntime:
         planner_patterns: list[re.Pattern[str]] | None = None,
         sandbox: Any | None = None,
         hook_registry: HookRegistry | None = None,
+        tool_policy: DefaultToolPolicy | None = None,
     ) -> None:
         self._config = config or RuntimeConfig(runtime_name="thin")
         self._auto_wrap_retriever()
@@ -86,6 +88,7 @@ class ThinRuntime:
             local_tools=merged_local_tools,
             mcp_servers=mcp_servers,
             hook_dispatcher=self._hook_dispatcher,
+            tool_policy=tool_policy,
         )
 
         # Cost tracking
