@@ -76,6 +76,50 @@ def build_portable_runtime_plan(
         create_kwargs["command_registry"] = agent_config.command_registry
 
     active_tools = [tool_definition.to_tool_spec() for tool_definition in agent_config.tools]
+
+    # Coding profile: inject coding tool pack + policy scope (after active_tools built)
+    if (
+        agent_config.coding_profile is not None
+        and agent_config.coding_profile.enabled
+    ):
+        from swarmline.policy.tool_policy import DefaultToolPolicy
+        from swarmline.runtime.thin.coding_toolpack import CODING_TOOL_NAMES, build_coding_toolpack
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.types import SandboxConfig
+
+        # Build coding tool pack from a default sandbox
+        cwd = agent_config.cwd
+        if cwd is None:
+            raise ValueError(
+                "AgentConfig.cwd is required when coding_profile is enabled. "
+                "Set cwd to the working directory for the coding agent."
+            )
+        sandbox_config = SandboxConfig(
+            root_path=cwd,
+            user_id="coding",
+            topic_id="agent",
+            allow_host_execution=agent_config.coding_profile.allow_host_execution,
+        )
+        sandbox = LocalSandboxProvider(sandbox_config)
+        coding_pack = build_coding_toolpack(sandbox)
+
+        # Add coding tool specs to active tools
+        for spec in coding_pack.specs.values():
+            active_tools.append(spec)
+
+        # Add coding tool executors to create_kwargs
+        existing_executors = create_kwargs.get("tool_executors", {})
+        existing_executors.update(coding_pack.executors)
+        create_kwargs["tool_executors"] = existing_executors
+
+        # Build/merge policy: coding tools allowed + any existing policy
+        coding_allowed = set(CODING_TOOL_NAMES)
+        if isinstance(agent_config.tool_policy, DefaultToolPolicy):
+            coding_allowed = coding_allowed | set(agent_config.tool_policy.allowed_system_tools)
+        create_kwargs["tool_policy"] = DefaultToolPolicy(
+            allowed_system_tools=coding_allowed,
+        )
+
     return PortableRuntimePlan(
         config=runtime_config,
         create_kwargs=create_kwargs,

@@ -2,7 +2,27 @@
 
 from __future__ import annotations
 
+import tempfile
 from typing import Any
+
+import pytest
+
+from swarmline.tools.sandbox_local import LocalSandboxProvider
+from swarmline.tools.types import SandboxConfig
+
+
+@pytest.fixture()
+def coding_sandbox(tmp_path: Any) -> LocalSandboxProvider:
+    """Create a real LocalSandboxProvider in a temp directory for coding tests."""
+    config = SandboxConfig(
+        root_path=str(tmp_path),
+        user_id="test",
+        topic_id="coding",
+        max_file_size_bytes=1024,
+        timeout_seconds=5,
+        allow_host_execution=True,
+    )
+    return LocalSandboxProvider(config)
 
 
 class FakeStreamEvent:

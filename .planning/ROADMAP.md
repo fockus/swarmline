@@ -15,9 +15,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Hook Dispatch** - Wire HookRegistry into ThinRuntime/ToolExecutor for PreToolUse, PostToolUse, Stop, and UserPromptSubmit lifecycle events
 - [x] **Phase 2: Tool Policy Enforcement** - Enforce DefaultToolPolicy in ToolExecutor after hook dispatch, blocking denied tools with error responses
 - [x] **Phase 3: LLM-Initiated Subagents** - Register spawn_agent tool in ThinRuntime so LLM can delegate tasks to child agents with depth/concurrency/timeout limits
-- [ ] **Phase 4: Command Routing** - Intercept /commands in user input before LLM, routing to CommandRegistry for immediate execution
-- [ ] **Phase 5: Native Tool Calling** - Opt-in native tool calling API for Anthropic/OpenAI/Google with parallel execution and Strangler Fig fallback
-- [ ] **Phase 6: Integration Validation** - Full-stack integration tests, cross-feature interaction validation, lint/type/coverage gates
+- [x] **Phase 4: Command Routing** - Intercept /commands in user input before LLM, routing to CommandRegistry for immediate execution
+- [x] **Phase 5: Native Tool Calling** - Opt-in native tool calling API for Anthropic/OpenAI/Google with parallel execution and Strangler Fig fallback
+- [x] **Phase 6: Integration Validation** - Full-stack integration tests, cross-feature interaction validation, lint/type/coverage gates
 - [ ] **Phase 7: Coding Profile Foundation** - Opt-in coding-agent profile, canonical coding tool pack, and profile-scoped policy without changing non-coding ThinRuntime behavior
 - [ ] **Phase 8: Coding Task Runtime and Persistence** - Persistent task/todo/session semantics for coding runs using existing GraphTaskBoard and TaskSessionStore seams
 - [ ] **Phase 9: Coding Context and Compatibility** - Budgeted coding-context slices plus legacy alias compatibility and fail-fast wiring
@@ -177,8 +177,8 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
-Note: Phases 4 and 5 are independent after their prerequisites and could execute in parallel.
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
+Note: Phases 4 and 5 were independent. Phases 7-10 are sequential (each depends on prior).
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -186,8 +186,8 @@ Note: Phases 4 and 5 are independent after their prerequisites and could execute
 | 2. Tool Policy Enforcement | 1/1 | Complete | 2026-04-12 |
 | 3. LLM-Initiated Subagents | 2/2 | Complete | 2026-04-12 |
 | 4. Command Routing | 1/1 | Complete | 2026-04-12 |
-| 5. Native Tool Calling | 0/3 | Not started | - |
-| 6. Integration Validation | 0/1 | Not started | - |
+| 5. Native Tool Calling | 1/1 | Complete | 2026-04-12 |
+| 6. Integration Validation | 1/1 | Complete | 2026-04-12 |
 | 7. Coding Profile Foundation | 0/1 | Not started | - |
 | 8. Coding Task Runtime and Persistence | 0/1 | Not started | - |
 | 9. Coding Context and Compatibility | 0/1 | Not started | - |

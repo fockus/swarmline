@@ -59,6 +59,39 @@
 - [ ] **INTG-03**: Coverage новых файлов >= 95%
 - [ ] **INTG-04**: ruff check + mypy clean
 
+### Coding-Agent Profile Foundation
+
+- [ ] **CADG-01**: `ThinRuntime` поддерживает opt-in `coding-agent profile` без введения нового runtime hierarchy
+- [ ] **CADG-02**: В coding mode visible tool surface совпадает с executable tool surface
+- [ ] **CADG-03**: `read/write/edit/multi_edit/bash/ls/glob/grep` берутся из shared builtin implementations, а не из параллельного thin-only path
+- [ ] **CADG-04**: Default-deny secure posture вне coding profile не меняется
+- [ ] **CADG-05**: Coding profile разрешает только явно объявленный allow-list coding tools
+
+### Coding Task Runtime and Persistence
+
+- [ ] **CTSK-01**: Coding-task lifecycle backed by `GraphTaskBoard`, без отдельного параллельного task engine
+- [ ] **CTSK-02**: `todo_read/todo_write` используют provider-backed persistence в coding mode
+- [ ] **CTSK-03**: Task state и session-to-task binding переживают restart/resume в поддерживаемом persistence mode
+- [ ] **CTSK-04**: Typed persistence snapshots проходят roundtrip без semantic loss
+- [ ] **CTSK-05**: Missing provider или missing binding paths fail fast, без silent degradation
+
+### Coding Context and Compatibility
+
+- [ ] **CCTX-01**: Coding mode добавляет task/board/workspace/search/session/skill-profile slices, non-coding mode не получает их
+- [ ] **CCTX-02**: Coding-context budget discipline deterministic under pressure (bounded truncation/omission)
+- [ ] **COMP-01**: Legacy aliases в coding mode маппятся на canonical implementations с эквивалентной семантикой
+- [ ] **COMP-02**: Unsupported alias/profile/wiring states возвращают явную ошибку
+- [ ] **COMP-03**: Compatibility layer не создаёт второй implementation path и не содержит silent fallback
+
+### Coding Subagent Inheritance and Validation
+
+- [ ] **CSUB-01**: Thin subagents наследуют coding profile, coding tool surface и policy от parent coding run
+- [ ] **CSUB-02**: Task context и continuity facts пробрасываются в child coding subagent
+- [ ] **CSUB-03**: Incompatible inheritance state fail-fast вместо silent downgrade в generic thin mode
+- [ ] **CVAL-01**: Non-coding thin runs остаются behaviorally unchanged после coding-agent tranche
+- [ ] **CVAL-02**: Targeted packs, broader regression, `ruff`, and `mypy` зелёные для coding-agent tranche
+- [ ] **CVAL-03**: Новые interfaces следуют contract-first, остаются dependency-safe и не превышают проектный лимит по ширине интерфейса
+
 ## v2 Requirements
 
 ### Extended Hooks
@@ -128,10 +161,31 @@
 | INTG-02 | Phase 6 | Pending |
 | INTG-03 | Phase 6 | Pending |
 | INTG-04 | Phase 6 | Pending |
+| CADG-01 | Phase 7 | Pending |
+| CADG-02 | Phase 7 | Pending |
+| CADG-03 | Phase 7 | Pending |
+| CADG-04 | Phase 7 | Pending |
+| CADG-05 | Phase 7 | Pending |
+| CTSK-01 | Phase 8 | Pending |
+| CTSK-02 | Phase 8 | Pending |
+| CTSK-03 | Phase 8 | Pending |
+| CTSK-04 | Phase 8 | Pending |
+| CTSK-05 | Phase 8 | Pending |
+| CCTX-01 | Phase 9 | Pending |
+| CCTX-02 | Phase 9 | Pending |
+| COMP-01 | Phase 9 | Pending |
+| COMP-02 | Phase 9 | Pending |
+| COMP-03 | Phase 9 | Pending |
+| CSUB-01 | Phase 10 | Pending |
+| CSUB-02 | Phase 10 | Pending |
+| CSUB-03 | Phase 10 | Pending |
+| CVAL-01 | Phase 10 | Pending |
+| CVAL-02 | Phase 10 | Pending |
+| CVAL-03 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 36 total
-- Mapped to phases: 36
+- v1 requirements: 57 total
+- Mapped to phases: 57
 - Unmapped: 0
 
 ---

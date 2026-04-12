@@ -104,6 +104,11 @@ class DefaultToolPolicy:
         self._codec = codec
         self._agent_logger = agent_logger
 
+    @property
+    def allowed_system_tools(self) -> frozenset[str]:
+        """Return the allowed system tools as an immutable set."""
+        return frozenset(self._allowed_system_tools)
+
     def _log_policy(
         self,
         tool_name: str,

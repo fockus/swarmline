@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
+    from swarmline.runtime.thin.coding_profile import CodingProfileConfig
     from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
 
 
@@ -82,6 +83,9 @@ class AgentConfig:
 
     # Command registry (slash-command routing)
     command_registry: CommandRegistry | None = None
+
+    # Coding profile (opt-in coding-agent tool surface + policy)
+    coding_profile: CodingProfileConfig | None = None
 
     # Runtime convergence / capability negotiation
     feature_mode: str = "portable"
