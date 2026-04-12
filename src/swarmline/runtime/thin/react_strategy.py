@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator, Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from swarmline.runtime.thin.native_tools import NativeToolCallAdapter
 
 from swarmline.runtime.structured_output import append_structured_output_instruction
 from swarmline.runtime.thin.executor import ToolExecutor
@@ -22,6 +27,8 @@ from swarmline.runtime.types import (
     ToolSpec,
 )
 
+_logger = logging.getLogger(__name__)
+
 
 async def run_react(  # noqa: C901
     llm_call: Callable[..., Any],
@@ -33,6 +40,7 @@ async def run_react(  # noqa: C901
     start_time: float,
     checkpoint: CheckpointFn | None = None,
     on_retry: Callable[[int, float], None] | None = None,
+    native_adapter: NativeToolCallAdapter | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Run react."""
     prompt = build_react_prompt(
@@ -56,6 +64,113 @@ async def run_react(  # noqa: C901
     while iterations < config.max_iterations:
         iterations += 1
 
+        # --- Native tool calling path (Strangler Fig: opt-in) ---
+        if native_adapter is not None and config.use_native_tools and tools:
+            native_handled = False
+            try:
+                tool_defs = [
+                    {"name": t.name, "description": t.description, "parameters": t.parameters}
+                    for t in tools
+                ]
+                native_result = await native_adapter.call_with_tools(
+                    lm_messages, prompt, tool_defs,
+                )
+
+                if native_result.tool_calls:
+                    # Budget check (same as JSON-in-text path)
+                    if tool_calls_count + len(native_result.tool_calls) > config.max_tool_calls:
+                        yield RuntimeEvent.error(
+                            RuntimeErrorData(
+                                kind="budget_exceeded",
+                                message=f"Превышен лимит tool_calls ({config.max_tool_calls})",
+                                recoverable=False,
+                            )
+                        )
+                        return
+
+                    # Execute tool calls through executor (which runs hooks + policy)
+                    # Parallel if >1, sequential otherwise
+                    if len(native_result.tool_calls) > 1:
+                        raw_results = await asyncio.gather(
+                            *[executor.execute(tc.name, tc.args) for tc in native_result.tool_calls],
+                            return_exceptions=True,
+                        )
+                        # Convert exceptions to JSON error strings
+                        results: list[str] = []
+                        for r in raw_results:
+                            if isinstance(r, BaseException):
+                                results.append(json.dumps({"error": str(r)}))
+                            else:
+                                results.append(r)
+                    else:
+                        results = [
+                            await executor.execute(
+                                native_result.tool_calls[0].name,
+                                native_result.tool_calls[0].args,
+                            )
+                        ]
+
+                    # Emit tool_call_started/finished events and count
+                    for tc, result in zip(native_result.tool_calls, results):
+                        yield RuntimeEvent.tool_call_started(
+                            name=tc.name, args=tc.args, correlation_id=tc.id,
+                        )
+                        tool_ok = True
+                        try:
+                            parsed = json.loads(result)
+                            if isinstance(parsed, dict) and "error" in parsed:
+                                tool_ok = False
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+                        yield RuntimeEvent.tool_call_finished(
+                            name=tc.name,
+                            correlation_id=tc.id,
+                            ok=tool_ok,
+                            result_summary=result[:200],
+                        )
+                        tool_calls_count += 1
+
+                    # Append messages for next turn
+                    if native_result.text:
+                        lm_messages.append({"role": "assistant", "content": native_result.text})
+                    for tc, result in zip(native_result.tool_calls, results):
+                        lm_messages.append({
+                            "role": "user",
+                            "content": f"Result {tc.name}: {result}",
+                        })
+                    new_messages.append(
+                        Message(role="assistant", content=native_result.text or "")
+                    )
+                    native_handled = True
+
+                elif native_result.text:
+                    # Text-only response -- finalize
+                    async for event in finalize_with_validation(
+                        native_result.text,
+                        config,
+                        lm_messages,
+                        prompt,
+                        llm_call,
+                        start_time,
+                        iterations=iterations,
+                        tool_calls=tool_calls_count,
+                        new_messages_prefix=new_messages,
+                        checkpoint=checkpoint,
+                    ):
+                        if not buffered_postprocessing and event.type == "final":
+                            yield RuntimeEvent.assistant_delta(native_result.text)
+                        yield event
+                    return
+
+            except Exception:
+                _logger.warning(
+                    "Native tool calling failed, falling back to JSON-in-text",
+                    exc_info=True,
+                )
+                native_handled = False
+
+            if native_handled:
+                continue
 
         try:
             checkpoint_event = await _run_checkpoint(checkpoint)

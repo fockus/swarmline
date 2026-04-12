@@ -178,6 +178,9 @@ class RuntimeConfig:
     # RAG: Retriever for automatic context injection
     retriever: Any | None = None  # Retriever
 
+    # Native tool calling: opt-in for provider-native tool APIs (Strangler Fig)
+    use_native_tools: bool = False
+
     @staticmethod
     def _get_valid_names() -> frozenset[str]:
         """Get valid runtime names: static builtins + dynamic registry."""

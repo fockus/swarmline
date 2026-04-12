@@ -95,6 +95,43 @@ class AnthropicAdapter:
             async for text in stream.text_stream:
                 yield text
 
+    async def call_with_tools(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str,
+        tools: list[dict[str, Any]],
+        **kwargs: Any,
+    ) -> Any:
+        """Call Anthropic API with native tool calling."""
+        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+
+        api_messages = _filter_chat_messages(messages)
+        response = await self._client.messages.create(
+            model=self._model,
+            max_tokens=kwargs.get("max_tokens", 4096),
+            system=system_prompt,
+            messages=api_messages,  # type: ignore[arg-type]
+            tools=tools,  # type: ignore[arg-type]
+        )
+        text_parts: list[str] = []
+        tool_calls: list[NativeToolCall] = []
+        for block in response.content:
+            if hasattr(block, "text"):
+                text_parts.append(block.text)
+            elif block.type == "tool_use":
+                tool_calls.append(
+                    NativeToolCall(
+                        id=block.id,
+                        name=block.name,
+                        args=dict(block.input) if block.input else {},
+                    )
+                )
+        return NativeToolCallResult(
+            text="".join(text_parts),
+            tool_calls=tuple(tool_calls),
+            stop_reason=getattr(response, "stop_reason", "end_turn") or "end_turn",
+        )
+
 
 class OpenAICompatAdapter:
     """Open A I Compat Adapter implementation."""
@@ -158,6 +195,43 @@ class OpenAICompatAdapter:
             content = chunk.choices[0].delta.content if chunk.choices else None
             if content:
                 yield content
+
+    async def call_with_tools(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str,
+        tools: list[dict[str, Any]],
+        **kwargs: Any,
+    ) -> Any:
+        """Call OpenAI-compatible API with native tool calling."""
+        import json as _json
+
+        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+
+        api_messages = self._prepare(messages, system_prompt)
+        response = await self._client.chat.completions.create(
+            model=self._model,
+            messages=api_messages,  # type: ignore[arg-type]
+            max_tokens=kwargs.get("max_tokens", 4096),
+            tools=tools,  # type: ignore[arg-type]
+        )
+        choice = response.choices[0]
+        text = choice.message.content or ""
+        tool_calls: list[NativeToolCall] = []
+        if choice.message.tool_calls:
+            for tc in choice.message.tool_calls:
+                tool_calls.append(
+                    NativeToolCall(
+                        id=tc.id,
+                        name=tc.function.name,  # type: ignore[union-attr]
+                        args=_json.loads(tc.function.arguments) if tc.function.arguments else {},  # type: ignore[union-attr]
+                    )
+                )
+        return NativeToolCallResult(
+            text=text,
+            tool_calls=tuple(tool_calls),
+            stop_reason=choice.finish_reason or "stop",
+        )
 
 
 class GoogleAdapter:
@@ -235,6 +309,55 @@ class GoogleAdapter:
             text = chunk.text
             if text:
                 yield text
+
+    async def call_with_tools(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str,
+        tools: list[dict[str, Any]],
+        **kwargs: Any,
+    ) -> Any:
+        """Call Google Gemini API with native tool calling."""
+        import google.genai as genai
+
+        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+
+        contents = self._prepare(messages)
+        tool_declarations = [genai.types.FunctionDeclaration(**t) for t in tools]
+        google_tools = [genai.types.Tool(function_declarations=tool_declarations)]
+
+        config_kwargs: dict[str, Any] = {"system_instruction": system_prompt}
+        if self._base_url:
+            config_kwargs["http_options"] = {"base_url": self._base_url}
+
+        response = await self._client.aio.models.generate_content(
+            model=self._model,
+            contents=contents,  # type: ignore[arg-type]
+            config=genai.types.GenerateContentConfig(
+                tools=google_tools,  # type: ignore[arg-type]
+                **config_kwargs,
+            ),
+        )
+        text = ""
+        tool_calls: list[NativeToolCall] = []
+        if response.candidates:
+            for part in response.candidates[0].content.parts:  # type: ignore[union-attr]
+                if hasattr(part, "text") and part.text:
+                    text += part.text
+                elif hasattr(part, "function_call") and part.function_call:
+                    fc = part.function_call
+                    tool_calls.append(
+                        NativeToolCall(
+                            id=str(fc.id) if hasattr(fc, "id") and fc.id else f"google_{len(tool_calls)}",
+                            name=str(fc.name) if fc.name else f"unknown_{len(tool_calls)}",
+                            args=dict(fc.args) if fc.args else {},
+                        )
+                    )
+        return NativeToolCallResult(
+            text=text,
+            tool_calls=tuple(tool_calls),
+            stop_reason="end_turn" if not tool_calls else "tool_use",
+        )
 
 
 def create_llm_adapter(resolved: ResolvedProvider) -> LlmAdapter:

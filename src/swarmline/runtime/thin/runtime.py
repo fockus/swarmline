@@ -123,6 +123,28 @@ class ThinRuntime:
             tool_policy=tool_policy,
         )
 
+        # Native tool calling adapter (stored for use_native_tools opt-in)
+        self._native_adapter: Any | None = None
+        if llm_call is None and self._config.use_native_tools:
+            # Using default adapter-based call — store adapter for native tools
+            try:
+                from swarmline.runtime.provider_resolver import resolve_provider
+                from swarmline.runtime.thin.llm_providers import get_cached_adapter
+                from swarmline.runtime.thin.native_tools import NativeToolCallAdapter
+
+                provider = resolve_provider(
+                    self._config.model, base_url=self._config.base_url,
+                )
+                adapter = get_cached_adapter(provider)
+                if isinstance(adapter, NativeToolCallAdapter):
+                    self._native_adapter = adapter
+            except Exception:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Failed to create native tool adapter, will fall back to JSON-in-text",
+                    exc_info=True,
+                )
+
         # Cost tracking
         self._cost_tracker: CostTracker | None = None
         if self._config.cost_budget is not None:
@@ -311,6 +333,11 @@ class ThinRuntime:
                     start_time,
                     checkpoint=checkpoint,
                     on_retry=self._buffer_retry_status,
+                    native_adapter=(
+                        self._native_adapter
+                        if effective_config.use_native_tools
+                        else None
+                    ),
                 )
             else:
                 strategy = run_planner(
