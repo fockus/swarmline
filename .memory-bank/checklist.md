@@ -15,10 +15,16 @@
 - ✅ 12.4 RuntimeConfig web_allowed_domains/web_blocked_domains fields + ResourceDescriptor frozen dataclass exported
 - ✅ Quality gates: 4824 tests pass, ruff clean
 
-### Phase 13: Conversation Compaction ⬜ NEXT
-- ⬜ 13.1 LLM-суммаризация истории (summary prompt + CompactionStrategy protocol)
-- ⬜ 13.2 ThinRuntime compaction wiring (token threshold trigger)
-- ⬜ 13.3 Integration tests + quality gate (ruff + mypy + full pytest)
+### Phase 13: Conversation Compaction ✅ DONE (Judge 4.23/5.0, 2026-04-13, commit 8a63ad6)
+- ✅ 13.1 ConversationCompactionFilter (InputFilter protocol) + CompactionConfig frozen dataclass
+- ✅ 13.2 3-tier cascade: tool result collapse → LLM summarization → emergency truncation
+- ✅ 13.3 Auto-wired in ThinRuntime.run() from RuntimeConfig.compaction + 35 tests (26 unit + 9 integration)
+- ✅ Quality gates: 4859 tests pass, ruff clean
+
+### Phase 14: Session Resume ⬜ NEXT
+- ⬜ 14.1 Session resume protocol + conversation history persistence
+- ⬜ 14.2 ThinRuntime session resume wiring
+- ⬜ 14.3 Integration tests + quality gate (ruff + mypy + full pytest)
 
 ## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 

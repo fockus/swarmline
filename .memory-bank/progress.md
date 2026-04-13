@@ -631,3 +631,14 @@
 - Quality gates: pytest -q → 4824 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: ~330.
 - Parity v2 progress: 2/7 фаз (29%). Overall: 12/17 фаз (71%).
 - Next: Phase 13 — Conversation Compaction (LLM-суммаризация истории + token threshold trigger).
+[2026-04-13] Phase 13 (Conversation Compaction) завершена — Judge 4.23/5.0, commit 8a63ad6.
+- Delivered: ConversationCompactionFilter реализует InputFilter protocol с 3-tier cascade:
+  - Tier 1: tool result collapse — старые tool call/result пары сворачиваются в compact summaries
+  - Tier 2: LLM summarization — старейшие сообщения суммаризируются через async llm_call
+  - Tier 3: emergency truncation — дропаем старейшие сообщения O(n) при исчерпании лимитов
+- CompactionConfig frozen dataclass: threshold, preserve_recent_pairs, per-tier enable flags
+- Auto-wired в ThinRuntime.run() из RuntimeConfig.compaction (None → no-op, backward-compatible)
+- 35 новых тестов: 26 unit + 9 integration
+- Quality gates: pytest -q → 4859 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: ~330.
+- Parity v2 progress: 3/7 фаз (43%). Overall: 13/17 фаз (76%).
+- Next: Phase 14 — Session Resume (conversation history persistence + ThinRuntime resume wiring).
