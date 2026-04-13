@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import AsyncIterator, Iterable
-from typing import Any, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from swarmline.runtime.provider_resolver import ResolvedProvider
 from swarmline.runtime.thin.errors import dependency_missing_error
+
+if TYPE_CHECKING:
+    from swarmline.runtime.thin.llm_client import LlmCallResult
 
 
 @runtime_checkable
@@ -19,7 +22,7 @@ class LlmAdapter(Protocol):
         messages: list[dict[str, str]],
         system_prompt: str,
         **kwargs: Any,
-    ) -> str: ...
+    ) -> str | LlmCallResult: ...
 
     def stream(
         self,
@@ -67,14 +70,40 @@ class AnthropicAdapter:
         messages: list[dict[str, str]],
         system_prompt: str,
         **kwargs: Any,
-    ) -> str:
+    ) -> str | Any:
+        thinking_config = kwargs.pop("_thinking_config", None)
         api_messages = _filter_chat_messages(messages)
-        response = await self._client.messages.create(
-            model=self._model,
-            max_tokens=kwargs.get("max_tokens", 4096),
-            system=system_prompt,
-            messages=api_messages,  # type: ignore[arg-type]
-        )
+
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": kwargs.get("max_tokens", 4096),
+            "system": system_prompt,
+            "messages": api_messages,
+        }
+        if thinking_config is not None:
+            create_kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": thinking_config.budget_tokens,
+            }
+
+        response = await self._client.messages.create(**create_kwargs)  # type: ignore[arg-type]
+
+        if thinking_config is not None:
+            text_parts: list[str] = []
+            thinking_parts: list[str] = []
+            for block in response.content:
+                if hasattr(block, "thinking") and getattr(block, "type", None) == "thinking":
+                    thinking_parts.append(block.thinking)
+                elif hasattr(block, "text"):
+                    text_parts.append(block.text)
+
+            text = "".join(text_parts)
+            if thinking_parts:
+                from swarmline.runtime.thin.llm_client import LlmCallResult
+
+                return LlmCallResult(text=text, thinking="".join(thinking_parts))
+            return text
+
         return "".join(
             block.text for block in response.content if hasattr(block, "text")
         )

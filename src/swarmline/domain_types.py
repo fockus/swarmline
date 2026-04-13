@@ -168,6 +168,21 @@ class TurnMetrics:
 
 
 # ---------------------------------------------------------------------------
+# ThinkingConfig - extended thinking configuration
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ThinkingConfig:
+    """Configuration for LLM extended thinking / chain-of-thought.
+
+    budget_tokens controls how many tokens the model may use for reasoning.
+    """
+
+    budget_tokens: int = 10_000
+
+
+# ---------------------------------------------------------------------------
 # RuntimeEvent - unified streaming event
 # ---------------------------------------------------------------------------
 
@@ -175,6 +190,7 @@ class TurnMetrics:
 RUNTIME_EVENT_TYPES = frozenset(
     {
         "assistant_delta",  # streamed text output
+        "thinking_delta",  # streamed thinking/reasoning fragment
         "status",  # status message ("Executing step...")
         "tool_call_started",  # tool call started
         "tool_call_finished",  # tool call finished
@@ -193,6 +209,7 @@ class RuntimeEvent:
 
     Types:
     - assistant_delta: data={"text": "..."}
+    - thinking_delta: data={"text": "..."} (extended thinking fragment)
     - status: data={"text": "..."}
     - tool_call_started: data={"name": "...", "correlation_id": "...", "args": {...}}
     - tool_call_finished: data={"name": "...", "correlation_id": "...", "ok": bool, "result_summary": "..."}
@@ -210,6 +227,11 @@ class RuntimeEvent:
     def assistant_delta(text: str) -> RuntimeEvent:
         """Streamed text fragment."""
         return RuntimeEvent(type="assistant_delta", data={"text": text})
+
+    @staticmethod
+    def thinking_delta(text: str) -> RuntimeEvent:
+        """Streamed thinking/reasoning fragment."""
+        return RuntimeEvent(type="thinking_delta", data={"text": text})
 
     @staticmethod
     def status(text: str) -> RuntimeEvent:

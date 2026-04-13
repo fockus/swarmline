@@ -12,10 +12,13 @@ if TYPE_CHECKING:
     from swarmline.runtime.thin.native_tools import NativeToolCallAdapter
 
 from swarmline.runtime.structured_output import append_structured_output_instruction
-from swarmline.runtime.thin.executor import ToolExecutor
 from swarmline.runtime.thin.errors import ThinLlmError
+from swarmline.runtime.thin.executor import ToolExecutor
 from swarmline.runtime.thin.finalization import CheckpointFn, finalize_with_validation
-from swarmline.runtime.thin.helpers import _messages_to_lm, _should_buffer_postprocessing
+from swarmline.runtime.thin.helpers import (
+    _messages_to_lm,
+    _should_buffer_postprocessing,
+)
 from swarmline.runtime.thin.llm_client import run_buffered_llm_call, try_stream_llm_call
 from swarmline.runtime.thin.parsers import extract_text_fallback, parse_envelope
 from swarmline.runtime.thin.prompts import build_react_prompt
@@ -60,6 +63,7 @@ async def run_react(  # noqa: C901
     last_raw = ""
     stream_chunks: list[str] = []
     buffered_postprocessing = _should_buffer_postprocessing(config)
+    thinking_metadata: dict[str, Any] | None = None
 
     while iterations < config.max_iterations:
         iterations += 1
@@ -186,6 +190,9 @@ async def run_react(  # noqa: C901
                     cancellation_token=config.cancellation_token,
                     on_retry=on_retry,
                 )
+                if attempt.thinking:
+                    yield RuntimeEvent.thinking_delta(attempt.thinking)
+                    thinking_metadata = {"thinking": attempt.thinking, "non_compactable": True}
                 stream_chunks = attempt.chunks
                 raw = attempt.raw
             else:
@@ -348,6 +355,7 @@ async def run_react(  # noqa: C901
                 tool_calls=tool_calls_count,
                 new_messages_prefix=new_messages,
                 checkpoint=checkpoint,
+                assistant_metadata=thinking_metadata,
             ):
                 yield event
             return

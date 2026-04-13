@@ -526,6 +526,119 @@ class TestCascade:
 
 
 # ---------------------------------------------------------------------------
+# Non-compactable message preservation (Phase 15 — Thinking Events)
+# ---------------------------------------------------------------------------
+
+
+class TestNonCompactableTier2:
+    """Tier 2: non_compactable messages survive LLM summarization."""
+
+    @pytest.mark.asyncio
+    async def test_non_compactable_survives_tier2(self) -> None:
+        """Messages with metadata.non_compactable=True skip summarization."""
+
+        async def mock_llm(prompt: str, dialog_text: str) -> str:
+            return "Summarized conversation."
+
+        config = CompactionConfig(
+            threshold_tokens=20, preserve_recent_pairs=0, tier_1_enabled=False,
+        )
+        f = ConversationCompactionFilter(config=config, llm_call=mock_llm)
+        msgs = [
+            _msg("user", "old msg " * 30),
+            _msg("assistant", "thinking content", metadata={"non_compactable": True}),
+            _msg("assistant", "old reply " * 30),
+            _msg("user", "latest"),
+        ]
+        result_msgs, _ = await f.filter(msgs, "sys")
+        # non_compactable message must survive
+        nc_msgs = [
+            m for m in result_msgs
+            if m.metadata and m.metadata.get("non_compactable")
+        ]
+        assert len(nc_msgs) == 1
+        assert nc_msgs[0].content == "thinking content"
+        # last message preserved
+        assert result_msgs[-1].content == "latest"
+
+    @pytest.mark.asyncio
+    async def test_non_compactable_excluded_from_summary_text(self) -> None:
+        """Non-compactable messages are NOT included in the summarization dialog."""
+        captured_dialog: list[str] = []
+
+        async def capture_llm(prompt: str, dialog_text: str) -> str:
+            captured_dialog.append(dialog_text)
+            return "Summary."
+
+        config = CompactionConfig(
+            threshold_tokens=20, preserve_recent_pairs=0, tier_1_enabled=False,
+        )
+        f = ConversationCompactionFilter(config=config, llm_call=capture_llm)
+        msgs = [
+            _msg("user", "old msg " * 30),
+            _msg("assistant", "SECRET_THINKING", metadata={"non_compactable": True}),
+            _msg("assistant", "old reply " * 30),
+            _msg("user", "latest"),
+        ]
+        await f.filter(msgs, "sys")
+        assert captured_dialog, "LLM should have been called"
+        assert "SECRET_THINKING" not in captured_dialog[0]
+
+
+class TestNonCompactableTier3:
+    """Tier 3: non_compactable messages survive emergency truncation."""
+
+    @pytest.mark.asyncio
+    async def test_non_compactable_survives_tier3(self) -> None:
+        """Messages with metadata.non_compactable=True are kept during truncation."""
+        config = CompactionConfig(
+            threshold_tokens=20,
+            preserve_recent_pairs=0,
+            tier_1_enabled=False,
+            tier_2_enabled=False,
+        )
+        f = ConversationCompactionFilter(config=config)
+        msgs = [
+            _msg("user", "old1 " * 50),
+            _msg("assistant", "thinking", metadata={"non_compactable": True}),
+            _msg("assistant", "old2 " * 50),
+            _msg("user", "old3 " * 50),
+            _msg("user", "recent"),
+        ]
+        result_msgs, _ = await f.filter(msgs, "sys")
+        # non_compactable must survive
+        nc_msgs = [
+            m for m in result_msgs
+            if m.metadata and m.metadata.get("non_compactable")
+        ]
+        assert len(nc_msgs) == 1
+        assert nc_msgs[0].content == "thinking"
+        # last message always preserved
+        assert result_msgs[-1].content == "recent"
+        # normal old messages should have been dropped
+        assert len(result_msgs) < len(msgs)
+
+    @pytest.mark.asyncio
+    async def test_normal_messages_still_truncated(self) -> None:
+        """Backward compat: messages without non_compactable are truncated normally."""
+        config = CompactionConfig(
+            threshold_tokens=10,
+            preserve_recent_pairs=0,
+            tier_1_enabled=False,
+            tier_2_enabled=False,
+        )
+        f = ConversationCompactionFilter(config=config)
+        msgs = [
+            _msg("user", "old " * 100),
+            _msg("assistant", "old " * 100),
+            _msg("user", "last"),
+        ]
+        result_msgs, _ = await f.filter(msgs, "sys")
+        assert result_msgs[-1].content == "last"
+        assert len(result_msgs) < len(msgs)
+
+
+# ---------------------------------------------------------------------------
 # InputFilter protocol conformance
 # ---------------------------------------------------------------------------
 

@@ -285,6 +285,7 @@ class TestRuntimeEvent:
     def test_all_event_types(self) -> None:
         expected = {
             "assistant_delta",
+            "thinking_delta",
             "status",
             "tool_call_started",
             "tool_call_finished",

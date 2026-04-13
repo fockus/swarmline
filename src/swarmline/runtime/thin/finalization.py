@@ -64,6 +64,7 @@ def _make_final_event(
     tool_calls: int,
     structured_output: Any,
     new_messages_prefix: list[Message] | None,
+    assistant_metadata: dict[str, Any] | None = None,
 ) -> RuntimeEvent:
     usage = _build_usage(lm_messages, prompt, text)
     metrics = _build_metrics(
@@ -75,7 +76,7 @@ def _make_final_event(
         tokens_out=usage["output_tokens"],
     )
     new_messages = list(new_messages_prefix or [])
-    new_messages.append(Message(role="assistant", content=text))
+    new_messages.append(Message(role="assistant", content=text, metadata=assistant_metadata))
     return RuntimeEvent.final(
         text=text,
         new_messages=new_messages,
@@ -97,6 +98,7 @@ async def finalize_with_validation(
     tool_calls: int = 0,
     new_messages_prefix: list[Message] | None = None,
     checkpoint: CheckpointFn | None = None,
+    assistant_metadata: dict[str, Any] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Validate structured output, retry if needed, then emit a final event."""
     current_text = text
@@ -122,6 +124,7 @@ async def finalize_with_validation(
             tool_calls=tool_calls,
             structured_output=structured_output,
             new_messages_prefix=new_messages_prefix,
+            assistant_metadata=assistant_metadata,
         )
         return
 
@@ -178,6 +181,7 @@ async def finalize_with_validation(
                 tool_calls=tool_calls,
                 structured_output=structured_output,
                 new_messages_prefix=new_messages_prefix,
+                assistant_metadata=assistant_metadata,
             )
             return
 

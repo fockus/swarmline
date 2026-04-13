@@ -47,4 +47,5 @@ def _should_buffer_postprocessing(config: RuntimeConfig) -> bool:
         config.output_guardrails
         or config.output_type is not None
         or config.retry_policy is not None
+        or config.thinking is not None
     )

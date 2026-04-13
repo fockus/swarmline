@@ -244,7 +244,10 @@ class RuntimeEventAdapter:
         etype = event.type
         data = event.data or {}
 
-        if etype == "assistant_delta":
+        if etype == "thinking_delta":
+            self.type = "thinking_delta"
+            self.text = data.get("text", "")
+        elif etype == "assistant_delta":
             self.type = "text_delta"
             self.text = data.get("text", "")
         elif etype == "final":

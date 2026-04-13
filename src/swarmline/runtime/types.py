@@ -18,6 +18,7 @@ from swarmline.domain_types import (  # noqa: F401
     Message,
     RuntimeErrorData,
     RuntimeEvent,
+    ThinkingConfig,
     ToolSpec,
     TurnMetrics,
 )
@@ -188,6 +189,9 @@ class RuntimeConfig:
 
     # Conversation compaction (3-tier pipeline via InputFilter)
     compaction: CompactionConfig | None = None
+
+    # Extended thinking / chain-of-thought configuration
+    thinking: ThinkingConfig | None = None
 
     @staticmethod
     def _get_valid_names() -> frozenset[str]:

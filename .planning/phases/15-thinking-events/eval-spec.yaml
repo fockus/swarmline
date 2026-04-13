@@ -1,0 +1,78 @@
+evaluation_specification:
+  task: 'Phase 15: Thinking Events'
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: >
+        All four THNK requirements are implemented and verifiable:
+        THNK-01 (thinking_delta events stream separately from text_delta),
+        THNK-02 (Anthropic extended thinking via budget_tokens config),
+        THNK-03 (thinking blocks marked non_compactable, survive compaction tiers 2+3),
+        THNK-04 (non-Anthropic providers emit status warning when thinking enabled).
+      checklist:
+        - 'RuntimeEvent.thinking_delta factory exists and returns RuntimeEvent(type="thinking_delta", data={"text": ...})'
+        - 'ThinkingConfig is a frozen dataclass with budget_tokens: int field'
+        - 'RuntimeConfig.thinking field is Optional[ThinkingConfig] defaulting to None'
+        - 'LlmCallResult dataclass carries both text and thinking content fields'
+        - 'BufferedLlmAttempt has optional thinking: str | None = None field'
+        - 'AnthropicAdapter detects ThinkingConfig and passes budget_tokens to Anthropic API call'
+        - 'AnthropicAdapter extracts thinking blocks from response and returns them in LlmCallResult'
+        - 'Strategies (conversational, react) emit RuntimeEvent.thinking_delta for thinking content'
+        - 'Non-Anthropic providers emit RuntimeEvent.status warning when thinking config present'
+        - 'Compaction tiers 2 and 3 skip messages flagged non_compactable'
+        - 'Thinking messages are marked non_compactable'
+        - 'RuntimeEventAdapter handles thinking_delta type'
+        - 'All existing tests pass (no regressions)'
+    - name: architecture
+      weight: 0.25
+      rubric: >
+        Clean Architecture respected. ThinkingConfig in domain layer. No reverse deps.
+        ISP compliance. Optional fields with None defaults.
+      checklist:
+        - 'ThinkingConfig defined in domain_types.py — not in infrastructure'
+        - 'RuntimeEvent.thinking_delta is @staticmethod, same pattern as assistant_delta'
+        - 'No new imports of anthropic/openai/google in domain or application layers'
+        - 'LlmCallResult in runtime/thin/ layer (infrastructure)'
+        - 'RuntimeConfig.thinking is Optional with None default'
+        - 'Compaction non_compactable integrated without breaking CompactionConfig'
+        - 'AnthropicAdapter changes contained within llm_providers.py'
+        - 'Strategy changes receive thinking via LlmCallResult, not Anthropic types'
+        - 'Dependency direction: no reverse imports'
+    - name: test_quality
+      weight: 0.20
+      rubric: >
+        TDD discipline. test_<what>_<condition>_<result> naming. AAA structure.
+        Integration tests for real component interaction. Compaction unit tests.
+      checklist:
+        - '>=7 integration tests covering thinking event flow'
+        - '>=3 compaction unit tests for non_compactable exclusion'
+        - 'Test for THNK-01: thinking_delta separate from text_delta'
+        - 'Test for THNK-02: AnthropicAdapter passes budget_tokens'
+        - 'Test for THNK-03: compaction preserves non_compactable'
+        - 'Test for THNK-04: non-Anthropic warning'
+        - 'Test for backward compat: ThinkingConfig=None unchanged behavior'
+        - 'Test names follow convention'
+        - 'pytest-asyncio patterns consistent with existing suite'
+    - name: code_quality
+      weight: 0.15
+      rubric: >
+        Frozen dataclasses. Lazy imports. Type hints. No TODO/FIXME.
+        Logging consistent. Docstrings match style.
+      checklist:
+        - 'ThinkingConfig uses @dataclass(frozen=True)'
+        - 'All new public methods have type hints'
+        - 'Anthropic SDK imported lazily'
+        - 'No TODO, FIXME, placeholder'
+        - 'ruff check passes on changed files'
+    - name: rules_compliance
+      weight: 0.10
+      rubric: >
+        Contract-first, TDD, SOLID, DRY, YAGNI. No new deps.
+        No protected file changes. No version bump.
+      checklist:
+        - 'No new external library added'
+        - 'ISP: no protocol exceeds 5 methods'
+        - 'All new fields Optional with None default'
+        - 'No changes to pyproject.toml version or CI'
+        - 'Backward compat: existing tests pass without modification'
+        - 'No scope creep beyond THNK-01..04'

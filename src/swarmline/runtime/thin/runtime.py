@@ -21,6 +21,7 @@ from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.executor import ToolExecutor
 from swarmline.runtime.thin.helpers import _should_buffer_postprocessing
 from swarmline.runtime.thin.llm_client import default_llm_call
+from swarmline.runtime.thin.modes import detect_mode
 from swarmline.runtime.thin.runtime_support import (
     auto_wrap_retriever,
     budget_exceeded_event,
@@ -31,7 +32,6 @@ from swarmline.runtime.thin.runtime_support import (
     wrap_user_llm_call,
     wrap_with_event_bus,
 )
-from swarmline.runtime.thin.modes import detect_mode
 from swarmline.runtime.thin.strategies import (
     run_conversational,
     run_planner,
@@ -249,7 +249,9 @@ class ThinRuntime:
             active_tools = [*active_tools, self._subagent_tool_spec]
             # Update executor with actual active_tools for correct tool inheritance
             if self._subagent_orchestrator is not None and self._subagent_config_obj is not None:
-                from swarmline.runtime.thin.subagent_tool import create_subagent_executor
+                from swarmline.runtime.thin.subagent_tool import (
+                    create_subagent_executor,
+                )
 
                 updated_executor = create_subagent_executor(
                     self._subagent_orchestrator, self._subagent_config_obj,
@@ -317,6 +319,17 @@ class ThinRuntime:
         )
 
         yield RuntimeEvent.status(f"Mode: {mode}")
+
+        # Extended thinking warning for non-Anthropic models
+        if effective_config.thinking is not None:
+            from swarmline.runtime.provider_resolver import resolve_provider as _resolve
+
+            _resolved = _resolve(effective_config.model, base_url=effective_config.base_url)
+            if _resolved.sdk_type != "anthropic":
+                yield RuntimeEvent.status(
+                    "Warning: extended thinking is only supported for Anthropic models; "
+                    f"'{effective_config.model}' uses {_resolved.provider}"
+                )
 
         # Flush any buffered retry events from previous calls
         self._retry_events.clear()

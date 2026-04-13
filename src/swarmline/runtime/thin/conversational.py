@@ -8,7 +8,10 @@ from typing import Any
 from swarmline.runtime.structured_output import append_structured_output_instruction
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.finalization import CheckpointFn, finalize_with_validation
-from swarmline.runtime.thin.helpers import _messages_to_lm, _should_buffer_postprocessing
+from swarmline.runtime.thin.helpers import (
+    _messages_to_lm,
+    _should_buffer_postprocessing,
+)
 from swarmline.runtime.thin.llm_client import run_buffered_llm_call, try_stream_llm_call
 from swarmline.runtime.thin.parsers import parse_envelope
 from swarmline.runtime.thin.prompts import build_conversational_prompt
@@ -58,6 +61,11 @@ async def run_conversational(
             yield RuntimeEvent.error(exc.error)
             return
 
+        thinking_metadata: dict[str, Any] | None = None
+        if attempt.thinking:
+            yield RuntimeEvent.thinking_delta(attempt.thinking)
+            thinking_metadata = {"thinking": attempt.thinking, "non_compactable": True}
+
         checkpoint_event = await _run_checkpoint(checkpoint)
         if checkpoint_event is not None:
             yield checkpoint_event
@@ -74,6 +82,7 @@ async def run_conversational(
                 llm_call,
                 start_time,
                 checkpoint=checkpoint,
+                assistant_metadata=thinking_metadata,
             ):
                 yield event
             return

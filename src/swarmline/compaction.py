@@ -135,6 +135,8 @@ class ConversationCompactionFilter:
         Replaces oldest messages with a single summary system message.
         Preserves the last ``preserve_recent_pairs * 2 + 1`` messages
         (recent tool pairs + at least 1 trailing message).
+        Messages with ``metadata.non_compactable=True`` skip summarization
+        and are preserved in their original position.
         Raises on LLM failure (caller catches).
         """
         # Preserve at least last message, plus recent tool pairs worth of messages
@@ -145,8 +147,20 @@ class ConversationCompactionFilter:
         region = messages[:-preserve_count]
         preserved = messages[-preserve_count:]
 
-        dialog_lines: list[str] = []
+        # Separate non-compactable messages from the summarization region
+        compactable: list[Message] = []
+        non_compactable: list[Message] = []
         for msg in region:
+            if msg.metadata and msg.metadata.get("non_compactable"):
+                non_compactable.append(msg)
+            else:
+                compactable.append(msg)
+
+        if not compactable:
+            return messages
+
+        dialog_lines: list[str] = []
+        for msg in compactable:
             dialog_lines.append(f"{msg.role}: {msg.content}")
         dialog_text = "\n".join(dialog_lines)
 
@@ -155,28 +169,38 @@ class ConversationCompactionFilter:
             role="system",
             content=f"[Conversation summary]: {summary}",
         )
-        return [summary_msg, *preserved]
+        return [summary_msg, *non_compactable, *preserved]
 
     def _emergency_truncate(
         self, messages: list[Message], system_prompt: str
     ) -> list[Message]:
         """Tier 3: Drop oldest messages until under budget.
 
-        Always preserves the last message. System prompt tokens are
-        counted against the budget but never truncated.
-        Uses cumulative subtraction for O(n) performance.
+        Always preserves the last message. Messages with
+        ``metadata.non_compactable=True`` are never dropped.
+        System prompt tokens are counted against the budget but
+        never truncated.  O(n) performance.
         """
         budget = self._config.threshold_tokens - estimate_tokens(system_prompt)
         if budget <= 0:
-            return [messages[-1]]
+            non_compactable = [
+                m for m in messages[:-1]
+                if m.metadata and m.metadata.get("non_compactable")
+            ]
+            return [*non_compactable, messages[-1]]
 
         total = sum(estimate_tokens(m.content) for m in messages)
-        start = 0
-        while start < len(messages) - 1 and total > budget:
-            total -= estimate_tokens(messages[start].content)
-            start += 1
+        dropped: set[int] = set()
+        for i in range(len(messages) - 1):
+            if total <= budget:
+                break
+            msg = messages[i]
+            if msg.metadata and msg.metadata.get("non_compactable"):
+                continue
+            total -= estimate_tokens(msg.content)
+            dropped.add(i)
 
-        return messages[start:]
+        return [m for i, m in enumerate(messages) if i not in dropped]
 
     def _collapse_tool_results(self, messages: list[Message]) -> list[Message]:
         """Collapse old tool call/result pairs into compact summary messages.

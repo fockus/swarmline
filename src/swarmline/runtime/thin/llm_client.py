@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 import logging
 from collections.abc import AsyncIterator, Callable
+from dataclasses import dataclass
 from typing import Any
 
 from swarmline.runtime.provider_resolver import resolve_provider
@@ -17,12 +17,21 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
+class LlmCallResult:
+    """Result of a single LLM call with optional thinking content."""
+
+    text: str
+    thinking: str | None = None
+
+
+@dataclass(frozen=True)
 class BufferedLlmAttempt:
     """Buffered Llm Attempt implementation."""
 
     raw: str
     chunks: list[str]
     used_stream: bool
+    thinking: str | None = None
 
 
 async def try_stream_llm_call(
@@ -37,8 +46,15 @@ async def try_stream_llm_call(
         # LLM not supports stream kwarg
         return None
 
-    if isinstance(result, str):
+    if isinstance(result, LlmCallResult):
+        if result.thinking:
+            logger.warning(
+                "Thinking content in streaming path will not be emitted as event. "
+                "Ensure _should_buffer_postprocessing returns True when thinking is configured.",
+            )
+        return [result.text], result.text
 
+    if isinstance(result, str):
         return [result], result
 
     if not hasattr(result, "__aiter__"):
@@ -68,7 +84,17 @@ async def run_buffered_llm_call(
                 result = await llm_call(lm_messages, prompt, stream=True)
             except TypeError:
                 raw = await llm_call(lm_messages, prompt)
+                if isinstance(raw, LlmCallResult):
+                    return BufferedLlmAttempt(
+                        raw=raw.text, chunks=[], used_stream=False, thinking=raw.thinking,
+                    )
                 return BufferedLlmAttempt(raw=raw, chunks=[], used_stream=False)
+
+            if isinstance(result, LlmCallResult):
+                return BufferedLlmAttempt(
+                    raw=result.text, chunks=[result.text], used_stream=False,
+                    thinking=result.thinking,
+                )
 
             if isinstance(result, str):
                 return BufferedLlmAttempt(raw=result, chunks=[result], used_stream=True)
@@ -80,6 +106,10 @@ async def run_buffered_llm_call(
                 return BufferedLlmAttempt(raw="".join(chunks), chunks=chunks, used_stream=True)
 
             raw = await llm_call(lm_messages, prompt)
+            if isinstance(raw, LlmCallResult):
+                return BufferedLlmAttempt(
+                    raw=raw.text, chunks=[], used_stream=False, thinking=raw.thinking,
+                )
             return BufferedLlmAttempt(raw=raw, chunks=[], used_stream=False)
         except ThinLlmError as exc:
             if retry_policy is None or exc.error.kind == "cancelled":
@@ -124,11 +154,17 @@ async def default_llm_call(
     messages: list[dict[str, str]],
     system_prompt: str,
     **kwargs: Any,
-) -> str | AsyncIterator[str]:
+) -> str | LlmCallResult | AsyncIterator[str]:
     """Default llm call."""
     use_stream = kwargs.pop("stream", False)
 
     resolved = resolve_provider(config.model, base_url=config.base_url)
+
+    # Extended thinking: inject _thinking_config for Anthropic only
+    if config.thinking is not None and resolved.sdk_type == "anthropic":
+        use_stream = False  # thinking API is non-streaming
+        kwargs["_thinking_config"] = config.thinking
+
     logger.info(
         "LLM запрос: model=%s, provider=%s, sdk=%s, stream=%s",
         resolved.model_id,
@@ -154,7 +190,10 @@ async def default_llm_call(
                 system_prompt,
                 **kwargs,
             )
-        return await adapter.call(messages, system_prompt, **kwargs)
+        result = await adapter.call(messages, system_prompt, **kwargs)
+        if isinstance(result, LlmCallResult):
+            return result
+        return result
     except ThinLlmError:
         raise
     except Exception as exc:
