@@ -38,6 +38,15 @@
 - ✅ 16.3 Read tool image detection + BinaryReadProvider ISP split + PDF/Jupyter extractors — 20 unit tests
 - ✅ 16.4 Integration tests (14) + quality gate: 5042 tests pass, ruff clean
 
+### Phase 17: Parallel Agent Infrastructure ✅ DONE (Judge 4.15/5.0, 2026-04-13, commit 2e2c800)
+- ✅ 17.1 SubagentSpec.isolation field + worktree lifecycle in ThinSubagentOrchestrator (create/cleanup/stale/max 5) — 14 unit tests
+- ✅ 17.2 spawn_agent tool isolation parameter + SUBAGENT_TOOL_SPEC update — 8 unit tests
+- ✅ 17.3 RuntimeEvent.background_complete + SubagentSpec.run_in_background + background orchestration — 15 unit tests
+- ✅ 17.4 monitor_agent tool + ThinRuntime background event wiring — 17 unit tests
+- ✅ Quality gates: 5096 tests pass, ruff clean
+
+## ThinRuntime Claude Code Parity v2 — COMPLETE (7/7 phases, 2026-04-13)
+
 ## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 
 ### Phase 1: Hook Dispatch (P0 — security) ✅ DONE

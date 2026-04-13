@@ -249,19 +249,18 @@ class TestReadExecutorExtractors:
             result = json.loads(await executor({"path": "doc.pdf"}))
         assert result["status"] == "ok"
         assert result["content"] == "Extracted PDF text"
-        mock_extract.assert_awaited_once_with("doc.pdf")
+        mock_extract.assert_awaited_once_with(b"")
 
     async def test_ipynb_file_uses_extractor(self) -> None:
         sandbox = _FakeSandboxWithBinary()
         executor = _create_read_executor(sandbox)
 
-        async def _mock_extract_jupyter(path: str) -> str:
-            return "Notebook cells extracted"
-
-        with patch("swarmline.tools.extractors.extract_jupyter", _mock_extract_jupyter):
+        mock_extract = AsyncMock(return_value="Notebook cells extracted")
+        with patch("swarmline.tools.extractors.extract_jupyter", mock_extract):
             result = json.loads(await executor({"path": "notebook.ipynb"}))
         assert result["status"] == "ok"
         assert result["content"] == "Notebook cells extracted"
+        mock_extract.assert_awaited_once_with("")
 
     async def test_pdf_extractor_error_returns_error_response(self) -> None:
         sandbox = _FakeSandboxWithBinary()
@@ -274,6 +273,42 @@ class TestReadExecutorExtractors:
             result = json.loads(await executor({"path": "doc.pdf"}))
         assert result["status"] == "error"
         assert "pymupdf4llm" in result["message"]
+
+    async def test_pdf_file_reads_via_sandbox_before_extractor(self) -> None:
+        class _Sandbox(_FakeSandboxWithBinary):
+            def __init__(self) -> None:
+                super().__init__(binary_content=b"%PDF-1.4 fake")
+                self.read_file_bytes = AsyncMock(return_value=b"%PDF-1.4 fake")
+
+        sandbox = _Sandbox()
+        executor = _create_read_executor(sandbox)
+
+        mock_extract = AsyncMock(return_value="Extracted PDF text")
+        with patch("swarmline.tools.extractors.extract_pdf", mock_extract):
+            result = json.loads(await executor({"path": "../secret.pdf"}))
+
+        assert result["status"] == "ok"
+        sandbox.read_file_bytes.assert_awaited_once_with("../secret.pdf")
+        mock_extract.assert_awaited_once_with(b"%PDF-1.4 fake")
+
+    async def test_ipynb_file_reads_via_sandbox_before_extractor(self) -> None:
+        notebook_text = '{"cells":[{"cell_type":"markdown","source":["hello"]}]}'
+
+        class _Sandbox(_FakeSandboxWithBinary):
+            def __init__(self) -> None:
+                super().__init__(text_content=notebook_text)
+                self.read_file = AsyncMock(return_value=notebook_text)
+
+        sandbox = _Sandbox()
+        executor = _create_read_executor(sandbox)
+
+        mock_extract = AsyncMock(return_value="Notebook cells extracted")
+        with patch("swarmline.tools.extractors.extract_jupyter", mock_extract):
+            result = json.loads(await executor({"path": "../secret.ipynb"}))
+
+        assert result["status"] == "ok"
+        sandbox.read_file.assert_awaited_once_with("../secret.ipynb")
+        mock_extract.assert_awaited_once_with(notebook_text)
 
 
 # ---------------------------------------------------------------------------

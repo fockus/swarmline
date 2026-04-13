@@ -4,11 +4,11 @@
 
 **ThinRuntime Claude Code Parity v2** (2026-04-13) — расширение ThinRuntime до полного набора возможностей Claude Code. Parity v1 (фазы 1-10) — ЗАВЕРШЕНО. Текущая работа: **Parity v2** (фазы 11-17, milestone v1.5.0).
 
-**Текущая фаза: Phase 17 — Parallel Agent Infrastructure** (следующая после Phase 16 DONE).
+**Текущая фаза: ALL PHASES COMPLETE** — Parity v2 завершён (7/7 фаз). Следующий шаг: v1.5.0 release.
 
-Phase 16 (Multimodal Input) ЗАВЕРШЕНА: ContentBlock types (TextBlock, ImageBlock) + Message.content_blocks additive field. Provider-specific conversion: Anthropic vision, OpenAI image_url, Google inline_data — в call(), stream(), call_with_tools(). Read tool image detection (PNG/JPG/GIF/WebP → base64). PDF/Jupyter extractors (pymupdf4llm, nbformat) с asyncio.to_thread. BinaryReadProvider ISP split. Image size limit 20MB. 83 новых теста. Judge: 4.26/5.0. Commit: 54fed1c.
+Phase 17 (Parallel Agent Infrastructure) ЗАВЕРШЕНА: SubagentSpec.isolation="worktree" + worktree lifecycle (create/cleanup/stale/max 5). RuntimeEvent.background_complete + fire-and-forget spawn + output buffering + monitor_agent tool + ThinRuntime bg event wiring. 54 новых теста. Judge: 4.15/5.0. Commit: 2e2c800.
 
-**Прогресс Parity v2: 6/7 фаз завершено (86%). Общий прогресс: 16/17 фаз (94%).**
+**Прогресс Parity v2: 7/7 фаз завершено (100%). Общий прогресс: 17/17 фаз (100%). PARITY COMPLETE.**
 
 **Предыдущие транши завершены**:
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -86,7 +86,8 @@ Phase 16 (Multimodal Input) ЗАВЕРШЕНА: ContentBlock types (TextBlock, I
 
 ## Тесты
 
-- Offline suite: `5042 passed, 5 skipped, 5 deselected` ← текущий (2026-04-13, Phase 16 done)
+- Offline suite: `5096 passed, 5 skipped, 5 deselected` ← текущий (2026-04-13, Phase 17 done, ALL COMPLETE)
+- Offline suite: `5042 passed, 5 skipped, 5 deselected` (после Phase 16)
 - Offline suite: `4959 passed, 3 skipped, 5 deselected` (после Phase 15)
 - Offline suite: `4899 passed, 3 skipped, 5 deselected` (после Phase 14)
 - Offline suite: `4859 passed, 3 skipped, 5 deselected` (после Phase 13)

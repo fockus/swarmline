@@ -8,6 +8,7 @@ and branch naming convention.
 from __future__ import annotations
 
 import asyncio
+import os
 from unittest.mock import AsyncMock
 
 import pytest
@@ -192,6 +193,40 @@ class TestWorktreeLifecycle:
         assert len(captured_cwd) == 1
         assert captured_cwd[0] is not None
         assert captured_cwd[0].startswith("/tmp/wt/")
+
+    async def test_worker_runtime_does_not_mutate_process_cwd(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.orchestration import thin_subagent as thin_subagent_module
+
+        class _FakeRuntime:
+            async def run(self, **_kwargs: object) -> None:
+                if False:
+                    yield None
+
+        async def _collect(_stream: object, **_kwargs: object) -> str:
+            return "result"
+
+        monkeypatch.setattr(thin_subagent_module, "ThinRuntime", lambda **_kwargs: _FakeRuntime())
+        monkeypatch.setattr(thin_subagent_module, "collect_runtime_output", _collect)
+
+        def _forbid_chdir(path: str) -> None:
+            raise AssertionError(f"os.chdir must not be called: {path}")
+
+        monkeypatch.setattr(os, "chdir", _forbid_chdir)
+
+        runtime = thin_subagent_module._ThinWorkerRuntime(
+            spec=SubagentSpec(name="worker", system_prompt="p"),
+            llm_call=None,
+            local_tools={},
+            mcp_servers=None,
+            runtime_config=thin_subagent_module.RuntimeConfig(runtime_name="thin"),
+        )
+        runtime._cwd = "/tmp/wt/isolated"
+
+        result = await runtime.run("task")
+
+        assert result == "result"
 
 
 # ---------------------------------------------------------------------------

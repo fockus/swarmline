@@ -2,23 +2,22 @@
 
 ## Текущий приоритет
 
-**ThinRuntime Claude Code Parity v2** — IN PROGRESS (16/17 фаз выполнено, 94%).
+**ThinRuntime Claude Code Parity v2** — COMPLETE (17/17 фаз выполнено, 100%).
 - Parity v1 (фазы 1-10): COMPLETE
-- Parity v2 (фазы 11-17, milestone v1.5.0): 6/7 фаз выполнено
+- Parity v2 (фазы 11-17, milestone v1.5.0): 7/7 фаз выполнено — ALL DONE
 - **Phase 11 (Foundation Filters): ✅ DONE** — ProjectInstructionFilter + SystemReminderFilter, 50 тестов, Judge 4.40/5.0
 - **Phase 12 (Tool Surface Expansion): ✅ DONE** — web_fetch domain filter + MCP resource reading + read_mcp_resource tool, 46 тестов, Judge 4.43/5.0
 - **Phase 13 (Conversation Compaction): ✅ DONE** — ConversationCompactionFilter 3-tier cascade + CompactionConfig, 35 тестов, Judge 4.23/5.0
 - **Phase 14 (Session Resume): ✅ DONE** — JsonlMessageStore + Conversation.resume() + auto-persist, 40 тестов, Judge 4.30/5.0
 - **Phase 15 (Thinking Events): ✅ DONE** — ThinkingConfig + thinking_delta + Anthropic extended thinking + non_compactable, 59 тестов, Judge 4.42/5.0
 - **Phase 16 (Multimodal Input): ✅ DONE** — ContentBlock types, provider conversion, read tool image detection, PDF/Jupyter extractors, 83 теста, Judge 4.26/5.0
-- **Phase 17 (Parallel Agent Infrastructure): ⬜ NEXT** — Git worktree isolation + background agents
+- **Phase 17 (Parallel Agent Infrastructure): ✅ DONE** — Git worktree isolation + background agents, Judge 4.15/5.0, commit 2e2c800
 
 GSD Roadmap: `.planning/ROADMAP.md`
 
 ## Следующий шаг
 
-1. **Phase 17: Parallel Agent Infrastructure** — Git worktree isolation + background agent execution
-2. **v1.5.0 release** — после завершения Phase 17 (последняя фаза Parity v2)
+1. **v1.5.0 release** — все 17 фаз завершены, готово к релизу
 
 ## Релизный контекст
 
@@ -34,8 +33,7 @@ GSD Roadmap: `.planning/ROADMAP.md`
 | 14 | Session Resume (conversation history) | P1 | ✅ DONE |
 | 15 | Thinking Events (отдельный reasoning поток) | P2 | ✅ DONE |
 | 16 | Multimodal Input (images, PDF, notebooks) | P2 | ✅ DONE |
-| 17 | Parallel Agent Infrastructure | P2 | ⬜ NEXT |
-| 18 | Git Worktree Isolation для субагентов | P2 | ⬜ |
+| 17 | Parallel Agent Infrastructure | P2 | ✅ DONE |
 
 ## Завершённые фазы — Parity v1 (Phases 1-10) ✅ COMPLETE
 

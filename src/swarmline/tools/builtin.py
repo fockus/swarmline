@@ -194,14 +194,20 @@ def _create_read_executor(sandbox: SandboxProvider) -> Callable:
             if ext == ".pdf":
                 from swarmline.tools.extractors import extract_pdf
 
-                content = await extract_pdf(path)
+                if not isinstance(sandbox, BinaryReadProvider):
+                    return _make_json_error(
+                        "PDF extraction requires a sandbox with binary read support"
+                    )
+                raw = await sandbox.read_file_bytes(path)
+                content = await extract_pdf(raw)
                 return json.dumps({"status": "ok", "content": content})
 
             # Jupyter notebook extraction
             if ext == ".ipynb":
                 from swarmline.tools.extractors import extract_jupyter
 
-                content = await extract_jupyter(path)
+                notebook = await sandbox.read_file(path)
+                content = await extract_jupyter(notebook)
                 return json.dumps({"status": "ok", "content": content})
 
             # Image detection — requires BinaryReadProvider

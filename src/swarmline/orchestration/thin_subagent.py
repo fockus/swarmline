@@ -405,8 +405,13 @@ class _ThinWorkerRuntime:
         self._cwd: str | None = None
 
     async def run(self, task: str) -> str:
-        """Run, optionally in an isolated worktree directory."""
-        import os
+        """Run the worker without mutating process-global cwd.
+
+        Worktree paths are carried on the worker instance for workspace-aware
+        tools and future runtime wiring. The worker itself must not call
+        ``os.chdir()``, because subagents execute concurrently in the same
+        process and a global cwd switch breaks isolation guarantees.
+        """
 
         kwargs: dict[str, Any] = {
             "config": self._runtime_config,
@@ -420,21 +425,13 @@ class _ThinWorkerRuntime:
         if self._hook_registry is not None:
             kwargs["hook_registry"] = self._hook_registry
 
-        original_cwd: str | None = None
-        if self._cwd is not None:
-            original_cwd = os.getcwd()
-            os.chdir(self._cwd)
-        try:
-            runtime = ThinRuntime(**kwargs)
-            return await collect_runtime_output(
-                runtime.run(
-                    messages=[Message(role="user", content=task)],
-                    system_prompt=self._spec.system_prompt,
-                    active_tools=self._spec.tools,
-                    mode_hint="react",
-                ),
-                error_prefix="ThinRuntime subagent error",
-            )
-        finally:
-            if original_cwd is not None:
-                os.chdir(original_cwd)
+        runtime = ThinRuntime(**kwargs)
+        return await collect_runtime_output(
+            runtime.run(
+                messages=[Message(role="user", content=task)],
+                system_prompt=self._spec.system_prompt,
+                active_tools=self._spec.tools,
+                mode_hint="react",
+            ),
+            error_prefix="ThinRuntime subagent error",
+        )

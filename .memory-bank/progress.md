@@ -651,3 +651,16 @@
 - Quality gates: pytest -q → 4899 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: ~332.
 - Parity v2 progress: 4/7 фаз (57%). Overall: 14/17 фаз (82%).
 - Next: Phase 15 — Thinking Events (ThinkingEvent domain type + ThinRuntime emission wiring).
+
+[2026-04-13] Phase 17 (Parallel Agent Infrastructure) завершена — Judge 4.15/5.0, commit 2e2c800. ФИНАЛЬНАЯ ФАЗА PARITY v2.
+- Delivered:
+  - SubagentSpec.isolation="worktree": child agents run in dedicated git worktree with automatic lifecycle (create/cleanup/stale detection/max 5 limit)
+  - RuntimeEvent.background_complete: domain event for async agent completion notifications
+  - SubagentSpec.run_in_background: fire-and-forget spawn with output buffering and mandatory timeout
+  - monitor_agent tool: polling-based status/output check for background agents
+  - ThinRuntime wiring: on_background_complete callback + _bg_events draining in run() loop
+  - 54 новых тестов: 14 worktree + 8 tool isolation + 15 background + 17 monitor/runtime
+- Review: 3 SERIOUS findings (cwd not applied, assert→ValueError, callback crash) — all fixed iteration 2
+- Quality gates: pytest -q → 5096 passed, 5 skipped, 5 deselected. ruff clean.
+- **Parity v2 progress: 7/7 фаз (100%). Overall: 17/17 фаз (100%). PARITY COMPLETE.**
+- Next: v1.5.0 release.

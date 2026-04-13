@@ -7,13 +7,14 @@ Sync I/O is wrapped in asyncio.to_thread to avoid blocking the event loop.
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 
-async def extract_pdf(path: str) -> str:
-    """Extract text from a PDF file using pymupdf4llm.
+async def extract_pdf(source: str | bytes) -> str:
+    """Extract text from a PDF file or raw PDF bytes using pymupdf4llm.
 
     Args:
-        path: Absolute or relative path to the PDF file.
+        source: Absolute/relative path to a PDF file, or raw PDF bytes.
 
     Returns:
         Extracted text content.
@@ -29,14 +30,33 @@ async def extract_pdf(path: str) -> str:
             "Install: pip install pymupdf4llm"
         ) from None
 
-    return await asyncio.to_thread(pymupdf4llm.to_markdown, path)
+    if isinstance(source, bytes):
+        try:
+            import fitz
+        except ImportError:
+            raise ImportError(
+                "pymupdf is required for PDF extraction from bytes. "
+                "Install: pip install pymupdf"
+            ) from None
+
+        def _extract_from_bytes() -> str:
+            doc = fitz.open(stream=source, filetype="pdf")
+            try:
+                return pymupdf4llm.to_markdown(doc)
+            finally:
+                doc.close()
+
+        return await asyncio.to_thread(_extract_from_bytes)
+
+    return await asyncio.to_thread(pymupdf4llm.to_markdown, source)
 
 
-async def extract_jupyter(path: str) -> str:
-    """Extract cell contents from a Jupyter notebook (.ipynb).
+async def extract_jupyter(source: str | bytes) -> str:
+    """Extract cell contents from a Jupyter notebook (.ipynb) or notebook JSON.
 
     Args:
-        path: Absolute or relative path to the .ipynb file.
+        source: Absolute/relative path to the .ipynb file, notebook JSON string,
+            or UTF-8 encoded notebook bytes.
 
     Returns:
         Extracted text (markdown + code cells concatenated).
@@ -52,7 +72,14 @@ async def extract_jupyter(path: str) -> str:
             "Install: pip install nbformat"
         ) from None
 
-    nb = await asyncio.to_thread(nbformat.read, path, 4)
+    if isinstance(source, bytes):
+        notebook_text = source.decode("utf-8")
+        nb = await asyncio.to_thread(nbformat.reads, notebook_text, as_version=4)
+    elif Path(source).exists():
+        nb = await asyncio.to_thread(nbformat.read, source, 4)
+    else:
+        nb = await asyncio.to_thread(nbformat.reads, source, as_version=4)
+
     parts: list[str] = []
     for cell in nb.cells:
         source = "".join(cell.source) if isinstance(cell.source, list) else cell.source

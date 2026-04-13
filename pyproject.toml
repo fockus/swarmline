@@ -171,7 +171,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
     "ruff>=0.8",
-    "mypy>=1.10",
+    "ty>=0.0.29",
 ]
 docs = [
     "mkdocs-material>=9.5",
