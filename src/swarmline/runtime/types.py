@@ -181,6 +181,10 @@ class RuntimeConfig:
     # Native tool calling: opt-in for provider-native tool APIs (Strangler Fig)
     use_native_tools: bool = False
 
+    # Web tool domain filtering (applied to HttpxWebProvider)
+    web_allowed_domains: list[str] | None = None
+    web_blocked_domains: list[str] | None = None
+
     @staticmethod
     def _get_valid_names() -> frozenset[str]:
         """Get valid runtime names: static builtins + dynamic registry."""

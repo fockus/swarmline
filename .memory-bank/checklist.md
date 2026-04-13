@@ -1,6 +1,19 @@
 # Checklist
 
-## ThinRuntime Claude Code Parity (2026-04-12) — v1.5.0
+## ThinRuntime Claude Code Parity v2 — v1.5.0 (Phases 11-17)
+
+### Phase 11: Foundation Filters ✅ DONE (Judge 4.40/5.0, 2026-04-13)
+- ✅ 11.1 InputFilter protocol + ProjectInstructionFilter (CLAUDE.md loading) + 19 unit tests
+- ✅ 11.2 SystemReminderFilter (dynamic context injection) + 17 unit tests
+- ✅ 11.3 ThinRuntime filter wiring + integration tests + 14 tests
+- ✅ Quality gates: 4778 tests pass, ruff clean
+
+### Phase 12: Tool Surface Expansion ⬜ NEXT
+- ⬜ 12.1 Web tools builtin (WebSearch + WebFetch) — @tool functions + policy integration
+- ⬜ 12.2 Thinking tool (extended reasoning events) + ThinRuntime wiring
+- ⬜ 12.3 Integration tests + quality gate (ruff + mypy + full pytest)
+
+## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 
 ### Phase 1: Hook Dispatch (P0 — security) ✅ DONE
 - ✅ 1.1 HookDispatcher Protocol + DefaultHookDispatcher + 27 unit tests (100% coverage)

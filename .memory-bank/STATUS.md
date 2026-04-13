@@ -2,14 +2,13 @@
 
 ## Текущий фокус
 
-**ThinRuntime Claude Code Parity** (2026-04-12) — доработка ThinRuntime до полноценного runtime с системой хуков, LLM-initiated субагентов, slash-команд и tool policy. Plan: `plans/2026-04-12_feature_thin-runtime-claude-code-parity.md`. Аудит: `reports/2026-04-12_audit_thin-runtime-gaps.md`.
+**ThinRuntime Claude Code Parity v2** (2026-04-13) — расширение ThinRuntime до полного набора возможностей Claude Code. Parity v1 (фазы 1-10) — ЗАВЕРШЕНО. Текущая работа: **Parity v2** (фазы 11-17, milestone v1.5.0).
 
-5 критических gap'ов выявлено аудитом:
-1. Hooks не подключены (SecurityGuard молча не работает)
-2. LLM не может spawn'ить субагентов (только Python API)
-3. Commands не активированы (registry есть, не wired)
-4. Pseudo tool-calling вместо native API
-5. Tool policy не enforcement
+**Текущая фаза: Phase 12 — Tool Surface Expansion** (следующая после Phase 11 DONE).
+
+Phase 11 (Foundation Filters) ЗАВЕРШЕНА: ProjectInstructionFilter + SystemReminderFilter (InputFilter protocol). 50 новых тестов. Judge: 4.40/5.0.
+
+**Прогресс Parity v2: 1/7 фаз завершено (14%). Общий прогресс: 11/17 фаз (65%).**
 
 **Предыдущие транши завершены**:
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -87,12 +86,13 @@
 
 ## Тесты
 
-- Offline suite: `4249 passed, 3 skipped, 5 deselected`
-- Offline suite: `4223 passed, 3 skipped, 5 deselected`
+- Offline suite: `4778 passed, 3 skipped, 5 deselected` ← текущий (2026-04-13)
+- Offline suite: `4249 passed, 3 skipped, 5 deselected` (после audit-remediation)
+- Offline suite: `4223 passed, 3 skipped, 5 deselected` (после stabilization)
 - Explicit integration: `31 passed, 5 skipped`
 - Live suite: `5 passed`
 - Postgres integration harness: `3 passed`
-- Source files: ~220 .py files
+- Source files: 328 .py files ← текущий (2026-04-13)
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests
 - Knowledge Bank (B1-B4): ~140 new tests

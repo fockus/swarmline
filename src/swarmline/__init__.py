@@ -41,6 +41,7 @@ from swarmline.runtime.types import (
     TurnMetrics,
 )
 from swarmline.project_instruction_filter import ProjectInstructionFilter
+from swarmline.runtime.thin.mcp_client import ResourceDescriptor
 from swarmline.system_reminder_filter import SystemReminder, SystemReminderFilter
 from swarmline.types import ContextPack, SkillSet, TurnContext
 
@@ -60,6 +61,7 @@ __all__ = [
     "ProjectInstructionFilter",
     "ModelSelector",
     "PhaseStore",
+    "ResourceDescriptor",
     "Result",
     "RoleRouter",
     "RoleSkillsProvider",

@@ -2,34 +2,49 @@
 
 ## Текущий приоритет
 
-**ThinRuntime Claude Code Parity v1** — COMPLETE (10 фаз). Следующий: v1.5.0 release + **Parity v2** (расширенные возможности).
+**ThinRuntime Claude Code Parity v2** — IN PROGRESS (11/17 фаз выполнено, 65%).
+- Parity v1 (фазы 1-10): COMPLETE
+- Parity v2 (фазы 11-17, milestone v1.5.0): 1/7 фаз выполнено
+- **Phase 11 (Foundation Filters): ✅ DONE** — ProjectInstructionFilter + SystemReminderFilter, 50 тестов, Judge 4.40/5.0
+- **Phase 12 (Tool Surface Expansion): ⬜ NEXT** — WebSearch + WebFetch + Thinking tool
 
-Завершённый план: `plans/2026-04-12_feature_thin-runtime-claude-code-parity.md`
 GSD Roadmap: `.planning/ROADMAP.md`
 
 ## Следующий шаг
 
-1. **v1.5.0 release** — version bump + CHANGELOG + sync to public repo
-2. **ThinRuntime Parity v2** — 10 новых идей в бэклоге (IDEA-044 — IDEA-053)
+1. **Phase 12: Tool Surface Expansion** — WebSearch/WebFetch builtin tools + Thinking tool wiring
+2. **v1.5.0 release** — после завершения всех 7 Parity v2 фаз
 
 ## Релизный контекст
 
 **v1.4.1** опубликован на PyPI (swarmline). Следующий release: **v1.5.0** после завершения ThinRuntime parity.
 
-## Активный план
+## Активный план — Parity v2 (Phases 11-17)
 
 | Phase | Название | Приоритет | Статус |
 |-------|----------|-----------|--------|
-| 1 | Hook Dispatch в ThinRuntime | P0 | ✅ |
-| 2 | Tool Policy Enforcement | P0 | ✅ |
-| 3 | LLM-Initiated Subagents | P1 | ✅ |
-| 4 | Command Routing | P2 | ✅ |
-| 5 | Native Tool Calling | P2 | ✅ |
-| 6 | Integration Validation | P3 | ✅ |
-| 7 | Coding Profile Foundation | P2 | ✅ |
-| 8 | Coding Task Runtime and Persistence | P2 | ✅ |
-| 9 | Coding Context and Compatibility | P2 | ✅ |
-| 10 | Coding Subagent Inheritance and Validation | P3 | ✅ |
+| 11 | Foundation Filters (ProjectInstruction + SystemReminder) | P1 | ✅ DONE |
+| 12 | Tool Surface Expansion (Web + Thinking) | P1 | ⬜ NEXT |
+| 13 | Conversation Compaction (LLM-суммаризация) | P1 | ⬜ |
+| 14 | Session Resume (conversation history) | P1 | ⬜ |
+| 15 | Multimodal Input (images, PDF, notebooks) | P2 | ⬜ |
+| 16 | MCP Resource Reading | P2 | ⬜ |
+| 17 | Git Worktree Isolation для субагентов | P2 | ⬜ |
+
+## Завершённые фазы — Parity v1 (Phases 1-10) ✅ COMPLETE
+
+| Phase | Название | Статус |
+|-------|----------|--------|
+| 1 | Hook Dispatch в ThinRuntime | ✅ |
+| 2 | Tool Policy Enforcement | ✅ |
+| 3 | LLM-Initiated Subagents | ✅ |
+| 4 | Command Routing | ✅ |
+| 5 | Native Tool Calling | ✅ |
+| 6 | Integration Validation | ✅ |
+| 7 | Coding Profile Foundation | ✅ |
+| 8 | Coding Task Runtime and Persistence | ✅ |
+| 9 | Coding Context and Compatibility | ✅ |
+| 10 | Coding Subagent Inheritance and Validation | ✅ |
 
 ### ThinRuntime Parity v2 — Claude Code Gap Closure (IDEA-044 — IDEA-053)
 

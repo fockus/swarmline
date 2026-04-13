@@ -13,6 +13,26 @@ from swarmline.runtime.thin.mcp_client import (
     parse_mcp_tool_name,
     resolve_mcp_server_url,
 )
+from swarmline.runtime.types import ToolSpec
+
+READ_MCP_RESOURCE_SPEC = ToolSpec(
+    name="read_mcp_resource",
+    description="Read a resource from a connected MCP server by URI",
+    parameters={
+        "type": "object",
+        "properties": {
+            "server_id": {
+                "type": "string",
+                "description": "MCP server identifier",
+            },
+            "uri": {
+                "type": "string",
+                "description": "Resource URI to read",
+            },
+        },
+        "required": ["server_id", "uri"],
+    },
+)
 
 if TYPE_CHECKING:
     from swarmline.hooks.dispatcher import HookDispatcher
@@ -31,12 +51,16 @@ class ToolExecutor:
         hook_dispatcher: HookDispatcher | None = None,
         tool_policy: DefaultToolPolicy | None = None,
     ) -> None:
-        self._local_tools = local_tools or {}
+        self._local_tools = dict(local_tools or {})
         self._mcp_servers = mcp_servers or {}
         self._timeout = timeout_seconds
         self._mcp_client = mcp_client or McpClient(timeout_seconds=timeout_seconds)
         self._hook_dispatcher = hook_dispatcher
         self._tool_policy = tool_policy
+
+        # Register read_mcp_resource tool when MCP servers are configured
+        if self._mcp_servers and "read_mcp_resource" not in self._local_tools:
+            self._local_tools["read_mcp_resource"] = self._make_read_mcp_resource()
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> str:
         """Execute."""
@@ -231,6 +255,30 @@ class ToolExecutor:
         if parsed is None:
             return False
         return self._resolve_server_url(parsed[0]) is not None
+
+    def _make_read_mcp_resource(self) -> Callable[..., Any]:
+        """Create read_mcp_resource executor bound to this executor's MCP client."""
+        mcp_client = self._mcp_client
+        resolve_url = self._resolve_server_url
+
+        async def read_mcp_resource(server_id: str, uri: str) -> str:
+            server_url = resolve_url(server_id)
+            if not server_url:
+                return json.dumps(
+                    {"error": f"MCP server '{server_id}' not found"},
+                    ensure_ascii=False,
+                )
+            result = await mcp_client.read_resource(server_url, uri)
+            if isinstance(result, dict) and result.get("error"):
+                return json.dumps(
+                    {"error": f"MCP error: {result['error']}"},
+                    ensure_ascii=False,
+                    default=str,
+                )
+            return json.dumps(result, ensure_ascii=False, default=str)
+
+        read_mcp_resource.__tool_definition__ = True  # type: ignore[attr-defined]
+        return read_mcp_resource
 
     @property
     def local_tool_names(self) -> list[str]:

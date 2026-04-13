@@ -615,3 +615,11 @@
   - Phase 09: blocker-free, tranche-final closure осознанно оставлена на Phase 10 по фазовой границе.
   - Phase 10: blocker-free после AST-audit fix; sanity-check вернул `Blockers: none`, `Warnings: none`.
 - Код проекта на этом шаге не менялся; это planning-only tranche. Поэтому `pytest`, `ruff` и `mypy` по репозиторию не запускались, а verification performed относится к phase-plan review/subagent checks и structural consistency планов.
+[2026-04-13] Phase 11 (Foundation Filters) завершена — ThinRuntime Parity v2 старт.
+- Milestone: v1.5.0 Parity v2 (7 фаз, IDEA-044—IDEA-053). Roadmap: docs/2026-04-13_milestone_v1.5.0-parity-v2.md
+- Phase 11 delivered: InputFilter protocol + ProjectInstructionFilter (CLAUDE.md/project instructions loading) + SystemReminderFilter (dynamic system reminder injection), wired into ThinRuntime filter chain.
+- 50 новых тестов: 19 (ProjectInstructionFilter) + 17 (SystemReminderFilter) + 14 (ThinRuntime integration).
+- Judge score: 4.40/5.0 (PASS).
+- Key commits: d6de9ea (phase-11 implementation), 7c4124f (docs: advance to Phase 12), 0fc6e15 (milestone roadmap), 1eb5c5b (requirements), a8c2384 (research).
+- Verification: pytest -q → 4778 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: 328.
+- Next: Phase 12 (Tool Surface Expansion) — WebSearch + WebFetch builtin tools + Thinking tool.

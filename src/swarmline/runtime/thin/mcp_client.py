@@ -4,12 +4,23 @@ from __future__ import annotations
 
 import time
 import uuid
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
 from swarmline.network_safety import validate_http_endpoint_url
 from swarmline.runtime.types import ToolSpec
+
+
+@dataclass(frozen=True)
+class ResourceDescriptor:
+    """Immutable descriptor for an MCP resource (resources/list item)."""
+
+    uri: str
+    name: str | None = None
+    description: str | None = None
+    mime_type: str | None = None
 
 
 def resolve_mcp_server_url(
@@ -81,10 +92,17 @@ class McpClient:
         self,
         timeout_seconds: float = 30.0,
         tools_cache_ttl_seconds: float = 300.0,
+        resources_cache_ttl_seconds: float | None = None,
     ) -> None:
         self._timeout = timeout_seconds
         self._tools_cache_ttl = tools_cache_ttl_seconds
+        self._resources_cache_ttl = (
+            resources_cache_ttl_seconds
+            if resources_cache_ttl_seconds is not None
+            else tools_cache_ttl_seconds
+        )
         self._tools_cache: dict[str, tuple[float, list[ToolSpec]]] = {}
+        self._resources_cache: dict[str, tuple[float, list[ResourceDescriptor]]] = {}
 
     async def call_tool(
         self,
@@ -205,3 +223,126 @@ class McpClient:
                 )
             )
         return parsed
+
+    # ------------------------------------------------------------------
+    # resources/list
+    # ------------------------------------------------------------------
+
+    async def list_resources(
+        self,
+        server_url: str,
+        *,
+        force_refresh: bool = False,
+    ) -> list[ResourceDescriptor]:
+        """Discover available MCP resources via resources/list.
+
+        Uses the same TTL cache strategy as list_tools.
+        On network error: returns stale cache if available, otherwise raises
+        ConnectionError.
+        """
+        now = time.monotonic()
+        cached = self._resources_cache.get(server_url)
+        if (
+            not force_refresh
+            and cached is not None
+            and (now - cached[0]) < self._resources_cache_ttl
+        ):
+            return cached[1]
+
+        payload = {
+            "jsonrpc": "2.0",
+            "id": uuid.uuid4().hex[:8],
+            "method": "resources/list",
+            "params": {},
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                response = await client.post(server_url, json=payload)
+                response.raise_for_status()
+                data = response.json()
+        except Exception:
+            if cached is not None:
+                return cached[1]
+            return []
+
+        resources = self._parse_resources_from_response(data)
+        self._resources_cache[server_url] = (now, resources)
+        return resources
+
+    @staticmethod
+    def _parse_resources_from_response(data: Any) -> list[ResourceDescriptor]:
+        """Extract ResourceDescriptor list from JSON-RPC response."""
+        raw: Any = []
+
+        if isinstance(data, dict):
+            result = data.get("result")
+            if isinstance(result, dict):
+                raw = result.get("resources", [])
+            elif isinstance(result, list):
+                raw = result
+
+        if not isinstance(raw, list):
+            return []
+
+        parsed: list[ResourceDescriptor] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            uri = item.get("uri")
+            if not isinstance(uri, str) or not uri:
+                continue
+            parsed.append(
+                ResourceDescriptor(
+                    uri=uri,
+                    name=item.get("name"),
+                    description=item.get("description"),
+                    mime_type=item.get("mimeType"),
+                )
+            )
+        return parsed
+
+    # ------------------------------------------------------------------
+    # resources/read
+    # ------------------------------------------------------------------
+
+    async def read_resource(
+        self,
+        server_url: str,
+        uri: str,
+    ) -> dict[str, Any]:
+        """Read a single MCP resource by URI via resources/read.
+
+        Returns the result dict (contains 'contents' list with text/blob entries).
+        On error returns {"error": <message>}.
+        """
+        if not uri or not uri.strip():
+            return {"error": "Resource URI is required"}
+
+        payload = {
+            "jsonrpc": "2.0",
+            "id": uuid.uuid4().hex[:8],
+            "method": "resources/read",
+            "params": {"uri": uri},
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                response = await client.post(server_url, json=payload)
+                response.raise_for_status()
+        except httpx.TimeoutException:
+            return {"error": f"Timeout reading MCP resource '{uri}'"}
+        except Exception as exc:
+            return {"error": f"HTTP error reading MCP resource '{uri}': {exc}"}
+
+        try:
+            data = response.json()
+        except Exception as exc:
+            return {"error": f"Invalid JSON from MCP resources/read: {exc}"}
+
+        if isinstance(data, dict) and data.get("error") is not None:
+            return {"error": data["error"]}
+
+        if isinstance(data, dict) and "result" in data:
+            return data["result"]
+        return data

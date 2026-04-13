@@ -123,6 +123,13 @@ class ThinRuntime:
             tool_policy=tool_policy,
         )
 
+        # MCP resource tool spec (expose to LLM when mcp_servers are configured)
+        self._mcp_resource_tool_spec: ToolSpec | None = None
+        if mcp_servers:
+            from swarmline.runtime.thin.executor import READ_MCP_RESOURCE_SPEC
+
+            self._mcp_resource_tool_spec = READ_MCP_RESOURCE_SPEC
+
         # Native tool calling adapter (stored for use_native_tools opt-in)
         self._native_adapter: Any | None = None
         if llm_call is None and self._config.use_native_tools:
@@ -232,6 +239,10 @@ class ThinRuntime:
 
 
         user_text = self._extract_last_user_text(messages)
+
+        # --- MCP resource tool: append spec to active_tools ---
+        if self._mcp_resource_tool_spec is not None:
+            active_tools = [*active_tools, self._mcp_resource_tool_spec]
 
         # --- Subagent tool: append spec to active_tools + update executor with full tool list ---
         if self._subagent_tool_spec is not None:

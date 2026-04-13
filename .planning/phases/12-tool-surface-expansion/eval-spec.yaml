@@ -1,0 +1,72 @@
+evaluation_specification:
+  task: 'Phase 12: Tool Surface Expansion'
+  version: '1.0'
+  project: swarmline
+  language: Python 3.10+
+  baseline_tests: 4778
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: '5=all 7 success criteria met with evidence (tests + runtime behavior), 4=6/7 met or minor edge case gaps, 3=4-5/7 met, 2=core features broken or missing, 1=does not build or run'
+      checklist:
+        - 'WEBT-01: web_search tool registered via create_web_tools returns search results from configured WebSearchProvider'
+        - 'WEBT-02: web_fetch tool registered via create_web_tools returns rendered page content from URL via HttpxWebProvider'
+        - 'WEBT-03: Domain allow/block lists in HttpxWebProvider.__init__() filter URLs before fetch — allowed_domains whitelist permits only listed domains, blocked_domains blacklist rejects listed domains, both interact correctly (block takes precedence)'
+        - 'WEBT-04: Domain filter rejects URLs before DNS resolution (no SSRF via allow/block bypass), returns structured JSON error for blocked domains'
+        - 'MCPR-01: McpClient.list_resources(server_url) returns list of MCP resources via resources/list JSON-RPC call'
+        - 'MCPR-02: McpClient.read_resource(server_url, uri) returns resource content via resources/read JSON-RPC call'
+        - 'MCPR-03: Resource list cached per-connection with configurable TTL, force_refresh bypasses cache'
+        - 'read_mcp_resource tool registered in ToolExecutor resolves MCP server, calls read_resource, returns content as tool output'
+        - 'RuntimeConfig gains optional domain filter fields wired through to HttpxWebProvider — new fields are Optional with None default'
+        - 'All new tests pass: pytest -x -q on new test files'
+        - 'No regressions: full pytest suite passes (4778+ tests, -m "not live")'
+        - 'ruff check src/ tests/ reports zero errors'
+
+    - name: architecture
+      weight: 0.25
+      rubric: '5=strict Clean Architecture, ISP compliant, all new code in correct layer, no reverse dependencies, 4=minor layer bleed, 3=one protocol violation or wrong layer placement, 2=multiple architectural violations, 1=no architectural awareness'
+      checklist:
+        - 'Domain filter logic is a pure function or domain type — no httpx, no I/O imports'
+        - 'HttpxWebProvider (Infrastructure) depends on domain filter contract, not the reverse'
+        - 'McpClient resource methods follow existing call_tool/list_tools patterns — same JSON-RPC envelope, same error handling shape'
+        - 'read_mcp_resource tool registration follows create_web_tools factory pattern in builtin.py'
+        - 'No new protocols exceed ISP limit of 5 methods'
+        - 'RuntimeConfig new fields are Optional with None defaults — no breaking changes'
+        - 'ToolExecutor does not import domain filter directly — filter applied inside HttpxWebProvider'
+        - 'Dependency direction preserved: runtime/types.py does not import from tools/ or runtime/thin/'
+        - 'New tool specs use existing ToolSpec dataclass'
+
+    - name: test_quality
+      weight: 0.20
+      rubric: '5=29+ tests, AAA pattern, parametrize, edge cases covered, naming convention followed, 4=25-28 tests with minor gaps, 3=20-24 tests or missing edge cases, 2=fewer than 20 tests, 1=fewer than 10 tests'
+      checklist:
+        - 'Task 1: 8+ unit tests for domain filter'
+        - 'Task 2: 11+ unit tests for MCP resources'
+        - 'Task 3: 10+ integration tests'
+        - 'Test naming follows test_<what>_<condition>_<result>'
+        - 'Arrange-Act-Assert structure'
+        - '@pytest.mark.parametrize used where appropriate'
+        - 'Monkeypatch httpx — no real HTTP calls'
+
+    - name: code_quality
+      weight: 0.15
+      rubric: '5=clean, readable, follows existing conventions, no lint warnings, 4=minor style inconsistencies, 3=readable but diverges from patterns, 2=code smells, 1=unreadable'
+      checklist:
+        - 'ruff check reports zero errors on changed files'
+        - 'No TODO, FIXME, HACK, XXX in new code'
+        - 'Docstrings on new public methods'
+        - 'Lazy imports for optional deps'
+        - 'Security logging on domain filter denials'
+        - 'JSON error responses use ensure_ascii=False'
+
+    - name: security
+      weight: 0.10
+      rubric: '5=domain filter + SSRF defense-in-depth, no bypass paths, 4=filter works but minor logging gap, 3=filter works but bypass possible, 2=cosmetic filter, 1=no security consideration'
+      checklist:
+        - 'Domain filter applied BEFORE DNS resolution'
+        - 'Domain filter applied on EACH redirect hop'
+        - 'Blocked domain returns structured error, no internal state leak'
+        - 'Security decision logged for domain filter denials'
+        - 'MCP resource URI validated — no dangerous URI schemes'
+        - 'read_mcp_resource validates server_id against configured mcp_servers'
+        - 'SSRF protections remain intact — domain filter is additive'

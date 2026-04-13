@@ -147,10 +147,53 @@ class HttpxWebProvider:
         timeout: int = 30,
         search_provider: WebSearchProvider | None = None,
         fetch_provider: WebFetchProvider | None = None,
+        allowed_domains: list[str] | None = None,
+        blocked_domains: list[str] | None = None,
     ) -> None:
         self._timeout = timeout
         self._search_provider = search_provider
         self._fetch_provider = fetch_provider
+        self._allowed_domains = (
+            frozenset(d.lower() for d in allowed_domains) if allowed_domains else frozenset()
+        )
+        self._blocked_domains = (
+            frozenset(d.lower() for d in blocked_domains) if blocked_domains else frozenset()
+        )
+
+    def _is_domain_blocked(self, url: str) -> str | None:
+        """Return rejection reason if URL domain is not allowed by filter, else None.
+
+        Rules:
+        - No lists configured (both empty) → allow all.
+        - Blocked list checked first — blocked takes precedence over allowed.
+        - Matching is case-insensitive with subdomain support:
+          hostname "sub.example.com" matches entry "example.com".
+        """
+        if not self._allowed_domains and not self._blocked_domains:
+            return None
+
+        try:
+            parsed = urlparse(url)
+            hostname = (parsed.hostname or "").lower()
+        except Exception:
+            return "Invalid URL"
+
+        if not hostname:
+            return "Invalid URL: no hostname"
+
+        def _matches(domain: str, entries: frozenset[str]) -> bool:
+            """Check if domain matches any entry (exact or as subdomain)."""
+            if domain in entries:
+                return True
+            return any(domain.endswith("." + entry) for entry in entries)
+
+        if self._blocked_domains and _matches(hostname, self._blocked_domains):
+            return f"Domain blocked: {hostname}"
+
+        if self._allowed_domains and not _matches(hostname, self._allowed_domains):
+            return f"Domain not in allowed list: {hostname}"
+
+        return None
 
     @staticmethod
     def _validate_url(url: str) -> str | None:
@@ -206,6 +249,12 @@ class HttpxWebProvider:
         If fetch_provider (Jina/Crawl4AI) is set, delegate to it.
         Otherwise, use httpx GET + trafilatura/regex.
         """
+        # Domain allow/block filter — fail fast before SSRF check
+        domain_rejection = self._is_domain_blocked(url)
+        if domain_rejection:
+            _log_network_target_denied(url, domain_rejection)
+            return f"URL blocked: {domain_rejection}"
+
         # SSRF protection — block private IPs and cloud metadata
         rejection = self._validate_url(url)
         if rejection:
