@@ -211,7 +211,7 @@ Plans:
   3. System reminders matching their trigger conditions appear in messages; reminders not matching are absent
   4. Total reminder content stays within the 500-token budget cap, with high-priority reminders preserved under budget pressure
   5. Neither feature requires changes to ThinRuntime.run() -- both are pure InputFilter implementations
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 11-01: ProjectInstructionFilter and SystemReminderFilter implementations
@@ -226,7 +226,7 @@ Plans:
   3. Domain allow/block lists control which URLs web_fetch can access
   4. Agent can call read_mcp_resource tool to read a resource by URI from a connected MCP server
   5. MCP resource list is cached per-connection and available for tool discovery
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 12-01: WebSearch and WebFetch built-in tools with domain filtering + MCP resource reading
@@ -240,7 +240,7 @@ Plans:
   2. Compaction summary preserves key decisions, tool results, and project instructions from the compacted region
   3. 3-tier pipeline activates in order: tool result collapse first, then LLM summarization, then emergency truncation as fallback
   4. Compaction behavior is configurable via RuntimeConfig (enable/disable, budget threshold, summarization model)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 13-01: Compaction pipeline (tool collapse, LLM summarization, emergency truncation)
@@ -254,7 +254,7 @@ Plans:
   2. Resuming by session_id loads the previous conversation and continues seamlessly
   3. When restored history exceeds token budget, auto-compaction triggers before the resumed run proceeds
   4. JSONL persistence format round-trips all message types (user, assistant, tool_call, tool_result) without data loss
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 14-01: Session persistence, resume-by-id, and auto-compaction on resume
@@ -268,7 +268,7 @@ Plans:
   2. Anthropic extended thinking is activated via budget_tokens config and thinking blocks are returned in the response
   3. Recent thinking blocks are marked non-compactable so multi-turn thinking signatures survive compaction
   4. Non-Anthropic providers emit a status warning when thinking mode is enabled instead of silently ignoring it
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 15-01: ThinkingEvent type, Anthropic extended thinking adapter, and compaction exclusion
@@ -283,7 +283,7 @@ Plans:
   3. Provider adapters convert content_blocks to the correct format: Anthropic vision blocks, OpenAI image_url, Google inline_data
   4. PDF files are extracted to markdown text via optional pymupdf4llm dependency
   5. Jupyter notebooks are extracted to cell text via optional nbformat dependency
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 16-01: ContentBlock types, Message extension, and provider-specific conversion adapters
@@ -299,7 +299,7 @@ Plans:
   3. Stale worktrees from crashed agents are detected and cleaned up on orchestrator initialization; max 5 worktrees enforced
   4. Background-mode subagents run asynchronously and emit RuntimeEvent.background_complete when finished
   5. Monitor tool streams stdout/stderr from background processes as async events to the parent agent
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 17-01: Git worktree lifecycle management and SubagentSpec isolation mode
