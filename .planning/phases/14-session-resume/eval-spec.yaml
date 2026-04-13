@@ -1,0 +1,46 @@
+evaluation_specification:
+  task: 'Phase 14: Session Resume'
+  version: '1.0'
+  project: swarmline
+  language: Python 3.10+
+  baseline_tests: 4859
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: '5=all 4 requirements met, 4=3/4, 3=2/4, 2=significant gaps, 1=broken'
+      checklist:
+        - 'SESS-01: Auto-save messages via MessageStore after say()'
+        - 'SESS-02: resume(session_id) loads history, subsequent say() continues'
+        - 'SESS-03: Auto-compaction on resume when history exceeds budget'
+        - 'SESS-04: JSONL round-trips all message types without data loss'
+        - 'All tests pass, no regressions (4859+ baseline)'
+    - name: architecture
+      weight: 0.25
+      checklist:
+        - 'JsonlMessageStore implements MessageStore protocol'
+        - 'JsonlMessageStore in session/ (Infrastructure layer)'
+        - 'Conversation depends on MessageStore abstraction (DIP)'
+        - 'CompactionConfig reused from Phase 13'
+        - 'New Conversation fields optional with None defaults'
+        - 'Async I/O for file operations'
+    - name: test_quality
+      weight: 0.20
+      checklist:
+        - 'Task 1: 12+ unit tests for JsonlMessageStore'
+        - 'Task 2: 8+ unit tests for resume/persist/compact'
+        - 'Task 3: 6+ integration tests'
+        - 'Edge cases: empty file, corrupted JSON, concurrent writes'
+        - 'test_what_condition_result naming, AAA, parametrize'
+    - name: code_quality
+      weight: 0.15
+      checklist:
+        - 'ruff clean, no TODO/FIXME'
+        - 'Docstrings on public methods'
+        - 'pathlib.Path, json.dumps with ensure_ascii=False'
+        - 'Reuses existing patterns'
+    - name: security
+      weight: 0.10
+      checklist:
+        - 'Path traversal prevention in session_id'
+        - 'Corrupted JSON lines handled gracefully'
+        - 'No code injection from tampered JSONL'

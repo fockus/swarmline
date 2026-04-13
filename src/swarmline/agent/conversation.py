@@ -17,6 +17,8 @@ from swarmline.runtime.types import Message
 
 if TYPE_CHECKING:
     from swarmline.agent.agent import Agent
+    from swarmline.compaction import CompactionConfig
+    from swarmline.protocols.memory import MessageStore
 
 
 logger = logging.getLogger(__name__)
@@ -34,12 +36,18 @@ class Conversation:
         self,
         agent: Agent,
         session_id: str | None = None,
+        message_store: MessageStore | None = None,
+        user_id: str = "default",
+        compaction_config: CompactionConfig | None = None,
     ) -> None:
         self._agent = agent
         self._session_id = session_id or uuid.uuid4().hex
         self._history: list[Message] = []
         self._adapter: Any = None  # RuntimeAdapter for claude_sdk
         self._connected = False
+        self._message_store = message_store
+        self._user_id = user_id
+        self._compaction_config = compaction_config
 
     @property
     def session_id(self) -> str:
@@ -48,6 +56,30 @@ class Conversation:
     @property
     def history(self) -> list[Message]:
         return list(self._history)
+
+    async def resume(self, session_id: str) -> None:
+        """Load conversation history from message_store and optionally compact.
+
+        Raises RuntimeError if no message_store is configured.
+        """
+        if self._message_store is None:
+            raise RuntimeError(
+                "Cannot resume: no message_store configured. "
+                "Pass message_store to Conversation.__init__."
+            )
+        self._session_id = session_id
+        memory_messages = await self._message_store.get_messages(
+            self._user_id, session_id, limit=2**31 - 1,
+        )
+        self._history = [
+            Message.from_memory_message(mm) for mm in memory_messages
+        ]
+        if self._compaction_config and self._history:
+            from swarmline.compaction import ConversationCompactionFilter
+
+            compactor = ConversationCompactionFilter(config=self._compaction_config)
+            system_prompt = self._agent.config.system_prompt
+            self._history, _ = await compactor.filter(self._history, system_prompt)
 
     async def say(self, prompt: str) -> Result:
         """Send a message and get a response."""
@@ -60,6 +92,7 @@ class Conversation:
             self._agent.config,
         )
 
+        history_len_before = len(self._history)
         self._history.append(Message(role="user", content=effective_prompt))
 
         # Execute + collect
@@ -75,6 +108,17 @@ class Conversation:
             self._history.extend(new_messages)
         elif not has_error and result_payload["text"]:
             self._history.append(Message(role="assistant", content=result_payload["text"]))
+
+        # Auto-persist new messages to store
+        if self._message_store is not None:
+            for msg in self._history[history_len_before:]:
+                await self._message_store.save_message(
+                    self._user_id,
+                    self._session_id,
+                    msg.role,
+                    msg.content,
+                    msg.tool_calls,
+                )
 
         # Conversation always fills session_id
         if not result_payload["session_id"]:
@@ -101,6 +145,7 @@ class Conversation:
             self._agent.config,
         )
 
+        history_len_before = len(self._history)
         self._history.append(Message(role="user", content=effective_prompt))
 
         full_text = ""
@@ -130,6 +175,17 @@ class Conversation:
             self._history.extend(final_new_messages)
         elif full_text:
             self._history.append(Message(role="assistant", content=full_text))
+
+        # Auto-persist new messages (stream path)
+        if self._message_store is not None:
+            for msg in self._history[history_len_before:]:
+                await self._message_store.save_message(
+                    self._user_id,
+                    self._session_id,
+                    msg.role,
+                    msg.content,
+                    msg.tool_calls,
+                )
 
     async def close(self) -> None:
         """Close the conversation (disconnect the runtime)."""

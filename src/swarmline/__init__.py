@@ -41,6 +41,7 @@ from swarmline.runtime.types import (
     TurnMetrics,
 )
 from swarmline.compaction import CompactionConfig, ConversationCompactionFilter
+from swarmline.session.jsonl_store import JsonlMessageStore
 from swarmline.project_instruction_filter import ProjectInstructionFilter
 from swarmline.runtime.thin.mcp_client import ResourceDescriptor
 from swarmline.system_reminder_filter import SystemReminder, SystemReminderFilter
@@ -58,6 +59,7 @@ __all__ = [
     "Conversation",
     "FactStore",
     "GoalStore",
+    "JsonlMessageStore",
     "LocalToolResolver",
     "Message",
     "MessageStore",
