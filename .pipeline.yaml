@@ -1,0 +1,63 @@
+# Pipeline Configuration — Swarmline
+# Used by /build:team-phase and /build:phase workflows
+
+project:
+  name: swarmline
+  language: python
+  version: "3.10+"
+  package_manager: pip
+
+commands:
+  test: "pytest tests/ -x -q --no-header"
+  test_verbose: "pytest tests/ -v"
+  test_coverage: "pytest --cov=swarmline --cov-report=term-missing"
+  lint: "ruff check src/ tests/"
+  lint_fix: "ruff check --fix src/ tests/"
+  format: "ruff format src/ tests/"
+  format_check: "ruff format --check src/ tests/"
+  typecheck: "ty check src/swarmline/"
+  typecheck_mypy: "mypy src/swarmline/"
+  lint_imports: "ruff check src/ --select I"
+
+quality_gates:
+  test: true
+  lint: true
+  typecheck: true
+  format_check: true
+  lint_imports: true
+
+coverage:
+  overall: 85
+  core: 95
+  infrastructure: 70
+  new_files: 95
+
+architecture_rules:
+  layers:
+    - name: domain
+      paths: ["src/swarmline/protocols.py", "src/swarmline/types.py", "src/swarmline/domain_types.py"]
+      no_imports_from: ["infrastructure"]
+    - name: application
+      paths: ["src/swarmline/agent/", "src/swarmline/orchestration/", "src/swarmline/bootstrap/"]
+      no_imports_from: ["infrastructure"]
+    - name: infrastructure
+      paths: ["src/swarmline/runtime/", "src/swarmline/memory/sqlite*", "src/swarmline/memory/postgres*", "src/swarmline/tools/"]
+
+boundary_checks:
+  - "ruff check src/ --select I"
+  - "ty check src/swarmline/"
+
+placeholder_checks:
+  patterns:
+    - "TODO"
+    - "FIXME"
+    - "HACK"
+    - "XXX"
+    - "pass  #"
+  exclude:
+    - "*.md"
+    - "CHANGELOG.md"
+
+judge:
+  mode: single
+  # panel_size: 3  # uncomment for debate mode

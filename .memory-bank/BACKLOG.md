@@ -805,6 +805,209 @@ Microsoft Agent Framework = AutoGen + Semantic Kernel merger. GA target Q1 2026.
 
 ---
 
+### IDEA-044: Conversation Compaction — LLM-суммаризация при сжатии контекста (2026-04-13)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: Claude Code parity gap analysis
+
+Вместо обрезки старых сообщений — суммаризация через LLM перед удалением.
+
+**Мотивация**: `MaxTokensFilter` просто отбрасывает старые сообщения. Claude Code при приближении к лимиту контекста вызывает LLM для суммаризации ранних сообщений, сохраняя ключевые решения и факты. Без compaction длинные coding-сессии теряют контекст о принятых решениях.
+
+**Что нужно**:
+1. `CompactionStrategy` Protocol: `async compact(messages, budget_tokens) → list[Message]`
+2. `LlmCompactionStrategy` — вызывает LLM (дешёвую модель) для суммаризации обрезаемых сообщений
+3. Summary вставляется как system message в начало оставшейся истории
+4. Интеграция в ThinRuntime: вызов compaction перед LLM call когда `len(messages) * avg_tokens > budget`
+5. Конфигурация: `RuntimeConfig.compaction_strategy: CompactionStrategy | None`
+
+**Отличие от MaxTokensFilter**: MaxTokensFilter = truncation (потеря), Compaction = summarization (сохранение смысла).
+
+---
+
+### IDEA-045: Project Instructions Loading — автозагрузка CLAUDE.md (2026-04-13)
+
+**Приоритет**: High
+**Сложность**: Low
+**Источник**: Claude Code parity gap analysis
+
+Автоматическое чтение project instruction files и инжект в system prompt.
+
+**Мотивация**: Claude Code автоматически загружает `CLAUDE.md` из корня проекта, родительских директорий и `~/.claude/`. Это позволяет кастомизировать поведение агента под проект без кода. ThinRuntime сейчас `supports_project_instructions: False`.
+
+**Что нужно**:
+1. `ProjectInstructionsLoader` — сканирует cwd → parent dirs → home для instruction files
+2. Поддержка нескольких форматов (multi-agent universal):
+   - `CLAUDE.md` — Claude Code формат
+   - `AGENTS.md` — OpenAI Codex / Agents формат
+   - `GEMINI.md` — Google Gemini CLI формат
+   - `RULES.md` — swarmline-native формат
+   - Кастомный файл через конфигурацию
+3. Приоритет загрузки: `RULES.md` > `CLAUDE.md` > `AGENTS.md` > `GEMINI.md` (первый найденный в директории)
+4. Мерж стратегия: home (lowest) → parent dirs → project root (highest priority)
+5. Инжект в system prompt через `SystemPromptInjector` (уже есть)
+6. Hot reload: при изменении файла — обновить prompt (опционально)
+7. `RuntimeConfig.instructions_files: list[str] | None` — override списка файлов для поиска
+8. `RuntimeConfig.instructions_dir: Path | None` — override директории поиска
+
+**Универсальность**: один и тот же проект может использовать swarmline + Claude Code + Codex. Каждый агент читает свой файл, но `ProjectInstructionsLoader` понимает все форматы.
+
+---
+
+### IDEA-046: Session Resume — продолжение разговора между run() вызовами (2026-04-13)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: Claude Code parity gap analysis
+
+Сохранение и восстановление conversation state между вызовами `run()`.
+
+**Мотивация**: Claude Code сохраняет полную историю и может продолжить с места остановки. ThinRuntime stateless — каждый `run()` начинается с пустой истории. Для coding agent это критично: пользователь хочет продолжить работу после перерыва.
+
+**Что нужно**:
+1. Интеграция с `MessageStore` / `SessionStateStore` (уже есть в swarmline)
+2. `ThinRuntime.run(session_id="abc")` → загрузка истории из store перед LLM call
+3. Auto-save: после каждого turn сохранять messages в store
+4. Resume: при повторном `run(session_id="abc")` — продолжение с сохранённой историей
+5. Compaction-aware: при resume применять compaction к восстановленной истории (IDEA-044)
+
+**Поглощает**: IDEA-005 (session persistence) — расширяет и конкретизирует для ThinRuntime.
+
+---
+
+### IDEA-047: Web Tools — встроенные WebSearch и WebFetch (2026-04-13)
+
+**Приоритет**: High
+**Сложность**: Low
+**Источник**: Claude Code parity gap analysis
+
+Подключение web-инструментов как built-in tools в ThinRuntime.
+
+**Мотивация**: Claude Code имеет `WebSearch` и `WebFetch` как стандартные инструменты. В swarmline вся инфраструктура есть (`web_httpx.py`, провайдеры Tavily/Brave/Jina), но не подключена к ThinRuntime. Разработчику нужно вручную создавать `local_tools`.
+
+**Что нужно**:
+1. `create_web_tools(provider) → dict[str, Callable]` — фабрика для web search + fetch
+2. `WebSearchTool` ToolSpec: `query: str, max_results: int` → JSON результаты
+3. `WebFetchTool` ToolSpec: `url: str` → markdown content
+4. Регистрация в coding tool pack как опциональные (не в CODING_TOOL_NAMES по умолчанию)
+5. Конфигурация провайдера: `CodingProfileConfig.web_provider: str | None`
+
+---
+
+### IDEA-048: Multimodal Input — изображения, PDF, Jupyter notebooks (2026-04-13)
+
+**Приоритет**: Medium
+**Сложность**: High
+**Источник**: Claude Code parity gap analysis
+
+Поддержка мультимодального input (не только текст) в ThinRuntime.
+
+**Мотивация**: Claude Code может читать изображения (PNG/JPG), PDF файлы (с пагинацией), Jupyter notebooks. ThinRuntime's `Message.content` — только `str`. Для coding agent это важно: скриншоты UI, PDF спецификации, анализ notebook'ов.
+
+**Что нужно**:
+1. Расширить `Message.content` до `str | list[ContentBlock]` (text, image, file)
+2. `ContentBlock` union: `TextBlock(text)`, `ImageBlock(media_type, data_b64)`, `FileBlock(path, parsed_text)`
+3. Provider-specific конвертация: Anthropic vision blocks, OpenAI image_url, Google inline_data
+4. `read` tool: при чтении .png/.jpg → ImageBlock, .pdf → TextBlock с extracted text, .ipynb → TextBlock с cells
+5. Lazy loading: изображения конвертируются в base64 только при отправке LLM
+
+---
+
+### IDEA-049: MCP Resource Reading — чтение MCP ресурсов (2026-04-13)
+
+**Приоритет**: Medium
+**Сложность**: Low
+**Источник**: Claude Code parity gap analysis
+
+Расширение MCP интеграции для чтения resources (не только tools).
+
+**Мотивация**: MCP Protocol определяет два типа взаимодействия: tools (вызов функций) и resources (чтение данных). ThinRuntime поддерживает только tools. Claude Code может читать MCP resources через `ReadMcpResource`.
+
+**Что нужно**:
+1. Расширить `McpClient`: `list_resources()`, `read_resource(uri)` 
+2. `ReadMcpResourceTool` ToolSpec: `server: str, uri: str` → content
+3. Resource discovery: при подключении MCP сервера — запрос `resources/list`
+4. Кэширование: resource list кэшируется, content — нет (может меняться)
+
+---
+
+### IDEA-050: System Reminders — динамические контекстные подсказки (2026-04-13)
+
+**Приоритет**: Medium
+**Сложность**: Medium
+**Источник**: Claude Code parity gap analysis
+
+Адаптивные system reminder блоки, инжектируемые в контекст по условиям.
+
+**Мотивация**: Claude Code вставляет `<system-reminder>` блоки с контекстной информацией: доступные инструменты, текущие задачи, напоминания. Они появляются и исчезают в зависимости от состояния. ThinRuntime имеет статичный system prompt.
+
+**Что нужно**:
+1. `SystemReminder` dataclass: `condition: Callable[[RunContext], bool]`, `content: str`, `priority: int`
+2. `SystemReminderManager`: коллекция reminders, `assemble(context) → str` — собирает активные
+3. Conditional triggers: "если agent давно не использовал tasks", "если budget > 80%", "если ошибка в предыдущем tool call"
+4. Интеграция: reminder text добавляется в system prompt перед каждым LLM call
+5. Бюджет: reminders не должны занимать > N% от context window
+
+---
+
+### IDEA-051: Git Worktree Isolation для субагентов (2026-04-13)
+
+**Приоритет**: Medium
+**Сложность**: Medium
+**Источник**: Claude Code parity gap analysis
+
+Запуск субагентов в изолированных git worktree.
+
+**Мотивация**: Claude Code может спавнить агентов в отдельных git worktree — каждый работает со своей копией репозитория, параллельные агенты не конфликтуют. ThinRuntime субагенты работают в одном sandbox.
+
+**Что нужно**:
+1. `WorktreeIsolation` — создание tmp git worktree (`git worktree add`)
+2. Интеграция в `ThinSubagentOrchestrator`: опция `isolation="worktree"` в SubagentSpec
+3. При спавне: создать worktree → переключить cwd субагента → cleanup после завершения
+4. Auto-cleanup: удаление worktree после `wait()` (или при cancel)
+5. Merge-back: опциональный автомерж изменений из worktree в основную ветку
+
+---
+
+### IDEA-052: Thinking Events — отдельный поток reasoning (2026-04-13)
+
+**Приоритет**: Low
+**Сложность**: Low
+**Источник**: Claude Code parity gap analysis
+
+Парсинг `<thinking>` блоков как отдельного типа событий.
+
+**Мотивация**: Claude модели поддерживают extended thinking. Claude Code показывает thinking как отдельный сворачиваемый блок. ThinRuntime парсит всё как единый `assistant_delta` — thinking и ответ смешиваются.
+
+**Что нужно**:
+1. Парсинг `<thinking>...</thinking>` блоков из LLM ответа
+2. Новый тип: `RuntimeEvent(type="thinking", text="...")` 
+3. Антропик SDK: парсинг `thinking` content blocks из API response
+4. Конфигурация: `RuntimeConfig.emit_thinking: bool = False` (opt-in)
+
+---
+
+### IDEA-053: Background Agents и Monitor Tool (2026-04-13)
+
+**Приоритет**: Low
+**Сложность**: Medium
+**Источник**: Claude Code parity gap analysis
+
+Запуск агентов в фоне с уведомлениями и мониторинг stdout процессов.
+
+**Мотивация**: Claude Code запускает агентов в background (`run_in_background: true`) и уведомляет при завершении. Также имеет `Monitor` tool для streaming stdout от background процессов. ThinRuntime subagents блокирующие — `wait()` ждёт завершения.
+
+**Что нужно**:
+1. `spawn()` возвращает `agent_id` (уже есть) + event notification при завершении
+2. `RuntimeEvent(type="background_complete", agent_id, result)` — уведомление
+3. `MonitorTool` ToolSpec: `pid: int` → async streaming stdout/stderr
+4. `bash` tool: опция `run_in_background: bool` → запуск без ожидания
+
+**Связано с**: IDEA-024 (Cancellation/Abort) — уже реализовано.
+
+---
+
 ## ADR
 
 - **ADR-001**: OpenAI Agents SDK — REJECTED (пересмотреть после v1.0). См. `notes/2026-03-17_ADR-001_openai-agents-sdk.md`

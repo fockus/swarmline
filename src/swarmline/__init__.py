@@ -40,6 +40,8 @@ from swarmline.runtime.types import (
     ToolSpec,
     TurnMetrics,
 )
+from swarmline.project_instruction_filter import ProjectInstructionFilter
+from swarmline.system_reminder_filter import SystemReminder, SystemReminderFilter
 from swarmline.types import ContextPack, SkillSet, TurnContext
 
 __all__ = [
@@ -55,6 +57,7 @@ __all__ = [
     "LocalToolResolver",
     "Message",
     "MessageStore",
+    "ProjectInstructionFilter",
     "ModelSelector",
     "PhaseStore",
     "Result",
@@ -72,6 +75,8 @@ __all__ = [
     "SessionStateStore",
     "SkillSet",
     "SummaryStore",
+    "SystemReminder",
+    "SystemReminderFilter",
     "ToolEventStore",
     "ToolIdCodec",
     "ToolSpec",

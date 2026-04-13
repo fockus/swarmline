@@ -405,3 +405,70 @@ Stub за feature flag. Без feature flag — не stub, а production code.
 ## Statistical Tests (Welch t-test, Cohen's d, p-value)
 ## Выводы + Решение (Keep / Rollback / Повторить)
 ```
+
+---
+
+## Project-Specific Rules — Swarmline
+
+### Architecture
+
+#### Layer Boundaries
+- **Domain**: `protocols.py`, `types.py`, `domain_types.py`, `memory/types.py` — zero external deps
+- **Application**: `agent/`, `orchestration/`, `bootstrap/` — depends only on Domain
+- **Infrastructure**: `runtime/`, `memory/{sqlite,postgres}.py`, `tools/` — concrete implementations
+
+#### ThinRuntime Extension Rules
+- **InputFilter pipeline** is the primary extension point for new context features
+- **Never modify** `ThinRuntime.run()` for new features — use InputFilter, hooks, or strategy composition
+- **RuntimeConfig** new fields: always `Optional[T] = None`
+- **AgentConfig** new fields: always `Optional[T] = None`
+
+#### Protocol Rules
+- `@runtime_checkable class MyPort(Protocol)` — max 5 methods per protocol (ISP)
+- Contract tests → implementation (never the other way)
+- All domain protocols in `protocols.py` or feature-local `types.py`
+
+### Testing
+
+#### Markers
+- `security` — security-related tests
+- `requires_claude_sdk` — needs Claude Agent SDK installed
+- `requires_anthropic` — needs Anthropic SDK
+- `requires_langchain` — needs LangChain
+- `live` — makes real API calls (needs keys)
+- `integration` — integration tests
+
+#### Commands
+```bash
+pytest                                           # offline suite (default: -m "not live")
+pytest tests/unit/test_foo.py -v                 # single file
+pytest -k "test_name" -v                         # by pattern
+pytest --cov=swarmline --cov-report=term-missing  # with coverage
+ruff check src/ tests/                           # lint
+ruff format src/ tests/                          # format
+ty check src/swarmline/                          # type check (primary, fast)
+mypy src/swarmline/                              # type check (secondary, slower)
+```
+
+### Conventions
+
+- **Async-first**: all runtime and storage APIs are async
+- **pytest-asyncio**: `asyncio_mode = "auto"`
+- **Frozen dataclasses** for domain objects
+- **Lazy imports** for optional deps (inside functions)
+- **Test naming**: `test_<what>_<condition>_<result>`
+- **Model aliases**: resolved via `runtime/models.yaml`
+
+### Git Workflow
+
+- Feature branches: `feat/<name>`, bug fixes: `fix/<name>`
+- All work on `origin` (private), sync to `public` via `scripts/sync-public.sh`
+- Never force-push main
+
+### Protected Files
+
+Do not modify without explicit user request:
+- `.env`, `*.pem`, `*.key`
+- `ci/**`, `.github/**`
+- `Dockerfile`, `docker-compose.yml`
+- `pyproject.toml` (version field only via release process)

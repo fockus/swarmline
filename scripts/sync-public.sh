@@ -49,6 +49,7 @@ PRIVATE_PATHS=(
     ".specs"
     ".planning"
     ".factory"
+    ".pipeline.yaml"
 )
 
 TEMP_BRANCH="_sync_public_temp"
