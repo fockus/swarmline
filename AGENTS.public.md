@@ -27,7 +27,7 @@ ruff check --fix src/ tests/                    # auto-fix
 ruff format src/ tests/                         # format
 
 # Type checking
-mypy src/swarmline/
+ty check src/swarmline/
 ```
 
 **Test markers:** `security`, `requires_claude_sdk`, `requires_anthropic`, `requires_langchain`, `live`, `integration`.

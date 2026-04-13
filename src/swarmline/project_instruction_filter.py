@@ -1,7 +1,7 @@
 """ProjectInstructionFilter — auto-discovers and injects project instruction
 files into the system prompt before each LLM call.
 
-Scans for instruction files (RULES.md, CLAUDE.md, AGENTS.md, GEMINI.md)
+Scans for instruction files (AGENTS.md, RULES.md, CLAUDE.md, GEMINI.md)
 from the current working directory up through parent dirs and the home
 directory. Merges discovered content with home (lowest priority) first
 and project root (highest priority) last, prepending to the system prompt.
@@ -17,8 +17,8 @@ from pathlib import Path
 
 from swarmline.runtime.types import Message
 
-# Priority order: first match wins at each directory level
-INSTRUCTION_FILES: list[str] = ["RULES.md", "CLAUDE.md", "AGENTS.md", "GEMINI.md"]
+# Repo-local precedence order at each directory level
+INSTRUCTION_FILES: list[str] = ["AGENTS.md", "RULES.md", "CLAUDE.md", "GEMINI.md"]
 
 
 class ProjectInstructionFilter:
@@ -26,7 +26,7 @@ class ProjectInstructionFilter:
 
     Walk-up algorithm:
     1. Start at cwd, walk up to filesystem root
-    2. At each level: check files in INSTRUCTION_FILES priority order, first found wins
+    2. At each level: merge all present files in INSTRUCTION_FILES order
     3. Also check home directory (separate from walk-up chain)
     4. Merge: home content first (lowest priority), then parents → cwd last (highest)
     5. Prepend merged content to system_prompt
@@ -62,8 +62,9 @@ class ProjectInstructionFilter:
         self._cache[path] = (mtime, content)
         return content or None
 
-    def _find_at_level(self, directory: Path) -> str | None:
-        """Find the highest-priority instruction file at a directory level."""
+    def _find_at_level(self, directory: Path) -> list[str]:
+        """Find all instruction file contents at a directory level."""
+        contents: list[str] = []
         for filename in INSTRUCTION_FILES:
             candidate = directory / filename
             if candidate.is_symlink():
@@ -71,8 +72,8 @@ class ProjectInstructionFilter:
             if candidate.is_file():
                 content = self._read_cached(candidate)
                 if content:
-                    return content
-        return None
+                    contents.append(content)
+        return contents
 
     def _collect_walk_up(self) -> list[str]:
         """Walk from cwd up to root, collecting instruction content per level.
@@ -84,9 +85,9 @@ class ProjectInstructionFilter:
         depth = 0
 
         while True:
-            content = self._find_at_level(current)
-            if content:
-                segments.append((depth, content))
+            contents = self._find_at_level(current)
+            if contents:
+                segments.append((depth, contents))
             parent = current.parent
             if parent == current:
                 break
@@ -95,14 +96,17 @@ class ProjectInstructionFilter:
 
         # Reverse: outermost parent first, cwd last
         segments.sort(key=lambda x: x[0], reverse=True)
-        return [s[1] for s in segments]
+        merged: list[str] = []
+        for _, level_contents in segments:
+            merged.extend(level_contents)
+        return merged
 
-    def _collect_home(self) -> str | None:
+    def _collect_home(self) -> list[str]:
         """Collect instruction content from home directory (if not in walk-up path)."""
         # Skip if home is an ancestor of cwd (already covered by walk-up)
         try:
             self._cwd.relative_to(self._home)
-            return None
+            return []
         except ValueError:
             pass
 
@@ -115,9 +119,8 @@ class ProjectInstructionFilter:
         """
         parts: list[str] = []
 
-        home_content = self._collect_home()
-        if home_content:
-            parts.append(home_content)
+        home_contents = self._collect_home()
+        parts.extend(home_contents)
 
         walk_up = self._collect_walk_up()
         parts.extend(walk_up)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import enum
-from typing import Optional
 
 import pytest
 from pydantic import BaseModel
@@ -122,7 +121,7 @@ class TestToolOptionalParam:
         """Optional[str] is not in required list."""
 
         @tool(name="t", description="d")
-        async def fn(name: str, nickname: Optional[str] = None) -> str:
+        async def fn(name: str, nickname: str | None = None) -> str:
             return name
 
         td: ToolDefinition = fn.__tool_definition__

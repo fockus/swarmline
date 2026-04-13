@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from swarmline.agent.config import AgentConfig
@@ -68,8 +68,16 @@ def build_portable_runtime_plan(
         create_kwargs["tool_policy"] = agent_config.tool_policy
 
     # Subagent configuration
-    if agent_config.subagent_config is not None:
-        create_kwargs["subagent_config"] = agent_config.subagent_config
+    if runtime_name == "thin" and agent_config.subagent_config is not None:
+        subagent_config = agent_config.subagent_config
+        if subagent_config.base_path is None:
+            if agent_config.cwd is None:
+                raise ValueError(
+                    "AgentConfig.cwd is required when subagent_config is enabled. "
+                    "Set cwd to a git repository path so worktree isolation can be initialized."
+                )
+            subagent_config = replace(subagent_config, base_path=agent_config.cwd)
+        create_kwargs["subagent_config"] = subagent_config
 
     # Command registry
     if agent_config.command_registry is not None:
@@ -79,13 +87,17 @@ def build_portable_runtime_plan(
 
     # Coding profile: inject coding tool pack + policy scope (after active_tools built)
     if (
-        agent_config.coding_profile is not None
+        runtime_name == "thin"
+        and agent_config.coding_profile is not None
         and agent_config.coding_profile.enabled
     ):
+        from swarmline.context.coding_input_filter import CodingContextInputFilter
         from swarmline.policy.tool_policy import DefaultToolPolicy
         from swarmline.runtime.thin.coding_toolpack import CODING_TOOL_NAMES, build_coding_toolpack
         from swarmline.tools.sandbox_local import LocalSandboxProvider
         from swarmline.tools.types import SandboxConfig
+
+        create_kwargs["coding_profile"] = agent_config.coding_profile
 
         # Build coding tool pack from a default sandbox
         cwd = agent_config.cwd
@@ -119,6 +131,45 @@ def build_portable_runtime_plan(
         create_kwargs["tool_policy"] = DefaultToolPolicy(
             allowed_system_tools=coding_allowed,
         )
+
+        board_context = agent_config.native_config.get("coding_board_context")
+        search_context = agent_config.native_config.get("coding_search_context")
+        skill_profile_text = agent_config.native_config.get("coding_skill_profile")
+        session_store = agent_config.native_config.get("task_session_store")
+        session_agent_id = agent_config.native_config.get("task_session_agent_id", "coding")
+        budget_tokens_raw = agent_config.native_config.get("coding_context_budget_tokens", 2000)
+        if skill_profile_text is None:
+            skill_profile_text = (
+                "Coding profile enabled. "
+                f"allow_host_execution={agent_config.coding_profile.allow_host_execution}"
+            )
+        runtime_config.input_filters.append(
+            CodingContextInputFilter(
+                workspace_cwd=cwd,
+                board_text=board_context if isinstance(board_context, str) else "",
+                search_text=search_context if isinstance(search_context, str) else "",
+                skill_profile_text=str(skill_profile_text),
+                task_session_store=session_store,
+                task_session_agent_id=(
+                    str(session_agent_id) if isinstance(session_agent_id, str) else "coding"
+                ),
+                task_session_task_id=session_id,
+                budget_tokens=(
+                    int(budget_tokens_raw)
+                    if isinstance(budget_tokens_raw, (int, float))
+                    else 2000
+                ),
+            )
+        )
+
+        # LLM-initiated child agents need the same sandbox template so the
+        # worker runtime can rebind coding tools to a per-worktree sandbox.
+        runtime_subagent_cfg = create_kwargs.get("subagent_config")
+        if runtime_subagent_cfg is not None and getattr(runtime_subagent_cfg, "sandbox_config", None) is None:
+            create_kwargs["subagent_config"] = replace(
+                runtime_subagent_cfg,
+                sandbox_config=sandbox_config,
+            )
 
     return PortableRuntimePlan(
         config=runtime_config,

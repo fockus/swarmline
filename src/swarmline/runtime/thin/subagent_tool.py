@@ -20,6 +20,7 @@ from typing import Any
 
 from swarmline.domain_types import ToolSpec
 from swarmline.orchestration.subagent_types import SubagentSpec
+from swarmline.tools.types import SandboxConfig
 
 
 @dataclass(frozen=True)
@@ -27,8 +28,12 @@ class SubagentToolConfig:
     """Configuration for the spawn_agent tool."""
 
     max_concurrent: int = 4
+    max_worktrees: int = 5
     max_depth: int = 3
     timeout_seconds: float = 300.0
+    base_path: str | None = None
+    background_timeout: float | None = None
+    sandbox_config: SandboxConfig | None = None
 
 
 SUBAGENT_TOOL_SPEC = ToolSpec(
@@ -151,6 +156,8 @@ def create_subagent_executor(
                 spec_kwargs["isolation"] = isolation
             if run_in_background:
                 spec_kwargs["run_in_background"] = True
+            if config.sandbox_config is not None:
+                spec_kwargs["sandbox_config"] = config.sandbox_config
             spec = SubagentSpec(**spec_kwargs)
             agent_id = await orchestrator.spawn(spec, task)
 

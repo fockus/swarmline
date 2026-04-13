@@ -73,6 +73,30 @@ class TestSaveMessage:
         assert params["role"] == "assistant"
         assert params["tool_calls"] is not None
 
+    @pytest.mark.asyncio
+    async def test_with_rich_fields(self) -> None:
+        factory, session = _mock_session_factory()
+        provider = PostgresMemoryProvider(factory)
+
+        await provider.save_message(
+            "u1",
+            "t1",
+            "tool",
+            "ok",
+            name="read_file",
+            metadata={"non_compactable": True},
+            content_blocks=[{"type": "text", "text": "ok"}],
+        )
+
+        statement = str(session.execute.call_args.args[0])
+        params = session.execute.call_args.args[1]
+        assert "name" in statement
+        assert "metadata" in statement
+        assert "content_blocks" in statement
+        assert params["name"] == "read_file"
+        assert json.loads(params["metadata"]) == {"non_compactable": True}
+        assert json.loads(params["content_blocks"]) == [{"type": "text", "text": "ok"}]
+
 
 class TestGetMessages:
     """get_messages - SELECT from messages."""
@@ -85,12 +109,18 @@ class TestGetMessages:
         row1 = MagicMock()
         row1.role = "user"
         row1.content = "Вопрос?"
+        row1.name = None
         row1.tool_calls = None
+        row1.metadata = None
+        row1.content_blocks = None
 
         row2 = MagicMock()
         row2.role = "assistant"
         row2.content = "Ответ!"
+        row2.name = None
         row2.tool_calls = None
+        row2.metadata = None
+        row2.content_blocks = None
 
         result_mock = MagicMock()
         result_mock.fetchall.return_value = [row2, row1]  # DESC

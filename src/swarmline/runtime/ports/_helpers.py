@@ -94,9 +94,9 @@ async def stream_runtime_reply(
     messages: list[Message],
     system_prompt: str,
     run_runtime: Callable[..., AsyncIterator[RuntimeEvent]],
-    convert_event_fn: Callable[[RuntimeEvent], "StreamEvent | None"],
+    convert_event_fn: Callable[[RuntimeEvent], StreamEvent | None],
     append_assistant: Callable[[str], None] | None = None,
-) -> AsyncIterator["StreamEvent"]:
+) -> AsyncIterator[StreamEvent]:
     """Consume runtime events and emit StreamEvent values."""
     from swarmline.runtime.ports.base import StreamEvent
 

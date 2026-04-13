@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
 
 import click
 
@@ -95,7 +94,7 @@ def step(
     plan_id: str,
     step_id: str,
     status: str,
-    result_text: Optional[str],
+    result_text: str | None,
 ) -> None:
     """Update a step within a plan."""
     from swarmline.mcp._session import StatefulSession

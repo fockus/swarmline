@@ -71,10 +71,33 @@ class Message:
     @classmethod
     def from_memory_message(cls, mm: Any) -> Message:
         """Create a Message from MemoryMessage (backward compat)."""
+        parsed_blocks: list[ContentBlock] | None = None
+        raw_blocks = getattr(mm, "content_blocks", None)
+        if isinstance(raw_blocks, list):
+            parsed: list[ContentBlock] = []
+            for raw in raw_blocks:
+                if not isinstance(raw, dict):
+                    continue
+                block_type = raw.get("type")
+                if block_type == "text" and isinstance(raw.get("text"), str):
+                    parsed.append(TextBlock(text=raw["text"]))
+                elif (
+                    block_type == "image"
+                    and isinstance(raw.get("data"), str)
+                    and isinstance(raw.get("media_type"), str)
+                ):
+                    parsed.append(
+                        ImageBlock(data=raw["data"], media_type=raw["media_type"])
+                    )
+            if parsed:
+                parsed_blocks = parsed
         return cls(
             role=mm.role,
             content=mm.content,
+            name=getattr(mm, "name", None),
             tool_calls=getattr(mm, "tool_calls", None),
+            metadata=getattr(mm, "metadata", None),
+            content_blocks=parsed_blocks,
         )
 
     def to_dict(self) -> dict[str, Any]:

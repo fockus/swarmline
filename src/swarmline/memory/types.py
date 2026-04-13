@@ -12,7 +12,10 @@ class MemoryMessage:
 
     role: str  # 'user' | 'assistant' | 'system'
     content: str
+    name: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
+    metadata: dict[str, Any] | None = None
+    content_blocks: list[dict[str, Any]] | None = None
 
 
 @dataclass

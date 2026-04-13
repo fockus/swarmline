@@ -53,10 +53,10 @@ ruff check --fix src/ tests/
 ruff format src/ tests/
 ```
 
-Type checking with [mypy](https://mypy-lang.org/):
+Type checking with [ty](https://docs.astral.sh/ty/):
 
 ```bash
-mypy src/swarmline/
+ty check src/swarmline/
 ```
 
 ## Architecture Principles

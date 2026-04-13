@@ -79,7 +79,7 @@ def resolve_coding_alias(name: str | None) -> str:
     )
 
 
-def build_alias_specs(pack: "CodingToolPack") -> dict[str, ToolSpec]:
+def build_alias_specs(pack: CodingToolPack) -> dict[str, ToolSpec]:
     """Build ToolSpec objects for legacy alias names that delegate to canonical.
 
     Each alias spec has the same description and parameters as the canonical

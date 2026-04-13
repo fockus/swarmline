@@ -178,6 +178,31 @@ async def test_roundtrip_tool_calls_json(store: JsonlMessageStore) -> None:
     assert msgs[0].content == "Let me calculate."
 
 
+async def test_roundtrip_extended_message_fields(store: JsonlMessageStore) -> None:
+    """name/metadata/content_blocks survive JSONL save/get roundtrip."""
+    blocks = [
+        {"type": "text", "text": "Check this"},
+        {"type": "image", "data": "aW1hZw==", "media_type": "image/png"},
+    ]
+    metadata = {"non_compactable": True, "source": "test"}
+
+    await store.save_message(
+        "bob",
+        "t1",
+        "user",
+        "Check this",
+        name="tester",
+        metadata=metadata,
+        content_blocks=blocks,
+    )
+
+    msgs = await store.get_messages("bob", "t1")
+    assert len(msgs) == 1
+    assert msgs[0].name == "tester"
+    assert msgs[0].metadata == metadata
+    assert msgs[0].content_blocks == blocks
+
+
 # --- Isolation ---
 
 

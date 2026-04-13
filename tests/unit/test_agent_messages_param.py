@@ -12,7 +12,7 @@ Contract tests for conversation history support:
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -185,8 +185,6 @@ class TestAgentRuntimeMessagesParam:
         """History messages appear before the current user message in the API call."""
         agent = _make_agent(runtime="thin")
         captured_messages: list[Message] = []
-
-        original_run_portable = None
 
         async def fake_run_portable(
             agent_config: Any,

@@ -113,6 +113,32 @@ class TestProjectInstructionFilterPipeline:
         base_pos = prompt.index("SYSTEM_BASE")
         assert rules_pos < base_pos
 
+    @pytest.mark.asyncio
+    async def test_project_instructions_merge_all_same_level_in_repo_order(
+        self, tmp_path: Path
+    ) -> None:
+        """All instruction files on one level are merged in AGENTS->RULES->CLAUDE order."""
+        (tmp_path / "AGENTS.md").write_text("A")
+        (tmp_path / "RULES.md").write_text("R")
+        (tmp_path / "CLAUDE.md").write_text("C")
+        captured: dict[str, Any] = {}
+
+        config = RuntimeConfig(
+            runtime_name="thin",
+            input_filters=[ProjectInstructionFilter(cwd=tmp_path, home=tmp_path / "nohome")],
+        )
+        runtime = ThinRuntime(config=config, llm_call=_make_llm_call(captured))
+
+        await _collect_events(
+            runtime,
+            messages=[_msg("user", "hi")],
+            system_prompt="BASE",
+            active_tools=[],
+        )
+
+        prompt = captured["system_prompt"]
+        assert prompt.index("A") < prompt.index("R") < prompt.index("C") < prompt.index("BASE")
+
 
 # ---------------------------------------------------------------------------
 # 2. SystemReminderFilter in ThinRuntime pipeline

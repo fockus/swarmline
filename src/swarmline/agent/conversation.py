@@ -118,6 +118,13 @@ class Conversation:
                     msg.role,
                     msg.content,
                     msg.tool_calls,
+                    name=msg.name,
+                    metadata=msg.metadata,
+                    content_blocks=(
+                        [block.to_dict() for block in msg.content_blocks]
+                        if msg.content_blocks is not None
+                        else None
+                    ),
                 )
 
         # Conversation always fills session_id
@@ -185,6 +192,13 @@ class Conversation:
                     msg.role,
                     msg.content,
                     msg.tool_calls,
+                    name=msg.name,
+                    metadata=msg.metadata,
+                    content_blocks=(
+                        [block.to_dict() for block in msg.content_blocks]
+                        if msg.content_blocks is not None
+                        else None
+                    ),
                 )
 
     async def close(self) -> None:

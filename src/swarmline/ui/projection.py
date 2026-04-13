@@ -17,7 +17,7 @@ from __future__ import annotations
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any, Protocol, Union, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from swarmline.runtime.types import RuntimeEvent
 
@@ -61,7 +61,7 @@ class ErrorBlock:
     message: str
 
 
-UIBlock = Union[TextBlock, ToolCallBlock, ToolResultBlock, ErrorBlock]
+UIBlock = TextBlock | ToolCallBlock | ToolResultBlock | ErrorBlock
 
 
 # ---------------------------------------------------------------------------

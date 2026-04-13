@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -36,6 +36,11 @@ _SQLITE_INCOMING_SOURCE_PRIORITY = (
     "WHEN 'mcp' THEN 1 "
     "ELSE 0 END"
 )
+_SQLITE_RICH_MESSAGE_COLUMNS = (
+    ("name", "TEXT"),
+    ("metadata", "TEXT"),
+    ("content_blocks", "TEXT"),
+)
 
 
 class SQLiteMemoryProvider:
@@ -60,23 +65,53 @@ class SQLiteMemoryProvider:
         role: str,
         content: str,
         tool_calls: list[dict[str, Any]] | None = None,
+        *,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        content_blocks: list[dict[str, Any]] | None = None,
     ) -> None:
         async with self._session(commit=True) as session:
-            await session.execute(
-                text(
-                    f"""
-                    INSERT INTO messages (user_id, topic_id, role, content, tool_calls)
-                    VALUES ({_USER_ID_SUB}, :topic_id, :role, :content, :tool_calls)
-                """
-                ),
-                {
-                    "user_id": user_id,
-                    "topic_id": topic_id,
-                    "role": role,
-                    "content": content,
-                    "tool_calls": _json_or_none(tool_calls),
-                },
+            params = {
+                "user_id": user_id,
+                "topic_id": topic_id,
+                "role": role,
+                "content": content,
+                "tool_calls": _json_or_none(tool_calls),
+            }
+            if name is None and metadata is None and content_blocks is None:
+                await session.execute(
+                    text(
+                        f"""
+                        INSERT INTO messages (user_id, topic_id, role, content, tool_calls)
+                        VALUES ({_USER_ID_SUB}, :topic_id, :role, :content, :tool_calls)
+                    """
+                    ),
+                    params,
+                )
+                return
+
+            rich_params = {
+                **params,
+                "name": name,
+                "metadata": _json_or_none(metadata),
+                "content_blocks": _json_or_none(content_blocks),
+            }
+            rich_insert = text(
+                f"""
+                INSERT INTO messages (user_id, topic_id, role, content, name, tool_calls, metadata, content_blocks)
+                VALUES (
+                    {_USER_ID_SUB}, :topic_id, :role, :content, :name, :tool_calls, :metadata, :content_blocks
+                )
+            """
             )
+            try:
+                await session.execute(rich_insert, rich_params)
+            except Exception as exc:  # pragma: no cover - defensive DB compatibility path
+                if not _is_missing_message_column_error(exc):
+                    raise
+                await session.rollback()
+                await _migrate_sqlite_messages_columns(session)
+                await session.execute(rich_insert, rich_params)
 
     async def get_messages(
         self,
@@ -85,24 +120,42 @@ class SQLiteMemoryProvider:
         limit: int = 10,
     ) -> list[MemoryMessage]:
         async with self._session() as session:
-            result = await session.execute(
-                text(
-                    f"""
-                    SELECT role, content, tool_calls
-                    FROM messages
-                    WHERE user_id = {_USER_ID_SUB} AND topic_id = :topic_id
-                    ORDER BY created_at DESC, id DESC
-                    LIMIT :limit
-                """
-                ),
-                {"user_id": user_id, "topic_id": topic_id, "limit": limit},
+            params = {"user_id": user_id, "topic_id": topic_id, "limit": limit}
+            rich_select = text(
+                f"""
+                SELECT role, content, name, tool_calls, metadata, content_blocks
+                FROM messages
+                WHERE user_id = {_USER_ID_SUB} AND topic_id = :topic_id
+                ORDER BY created_at DESC, id DESC
+                LIMIT :limit
+            """
             )
+            try:
+                result = await session.execute(rich_select, params)
+            except Exception as exc:  # pragma: no cover - defensive DB compatibility path
+                if not _is_missing_message_column_error(exc):
+                    raise
+                result = await session.execute(
+                    text(
+                        f"""
+                        SELECT role, content, NULL AS name, tool_calls, NULL AS metadata, NULL AS content_blocks
+                        FROM messages
+                        WHERE user_id = {_USER_ID_SUB} AND topic_id = :topic_id
+                        ORDER BY created_at DESC, id DESC
+                        LIMIT :limit
+                    """
+                    ),
+                    params,
+                )
             rows = result.fetchall()
         return [
             MemoryMessage(
                 role=str(row.role),
                 content=str(row.content),
+                name=_optional_text(getattr(row, "name", None)),
                 tool_calls=_load_json_or_none(row.tool_calls),
+                metadata=_load_json_dict_or_none(getattr(row, "metadata", None)),
+                content_blocks=_load_json_list_of_dicts_or_none(getattr(row, "content_blocks", None)),
             )
             for row in reversed(rows)
         ]
@@ -534,3 +587,47 @@ def _load_json_value(raw: Any) -> Any:
 
 def _merge_scoped_sqlite_facts(rows: Sequence[Any]) -> dict[str, Any]:
     return merge_scoped_facts(rows)
+
+
+def _optional_text(value: Any) -> str | None:
+    return None if value is None else str(value)
+
+
+def _load_json_dict_or_none(raw: Any) -> dict[str, Any] | None:
+    loaded = json_load_or_none(raw)
+    return loaded if isinstance(loaded, dict) else None
+
+
+def _load_json_list_of_dicts_or_none(raw: Any) -> list[dict[str, Any]] | None:
+    loaded = json_load_or_none(raw)
+    if loaded is None:
+        return None
+    if isinstance(loaded, list) and all(isinstance(item, dict) for item in loaded):
+        return cast(list[dict[str, Any]], loaded)
+    return None
+
+
+def _is_missing_message_column_error(exc: Exception) -> bool:
+    messages = [str(exc), str(getattr(exc, "orig", ""))]
+    normalized = " ".join(messages).lower()
+    return (
+        "messages" in normalized
+        and (
+            "no such column" in normalized
+            or "has no column named" in normalized
+            or "column does not exist" in normalized
+        )
+    )
+
+
+async def _migrate_sqlite_messages_columns(session: AsyncSession) -> None:
+    for column, sql_type in _SQLITE_RICH_MESSAGE_COLUMNS:
+        try:
+            await session.execute(text(f"ALTER TABLE messages ADD COLUMN {column} {sql_type}"))
+        except Exception as exc:  # pragma: no cover - depends on existing schema state
+            normalized = f"{exc} {getattr(exc, 'orig', '')}".lower()
+            if "duplicate column name" in normalized:
+                continue
+            raise RuntimeError(
+                f"messages migration failed while adding '{column}': {exc}"
+            ) from exc

@@ -28,7 +28,7 @@ class TestCheckDetail:
 
     def test_check_detail_with_message(self) -> None:
         check = CheckDetail(
-            name="mypy",
+            name="ty",
             status=VerificationStatus.FAIL,
             message="Found 3 type errors",
         )
@@ -64,18 +64,18 @@ class TestVerificationResult:
             checks=(
                 CheckDetail(name="lint", status=VerificationStatus.PASS),
                 CheckDetail(
-                    name="mypy",
+                    name="ty",
                     status=VerificationStatus.FAIL,
                     message="2 errors",
                 ),
             ),
-            summary="mypy failed",
+            summary="ty failed",
         )
         assert result.passed is False
         assert result.status == VerificationStatus.FAIL
         failed = [c for c in result.checks if c.status == VerificationStatus.FAIL]
         assert len(failed) == 1
-        assert failed[0].name == "mypy"
+        assert failed[0].name == "ty"
 
     def test_verification_result_skip(self) -> None:
         result = VerificationResult(status=VerificationStatus.SKIP)

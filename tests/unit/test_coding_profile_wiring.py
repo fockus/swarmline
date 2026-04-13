@@ -195,3 +195,46 @@ class TestCodingProfileWiring:
         assert tool_name in active_tool_names, (
             f"Expected {tool_name} in active_tools, got {active_tool_names}"
         )
+
+    def test_wiring_enriches_subagent_config_with_coding_sandbox(self) -> None:
+        """Coding profile injects sandbox template into subagent_config."""
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
+
+        subagent_config = SubagentToolConfig(max_concurrent=2, max_depth=4)
+        cfg = AgentConfig(
+            system_prompt="test",
+            runtime="thin",
+            coding_profile=CodingProfileConfig(enabled=True, allow_host_execution=True),
+            subagent_config=subagent_config,
+            cwd="/tmp/test-coding",
+        )
+
+        plan = build_portable_runtime_plan(cfg, "thin")
+
+        runtime_subagent_config = plan.create_kwargs["subagent_config"]
+        assert runtime_subagent_config is not subagent_config
+        assert runtime_subagent_config.max_concurrent == 2
+        assert runtime_subagent_config.max_depth == 4
+        assert runtime_subagent_config.base_path == "/tmp/test-coding"
+        assert runtime_subagent_config.sandbox_config is not None
+        assert runtime_subagent_config.sandbox_config.root_path == "/tmp/test-coding"
+        assert runtime_subagent_config.sandbox_config.allow_host_execution is True
+
+    def test_wiring_passes_coding_profile_and_context_filter(self) -> None:
+        """Enabled coding profile passes coding_profile kwarg and input filter."""
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+
+        cfg = AgentConfig(
+            system_prompt="test",
+            runtime="thin",
+            coding_profile=CodingProfileConfig(enabled=True),
+            cwd="/tmp/test-coding",
+        )
+
+        plan = build_portable_runtime_plan(cfg, "thin", session_id="sess-1")
+
+        assert "coding_profile" in plan.create_kwargs
+        assert plan.create_kwargs["coding_profile"] == cfg.coding_profile
+        assert len(plan.config.input_filters) == 1
+        assert type(plan.config.input_filters[0]).__name__ == "CodingContextInputFilter"

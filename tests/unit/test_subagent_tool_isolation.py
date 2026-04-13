@@ -22,6 +22,7 @@ from swarmline.runtime.thin.subagent_tool import (
     SubagentToolConfig,
     create_subagent_executor,
 )
+from swarmline.tools.types import SandboxConfig
 
 
 # ---------------------------------------------------------------------------
@@ -152,3 +153,25 @@ class TestExecutorIsolationPassthrough:
         assert call_kwargs["system_prompt"] == "Be careful"
         assert len(call_kwargs["tools"]) == 1
         assert call_kwargs["tools"][0].name == "read_file"
+
+    @patch("swarmline.runtime.thin.subagent_tool.SubagentSpec")
+    async def test_sandbox_config_passed_to_spec_when_configured(
+        self,
+        mock_spec_cls: MagicMock,
+        orchestrator: AsyncMock,
+        parent_tools: list[ToolSpec],
+    ) -> None:
+        sandbox_config = SandboxConfig(
+            root_path="/tmp/coding-parent",
+            user_id="coding",
+            topic_id="agent",
+            allow_host_execution=True,
+        )
+        config = SubagentToolConfig(sandbox_config=sandbox_config)
+        mock_spec_cls.return_value = MagicMock()
+
+        executor = create_subagent_executor(orchestrator, config, parent_tools)
+        await executor({"task": "isolated coding work", "isolation": "worktree"})
+
+        call_kwargs = mock_spec_cls.call_args.kwargs
+        assert call_kwargs["sandbox_config"] is sandbox_config

@@ -7,7 +7,6 @@ Contract tests (pass for ANY correct HookDispatcher implementation)
 from __future__ import annotations
 
 import logging
-from fnmatch import fnmatch
 from typing import Any
 
 import pytest

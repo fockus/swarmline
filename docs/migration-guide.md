@@ -525,7 +525,7 @@ These are additive and do not require changes to existing code:
 ```bash
 pytest
 ruff check src/ tests/
-mypy src/swarmline/
+ty check src/swarmline/
 ```
 
 Verify that all tests pass and there are no import errors or type check failures

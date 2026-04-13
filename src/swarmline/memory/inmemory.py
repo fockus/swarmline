@@ -52,10 +52,23 @@ class InMemoryMemoryProvider:
         role: str,
         content: str,
         tool_calls: list[dict[str, Any]] | None = None,
+        *,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        content_blocks: list[dict[str, Any]] | None = None,
     ) -> None:
         """Save a message."""
         key = (user_id, topic_id)
-        self._messages[key].append(MemoryMessage(role=role, content=content, tool_calls=tool_calls))
+        self._messages[key].append(
+            MemoryMessage(
+                role=role,
+                content=content,
+                name=name,
+                tool_calls=tool_calls,
+                metadata=dict(metadata) if metadata is not None else None,
+                content_blocks=list(content_blocks) if content_blocks is not None else None,
+            )
+        )
 
     async def get_messages(
         self,

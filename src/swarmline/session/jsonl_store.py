@@ -47,12 +47,19 @@ class JsonlMessageStore:
         role: str,
         content: str,
         tool_calls: list[dict[str, Any]] | None = None,
+        *,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        content_blocks: list[dict[str, Any]] | None = None,
     ) -> None:
         """Append a message as a JSON line to the session file."""
         record = {
             "role": role,
             "content": content,
+            "name": name,
             "tool_calls": tool_calls,
+            "metadata": metadata,
+            "content_blocks": content_blocks,
             "ts": time.time(),
         }
         line = json.dumps(record, ensure_ascii=False) + "\n"
@@ -83,7 +90,10 @@ class JsonlMessageStore:
                 MemoryMessage(
                     role=record.get("role", "user"),
                     content=record.get("content", ""),
+                    name=record.get("name"),
                     tool_calls=record.get("tool_calls"),
+                    metadata=record.get("metadata"),
+                    content_blocks=record.get("content_blocks"),
                 )
             )
         return result

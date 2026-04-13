@@ -9,14 +9,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import pytest
 
 from swarmline.hooks.dispatcher import HookResult
 from swarmline.hooks.registry import HookRegistry
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import (
     Message,
-    RuntimeConfig,
     RuntimeEvent,
     ToolSpec,
 )
@@ -155,7 +153,7 @@ class TestThinRuntimeHooks:
             local_tools={"echo": echo_tool},
             hook_registry=reg,
         )
-        events = await collect(runtime, "use echo", tools=[tool_spec], mode_hint="react")
+        await collect(runtime, "use echo", tools=[tool_spec], mode_hint="react")
         # The modified output should appear in the LLM messages
         assert llm._call_count == 2  # tool_call + final
 
@@ -205,7 +203,7 @@ class TestThinRuntimeHooks:
         llm = MockLLM([make_final("ok")])
         runtime = ThinRuntime(llm_call=llm, hook_registry=reg)
 
-        events = await collect(runtime, "hello")
+        await collect(runtime, "hello")
         # The LLM should receive the transformed prompt in the last user message
         assert llm._call_count == 1
         last_msg = llm.received_messages[0][-1]

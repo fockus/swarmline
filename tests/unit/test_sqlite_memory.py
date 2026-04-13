@@ -205,6 +205,25 @@ class TestSQLiteMessages:
         assert deleted == 2
         assert await provider.count_messages("u1", "t1") == 1
 
+    @pytest.mark.asyncio
+    async def test_save_and_get_rich_message_roundtrip(self, provider: SQLiteMemoryProvider) -> None:
+        await provider.save_message(
+            "u1",
+            "t-rich",
+            "user",
+            "Опиши файл",
+            name="alice",
+            metadata={"non_compactable": True, "trace_id": "tr-1"},
+            content_blocks=[{"type": "text", "text": "Опиши файл"}],
+        )
+
+        messages = await provider.get_messages("u1", "t-rich", limit=5)
+
+        assert len(messages) == 1
+        assert messages[0].name == "alice"
+        assert messages[0].metadata == {"non_compactable": True, "trace_id": "tr-1"}
+        assert messages[0].content_blocks == [{"type": "text", "text": "Опиши файл"}]
+
 
 class TestSQLiteFacts:
     @pytest.mark.asyncio

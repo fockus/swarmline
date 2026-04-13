@@ -180,7 +180,7 @@ class GraphContextBuilder:
         goal: str,
         *,
         shared_knowledge: str = "",
-    ) -> "AgentExecutionContext":
+    ) -> AgentExecutionContext:
         """Build a full execution context for the runner."""
         from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 

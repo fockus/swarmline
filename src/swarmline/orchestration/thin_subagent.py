@@ -404,6 +404,41 @@ class _ThinWorkerRuntime:
         self._hook_registry = hook_registry
         self._cwd: str | None = None
 
+    def _build_runtime_local_tools(self) -> dict[str, Callable[..., Any]]:
+        """Rebind coding sandbox tools to the worker worktree when available."""
+        if self._cwd is None or self._spec.sandbox_config is None:
+            return self._local_tools
+
+        from swarmline.runtime.thin.coding_toolpack import (
+            CODING_SANDBOX_TOOL_NAMES,
+            build_coding_toolpack,
+        )
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.types import SandboxConfig
+
+        tool_names_to_rebind = CODING_SANDBOX_TOOL_NAMES & set(self._local_tools)
+        if not tool_names_to_rebind:
+            return self._local_tools
+
+        sandbox_template = self._spec.sandbox_config
+        worktree_sandbox_config = SandboxConfig(
+            root_path=self._cwd,
+            user_id=sandbox_template.user_id,
+            topic_id=sandbox_template.topic_id,
+            max_file_size_bytes=sandbox_template.max_file_size_bytes,
+            timeout_seconds=sandbox_template.timeout_seconds,
+            allowed_extensions=sandbox_template.allowed_extensions,
+            denied_commands=sandbox_template.denied_commands,
+            allow_host_execution=sandbox_template.allow_host_execution,
+        )
+        worktree_sandbox = LocalSandboxProvider(worktree_sandbox_config)
+        coding_pack = build_coding_toolpack(worktree_sandbox)
+
+        rebound_local_tools = dict(self._local_tools)
+        for tool_name in tool_names_to_rebind:
+            rebound_local_tools[tool_name] = coding_pack.executors[tool_name]
+        return rebound_local_tools
+
     async def run(self, task: str) -> str:
         """Run the worker without mutating process-global cwd.
 
@@ -415,7 +450,7 @@ class _ThinWorkerRuntime:
 
         kwargs: dict[str, Any] = {
             "config": self._runtime_config,
-            "local_tools": self._local_tools,
+            "local_tools": self._build_runtime_local_tools(),
             "mcp_servers": self._mcp_servers,
         }
         if self._llm_call is not None:

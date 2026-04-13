@@ -6,13 +6,14 @@ Covers: resume(), auto-persist in say(), auto-compact on resume, backward compat
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from swarmline.compaction import CompactionConfig
-from swarmline.domain_types import Message
+from swarmline.domain_types import ImageBlock, Message, TextBlock
 from swarmline.memory.types import MemoryMessage
 
 
@@ -178,10 +179,20 @@ class TestConversationAutoPersist:
         # First call: user message
         user_call = store.save_message.await_args_list[0]
         assert user_call.args == ("u1", "s1", "user", "hello agent", None)
+        assert user_call.kwargs == {
+            "name": None,
+            "metadata": None,
+            "content_blocks": None,
+        }
 
         # Second call: assistant response
         assistant_call = store.save_message.await_args_list[1]
         assert assistant_call.args == ("u1", "s1", "assistant", "response text", None)
+        assert assistant_call.kwargs == {
+            "name": None,
+            "metadata": None,
+            "content_blocks": None,
+        }
 
     @pytest.mark.asyncio
     async def test_conversation_no_store_no_persist(self) -> None:
@@ -308,6 +319,45 @@ class TestConversationResumeThenSay:
         assert conv.history[2].content == "new-question"
         assert conv.history[3].content == "new-answer"
 
+    @pytest.mark.asyncio
+    async def test_resume_preserves_metadata_and_content_blocks(self) -> None:
+        """resume() restores name/metadata/content_blocks from MemoryMessage."""
+        from swarmline.agent.conversation import Conversation
+
+        store = AsyncMock()
+        store.get_messages = AsyncMock(
+            return_value=[
+                MemoryMessage(
+                    role="user",
+                    content="Analyze image",
+                    name="alice",
+                    metadata={"non_compactable": True},
+                    content_blocks=[
+                        {"type": "text", "text": "Analyze image"},
+                        {"type": "image", "data": "aW1hZw==", "media_type": "image/png"},
+                    ],
+                ),
+            ]
+        )
+
+        conv = Conversation(
+            agent=_make_agent_stub(),
+            session_id="s1",
+            message_store=store,
+            user_id="u1",
+        )
+        await conv.resume("s1")
+
+        assert len(conv.history) == 1
+        restored = conv.history[0]
+        assert restored.name == "alice"
+        assert restored.metadata == {"non_compactable": True}
+        assert restored.content_blocks is not None
+        assert restored.content_blocks == [
+            TextBlock(text="Analyze image"),
+            ImageBlock(data="aW1hZw==", media_type="image/png"),
+        ]
+
 
 # ---------------------------------------------------------------------------
 # No message_store: resume raises
@@ -323,3 +373,43 @@ class TestConversationResumeWithoutStore:
         conv = Conversation(agent=_make_agent_stub())
         with pytest.raises(RuntimeError, match="message_store"):
             await conv.resume("any-session")
+
+
+class TestConversationJsonlRoundtrip:
+    @pytest.mark.asyncio
+    async def test_jsonl_resume_roundtrip_preserves_extended_fields(
+        self, tmp_path: Path
+    ) -> None:
+        """Jsonl store keeps name/metadata/content_blocks through resume()."""
+        from swarmline.agent.conversation import Conversation
+        from swarmline.session.jsonl_store import JsonlMessageStore
+
+        store = JsonlMessageStore(base_dir=tmp_path)
+        await store.save_message(
+            "u1",
+            "sess-rich",
+            "user",
+            "Analyze this image",
+            name="alice",
+            metadata={"non_compactable": True, "source": "test"},
+            content_blocks=[
+                {"type": "text", "text": "Analyze this image"},
+                {"type": "image", "data": "aW1hZw==", "media_type": "image/png"},
+            ],
+        )
+
+        conv = Conversation(
+            agent=_make_agent_stub(),
+            message_store=store,
+            user_id="u1",
+        )
+        await conv.resume("sess-rich")
+
+        assert len(conv.history) == 1
+        restored = conv.history[0]
+        assert restored.name == "alice"
+        assert restored.metadata == {"non_compactable": True, "source": "test"}
+        assert restored.content_blocks == [
+            TextBlock(text="Analyze this image"),
+            ImageBlock(data="aW1hZw==", media_type="image/png"),
+        ]

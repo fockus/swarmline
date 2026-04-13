@@ -13,7 +13,9 @@ if TYPE_CHECKING:
     from swarmline.commands.registry import CommandRegistry
     from swarmline.hooks.dispatcher import HookDispatcher
     from swarmline.hooks.registry import HookRegistry
+    from swarmline.multi_agent.workspace import ExecutionWorkspace
     from swarmline.policy.tool_policy import DefaultToolPolicy
+    from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 
 from swarmline.runtime.cost import CostTracker, load_pricing
 from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
@@ -61,6 +63,8 @@ class ThinRuntime:
         hook_registry: HookRegistry | None = None,
         tool_policy: DefaultToolPolicy | None = None,
         subagent_config: Any | None = None,
+        coding_profile: CodingProfileConfig | None = None,
+        workspace: ExecutionWorkspace | None = None,
         command_registry: CommandRegistry | None = None,
     ) -> None:
         self._config = config or RuntimeConfig(runtime_name="thin")
@@ -106,13 +110,29 @@ class ThinRuntime:
             async def _on_bg_complete(event: RuntimeEvent) -> None:
                 self._bg_events.append(event)
 
+            base_path = getattr(subagent_config, "base_path", None)
+            max_worktrees = int(getattr(subagent_config, "max_worktrees", 5))
+            background_timeout = getattr(subagent_config, "background_timeout", None)
+            workspace_impl = workspace
+            if workspace_impl is None and base_path is not None:
+                from swarmline.multi_agent.workspace import LocalWorkspace
+
+                workspace_impl = LocalWorkspace(event_bus=self._config.event_bus)
+
             self._subagent_orchestrator = ThinSubagentOrchestrator(
                 max_concurrent=subagent_config.max_concurrent,
+                max_worktrees=max_worktrees,
+                base_path=base_path,
+                workspace=workspace_impl,
                 llm_call=raw_llm_call,
                 local_tools=merged_local_tools,
                 mcp_servers=mcp_servers,
                 runtime_config=self._config,
+                coding_profile=coding_profile,
+                tool_policy=tool_policy,
+                hook_registry=hook_registry,
                 on_background_complete=_on_bg_complete,
+                background_timeout=background_timeout,
             )
             self._subagent_config_obj = subagent_config
             # Initial executor with builtin specs only; run() updates with actual active_tools

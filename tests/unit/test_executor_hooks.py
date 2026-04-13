@@ -9,7 +9,6 @@ import json
 from typing import Any
 from unittest.mock import AsyncMock
 
-import pytest
 
 from swarmline.hooks.dispatcher import DefaultHookDispatcher, HookResult
 from swarmline.hooks.registry import HookRegistry

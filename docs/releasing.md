@@ -23,7 +23,7 @@ These changes are committed to `main` but do **not** trigger a release:
 - CI/CD changes (GitHub Actions, workflows)
 - Documentation (docs/, README, CHANGELOG draft)
 - Memory Bank, CLAUDE.md, RULES.md, AGENTS.md updates
-- Lint/format fixes (ruff, mypy)
+- Lint/format fixes (ruff, ty)
 - Development tooling (scripts/, Makefile, editor configs)
 
 ### Batching rule
@@ -101,7 +101,7 @@ At this point, changes are on `main` in the private repo but NOT published.
 pytest -q                              # offline: 4000+ passed
 pytest -m integration -v               # integration tests
 ruff check src/ tests/                 # lint clean
-mypy src/swarmline/                    # type check clean
+ty check src/swarmline/                # type check clean
 
 # 2. Check CHANGELOG.md has all changes under [Unreleased]
 # Move [Unreleased] → [X.Y.Z] - YYYY-MM-DD

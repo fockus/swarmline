@@ -228,7 +228,7 @@ class CodeVerifier(Protocol):
         ...
 
     async def verify_linters(self) -> VerificationResult:
-        """Run linters (ruff, mypy, etc.)."""
+        """Run linters and type checks (ruff, ty, etc.)."""
         ...
 
     async def verify_coverage(self, min_pct: int = 85) -> VerificationResult:
@@ -283,7 +283,7 @@ class MyProjectVerifier:
         ...
 
     async def verify_linters(self) -> VerificationResult:
-        result = await self._runner.run("ruff check . && mypy src")
+        result = await self._runner.run("ruff check . && ty check src/swarmline")
         # ...
 
     async def verify_coverage(self, min_pct: int = 85) -> VerificationResult:

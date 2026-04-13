@@ -446,8 +446,7 @@ pytest -k "test_name" -v                         # by pattern
 pytest --cov=swarmline --cov-report=term-missing  # with coverage
 ruff check src/ tests/                           # lint
 ruff format src/ tests/                          # format
-ty check src/swarmline/                          # type check (primary, fast)
-mypy src/swarmline/                              # type check (secondary, slower)
+ty check src/swarmline/                          # type check
 ```
 
 ### Conventions

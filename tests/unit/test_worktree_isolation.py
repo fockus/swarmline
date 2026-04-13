@@ -228,6 +228,97 @@ class TestWorktreeLifecycle:
 
         assert result == "result"
 
+    async def test_worker_runtime_rebinds_coding_tools_to_worktree_sandbox(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from swarmline.orchestration import thin_subagent as thin_subagent_module
+        from swarmline.tools.types import SandboxConfig
+
+        parent_read = object()
+        parent_write = object()
+        preserved_tool = object()
+        rebound_read = object()
+        rebound_write = object()
+        captured: dict[str, object] = {}
+
+        class _FakeRuntime:
+            def __init__(self, **kwargs: object) -> None:
+                captured["local_tools"] = kwargs["local_tools"]
+
+            async def run(self, **_kwargs: object) -> None:
+                if False:
+                    yield None
+
+        async def _collect(_stream: object, **_kwargs: object) -> str:
+            return "result"
+
+        def _fake_provider(config: SandboxConfig) -> object:
+            captured["sandbox_config"] = config
+            return SimpleNamespace(config=config)
+
+        def _fake_build_coding_toolpack(_sandbox: object) -> object:
+            return SimpleNamespace(
+                executors={
+                    "read": rebound_read,
+                    "write": rebound_write,
+                }
+            )
+
+        monkeypatch.setattr(
+            thin_subagent_module,
+            "ThinRuntime",
+            lambda **kwargs: _FakeRuntime(**kwargs),
+        )
+        monkeypatch.setattr(thin_subagent_module, "collect_runtime_output", _collect)
+        monkeypatch.setattr(
+            "swarmline.tools.sandbox_local.LocalSandboxProvider",
+            _fake_provider,
+        )
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.coding_toolpack.build_coding_toolpack",
+            _fake_build_coding_toolpack,
+        )
+
+        runtime = thin_subagent_module._ThinWorkerRuntime(
+            spec=SubagentSpec(
+                name="worker",
+                system_prompt="p",
+                sandbox_config=SandboxConfig(
+                    root_path="/tmp/parent",
+                    user_id="coding",
+                    topic_id="agent",
+                    allow_host_execution=True,
+                ),
+            ),
+            llm_call=None,
+            local_tools={
+                "read": parent_read,
+                "write": parent_write,
+                "web_fetch": preserved_tool,
+            },
+            mcp_servers=None,
+            runtime_config=thin_subagent_module.RuntimeConfig(runtime_name="thin"),
+        )
+        runtime._cwd = "/tmp/wt/isolated"
+
+        result = await runtime.run("task")
+
+        assert result == "result"
+        sandbox_config = captured["sandbox_config"]
+        assert isinstance(sandbox_config, SandboxConfig)
+        assert sandbox_config.root_path == "/tmp/wt/isolated"
+        assert sandbox_config.user_id == "coding"
+        assert sandbox_config.topic_id == "agent"
+        assert sandbox_config.allow_host_execution is True
+
+        local_tools = captured["local_tools"]
+        assert isinstance(local_tools, dict)
+        assert local_tools["read"] is rebound_read
+        assert local_tools["write"] is rebound_write
+        assert local_tools["web_fetch"] is preserved_tool
+
 
 # ---------------------------------------------------------------------------
 # Validation — fail-fast on bad config

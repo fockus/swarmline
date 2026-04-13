@@ -79,7 +79,7 @@ Start Codex CLI in your project directory. The MCP server starts automatically.
 
 Store a project convention:
 
-> Remember that we use ruff for linting and mypy for type checking
+> Remember that we use ruff for linting and ty for type checking
 
 Codex calls `swarmline_memory_upsert_fact` to persist these facts.
 

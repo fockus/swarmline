@@ -13,11 +13,9 @@ import pytest
 
 from swarmline.agent.config import AgentConfig
 from swarmline.agent.middleware import SecurityGuard
-from swarmline.hooks.registry import HookRegistry
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import (
     Message,
-    RuntimeConfig,
     RuntimeEvent,
     ToolSpec,
 )

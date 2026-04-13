@@ -18,6 +18,10 @@ class MessageStore(Protocol):
         role: str,
         content: str,
         tool_calls: list[dict[str, Any]] | None = None,
+        *,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        content_blocks: list[dict[str, Any]] | None = None,
     ) -> None: ...
 
     async def get_messages(
