@@ -1,193 +1,155 @@
 # Requirements: ThinRuntime Claude Code Parity
 
-**Defined:** 2026-04-12
-**Core Value:** ThinRuntime обеспечивает безопасное и полнофункциональное выполнение агентов с контролем инструментов, делегированием задач и native tool calling.
+**Defined:** 2026-04-12 (v1), 2026-04-13 (v2)
+**Core Value:** ThinRuntime обеспечивает безопасное и полнофункциональное выполнение агентов с продвинутым context management, session persistence и multimodal support
 
-## v1 Requirements
+## v1 Requirements (COMPLETE — Parity v1)
 
-### Hook Dispatch
+All v1 requirements completed and validated with Judge scores 4.25-4.40/5.0.
 
-- [ ] **HOOK-01**: PreToolUse hook вызывается перед каждым tool call (local + MCP) в ToolExecutor
-- [ ] **HOOK-02**: PreToolUse hook может заблокировать выполнение инструмента (action: block)
-- [ ] **HOOK-03**: PreToolUse hook может модифицировать аргументы инструмента (action: modify)
-- [ ] **HOOK-04**: PostToolUse hook вызывается после каждого tool call в ToolExecutor
-- [ ] **HOOK-05**: PostToolUse hook может модифицировать output инструмента
-- [ ] **HOOK-06**: Stop hook вызывается при завершении ThinRuntime.run() (нормальное + ошибка)
-- [ ] **HOOK-07**: UserPromptSubmit hook вызывается в начале run() и может трансформировать prompt
-- [ ] **HOOK-08**: HookRegistry пробрасывается через Agent → RuntimeFactory → ThinRuntime → ToolExecutor
-- [ ] **HOOK-09**: SecurityGuard middleware реально блокирует tools в thin runtime
-- [ ] **HOOK-10**: ToolOutputCompressor middleware реально сжимает output в thin runtime
+### Hook Dispatch ✅
+- [x] **HOOK-01** — **HOOK-10**: All hook dispatch requirements — Phase 1
 
-### Tool Policy
+### Tool Policy ✅
+- [x] **PLCY-01** — **PLCY-04**: All policy enforcement requirements — Phase 2
 
-- [ ] **PLCY-01**: DefaultToolPolicy проверяется в ToolExecutor перед выполнением инструмента
-- [ ] **PLCY-02**: Denied tools не выполняются, возвращается JSON error с причиной
-- [ ] **PLCY-03**: Policy check выполняется после PreToolUse hooks (hooks могут modify args)
-- [ ] **PLCY-04**: Tool policy пробрасывается через Agent → RuntimeFactory → ThinRuntime
+### Subagents ✅
+- [x] **SUBA-01** — **SUBA-08**: All subagent requirements — Phase 3
 
-### Subagent Tool
+### Commands ✅
+- [x] **CMDR-01** — **CMDR-04**: All command routing requirements — Phase 4
 
-- [ ] **SUBA-01**: LLM внутри ThinRuntime может вызвать spawn_agent tool
-- [ ] **SUBA-02**: Субагент запускается в отдельном ThinRuntime instance через ThinSubagentOrchestrator
-- [ ] **SUBA-03**: Субагент возвращает результат parent агенту через tool result
-- [ ] **SUBA-04**: max_depth enforcement — субагент не может spawn'ить глубже лимита
-- [ ] **SUBA-05**: max_concurrent enforcement — ограничение параллельных субагентов
-- [ ] **SUBA-06**: Timeout enforcement — субагент прерывается по таймауту
-- [ ] **SUBA-07**: Субагент наследует subset tools из parent
-- [ ] **SUBA-08**: Ошибки субагента возвращаются как JSON error, не crash parent
+### Native Tools ✅
+- [x] **NATV-01** — **NATV-06**: All native tool calling requirements — Phase 5
 
-### Command Routing
+### Integration ✅
+- [x] **INTG-01** — **INTG-04**: All integration validation requirements — Phase 6
 
-- [ ] **CMDR-01**: /command в user input перехватывается перед отправкой в LLM
-- [ ] **CMDR-02**: Известные команды выполняются через CommandRegistry
-- [ ] **CMDR-03**: Handled commands возвращают immediate response без вызова LLM
-- [ ] **CMDR-04**: Non-command text проходит в LLM без изменений
+### Coding Profile ✅
+- [x] **CADG-01** — **CADG-05**: All coding profile requirements — Phase 7
 
-### Native Tool Calling
+### Coding Tasks ✅
+- [x] **CTSK-01** — **CTSK-05**: All coding task requirements — Phase 8
 
-- [ ] **NATV-01**: Anthropic native tool calling через tools parameter API
-- [ ] **NATV-02**: OpenAI native tool calling через functions/tools parameter
-- [ ] **NATV-03**: Google native tool calling через function declarations
-- [ ] **NATV-04**: Parallel tool calls — batch multiple tool_use в одном response
-- [ ] **NATV-05**: use_native_tools=False (default) сохраняет JSON-in-text поведение
-- [ ] **NATV-06**: Fallback при ошибке native → JSON-in-text
+### Coding Context ✅
+- [x] **CCTX-01** — **CCTX-02**, **COMP-01** — **COMP-03**: All context/compat requirements — Phase 9
 
-### Integration
+### Coding Subagent ✅
+- [x] **CSUB-01** — **CSUB-03**, **CVAL-01** — **CVAL-03**: All inheritance requirements — Phase 10
 
-- [ ] **INTG-01**: Все существующие 4263+ тестов проходят на каждом этапе
-- [ ] **INTG-02**: Все новые поля в AgentConfig/RuntimeConfig optional с None default
-- [ ] **INTG-03**: Coverage новых файлов >= 95%
-- [ ] **INTG-04**: ruff check + mypy clean
+## v2 Requirements (Parity v2 — Claude Code Gap Closure)
 
-### Coding-Agent Profile Foundation
+### Context Management
 
-- [ ] **CADG-01**: `ThinRuntime` поддерживает opt-in `coding-agent profile` без введения нового runtime hierarchy
-- [ ] **CADG-02**: В coding mode visible tool surface совпадает с executable tool surface
-- [ ] **CADG-03**: `read/write/edit/multi_edit/bash/ls/glob/grep` берутся из shared builtin implementations, а не из параллельного thin-only path
-- [ ] **CADG-04**: Default-deny secure posture вне coding profile не меняется
-- [ ] **CADG-05**: Coding profile разрешает только явно объявленный allow-list coding tools
+- [ ] **CMPCT-01**: ThinRuntime автоматически суммаризирует ранние сообщения через LLM при приближении к token budget вместо обрезки
+- [ ] **CMPCT-02**: Compaction сохраняет ключевые решения, tool results и project instructions в summary
+- [ ] **CMPCT-03**: 3-tier pipeline: tool result collapse → LLM summarization → emergency truncation (fallback)
+- [ ] **CMPCT-04**: Compaction strategy конфигурируется через RuntimeConfig (вкл/выкл, бюджет, модель)
 
-### Coding Task Runtime and Persistence
+### Project Instructions
 
-- [ ] **CTSK-01**: Coding-task lifecycle backed by `GraphTaskBoard`, без отдельного параллельного task engine
-- [ ] **CTSK-02**: `todo_read/todo_write` используют provider-backed persistence в coding mode
-- [ ] **CTSK-03**: Task state и session-to-task binding переживают restart/resume в поддерживаемом persistence mode
-- [ ] **CTSK-04**: Typed persistence snapshots проходят roundtrip без semantic loss
-- [ ] **CTSK-05**: Missing provider или missing binding paths fail fast, без silent degradation
+- [ ] **INST-01**: ThinRuntime автоматически загружает instruction files из cwd → parent dirs → home directory
+- [ ] **INST-02**: Поддержка нескольких форматов: CLAUDE.md, AGENTS.md, GEMINI.md, RULES.md (multi-agent universal)
+- [ ] **INST-03**: Приоритет загрузки: RULES.md > CLAUDE.md > AGENTS.md > GEMINI.md (первый найденный)
+- [ ] **INST-04**: Merge стратегия: home (lowest) → parent dirs → project root (highest priority)
+- [ ] **INST-05**: Инжект через существующий InputFilter pipeline без модификации run()
 
-### Coding Context and Compatibility
+### Session Resume
 
-- [ ] **CCTX-01**: Coding mode добавляет task/board/workspace/search/session/skill-profile slices, non-coding mode не получает их
-- [ ] **CCTX-02**: Coding-context budget discipline deterministic under pressure (bounded truncation/omission)
-- [ ] **COMP-01**: Legacy aliases в coding mode маппятся на canonical implementations с эквивалентной семантикой
-- [ ] **COMP-02**: Unsupported alias/profile/wiring states возвращают явную ошибку
-- [ ] **COMP-03**: Compatibility layer не создаёт второй implementation path и не содержит silent fallback
+- [ ] **SESS-01**: ThinRuntime сохраняет conversation history между вызовами run() через MessageStore
+- [ ] **SESS-02**: Resume по session_id загружает предыдущую историю и продолжает разговор
+- [ ] **SESS-03**: Auto-compaction при resume если восстановленная история превышает token budget
+- [ ] **SESS-04**: JSONL persistence format с roundtrip-clean сериализацией
 
-### Coding Subagent Inheritance and Validation
+### Web Tools
 
-- [ ] **CSUB-01**: Thin subagents наследуют coding profile, coding tool surface и policy от parent coding run
-- [ ] **CSUB-02**: Task context и continuity facts пробрасываются в child coding subagent
-- [ ] **CSUB-03**: Incompatible inheritance state fail-fast вместо silent downgrade в generic thin mode
-- [ ] **CVAL-01**: Non-coding thin runs остаются behaviorally unchanged после coding-agent tranche
-- [ ] **CVAL-02**: Targeted packs, broader regression, `ruff`, and `mypy` зелёные для coding-agent tranche
-- [ ] **CVAL-03**: Новые interfaces следуют contract-first, остаются dependency-safe и не превышают проектный лимит по ширине интерфейса
+- [ ] **WEBT-01**: WebSearch доступен как built-in tool в ThinRuntime (через существующие web провайдеры)
+- [ ] **WEBT-02**: WebFetch доступен как built-in tool для получения содержимого URL
+- [ ] **WEBT-03**: Domain allow/block list для контроля доступа к веб-ресурсам
+- [ ] **WEBT-04**: Интеграция через CodingToolPack как опциональные инструменты
 
-## v2 Requirements
+### Multimodal Input
 
-### Extended Hooks
+- [ ] **MMOD-01**: Message поддерживает multi-part content (text + image + file) через additive content_blocks field
+- [ ] **MMOD-02**: Инструмент read возвращает ImageBlock при чтении PNG/JPG файлов
+- [ ] **MMOD-03**: Provider-specific конвертация: Anthropic vision blocks, OpenAI image_url, Google inline_data
+- [ ] **MMOD-04**: PDF extraction через опциональный pymupdf4llm extra
+- [ ] **MMOD-05**: Jupyter notebook extraction через опциональный nbformat extra
 
-- **HOOK-V2-01**: Custom hook types (beyond 4 standard types)
-- **HOOK-V2-02**: Hook priority ordering
-- **HOOK-V2-03**: Async hook dispatch with timeout
+### MCP Resources
 
-### Subagent Enhancements
+- [ ] **MCPR-01**: McpClient расширен для resources/list и resources/read JSON-RPC methods
+- [ ] **MCPR-02**: ReadMcpResource доступен как tool для чтения MCP ресурсов по URI
+- [ ] **MCPR-03**: Resource list кэшируется при подключении к серверу
 
-- **SUBA-V2-01**: Persistent subagent state across turns
-- **SUBA-V2-02**: Subagent-to-subagent communication (MessageBus)
-- **SUBA-V2-03**: Subagent progress streaming to parent
+### System Reminders
 
-### MCP
+- [ ] **RMND-01**: Conditional context блоки инжектируются в messages по trigger conditions
+- [ ] **RMND-02**: Reminder budget ограничен (max 500 tokens) для предотвращения prompt bloat
+- [ ] **RMND-03**: Priority ordering: при бюджетном pressure высокоприоритетные reminders сохраняются
+- [ ] **RMND-04**: Реализация через InputFilter без модификации ThinRuntime.run()
 
-- **MCP-V2-01**: MCP stdio transport (local servers)
-- **MCP-V2-02**: MCP SSE transport (event streaming)
+### Git Worktree Isolation
+
+- [ ] **WKTR-01**: SubagentSpec поддерживает isolation="worktree" для запуска в отдельном git worktree
+- [ ] **WKTR-02**: Worktree lifecycle: create → use → cleanup автоматически при завершении субагента
+- [ ] **WKTR-03**: Stale worktree detection и cleanup при инициализации orchestrator
+- [ ] **WKTR-04**: Max worktrees limit (default 5) для предотвращения disk space exhaustion
+
+### Thinking Events
+
+- [ ] **THNK-01**: RuntimeEvent.thinking_delta для streaming thinking blocks отдельно от ответа
+- [ ] **THNK-02**: Anthropic extended thinking API integration (budget_tokens config)
+- [ ] **THNK-03**: Multi-turn thinking signature preservation (non-compactable recent blocks)
+- [ ] **THNK-04**: Non-Anthropic провайдеры: status warning при включении thinking mode
+
+### Background Agents
+
+- [ ] **BGND-01**: Субагенты могут запускаться в background mode с async notification при завершении
+- [ ] **BGND-02**: RuntimeEvent.background_complete для уведомления parent agent
+- [ ] **BGND-03**: Monitor tool для async streaming stdout/stderr от background процессов
+- [ ] **BGND-04**: Mandatory timeout (5 min default) и error forwarding через done_callbacks
+
+## v1.6.0+ Requirements (Deferred)
+
+- **CMPCT-05**: Anthropic compact API passthrough
+- **INST-06**: @import syntax для cross-file includes
+- **INST-07**: File watcher hot reload
+- **MMOD-06**: Video/audio input support
+- **MCPR-04**: Resource subscriptions (change notifications)
+- **WKTR-05**: Automatic merge-back из worktree
+- **BGND-05**: Monitor tool min_interval throttling
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Breaking changes в AgentConfig | Обратная совместимость — все поля optional |
-| MCP stdio/SSE transport | HTTP достаточно для v1.5, stdio сложнее и менее portable |
-| Замена JSON-in-text как default | Strangler Fig — native tools opt-in, JSON-in-text проверен |
-| Custom hook types | 4 стандартных типа покрывают все use cases Claude Code |
-| Subagent state persistence | Stateless субагенты достаточны для v1, persistence в v2 |
+| Interactive permission modes (auto/default/plan) | Binary policy sufficient for library |
+| Plan mode review gate | Planner strategy exists; interactive review is UI layer |
+| tiktoken tokenizer | OpenAI-only; char heuristic sufficient for multi-provider |
+| gitpython | Heavy; asyncio subprocess lighter |
+| watchdog file watcher | Overkill; stat().st_mtime sufficient |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOOK-01 | Phase 1 | Pending |
-| HOOK-02 | Phase 1 | Pending |
-| HOOK-03 | Phase 1 | Pending |
-| HOOK-04 | Phase 1 | Pending |
-| HOOK-05 | Phase 1 | Pending |
-| HOOK-06 | Phase 1 | Pending |
-| HOOK-07 | Phase 1 | Pending |
-| HOOK-08 | Phase 1 | Pending |
-| HOOK-09 | Phase 1 | Pending |
-| HOOK-10 | Phase 1 | Pending |
-| PLCY-01 | Phase 2 | Pending |
-| PLCY-02 | Phase 2 | Pending |
-| PLCY-03 | Phase 2 | Pending |
-| PLCY-04 | Phase 2 | Pending |
-| SUBA-01 | Phase 3 | Pending |
-| SUBA-02 | Phase 3 | Pending |
-| SUBA-03 | Phase 3 | Pending |
-| SUBA-04 | Phase 3 | Pending |
-| SUBA-05 | Phase 3 | Pending |
-| SUBA-06 | Phase 3 | Pending |
-| SUBA-07 | Phase 3 | Pending |
-| SUBA-08 | Phase 3 | Pending |
-| CMDR-01 | Phase 4 | Pending |
-| CMDR-02 | Phase 4 | Pending |
-| CMDR-03 | Phase 4 | Pending |
-| CMDR-04 | Phase 4 | Pending |
-| NATV-01 | Phase 5 | Pending |
-| NATV-02 | Phase 5 | Pending |
-| NATV-03 | Phase 5 | Pending |
-| NATV-04 | Phase 5 | Pending |
-| NATV-05 | Phase 5 | Pending |
-| NATV-06 | Phase 5 | Pending |
-| INTG-01 | Phase 6 | Pending |
-| INTG-02 | Phase 6 | Pending |
-| INTG-03 | Phase 6 | Pending |
-| INTG-04 | Phase 6 | Pending |
-| CADG-01 | Phase 7 | Pending |
-| CADG-02 | Phase 7 | Pending |
-| CADG-03 | Phase 7 | Pending |
-| CADG-04 | Phase 7 | Pending |
-| CADG-05 | Phase 7 | Pending |
-| CTSK-01 | Phase 8 | Pending |
-| CTSK-02 | Phase 8 | Pending |
-| CTSK-03 | Phase 8 | Pending |
-| CTSK-04 | Phase 8 | Pending |
-| CTSK-05 | Phase 8 | Pending |
-| CCTX-01 | Phase 9 | Pending |
-| CCTX-02 | Phase 9 | Pending |
-| COMP-01 | Phase 9 | Pending |
-| COMP-02 | Phase 9 | Pending |
-| COMP-03 | Phase 9 | Pending |
-| CSUB-01 | Phase 10 | Pending |
-| CSUB-02 | Phase 10 | Pending |
-| CSUB-03 | Phase 10 | Pending |
-| CVAL-01 | Phase 10 | Pending |
-| CVAL-02 | Phase 10 | Pending |
-| CVAL-03 | Phase 10 | Pending |
+| INST-01..05 | Phase 11 | Pending |
+| RMND-01..04 | Phase 11 | Pending |
+| WEBT-01..04 | Phase 12 | Pending |
+| MCPR-01..03 | Phase 12 | Pending |
+| CMPCT-01..04 | Phase 13 | Pending |
+| SESS-01..04 | Phase 14 | Pending |
+| THNK-01..04 | Phase 15 | Pending |
+| MMOD-01..05 | Phase 16 | Pending |
+| WKTR-01..04 | Phase 17 | Pending |
+| BGND-01..04 | Phase 17 | Pending |
 
 **Coverage:**
-- v1 requirements: 57 total
-- Mapped to phases: 57
-- Unmapped: 0
+- v2 requirements: 39 total
+- Mapped to phases: 39
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-04-12*
-*Last updated: 2026-04-12 after initial definition*
+*Requirements defined: 2026-04-12 (v1), 2026-04-13 (v2)*
+*Last updated: 2026-04-13 after research synthesis*
