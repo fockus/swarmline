@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Parity v2 (Phases 11-17) -- IN PROGRESS
 
-- [ ] **Phase 11: Foundation Filters** - Load project instructions and inject system reminders via InputFilter pipeline without modifying ThinRuntime.run()
+- [x] **Phase 11: Foundation Filters** - Load project instructions and inject system reminders via InputFilter pipeline without modifying ThinRuntime.run()
 - [ ] **Phase 12: Tool Surface Expansion** - Add WebSearch/WebFetch built-in tools and MCP resource reading to extend agent capabilities
 - [ ] **Phase 13: Conversation Compaction** - 3-tier context management pipeline (tool collapse, LLM summarization, emergency truncation) to replace naive truncation
 - [ ] **Phase 14: Session Resume** - Persist and restore conversation history between run() calls with auto-compaction on resume
@@ -214,7 +214,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 11-01: ProjectInstructionFilter and SystemReminderFilter implementations
+- [x] 11-01: ProjectInstructionFilter and SystemReminderFilter implementations
 
 ### Phase 12: Tool Surface Expansion
 **Goal**: Agents can search the web, fetch URL content, and read MCP server resources as built-in capabilities, extending the tool surface without new infrastructure
@@ -323,7 +323,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 8. Coding Task Runtime and Persistence | Parity v1 | 1/1 | Complete | 2026-04-12 |
 | 9. Coding Context and Compatibility | Parity v1 | 1/1 | Complete | 2026-04-13 |
 | 10. Coding Subagent Inheritance and Validation | Parity v1 | 1/1 | Complete | 2026-04-13 |
-| 11. Foundation Filters | Parity v2 | 0/1 | Not started | - |
+| 11. Foundation Filters | Parity v2 | 1/1 | Complete | 2026-04-13 |
 | 12. Tool Surface Expansion | Parity v2 | 0/2 | Not started | - |
 | 13. Conversation Compaction | Parity v2 | 0/1 | Not started | - |
 | 14. Session Resume | Parity v2 | 0/1 | Not started | - |
