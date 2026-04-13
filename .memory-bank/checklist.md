@@ -32,6 +32,12 @@
 - ✅ 15.3 Compaction non_compactable exclusion (tier 2 + tier 3) + integration tests — 14 tests
 - ✅ Quality gates: 4959 tests pass, ruff clean
 
+### Phase 16: Multimodal Input ✅ DONE (Judge 4.26/5.0, 2026-04-13, commit 54fed1c)
+- ✅ 16.1 ContentBlock types (TextBlock, ImageBlock) + Message.content_blocks additive field — 28 unit tests
+- ✅ 16.2 Provider adapters (Anthropic vision, OpenAI image_url, Google inline_data) in call/stream/call_with_tools — 21 unit tests
+- ✅ 16.3 Read tool image detection + BinaryReadProvider ISP split + PDF/Jupyter extractors — 20 unit tests
+- ✅ 16.4 Integration tests (14) + quality gate: 5042 tests pass, ruff clean
+
 ## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 
 ### Phase 1: Hook Dispatch (P0 — security) ✅ DONE

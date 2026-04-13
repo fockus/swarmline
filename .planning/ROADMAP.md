@@ -42,7 +42,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Conversation Compaction** - 3-tier context management pipeline (tool collapse, LLM summarization, emergency truncation) to replace naive truncation
 - [x] **Phase 14: Session Resume** - Persist and restore conversation history between run() calls with auto-compaction on resume
 - [x] **Phase 15: Thinking Events** - Separate reasoning stream via thinking_delta events with Anthropic extended thinking integration
-- [ ] **Phase 16: Multimodal Input** - Multi-part message content (images, PDF, Jupyter) with provider-specific vision block conversion
+- [x] **Phase 16: Multimodal Input** - Multi-part message content (images, PDF, Jupyter) with provider-specific vision block conversion
 - [ ] **Phase 17: Parallel Agent Infrastructure** - Git worktree isolation for subagents and background agent execution with async notifications
 
 ## Phase Details
@@ -286,8 +286,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 16-01: ContentBlock types, Message extension, and provider-specific conversion adapters
-- [ ] 16-02: File-type detection in read tool and optional PDF/Jupyter extractors
+- [x] 16-01: ContentBlock types, Message extension, and provider-specific conversion adapters
+- [x] 16-02: File-type detection in read tool and optional PDF/Jupyter extractors
 
 ### Phase 17: Parallel Agent Infrastructure
 **Goal**: Subagents can run in isolated git worktrees for safe parallel file operations, and background agents execute asynchronously with completion notifications and monitoring

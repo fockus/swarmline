@@ -4,11 +4,11 @@
 
 **ThinRuntime Claude Code Parity v2** (2026-04-13) — расширение ThinRuntime до полного набора возможностей Claude Code. Parity v1 (фазы 1-10) — ЗАВЕРШЕНО. Текущая работа: **Parity v2** (фазы 11-17, milestone v1.5.0).
 
-**Текущая фаза: Phase 16 — Multimodal Input** (следующая после Phase 15 DONE).
+**Текущая фаза: Phase 17 — Parallel Agent Infrastructure** (следующая после Phase 16 DONE).
 
-Phase 15 (Thinking Events) ЗАВЕРШЕНА: ThinkingConfig frozen dataclass + RuntimeEvent.thinking_delta factory. AnthropicAdapter extended thinking via budget_tokens — extracts thinking blocks, returns LlmCallResult. Strategies emit thinking_delta before text. Non-Anthropic providers emit status warning. Compaction respects non_compactable metadata (tiers 2+3). LlmAdapter protocol updated. 59 новых тестов. Judge: 4.42/5.0. Commit: 8c56581.
+Phase 16 (Multimodal Input) ЗАВЕРШЕНА: ContentBlock types (TextBlock, ImageBlock) + Message.content_blocks additive field. Provider-specific conversion: Anthropic vision, OpenAI image_url, Google inline_data — в call(), stream(), call_with_tools(). Read tool image detection (PNG/JPG/GIF/WebP → base64). PDF/Jupyter extractors (pymupdf4llm, nbformat) с asyncio.to_thread. BinaryReadProvider ISP split. Image size limit 20MB. 83 новых теста. Judge: 4.26/5.0. Commit: 54fed1c.
 
-**Прогресс Parity v2: 5/7 фаз завершено (71%). Общий прогресс: 15/17 фаз (88%).**
+**Прогресс Parity v2: 6/7 фаз завершено (86%). Общий прогресс: 16/17 фаз (94%).**
 
 **Предыдущие транши завершены**:
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -86,7 +86,8 @@ Phase 15 (Thinking Events) ЗАВЕРШЕНА: ThinkingConfig frozen dataclass +
 
 ## Тесты
 
-- Offline suite: `4959 passed, 3 skipped, 5 deselected` ← текущий (2026-04-13, Phase 15 done)
+- Offline suite: `5042 passed, 5 skipped, 5 deselected` ← текущий (2026-04-13, Phase 16 done)
+- Offline suite: `4959 passed, 3 skipped, 5 deselected` (после Phase 15)
 - Offline suite: `4899 passed, 3 skipped, 5 deselected` (после Phase 14)
 - Offline suite: `4859 passed, 3 skipped, 5 deselected` (после Phase 13)
 - Offline suite: `4824 passed, 3 skipped, 5 deselected` (после Phase 12)
@@ -96,7 +97,7 @@ Phase 15 (Thinking Events) ЗАВЕРШЕНА: ThinkingConfig frozen dataclass +
 - Explicit integration: `31 passed, 5 skipped`
 - Live suite: `5 passed`
 - Postgres integration harness: `3 passed`
-- Source files: ~335 .py files ← текущий (2026-04-13, Phase 15 done)
+- Source files: ~336 .py files ← текущий (2026-04-13, Phase 16 done)
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests
 - Knowledge Bank (B1-B4): ~140 new tests
