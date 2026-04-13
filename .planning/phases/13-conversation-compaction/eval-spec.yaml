@@ -1,0 +1,53 @@
+evaluation_specification:
+  task: 'Phase 13: Conversation Compaction'
+  version: '1.0'
+  project: swarmline
+  language: Python 3.10+
+  baseline_tests: 4824
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: '5=all 4 requirements met with evidence, 4=3/4 met, 3=2/4, 2=significant gaps, 1=broken'
+      checklist:
+        - 'CMPCT-01: Auto-replace early messages with LLM summary when approaching budget'
+        - 'CMPCT-02: Summary preserves key decisions, tool results, instructions'
+        - 'CMPCT-03: 3-tier cascade: tool collapse → LLM summarize → emergency truncate'
+        - 'CMPCT-04: Configurable via RuntimeConfig (enable/disable, threshold, model)'
+        - 'All tests pass, no regressions (4824+ baseline)'
+    - name: architecture
+      weight: 0.25
+      rubric: '5=all checks pass, 4=minor deviation, 3=one violation, 2=multiple, 1=major'
+      checklist:
+        - 'ConversationCompactionFilter implements InputFilter protocol exactly'
+        - 'Clean separation of 3 tiers as distinct private methods'
+        - 'No ThinRuntime.run() modification — pure InputFilter'
+        - 'CompactionConfig is frozen dataclass'
+        - 'RuntimeConfig.compaction is Optional with None default'
+        - 'Dependency direction: compaction imports from domain only'
+    - name: test_quality
+      weight: 0.20
+      rubric: '5=28+ tests with tiers+cascade+edge cases, 4=24-27, 3=20-23, 2=<20, 1=minimal'
+      checklist:
+        - 'Task 1: 10+ unit tests for config + Tier 1'
+        - 'Task 2: 11+ unit tests for Tier 2 + Tier 3 + cascade'
+        - 'Task 3: 7+ integration tests'
+        - 'Each tier tested independently AND in cascade'
+        - 'Edge cases: empty history, single message, LLM failure'
+        - 'test_what_condition_result naming, AAA, parametrize'
+    - name: code_quality
+      weight: 0.15
+      rubric: '5=clean, follows conventions, 4=minor style gaps, 3=diverges, 2=smells, 1=unreadable'
+      checklist:
+        - 'ruff check clean on new files'
+        - 'No TODO/FIXME/HACK'
+        - 'Docstrings on public methods'
+        - 'Reuses estimate_tokens() — no reimplementation'
+        - 'Type hints on all public signatures'
+    - name: security
+      weight: 0.10
+      rubric: '5=all checks pass, 4=3/4, 3=2/4, 2=1/4, 1=vulnerability'
+      checklist:
+        - 'Summary prompt excludes secrets/credentials'
+        - 'LLM failure → graceful fallback to Tier 3'
+        - 'No infinite recursion possible'
+        - 'Emergency truncation never drops system prompt'

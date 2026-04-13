@@ -21,6 +21,7 @@ from swarmline.domain_types import (  # noqa: F401
     ToolSpec,
     TurnMetrics,
 )
+from swarmline.compaction import CompactionConfig  # noqa: TC001
 from swarmline.runtime.cancellation import CancellationToken  # noqa: TC001
 from swarmline.runtime.capabilities import (
     VALID_FEATURE_MODES,
@@ -184,6 +185,9 @@ class RuntimeConfig:
     # Web tool domain filtering (applied to HttpxWebProvider)
     web_allowed_domains: list[str] | None = None
     web_blocked_domains: list[str] | None = None
+
+    # Conversation compaction (3-tier pipeline via InputFilter)
+    compaction: CompactionConfig | None = None
 
     @staticmethod
     def _get_valid_names() -> frozenset[str]:

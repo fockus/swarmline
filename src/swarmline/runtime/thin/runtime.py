@@ -293,6 +293,17 @@ class ThinRuntime:
                 yield guard_error
                 return
 
+        # --- Compaction filter (auto-created from config.compaction) ---
+        if effective_config.compaction is not None:
+            from swarmline.compaction import ConversationCompactionFilter
+
+            compaction_filter = ConversationCompactionFilter(
+                config=effective_config.compaction,
+            )
+            messages, system_prompt = await compaction_filter.filter(
+                messages, system_prompt,
+            )
+
         # --- Input filters ---
         if effective_config.input_filters:
             for f in effective_config.input_filters:
