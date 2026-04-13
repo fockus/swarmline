@@ -294,6 +294,7 @@ class TestRuntimeEvent:
             "native_notice",
             "final",
             "error",
+            "background_complete",
         }
         assert expected == RUNTIME_EVENT_TYPES
 

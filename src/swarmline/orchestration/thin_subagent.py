@@ -5,10 +5,17 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
+from swarmline.multi_agent.workspace_types import (
+    WorkspaceHandle,
+    WorkspaceSpec,
+    WorkspaceStrategy,
+)
+
+from swarmline.domain_types import RuntimeEvent
 from swarmline.orchestration.runtime_helpers import collect_runtime_output
 from swarmline.orchestration.subagent_types import (
     SubagentResult,
@@ -20,6 +27,7 @@ from swarmline.runtime.types import Message, RuntimeConfig
 
 if TYPE_CHECKING:
     from swarmline.hooks.registry import HookRegistry
+    from swarmline.multi_agent.workspace import ExecutionWorkspace
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 
@@ -41,6 +49,10 @@ class ThinSubagentOrchestrator:
         self,
         max_concurrent: int = 4,
         *,
+        max_worktrees: int = 5,
+        base_path: str | None = None,
+        workspace: ExecutionWorkspace | None = None,
+        stale_cleanup_fn: Callable[[], Awaitable[None]] | None = None,
         llm_call: Callable[..., Any] | None = None,
         local_tools: dict[str, Callable[..., Any]] | None = None,
         mcp_servers: dict[str, Any] | None = None,
@@ -48,8 +60,17 @@ class ThinSubagentOrchestrator:
         coding_profile: CodingProfileConfig | None = None,
         tool_policy: DefaultToolPolicy | None = None,
         hook_registry: HookRegistry | None = None,
+        on_background_complete: Callable[[RuntimeEvent], Awaitable[None]] | None = None,
+        background_timeout: float | None = None,
     ) -> None:
         self._max_concurrent = max_concurrent
+        self._max_worktrees = max_worktrees
+        self._base_path = base_path
+        self._workspace = workspace
+        self._stale_cleanup_fn = stale_cleanup_fn
+        self._stale_cleanup_done = False
+        self._stale_cleanup_task: asyncio.Task[None] | None = None
+        self._worktree_handles: dict[str, WorkspaceHandle] = {}
         self._llm_call = llm_call
         self._local_tools: dict[str, Callable[..., Any]] = dict(local_tools or {})
         self._mcp_servers = mcp_servers
@@ -57,9 +78,12 @@ class ThinSubagentOrchestrator:
         self._coding_profile = coding_profile
         self._tool_policy = tool_policy
         self._hook_registry = hook_registry
+        self._on_background_complete = on_background_complete
+        self._background_timeout = background_timeout
         self._tasks: dict[str, asyncio.Task[str]] = {}
         self._specs: dict[str, SubagentSpec] = {}
         self._results: dict[str, SubagentResult] = {}
+        self._output_buffers: dict[str, str] = {}
 
     def register_tool(self, name: str, executor: Callable[..., Any]) -> None:
         """Register a tool available to all spawned workers."""
@@ -94,6 +118,22 @@ class ThinSubagentOrchestrator:
 
     async def spawn(self, spec: SubagentSpec, task: str) -> str:
         """Run subagent. Returns agent_id."""
+        if spec.isolation is not None and spec.isolation != "worktree":
+            raise ValueError(
+                f"Invalid isolation mode: {spec.isolation!r}, "
+                "only 'worktree' is supported"
+            )
+        if spec.isolation == "worktree":
+            if self._base_path is None:
+                raise ValueError(
+                    "base_path is required for worktree isolation"
+                )
+            if len(self._worktree_handles) >= self._max_worktrees:
+                raise ValueError(
+                    f"Max worktrees limit ({self._max_worktrees}) reached"
+                )
+            self._ensure_stale_cleanup()
+
         active_count = sum(1 for t in self._tasks.values() if not t.done())
         if active_count >= self._max_concurrent:
             msg = f"Достигнут лимит max_concurrent ({self._max_concurrent})"
@@ -102,13 +142,30 @@ class ThinSubagentOrchestrator:
         agent_id = str(uuid.uuid4())
         self._specs[agent_id] = spec
 
-        runtime = self._create_runtime(spec)
-        coro = self._run_agent(agent_id, runtime, task)
-        self._tasks[agent_id] = asyncio.create_task(coro)
-        return agent_id
+        handle: WorkspaceHandle | None = None
+        try:
+            if spec.isolation == "worktree":
+                handle = await self._create_worktree(agent_id, spec)
+                self._worktree_handles[agent_id] = handle
+
+            runtime = self._create_runtime(spec)
+            if handle is not None and hasattr(runtime, "_cwd"):
+                runtime._cwd = handle.path  # type: ignore[union-attr]
+
+            if spec.run_in_background:
+                coro = self._run_background_agent(agent_id, runtime, task)
+            else:
+                coro = self._run_agent(agent_id, runtime, task)
+            self._tasks[agent_id] = asyncio.create_task(coro)
+            return agent_id
+        except Exception:
+            if handle is not None:
+                self._worktree_handles.pop(agent_id, None)
+                await self._cleanup_worktree(handle)
+            raise
 
     async def _run_agent(self, agent_id: str, runtime: _SubagentRuntime, task: str) -> str:
-        """Run agent."""
+        """Run agent with worktree cleanup in finally."""
         started = datetime.now(tz=UTC)
         try:
             output = await runtime.run(task)
@@ -144,6 +201,140 @@ class ThinSubagentOrchestrator:
                 output="",
             )
             return ""
+        finally:
+            handle = self._worktree_handles.pop(agent_id, None)
+            if handle is not None:
+                await self._cleanup_worktree(handle)
+
+    async def _run_background_agent(
+        self, agent_id: str, runtime: _SubagentRuntime, task: str
+    ) -> str:
+        """Run agent in background with optional timeout and completion event."""
+        started = datetime.now(tz=UTC)
+        try:
+            coro = runtime.run(task)
+            if self._background_timeout is not None:
+                output = await asyncio.wait_for(coro, timeout=self._background_timeout)
+            else:
+                output = await coro
+            self._output_buffers[agent_id] = output
+            self._results[agent_id] = SubagentResult(
+                agent_id=agent_id,
+                status=SubagentStatus(
+                    state="completed",
+                    result=output,
+                    started_at=started,
+                    finished_at=datetime.now(tz=UTC),
+                ),
+                output=output,
+            )
+            await self._emit_background_complete(agent_id, result=output)
+            return output
+        except asyncio.TimeoutError:
+            error_msg = f"Background agent {agent_id} timed out"
+            self._results[agent_id] = SubagentResult(
+                agent_id=agent_id,
+                status=SubagentStatus(
+                    state="failed",
+                    error=error_msg,
+                    started_at=started,
+                    finished_at=datetime.now(tz=UTC),
+                ),
+                output="",
+            )
+            await self._emit_background_complete(agent_id, error=error_msg)
+            return ""
+        except asyncio.CancelledError:
+            self._results[agent_id] = SubagentResult(
+                agent_id=agent_id,
+                status=SubagentStatus(
+                    state="cancelled",
+                    started_at=started,
+                    finished_at=datetime.now(tz=UTC),
+                ),
+                output="",
+            )
+            return ""
+        except Exception as e:
+            error_msg = str(e)
+            self._results[agent_id] = SubagentResult(
+                agent_id=agent_id,
+                status=SubagentStatus(
+                    state="failed",
+                    error=error_msg,
+                    started_at=started,
+                    finished_at=datetime.now(tz=UTC),
+                ),
+                output="",
+            )
+            await self._emit_background_complete(agent_id, error=error_msg)
+            return ""
+        finally:
+            handle = self._worktree_handles.pop(agent_id, None)
+            if handle is not None:
+                await self._cleanup_worktree(handle)
+
+    async def _emit_background_complete(
+        self,
+        agent_id: str,
+        result: str | None = None,
+        error: str | None = None,
+    ) -> None:
+        """Emit background_complete event via callback if registered."""
+        if self._on_background_complete is not None:
+            event = RuntimeEvent.background_complete(
+                agent_id=agent_id, result=result, error=error
+            )
+            try:
+                await self._on_background_complete(event)
+            except Exception:  # noqa: BLE001
+                pass  # callback failure must not crash agent lifecycle
+
+    def get_output(self, agent_id: str) -> str:
+        """Return buffered output for a background agent."""
+        return self._output_buffers.get(agent_id, "")
+
+    async def _create_worktree(
+        self, agent_id: str, spec: SubagentSpec
+    ) -> WorkspaceHandle:
+        """Create a git worktree workspace for an isolated subagent."""
+        if self._workspace is None:
+            raise ValueError("workspace is required for worktree isolation")
+        if self._base_path is None:
+            raise ValueError("base_path is required for worktree isolation")
+        uuid_short = uuid.uuid4().hex[:8]
+        ws_spec = WorkspaceSpec(
+            strategy=WorkspaceStrategy.GIT_WORKTREE,
+            base_path=self._base_path,
+            branch_template="swarmline/{agent_name}/{task_id}",
+        )
+        return await self._workspace.create(ws_spec, spec.name, uuid_short)
+
+    async def _cleanup_worktree(self, handle: WorkspaceHandle) -> None:
+        """Best-effort cleanup — must not propagate exceptions."""
+        if self._workspace is not None:
+            try:
+                await self._workspace.cleanup(handle)
+            except Exception:  # noqa: BLE001
+                pass  # cleanup errors must not crash the orchestrator
+
+    def _ensure_stale_cleanup(self) -> None:
+        """Fire-and-forget stale worktree cleanup, once per lifetime."""
+        if self._stale_cleanup_done:
+            return
+        self._stale_cleanup_done = True
+        if self._stale_cleanup_fn is not None:
+            self._stale_cleanup_task = asyncio.create_task(
+                self._run_stale_cleanup()
+            )
+
+    async def _run_stale_cleanup(self) -> None:
+        """Execute the stale cleanup callback (fire-and-forget)."""
+        try:
+            if self._stale_cleanup_fn is not None:
+                await self._stale_cleanup_fn()
+        except Exception:  # noqa: BLE001
+            pass  # fire-and-forget, must not crash orchestrator
 
     async def get_status(self, agent_id: str) -> SubagentStatus:
         """Get status."""
@@ -211,9 +402,12 @@ class _ThinWorkerRuntime:
         self._runtime_config = runtime_config
         self._tool_policy = tool_policy
         self._hook_registry = hook_registry
+        self._cwd: str | None = None
 
     async def run(self, task: str) -> str:
-        """Run."""
+        """Run, optionally in an isolated worktree directory."""
+        import os
+
         kwargs: dict[str, Any] = {
             "config": self._runtime_config,
             "local_tools": self._local_tools,
@@ -225,13 +419,22 @@ class _ThinWorkerRuntime:
             kwargs["tool_policy"] = self._tool_policy
         if self._hook_registry is not None:
             kwargs["hook_registry"] = self._hook_registry
-        runtime = ThinRuntime(**kwargs)
-        return await collect_runtime_output(
-            runtime.run(
-                messages=[Message(role="user", content=task)],
-                system_prompt=self._spec.system_prompt,
-                active_tools=self._spec.tools,
-                mode_hint="react",
-            ),
-            error_prefix="ThinRuntime subagent error",
-        )
+
+        original_cwd: str | None = None
+        if self._cwd is not None:
+            original_cwd = os.getcwd()
+            os.chdir(self._cwd)
+        try:
+            runtime = ThinRuntime(**kwargs)
+            return await collect_runtime_output(
+                runtime.run(
+                    messages=[Message(role="user", content=task)],
+                    system_prompt=self._spec.system_prompt,
+                    active_tools=self._spec.tools,
+                    mode_hint="react",
+                ),
+                error_prefix="ThinRuntime subagent error",
+            )
+        finally:
+            if original_cwd is not None:
+                os.chdir(original_cwd)

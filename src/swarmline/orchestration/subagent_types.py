@@ -14,12 +14,14 @@ SubagentState = Literal["pending", "running", "completed", "failed", "cancelled"
 
 @dataclass(frozen=True)
 class SubagentSpec:
-    """Spetsandfandtoatsandya subagent'a - what run."""
+    """Specification for a subagent — defines what to run."""
 
     name: str
     system_prompt: str
     tools: list[ToolSpec] = field(default_factory=list)
     sandbox_config: SandboxConfig | None = None
+    isolation: str | None = None
+    run_in_background: bool = False
 
 
 @dataclass(frozen=True)

@@ -88,16 +88,23 @@ class ThinRuntime:
             if name not in merged_local_tools:
                 merged_local_tools[name] = executor
 
-        # Subagent tool wiring (spawn_agent)
+        # Subagent tool wiring (spawn_agent + monitor_agent)
         self._subagent_tool_spec: ToolSpec | None = None
+        self._monitor_agent_tool_spec: ToolSpec | None = None
         self._subagent_orchestrator: Any | None = None
         self._subagent_config_obj: Any | None = None
+        self._bg_events: list[RuntimeEvent] = []
         if subagent_config is not None:
             from swarmline.orchestration.thin_subagent import ThinSubagentOrchestrator
             from swarmline.runtime.thin.subagent_tool import (
+                MONITOR_AGENT_TOOL_SPEC,
                 SUBAGENT_TOOL_SPEC,
+                create_monitor_executor,
                 create_subagent_executor,
             )
+
+            async def _on_bg_complete(event: RuntimeEvent) -> None:
+                self._bg_events.append(event)
 
             self._subagent_orchestrator = ThinSubagentOrchestrator(
                 max_concurrent=subagent_config.max_concurrent,
@@ -105,6 +112,7 @@ class ThinRuntime:
                 local_tools=merged_local_tools,
                 mcp_servers=mcp_servers,
                 runtime_config=self._config,
+                on_background_complete=_on_bg_complete,
             )
             self._subagent_config_obj = subagent_config
             # Initial executor with builtin specs only; run() updates with actual active_tools
@@ -115,6 +123,10 @@ class ThinRuntime:
             )
             merged_local_tools["spawn_agent"] = subagent_executor
             self._subagent_tool_spec = SUBAGENT_TOOL_SPEC
+
+            monitor_executor = create_monitor_executor(self._subagent_orchestrator)
+            merged_local_tools["monitor_agent"] = monitor_executor
+            self._monitor_agent_tool_spec = MONITOR_AGENT_TOOL_SPEC
 
         self._executor = ToolExecutor(
             local_tools=merged_local_tools,
@@ -247,6 +259,8 @@ class ThinRuntime:
         # --- Subagent tool: append spec to active_tools + update executor with full tool list ---
         if self._subagent_tool_spec is not None:
             active_tools = [*active_tools, self._subagent_tool_spec]
+        if self._monitor_agent_tool_spec is not None:
+            active_tools = [*active_tools, self._monitor_agent_tool_spec]
             # Update executor with actual active_tools for correct tool inheritance
             if self._subagent_orchestrator is not None and self._subagent_config_obj is not None:
                 from swarmline.runtime.thin.subagent_tool import (
@@ -470,6 +484,12 @@ class ThinRuntime:
                 ):
                     yield RuntimeEvent.assistant_delta(str(event.data["text"]))
                     emitted_text_delta = True
+
+                # --- Drain pending background completion events ---
+                if self._bg_events:
+                    for bg_evt in self._bg_events:
+                        yield bg_evt
+                    self._bg_events.clear()
 
                 yield event
 

@@ -233,6 +233,7 @@ RUNTIME_EVENT_TYPES = frozenset(
         "native_notice",  # important native-specific semantics notice
         "final",  # final response (full text + new_messages)
         "error",  # error
+        "background_complete",  # background agent finished
     }
 )
 
@@ -373,6 +374,20 @@ class RuntimeEvent:
         if native_metadata is not None:
             data["native_metadata"] = native_metadata
         return RuntimeEvent(type="final", data=data)
+
+    @staticmethod
+    def background_complete(
+        agent_id: str,
+        result: str | None = None,
+        error: str | None = None,
+    ) -> RuntimeEvent:
+        """Background agent finished execution."""
+        data: dict[str, Any] = {"agent_id": agent_id}
+        if result is not None:
+            data["result"] = result
+        if error is not None:
+            data["error"] = error
+        return RuntimeEvent(type="background_complete", data=data)
 
     @staticmethod
     def error(error: RuntimeErrorData) -> RuntimeEvent:

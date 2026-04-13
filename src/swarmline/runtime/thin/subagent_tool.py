@@ -50,8 +50,34 @@ SUBAGENT_TOOL_SPEC = ToolSpec(
                 "items": {"type": "string"},
                 "description": "Tool names the child agent can use (defaults to all parent tools)",
             },
+            "isolation": {
+                "type": "string",
+                "enum": ["worktree"],
+                "description": "Isolation mode for child agent. 'worktree' runs in a dedicated git worktree.",
+            },
+            "run_in_background": {
+                "type": "boolean",
+                "description": "If true, spawn agent in background and return immediately with agent_id.",
+            },
         },
         "required": ["task"],
+    },
+    is_local=True,
+)
+
+
+MONITOR_AGENT_TOOL_SPEC = ToolSpec(
+    name="monitor_agent",
+    description="Check status and retrieve output of a background agent",
+    parameters={
+        "type": "object",
+        "properties": {
+            "agent_id": {
+                "type": "string",
+                "description": "The agent_id returned by spawn_agent with run_in_background=true",
+            },
+        },
+        "required": ["agent_id"],
     },
     is_local=True,
 )
@@ -109,15 +135,34 @@ def create_subagent_executor(
             else:
                 child_tools = list(parent_tools)
 
+            # --- isolation mode (optional) ---
+            isolation: str | None = args.get("isolation")
+
+            # --- run_in_background flag ---
+            run_in_background: bool = bool(args.get("run_in_background", False))
+
             # --- build spec & spawn ---
-            spec = SubagentSpec(
-                name=f"subagent-depth-{current_depth + 1}",
-                system_prompt=system_prompt,
-                tools=child_tools,
-            )
+            spec_kwargs: dict[str, Any] = {
+                "name": f"subagent-depth-{current_depth + 1}",
+                "system_prompt": system_prompt,
+                "tools": child_tools,
+            }
+            if isolation is not None:
+                spec_kwargs["isolation"] = isolation
+            if run_in_background:
+                spec_kwargs["run_in_background"] = True
+            spec = SubagentSpec(**spec_kwargs)
             agent_id = await orchestrator.spawn(spec, task)
 
-            # --- wait with timeout ---
+            # --- background: return immediately ---
+            if run_in_background:
+                return json.dumps({
+                    "agent_id": agent_id,
+                    "status": "spawned",
+                    "message": "Agent spawned in background. Use monitor_agent to check status.",
+                })
+
+            # --- foreground: wait with timeout ---
             result = await asyncio.wait_for(
                 orchestrator.wait(agent_id),
                 timeout=config.timeout_seconds,
@@ -147,5 +192,47 @@ def create_subagent_executor(
             )
         except Exception as exc:
             return _json_error(str(exc), agent_id=agent_id)
+
+    return _execute
+
+
+def create_monitor_executor(
+    orchestrator: Any,
+) -> Callable[[dict[str, Any]], Coroutine[Any, Any, str]]:
+    """Create the monitor_agent tool executor.
+
+    Checks status and retrieves output of a background agent
+    via MONITOR_AGENT_TOOL_SPEC.
+
+    Args:
+        orchestrator: ThinSubagentOrchestrator (or compatible duck-type).
+
+    Returns:
+        Async callable(args: dict) -> str (always valid JSON, never raises).
+    """
+
+    async def _execute(args: dict[str, Any]) -> str:
+        try:
+            agent_id = args.get("agent_id")
+            if not agent_id or not str(agent_id).strip():
+                return _json_error("Missing required argument: 'agent_id' must be a non-empty string.")
+
+            agent_id = str(agent_id).strip()
+            status = await orchestrator.get_status(agent_id)
+            output = orchestrator.get_output(agent_id)
+
+            payload: dict[str, Any] = {
+                "agent_id": agent_id,
+                "state": status.state,
+                "output": output,
+            }
+            if status.error is not None:
+                payload["error"] = status.error
+            if status.result is not None:
+                payload["result"] = status.result
+
+            return json.dumps(payload)
+        except Exception as exc:
+            return _json_error(str(exc))
 
     return _execute
