@@ -88,3 +88,27 @@ class SandboxProvider(Protocol):
             List of relative paths from the workspace root.
         """
         ...
+
+
+@runtime_checkable
+class BinaryReadProvider(Protocol):
+    """Extension protocol for binary file reading.
+
+    Separated from SandboxProvider to maintain ISP (≤5 methods).
+    Providers that support binary reading (images, PDFs) implement this.
+    """
+
+    async def read_file_bytes(self, path: str) -> bytes:
+        """Read a file as raw bytes from the workspace.
+
+        Args:
+            path: Relative path from the workspace root.
+
+        Returns:
+            Raw file bytes.
+
+        Raises:
+            FileNotFoundError: File does not exist.
+            SandboxViolation: Path traversal or leaving the workspace.
+        """
+        ...

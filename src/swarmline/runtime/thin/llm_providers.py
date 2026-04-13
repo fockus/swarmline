@@ -32,16 +32,88 @@ class LlmAdapter(Protocol):
     ) -> AsyncIterator[str]: ...
 
 
-def _filter_chat_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
+def _filter_chat_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Filter out user/assistant messages, fallback on empty user."""
-    filtered = [
-        {"role": m["role"], "content": m["content"]}
-        for m in messages
-        if m["role"] in ("user", "assistant")
-    ]
+    filtered: list[dict[str, Any]] = []
+    for m in messages:
+        if m["role"] in ("user", "assistant"):
+            d: dict[str, Any] = {"role": m["role"], "content": m["content"]}
+            if "content_blocks" in m:
+                d["content_blocks"] = m["content_blocks"]
+            filtered.append(d)
     if not filtered:
         filtered = [{"role": "user", "content": ""}]
     return filtered
+
+
+def _convert_content_blocks_anthropic(
+    content_blocks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Convert serialized ContentBlock dicts to Anthropic vision format."""
+    result: list[dict[str, Any]] = []
+    for block in content_blocks:
+        if block.get("type") == "image":
+            result.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": block["media_type"],
+                        "data": block["data"],
+                    },
+                }
+            )
+        else:
+            result.append({"type": "text", "text": block.get("text", "")})
+    return result
+
+
+def _convert_content_blocks_openai(
+    content_blocks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Convert serialized ContentBlock dicts to OpenAI vision format."""
+    result: list[dict[str, Any]] = []
+    for block in content_blocks:
+        if block.get("type") == "image":
+            data_uri = f"data:{block['media_type']};base64,{block['data']}"
+            result.append(
+                {"type": "image_url", "image_url": {"url": data_uri}}
+            )
+        else:
+            result.append({"type": "text", "text": block.get("text", "")})
+    return result
+
+
+def _convert_content_blocks_google(
+    content_blocks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Convert serialized ContentBlock dicts to Google Gemini parts format."""
+    result: list[dict[str, Any]] = []
+    for block in content_blocks:
+        if block.get("type") == "image":
+            result.append(
+                {"inline_data": {"mime_type": block["media_type"], "data": block["data"]}}
+            )
+        else:
+            result.append({"text": block.get("text", "")})
+    return result
+
+
+def _apply_content_blocks(
+    messages: list[dict[str, Any]],
+    converter: Any,
+) -> list[dict[str, Any]]:
+    """Apply content_blocks conversion to messages that have them."""
+    result: list[dict[str, Any]] = []
+    for m in messages:
+        if "content_blocks" in m:
+            converted = converter(m["content_blocks"])
+            result.append({**m, "content": converted})
+            # Remove the raw content_blocks key from the final dict
+            result[-1].pop("content_blocks", None)
+        else:
+            result.append(m)
+    return result
 
 
 class AnthropicAdapter:
@@ -73,6 +145,7 @@ class AnthropicAdapter:
     ) -> str | Any:
         thinking_config = kwargs.pop("_thinking_config", None)
         api_messages = _filter_chat_messages(messages)
+        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_anthropic)
 
         create_kwargs: dict[str, Any] = {
             "model": self._model,
@@ -115,6 +188,7 @@ class AnthropicAdapter:
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         api_messages = _filter_chat_messages(messages)
+        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_anthropic)
         async with self._client.messages.stream(
             model=self._model,
             max_tokens=kwargs.get("max_tokens", 4096),
@@ -135,6 +209,7 @@ class AnthropicAdapter:
         from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
 
         api_messages = _filter_chat_messages(messages)
+        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_anthropic)
         response = await self._client.messages.create(
             model=self._model,
             max_tokens=kwargs.get("max_tokens", 4096),
@@ -184,13 +259,14 @@ class OpenAICompatAdapter:
         self._client = openai.AsyncOpenAI(**client_kwargs)
 
     @staticmethod
-    def _prepare(messages: list[dict[str, str]], system_prompt: str) -> list[dict[str, str]]:
-        api_messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
-        api_messages.extend(
-            {"role": m["role"], "content": m["content"]}
-            for m in messages
-            if m["role"] in ("user", "assistant")
-        )
+    def _prepare(messages: list[dict[str, Any]], system_prompt: str) -> list[dict[str, Any]]:
+        api_messages: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
+        for m in messages:
+            if m["role"] in ("user", "assistant"):
+                d: dict[str, Any] = {"role": m["role"], "content": m["content"]}
+                if "content_blocks" in m:
+                    d["content_blocks"] = m["content_blocks"]
+                api_messages.append(d)
         return api_messages
 
     async def call(
@@ -200,6 +276,7 @@ class OpenAICompatAdapter:
         **kwargs: Any,
     ) -> str:
         api_messages = self._prepare(messages, system_prompt)
+        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_openai)
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
@@ -214,6 +291,7 @@ class OpenAICompatAdapter:
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         api_messages = self._prepare(messages, system_prompt)
+        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_openai)
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
@@ -238,6 +316,7 @@ class OpenAICompatAdapter:
         from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
 
         api_messages = self._prepare(messages, system_prompt)
+        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_openai)
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
@@ -285,13 +364,18 @@ class GoogleAdapter:
         self._client = genai.Client(**client_kwargs)
 
     @staticmethod
-    def _prepare(messages: list[dict[str, str]]) -> list[dict[str, Any]]:
+    def _prepare(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         _role_map = {"user": "user", "assistant": "model"}
-        contents: list[dict[str, Any]] = [
-            {"role": _role_map.get(m["role"], "user"), "parts": [{"text": m["content"]}]}
-            for m in messages
-            if m["role"] in ("user", "assistant")
-        ]
+        contents: list[dict[str, Any]] = []
+        for m in messages:
+            if m["role"] not in ("user", "assistant"):
+                continue
+            role = _role_map.get(m["role"], "user")
+            if "content_blocks" in m:
+                parts = _convert_content_blocks_google(m["content_blocks"])
+            else:
+                parts = [{"text": m["content"]}]
+            contents.append({"role": role, "parts": parts})
         if not contents:
             contents = [{"role": "user", "parts": [{"text": ""}]}]
         return contents

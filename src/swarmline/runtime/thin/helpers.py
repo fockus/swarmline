@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 from swarmline.runtime.types import (
     Message,
@@ -11,13 +12,15 @@ from swarmline.runtime.types import (
 )
 
 
-def _messages_to_lm(messages: list[Message]) -> list[dict[str, str]]:
+def _messages_to_lm(messages: list[Message]) -> list[dict[str, Any]]:
     """Messages to lm."""
-    result = []
+    result: list[dict[str, Any]] = []
     for m in messages:
-        d: dict[str, str] = {"role": m.role, "content": m.content}
+        d: dict[str, Any] = {"role": m.role, "content": m.content}
         if m.name:
             d["name"] = m.name
+        if m.content_blocks is not None:
+            d["content_blocks"] = [b.to_dict() for b in m.content_blocks]
         result.append(d)
     return result
 

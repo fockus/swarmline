@@ -107,6 +107,13 @@ class LocalSandboxProvider:
             raise FileNotFoundError(f"File not found: {path}")
         return safe_path.read_text(encoding="utf-8")
 
+    async def read_file_bytes(self, path: str) -> bytes:
+        """Read a file as raw bytes from the workspace."""
+        safe_path = self._resolve_safe_path(path)
+        if not safe_path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+        return safe_path.read_bytes()
+
     async def write_file(self, path: str, content: str) -> None:
         """Write a file to the workspace. Atomic write via tmp + rename."""
         # Check file size limit

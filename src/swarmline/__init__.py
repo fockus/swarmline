@@ -44,6 +44,7 @@ from swarmline.runtime.types import (
     ToolSpec,
     TurnMetrics,
 )
+from swarmline.domain_types import ContentBlock, ImageBlock, TextBlock
 from swarmline.session.jsonl_store import JsonlMessageStore
 from swarmline.system_reminder_filter import SystemReminder, SystemReminderFilter
 from swarmline.types import ContextPack, SkillSet, TurnContext
@@ -53,6 +54,7 @@ __all__ = [
     "AgentConfig",
     "AgentRuntime",
     "CompactionConfig",
+    "ContentBlock",
     "ConversationCompactionFilter",
     "SwarmlineStack",
     "ContextBuilder",
@@ -60,6 +62,7 @@ __all__ = [
     "Conversation",
     "FactStore",
     "GoalStore",
+    "ImageBlock",
     "JsonlMessageStore",
     "LocalToolResolver",
     "Message",
@@ -85,6 +88,7 @@ __all__ = [
     "SummaryStore",
     "SystemReminder",
     "SystemReminderFilter",
+    "TextBlock",
     "ThinkingConfig",
     "ToolEventStore",
     "ToolIdCodec",

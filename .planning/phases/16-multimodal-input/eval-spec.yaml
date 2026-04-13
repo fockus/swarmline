@@ -1,0 +1,55 @@
+evaluation_specification:
+  task: 'Phase 16: Multimodal Input'
+  criteria:
+    - name: correctness
+      weight: 0.30
+      rubric: 'All MMOD requirements implemented. ContentBlock types frozen. Message.content_blocks additive. Adapters convert correctly. Read tool detects images. Extractors work. No regressions.'
+      checklist:
+        - 'TextBlock and ImageBlock frozen dataclasses in domain_types.py'
+        - 'Message.content_blocks: Optional[list[ContentBlock]] = None'
+        - '_messages_to_lm handles content_blocks'
+        - '_filter_chat_messages preserves content_blocks'
+        - 'Read tool detects PNG/JPG, returns ImageBlock with base64'
+        - 'Anthropic adapter: ImageBlock → vision source block'
+        - 'OpenAI adapter: ImageBlock → image_url data URI'
+        - 'Google adapter: ImageBlock → inline_data'
+        - 'PDF extractor via pymupdf4llm with lazy import'
+        - 'Jupyter extractor via nbformat with lazy import'
+        - 'All existing tests pass'
+    - name: architecture
+      weight: 0.25
+      rubric: 'Clean Architecture. Domain types zero deps. Provider conversion in infra. Lazy imports. ISP. Frozen dataclasses.'
+      checklist:
+        - 'ContentBlock in domain layer with stdlib-only imports'
+        - 'TextBlock and ImageBlock frozen=True'
+        - 'Provider conversion in llm_providers.py (infrastructure)'
+        - 'Extractors in tools/extractors.py (infrastructure)'
+        - 'Optional deps lazy-imported inside functions'
+        - 'No reverse dependencies'
+        - 'Message.content_blocks Optional with None default'
+    - name: test_quality
+      weight: 0.20
+      rubric: 'TDD. >=9 integration tests. Naming convention. AAA. @parametrize for providers.'
+      checklist:
+        - '>=9 integration tests covering MMOD-01..05'
+        - 'Test names follow convention'
+        - 'Provider conversion tested per provider'
+        - 'Read tool image detection tested'
+        - 'Extractor ImportError path tested'
+        - 'Backward compat tested'
+    - name: code_quality
+      weight: 0.15
+      rubric: 'Type hints. No TODO. ruff clean. Docstrings on public API.'
+      checklist:
+        - 'All new public methods have type hints'
+        - 'No TODO/FIXME/placeholder'
+        - 'ruff check passes'
+        - 'Union type syntax correct'
+    - name: security
+      weight: 0.10
+      rubric: 'Path traversal prevented. Base64 validated. Size limits. No code execution from extractors.'
+      checklist:
+        - 'File paths validated in image detection'
+        - 'Image size limits enforced'
+        - 'Extractors dont execute code'
+        - 'Safe ImportError messages'

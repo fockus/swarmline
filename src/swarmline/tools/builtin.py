@@ -10,7 +10,9 @@ KISS: each executor <=30 lines.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
+import os
 import re
 from collections.abc import Callable
 from typing import Any
@@ -18,7 +20,7 @@ from typing import Any
 import structlog
 
 from swarmline.runtime.types import ToolSpec
-from swarmline.tools.protocols import SandboxProvider
+from swarmline.tools.protocols import BinaryReadProvider, SandboxProvider
 
 _log = structlog.get_logger(component="web_tools")
 
@@ -171,12 +173,54 @@ def _create_bash_executor(sandbox: SandboxProvider) -> Callable:
     return executor
 
 
+_IMAGE_EXTENSIONS: dict[str, str] = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+
+
 def _create_read_executor(sandbox: SandboxProvider) -> Callable:
     async def executor(args: dict) -> str:
         path = args.get("path")
         if not path:
             return _make_json_error("path обязателен")
         try:
+            ext = os.path.splitext(path)[1].lower()
+
+            # PDF extraction
+            if ext == ".pdf":
+                from swarmline.tools.extractors import extract_pdf
+
+                content = await extract_pdf(path)
+                return json.dumps({"status": "ok", "content": content})
+
+            # Jupyter notebook extraction
+            if ext == ".ipynb":
+                from swarmline.tools.extractors import extract_jupyter
+
+                content = await extract_jupyter(path)
+                return json.dumps({"status": "ok", "content": content})
+
+            # Image detection — requires BinaryReadProvider
+            _MAX_IMAGE_BYTES = 20 * 1024 * 1024  # 20 MB limit
+            if ext in _IMAGE_EXTENSIONS and isinstance(sandbox, BinaryReadProvider):
+                raw = await sandbox.read_file_bytes(path)
+                if len(raw) > _MAX_IMAGE_BYTES:
+                    return _make_json_error(
+                        f"Image too large ({len(raw)} bytes, max {_MAX_IMAGE_BYTES})"
+                    )
+                data = base64.b64encode(raw).decode()
+                return json.dumps({
+                    "status": "ok",
+                    "type": "image",
+                    "data": data,
+                    "media_type": _IMAGE_EXTENSIONS[ext],
+                })
+
+            # Default: text read
             content = await sandbox.read_file(path)
             return json.dumps({"status": "ok", "content": content})
         except Exception as e:

@@ -18,6 +18,37 @@ from dataclasses import dataclass, field
 from typing import Any
 
 # ---------------------------------------------------------------------------
+# ContentBlock - multimodal content blocks
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TextBlock:
+    """Plain text content block."""
+
+    text: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dict."""
+        return {"type": "text", "text": self.text}
+
+
+@dataclass(frozen=True)
+class ImageBlock:
+    """Base64-encoded image content block."""
+
+    data: str  # base64-encoded image bytes
+    media_type: str  # e.g. "image/png", "image/jpeg"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dict."""
+        return {"type": "image", "data": self.data, "media_type": self.media_type}
+
+
+ContentBlock = TextBlock | ImageBlock
+
+
+# ---------------------------------------------------------------------------
 # Message - canonical runtime message
 # ---------------------------------------------------------------------------
 
@@ -35,6 +66,7 @@ class Message:
     name: str | None = None  # tool name (for role="tool")
     tool_calls: list[dict[str, Any]] | None = None
     metadata: dict[str, Any] | None = None
+    content_blocks: list[ContentBlock] | None = None
 
     @classmethod
     def from_memory_message(cls, mm: Any) -> Message:
@@ -54,6 +86,8 @@ class Message:
             d["tool_calls"] = self.tool_calls
         if self.metadata is not None:
             d["metadata"] = self.metadata
+        if self.content_blocks is not None:
+            d["content_blocks"] = [b.to_dict() for b in self.content_blocks]
         return d
 
 

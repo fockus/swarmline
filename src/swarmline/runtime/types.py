@@ -15,9 +15,12 @@ from typing import Any
 from swarmline.domain_types import (  # noqa: F401
     RUNTIME_ERROR_KINDS,
     RUNTIME_EVENT_TYPES,
+    ContentBlock,
+    ImageBlock,
     Message,
     RuntimeErrorData,
     RuntimeEvent,
+    TextBlock,
     ThinkingConfig,
     ToolSpec,
     TurnMetrics,

@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from swarmline.runtime.provider_resolver import ResolvedProvider
+from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.llm_providers import (
     AnthropicAdapter,
     GoogleAdapter,
@@ -15,8 +17,6 @@ from swarmline.runtime.thin.llm_providers import (
     OpenAICompatAdapter,
     create_llm_adapter,
 )
-from swarmline.runtime.thin.errors import ThinLlmError
-from swarmline.runtime.provider_resolver import ResolvedProvider
 from swarmline.runtime.types import RuntimeErrorData
 
 
@@ -783,3 +783,354 @@ class TestTryStreamLlmCallWithAdapter:
                 [{"role": "user", "content": "hi"}],
                 "system",
             )
+
+
+# ---------------------------------------------------------------------------
+# ContentBlock conversion helpers (Task 2: Multimodal Input)
+# ---------------------------------------------------------------------------
+
+
+class TestConvertContentBlocksAnthropic:
+    """_convert_content_blocks_anthropic converts serialized blocks to Anthropic format."""
+
+    def test_text_block_produces_text_dict(self) -> None:
+        from swarmline.runtime.thin.llm_providers import (
+            _convert_content_blocks_anthropic,
+        )
+
+        blocks = [{"type": "text", "text": "hello"}]
+        result = _convert_content_blocks_anthropic(blocks)
+        assert result == [{"type": "text", "text": "hello"}]
+
+    def test_image_block_produces_vision_source(self) -> None:
+        from swarmline.runtime.thin.llm_providers import (
+            _convert_content_blocks_anthropic,
+        )
+
+        blocks = [{"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"}]
+        result = _convert_content_blocks_anthropic(blocks)
+        assert result == [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": "aW1hZ2U=",
+                },
+            }
+        ]
+
+    def test_mixed_blocks_preserves_order(self) -> None:
+        from swarmline.runtime.thin.llm_providers import (
+            _convert_content_blocks_anthropic,
+        )
+
+        blocks = [
+            {"type": "text", "text": "Look at this:"},
+            {"type": "image", "data": "aW1hZ2U=", "media_type": "image/jpeg"},
+            {"type": "text", "text": "What do you see?"},
+        ]
+        result = _convert_content_blocks_anthropic(blocks)
+        assert len(result) == 3
+        assert result[0] == {"type": "text", "text": "Look at this:"}
+        assert result[1]["type"] == "image"
+        assert result[1]["source"]["media_type"] == "image/jpeg"
+        assert result[2] == {"type": "text", "text": "What do you see?"}
+
+    def test_empty_blocks_returns_empty(self) -> None:
+        from swarmline.runtime.thin.llm_providers import (
+            _convert_content_blocks_anthropic,
+        )
+
+        assert _convert_content_blocks_anthropic([]) == []
+
+
+class TestConvertContentBlocksOpenAI:
+    """_convert_content_blocks_openai converts serialized blocks to OpenAI format."""
+
+    def test_text_block_produces_text_dict(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_openai
+
+        blocks = [{"type": "text", "text": "hello"}]
+        result = _convert_content_blocks_openai(blocks)
+        assert result == [{"type": "text", "text": "hello"}]
+
+    def test_image_block_produces_data_uri(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_openai
+
+        blocks = [{"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"}]
+        result = _convert_content_blocks_openai(blocks)
+        assert result == [
+            {
+                "type": "image_url",
+                "image_url": {"url": "data:image/png;base64,aW1hZ2U="},
+            }
+        ]
+
+    def test_mixed_blocks_preserves_order(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_openai
+
+        blocks = [
+            {"type": "text", "text": "Describe:"},
+            {"type": "image", "data": "aW1hZ2U=", "media_type": "image/webp"},
+        ]
+        result = _convert_content_blocks_openai(blocks)
+        assert len(result) == 2
+        assert result[0] == {"type": "text", "text": "Describe:"}
+        assert result[1]["type"] == "image_url"
+        assert result[1]["image_url"]["url"] == "data:image/webp;base64,aW1hZ2U="
+
+    def test_empty_blocks_returns_empty(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_openai
+
+        assert _convert_content_blocks_openai([]) == []
+
+
+class TestConvertContentBlocksGoogle:
+    """_convert_content_blocks_google converts serialized blocks to Google format."""
+
+    def test_text_block_produces_text_part(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_google
+
+        blocks = [{"type": "text", "text": "hello"}]
+        result = _convert_content_blocks_google(blocks)
+        assert result == [{"text": "hello"}]
+
+    def test_image_block_produces_inline_data(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_google
+
+        blocks = [{"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"}]
+        result = _convert_content_blocks_google(blocks)
+        assert result == [
+            {"inline_data": {"mime_type": "image/png", "data": "aW1hZ2U="}}
+        ]
+
+    def test_mixed_blocks_preserves_order(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_google
+
+        blocks = [
+            {"type": "text", "text": "Analyze:"},
+            {"type": "image", "data": "aW1hZ2U=", "media_type": "image/gif"},
+        ]
+        result = _convert_content_blocks_google(blocks)
+        assert len(result) == 2
+        assert result[0] == {"text": "Analyze:"}
+        assert result[1] == {"inline_data": {"mime_type": "image/gif", "data": "aW1hZ2U="}}
+
+    def test_empty_blocks_returns_empty(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _convert_content_blocks_google
+
+        assert _convert_content_blocks_google([]) == []
+
+
+# ---------------------------------------------------------------------------
+# Adapter.call() with content_blocks
+# ---------------------------------------------------------------------------
+
+
+class TestAnthropicAdapterContentBlocks:
+    """AnthropicAdapter.call() handles content_blocks in messages."""
+
+    @pytest.fixture
+    def mock_anthropic(self):
+        mock_module = MagicMock()
+        mock_client = AsyncMock()
+        mock_block = MagicMock()
+        mock_block.text = "I see an image"
+        mock_response = MagicMock()
+        mock_response.content = [mock_block]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
+        mock_module.AsyncAnthropic.return_value = mock_client
+        mock_module.AuthenticationError = type("AuthenticationError", (Exception,), {})
+        mock_module.APIConnectionError = type("APIConnectionError", (Exception,), {})
+        mock_module.APIStatusError = type("APIStatusError", (Exception,), {})
+        return mock_module, mock_client
+
+    @pytest.mark.asyncio
+    async def test_call_with_content_blocks_sends_multipart(self, mock_anthropic) -> None:
+        mock_module, mock_client = mock_anthropic
+        with patch.dict("sys.modules", {"anthropic": mock_module}):
+            adapter = AnthropicAdapter(model="claude-sonnet-4-20250514")
+            adapter._client = mock_client
+            messages = [
+                {
+                    "role": "user",
+                    "content": "What is this?",
+                    "content_blocks": [
+                        {"type": "text", "text": "What is this?"},
+                        {"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"},
+                    ],
+                }
+            ]
+            await adapter.call(messages=messages, system_prompt="test")
+            kwargs = mock_client.messages.create.call_args.kwargs
+            msg = kwargs["messages"][0]
+            assert isinstance(msg["content"], list)
+            assert msg["content"][0] == {"type": "text", "text": "What is this?"}
+            assert msg["content"][1]["type"] == "image"
+            assert msg["content"][1]["source"]["type"] == "base64"
+
+    @pytest.mark.asyncio
+    async def test_call_without_content_blocks_uses_string(self, mock_anthropic) -> None:
+        mock_module, mock_client = mock_anthropic
+        with patch.dict("sys.modules", {"anthropic": mock_module}):
+            adapter = AnthropicAdapter(model="claude-sonnet-4-20250514")
+            adapter._client = mock_client
+            messages = [{"role": "user", "content": "hi"}]
+            await adapter.call(messages=messages, system_prompt="test")
+            kwargs = mock_client.messages.create.call_args.kwargs
+            msg = kwargs["messages"][0]
+            assert msg["content"] == "hi"
+
+
+class TestOpenAIAdapterContentBlocks:
+    """OpenAICompatAdapter.call() handles content_blocks in messages."""
+
+    @pytest.fixture
+    def mock_openai(self):
+        mock_module = MagicMock()
+        mock_client = AsyncMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = "I see an image"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_module.AsyncOpenAI.return_value = mock_client
+        return mock_module, mock_client
+
+    @pytest.mark.asyncio
+    async def test_call_with_content_blocks_sends_multipart(self, mock_openai) -> None:
+        mock_module, mock_client = mock_openai
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="gpt-4o")
+            adapter._client = mock_client
+            messages = [
+                {
+                    "role": "user",
+                    "content": "What is this?",
+                    "content_blocks": [
+                        {"type": "text", "text": "What is this?"},
+                        {"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"},
+                    ],
+                }
+            ]
+            await adapter.call(messages=messages, system_prompt="test")
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            # System message is first, user message is second
+            user_msg = kwargs["messages"][1]
+            assert isinstance(user_msg["content"], list)
+            assert user_msg["content"][0] == {"type": "text", "text": "What is this?"}
+            assert user_msg["content"][1]["type"] == "image_url"
+
+    @pytest.mark.asyncio
+    async def test_call_without_content_blocks_uses_string(self, mock_openai) -> None:
+        mock_module, mock_client = mock_openai
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="gpt-4o")
+            adapter._client = mock_client
+            messages = [{"role": "user", "content": "hi"}]
+            await adapter.call(messages=messages, system_prompt="test")
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            user_msg = kwargs["messages"][1]
+            assert user_msg["content"] == "hi"
+
+
+class TestGoogleAdapterContentBlocks:
+    """GoogleAdapter.call() handles content_blocks in messages."""
+
+    @pytest.fixture
+    def mock_google(self):
+        mock_module = MagicMock()
+        mock_types = MagicMock()
+        mock_types.HttpOptions = MagicMock(side_effect=lambda **kwargs: kwargs)
+        mock_module.types = mock_types
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = "I see an image"
+        mock_client.models.generate_content = AsyncMock(return_value=mock_response)
+        mock_module.Client.return_value = mock_client
+        return mock_module, mock_client
+
+    @pytest.mark.asyncio
+    async def test_call_with_content_blocks_sends_multipart(self, mock_google) -> None:
+        mock_module, mock_client = mock_google
+        with patch.dict(
+            "sys.modules",
+            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+        ):
+            adapter = GoogleAdapter(model="gemini-2.5-pro")
+            adapter._client = mock_client
+            messages = [
+                {
+                    "role": "user",
+                    "content": "What is this?",
+                    "content_blocks": [
+                        {"type": "text", "text": "What is this?"},
+                        {"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"},
+                    ],
+                }
+            ]
+            await adapter.call(messages=messages, system_prompt="test")
+            kwargs = mock_client.models.generate_content.call_args.kwargs
+            contents = kwargs["contents"]
+            parts = contents[0]["parts"]
+            assert len(parts) == 2
+            assert parts[0] == {"text": "What is this?"}
+            assert parts[1] == {"inline_data": {"mime_type": "image/png", "data": "aW1hZ2U="}}
+
+    @pytest.mark.asyncio
+    async def test_call_without_content_blocks_uses_text(self, mock_google) -> None:
+        mock_module, mock_client = mock_google
+        with patch.dict(
+            "sys.modules",
+            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+        ):
+            adapter = GoogleAdapter(model="gemini-2.5-pro")
+            adapter._client = mock_client
+            messages = [{"role": "user", "content": "hi"}]
+            await adapter.call(messages=messages, system_prompt="test")
+            kwargs = mock_client.models.generate_content.call_args.kwargs
+            contents = kwargs["contents"]
+            parts = contents[0]["parts"]
+            assert parts == [{"text": "hi"}]
+
+
+# ---------------------------------------------------------------------------
+# _filter_chat_messages preserves content_blocks
+# ---------------------------------------------------------------------------
+
+
+class TestFilterChatMessagesContentBlocks:
+    """_filter_chat_messages preserves content_blocks key."""
+
+    def test_preserves_content_blocks_when_present(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _filter_chat_messages
+
+        messages = [
+            {
+                "role": "user",
+                "content": "hi",
+                "content_blocks": [{"type": "text", "text": "hi"}],
+            }
+        ]
+        result = _filter_chat_messages(messages)
+        assert "content_blocks" in result[0]
+        assert result[0]["content_blocks"] == [{"type": "text", "text": "hi"}]
+
+    def test_omits_content_blocks_when_absent(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _filter_chat_messages
+
+        messages = [{"role": "user", "content": "hi"}]
+        result = _filter_chat_messages(messages)
+        assert "content_blocks" not in result[0]
+
+    def test_filters_system_messages_with_content_blocks(self) -> None:
+        from swarmline.runtime.thin.llm_providers import _filter_chat_messages
+
+        messages = [
+            {"role": "system", "content": "sys", "content_blocks": [{"type": "text", "text": "sys"}]},
+            {"role": "user", "content": "hi", "content_blocks": [{"type": "text", "text": "hi"}]},
+        ]
+        result = _filter_chat_messages(messages)
+        assert len(result) == 1
+        assert result[0]["role"] == "user"
