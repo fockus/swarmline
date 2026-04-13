@@ -4,11 +4,11 @@
 
 **ThinRuntime Claude Code Parity v2** (2026-04-13) — расширение ThinRuntime до полного набора возможностей Claude Code. Parity v1 (фазы 1-10) — ЗАВЕРШЕНО. Текущая работа: **Parity v2** (фазы 11-17, milestone v1.5.0).
 
-**Текущая фаза: Phase 15 — Thinking Events** (следующая после Phase 14 DONE).
+**Текущая фаза: Phase 16 — Multimodal Input** (следующая после Phase 15 DONE).
 
-Phase 14 (Session Resume) ЗАВЕРШЕНА: JsonlMessageStore — JSONL file-based message persistence (SHA-256 filenames, corrupted line resilience). Conversation.resume(session_id) загружает историю из MessageStore. Auto-persist в say() и stream() — сохраняет сообщения после каждого turn. Auto-compaction on resume через CompactionConfig (Phase 13). 40 новых тестов (18 JSONL unit + 10 resume unit + 12 integration). Judge: 4.30/5.0. Commit: d3602c5.
+Phase 15 (Thinking Events) ЗАВЕРШЕНА: ThinkingConfig frozen dataclass + RuntimeEvent.thinking_delta factory. AnthropicAdapter extended thinking via budget_tokens — extracts thinking blocks, returns LlmCallResult. Strategies emit thinking_delta before text. Non-Anthropic providers emit status warning. Compaction respects non_compactable metadata (tiers 2+3). LlmAdapter protocol updated. 59 новых тестов. Judge: 4.42/5.0. Commit: 8c56581.
 
-**Прогресс Parity v2: 4/7 фаз завершено (57%). Общий прогресс: 14/17 фаз (82%).**
+**Прогресс Parity v2: 5/7 фаз завершено (71%). Общий прогресс: 15/17 фаз (88%).**
 
 **Предыдущие транши завершены**:
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -86,7 +86,8 @@ Phase 14 (Session Resume) ЗАВЕРШЕНА: JsonlMessageStore — JSONL file-b
 
 ## Тесты
 
-- Offline suite: `4899 passed, 3 skipped, 5 deselected` ← текущий (2026-04-13, Phase 14 done)
+- Offline suite: `4959 passed, 3 skipped, 5 deselected` ← текущий (2026-04-13, Phase 15 done)
+- Offline suite: `4899 passed, 3 skipped, 5 deselected` (после Phase 14)
 - Offline suite: `4859 passed, 3 skipped, 5 deselected` (после Phase 13)
 - Offline suite: `4824 passed, 3 skipped, 5 deselected` (после Phase 12)
 - Offline suite: `4778 passed, 3 skipped, 5 deselected` (после Phase 11)
@@ -95,7 +96,7 @@ Phase 14 (Session Resume) ЗАВЕРШЕНА: JsonlMessageStore — JSONL file-b
 - Explicit integration: `31 passed, 5 skipped`
 - Live suite: `5 passed`
 - Postgres integration harness: `3 passed`
-- Source files: ~332 .py files ← текущий (2026-04-13, Phase 14 done)
+- Source files: ~335 .py files ← текущий (2026-04-13, Phase 15 done)
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests
 - Knowledge Bank (B1-B4): ~140 new tests

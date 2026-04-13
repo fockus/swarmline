@@ -2,21 +2,22 @@
 
 ## Текущий приоритет
 
-**ThinRuntime Claude Code Parity v2** — IN PROGRESS (14/17 фаз выполнено, 82%).
+**ThinRuntime Claude Code Parity v2** — IN PROGRESS (15/17 фаз выполнено, 88%).
 - Parity v1 (фазы 1-10): COMPLETE
-- Parity v2 (фазы 11-17, milestone v1.5.0): 4/7 фаз выполнено
+- Parity v2 (фазы 11-17, milestone v1.5.0): 5/7 фаз выполнено
 - **Phase 11 (Foundation Filters): ✅ DONE** — ProjectInstructionFilter + SystemReminderFilter, 50 тестов, Judge 4.40/5.0
 - **Phase 12 (Tool Surface Expansion): ✅ DONE** — web_fetch domain filter + MCP resource reading + read_mcp_resource tool, 46 тестов, Judge 4.43/5.0
 - **Phase 13 (Conversation Compaction): ✅ DONE** — ConversationCompactionFilter 3-tier cascade + CompactionConfig, 35 тестов, Judge 4.23/5.0
-- **Phase 14 (Session Resume): ✅ DONE** — JsonlMessageStore + Conversation.resume() + auto-persist, 40 тестов, Judge 4.30/5.0, commit d3602c5
-- **Phase 15 (Thinking Events): ⬜ NEXT** — ThinkingEvent domain type + ThinRuntime emission wiring
+- **Phase 14 (Session Resume): ✅ DONE** — JsonlMessageStore + Conversation.resume() + auto-persist, 40 тестов, Judge 4.30/5.0
+- **Phase 15 (Thinking Events): ✅ DONE** — ThinkingConfig + thinking_delta + Anthropic extended thinking + non_compactable, 59 тестов, Judge 4.42/5.0
+- **Phase 16 (Multimodal Input): ⬜ NEXT** — ContentBlock types, Message.content_blocks, provider conversion
 
 GSD Roadmap: `.planning/ROADMAP.md`
 
 ## Следующий шаг
 
-1. **Phase 15: Thinking Events** — ThinkingEvent domain type, ThinRuntime emission wiring, integration tests
-2. **v1.5.0 release** — после завершения всех 7 Parity v2 фаз (осталось 3 фазы)
+1. **Phase 16: Multimodal Input** — ContentBlock types, Message.content_blocks, provider-specific conversion (Anthropic/OpenAI/Google)
+2. **v1.5.0 release** — после завершения всех 7 Parity v2 фаз (осталось 2 фазы)
 
 ## Релизный контекст
 
@@ -30,8 +31,8 @@ GSD Roadmap: `.planning/ROADMAP.md`
 | 12 | Tool Surface Expansion (Web domain filter + MCP resources) | P1 | ✅ DONE |
 | 13 | Conversation Compaction (LLM-суммаризация) | P1 | ✅ DONE |
 | 14 | Session Resume (conversation history) | P1 | ✅ DONE |
-| 15 | Thinking Events (отдельный reasoning поток) | P2 | ⬜ NEXT |
-| 16 | Multimodal Input (images, PDF, notebooks) | P2 | ⬜ |
+| 15 | Thinking Events (отдельный reasoning поток) | P2 | ✅ DONE |
+| 16 | Multimodal Input (images, PDF, notebooks) | P2 | ⬜ NEXT |
 | 17 | Background Agents и Monitor Tool | P2 | ⬜ |
 | 18 | Git Worktree Isolation для субагентов | P2 | ⬜ |
 

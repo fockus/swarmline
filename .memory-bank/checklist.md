@@ -26,10 +26,11 @@
 - ✅ 14.2 Conversation.resume(session_id) + auto-persist in say()/stream() + auto-compaction on resume — 10 unit tests
 - ✅ 14.3 Integration tests (12) + quality gate: 4899 tests pass, ruff clean
 
-### Phase 15: Thinking Events ⬜ NEXT
-- ⬜ 15.1 ThinkingEvent domain type + protocol
-- ⬜ 15.2 ThinRuntime thinking events emission wiring
-- ⬜ 15.3 Integration tests + quality gate (ruff + mypy + full pytest)
+### Phase 15: Thinking Events ✅ DONE (Judge 4.42/5.0, 2026-04-13, commit 8c56581)
+- ✅ 15.1 ThinkingConfig frozen dataclass + RuntimeEvent.thinking_delta factory + LlmCallResult — 22 unit tests
+- ✅ 15.2 AnthropicAdapter thinking extraction + LLM client wiring + strategy emission + non-Anthropic warning — 23 unit tests
+- ✅ 15.3 Compaction non_compactable exclusion (tier 2 + tier 3) + integration tests — 14 tests
+- ✅ Quality gates: 4959 tests pass, ruff clean
 
 ## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 

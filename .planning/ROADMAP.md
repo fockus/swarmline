@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Tool Surface Expansion** - Add WebSearch/WebFetch built-in tools and MCP resource reading to extend agent capabilities
 - [x] **Phase 13: Conversation Compaction** - 3-tier context management pipeline (tool collapse, LLM summarization, emergency truncation) to replace naive truncation
 - [x] **Phase 14: Session Resume** - Persist and restore conversation history between run() calls with auto-compaction on resume
-- [ ] **Phase 15: Thinking Events** - Separate reasoning stream via thinking_delta events with Anthropic extended thinking integration
+- [x] **Phase 15: Thinking Events** - Separate reasoning stream via thinking_delta events with Anthropic extended thinking integration
 - [ ] **Phase 16: Multimodal Input** - Multi-part message content (images, PDF, Jupyter) with provider-specific vision block conversion
 - [ ] **Phase 17: Parallel Agent Infrastructure** - Git worktree isolation for subagents and background agent execution with async notifications
 
@@ -271,7 +271,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 15-01: ThinkingEvent type, Anthropic extended thinking adapter, and compaction exclusion
+- [x] 15-01: ThinkingEvent type, Anthropic extended thinking adapter, and compaction exclusion
 
 ### Phase 16: Multimodal Input
 **Goal**: Agents can process images, PDFs, and Jupyter notebooks alongside text, with automatic provider-specific conversion for Anthropic, OpenAI, and Google vision APIs
