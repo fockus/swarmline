@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Foundation Filters** - Load project instructions and inject system reminders via InputFilter pipeline without modifying ThinRuntime.run()
 - [x] **Phase 12: Tool Surface Expansion** - Add WebSearch/WebFetch built-in tools and MCP resource reading to extend agent capabilities
 - [x] **Phase 13: Conversation Compaction** - 3-tier context management pipeline (tool collapse, LLM summarization, emergency truncation) to replace naive truncation
-- [ ] **Phase 14: Session Resume** - Persist and restore conversation history between run() calls with auto-compaction on resume
+- [x] **Phase 14: Session Resume** - Persist and restore conversation history between run() calls with auto-compaction on resume
 - [ ] **Phase 15: Thinking Events** - Separate reasoning stream via thinking_delta events with Anthropic extended thinking integration
 - [ ] **Phase 16: Multimodal Input** - Multi-part message content (images, PDF, Jupyter) with provider-specific vision block conversion
 - [ ] **Phase 17: Parallel Agent Infrastructure** - Git worktree isolation for subagents and background agent execution with async notifications
@@ -257,7 +257,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 14-01: Session persistence, resume-by-id, and auto-compaction on resume
+- [x] 14-01: Session persistence, resume-by-id, and auto-compaction on resume
 
 ### Phase 15: Thinking Events
 **Goal**: Developers can observe the model's reasoning process as a separate event stream, with Anthropic extended thinking budget control and multi-turn signature preservation
@@ -325,7 +325,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 11. Foundation Filters | Parity v2 | 1/1 | Complete | 2026-04-13 |
 | 12. Tool Surface Expansion | Parity v2 | 1/1 | Complete | 2026-04-13 |
 | 13. Conversation Compaction | Parity v2 | 1/1 | Complete | 2026-04-13 |
-| 14. Session Resume | Parity v2 | 0/1 | Not started | - |
+| 14. Session Resume | Parity v2 | 1/1 | Complete | 2026-04-13 |
 | 15. Thinking Events | Parity v2 | 0/1 | Not started | - |
 | 16. Multimodal Input | Parity v2 | 0/2 | Not started | - |
 | 17. Parallel Agent Infrastructure | Parity v2 | 0/2 | Not started | - |

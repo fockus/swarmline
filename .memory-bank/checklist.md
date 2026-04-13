@@ -21,10 +21,15 @@
 - ✅ 13.3 Auto-wired in ThinRuntime.run() from RuntimeConfig.compaction + 35 tests (26 unit + 9 integration)
 - ✅ Quality gates: 4859 tests pass, ruff clean
 
-### Phase 14: Session Resume ⬜ NEXT
-- ⬜ 14.1 Session resume protocol + conversation history persistence
-- ⬜ 14.2 ThinRuntime session resume wiring
-- ⬜ 14.3 Integration tests + quality gate (ruff + mypy + full pytest)
+### Phase 14: Session Resume ✅ DONE (Judge 4.30/5.0, 2026-04-13, commit d3602c5)
+- ✅ 14.1 JsonlMessageStore — JSONL file-based persistence (SHA-256 filenames, corrupted-line resilience) + 18 unit tests
+- ✅ 14.2 Conversation.resume(session_id) + auto-persist in say()/stream() + auto-compaction on resume — 10 unit tests
+- ✅ 14.3 Integration tests (12) + quality gate: 4899 tests pass, ruff clean
+
+### Phase 15: Thinking Events ⬜ NEXT
+- ⬜ 15.1 ThinkingEvent domain type + protocol
+- ⬜ 15.2 ThinRuntime thinking events emission wiring
+- ⬜ 15.3 Integration tests + quality gate (ruff + mypy + full pytest)
 
 ## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 

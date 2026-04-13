@@ -4,11 +4,11 @@
 
 **ThinRuntime Claude Code Parity v2** (2026-04-13) — расширение ThinRuntime до полного набора возможностей Claude Code. Parity v1 (фазы 1-10) — ЗАВЕРШЕНО. Текущая работа: **Parity v2** (фазы 11-17, milestone v1.5.0).
 
-**Текущая фаза: Phase 14 — Session Resume** (следующая после Phase 13 DONE).
+**Текущая фаза: Phase 15 — Thinking Events** (следующая после Phase 14 DONE).
 
-Phase 13 (Conversation Compaction) ЗАВЕРШЕНА: ConversationCompactionFilter (InputFilter protocol) с 3-tier cascade: Tier 1 — tool result collapse (old tool call/result pairs → compact summaries), Tier 2 — LLM summarization (oldest messages → summary via async llm_call), Tier 3 — emergency truncation (drop oldest, O(n)). CompactionConfig frozen dataclass. Auto-wired в ThinRuntime.run() из RuntimeConfig.compaction. 35 новых тестов (26 unit + 9 integration). Judge: 4.23/5.0. Commit: 8a63ad6.
+Phase 14 (Session Resume) ЗАВЕРШЕНА: JsonlMessageStore — JSONL file-based message persistence (SHA-256 filenames, corrupted line resilience). Conversation.resume(session_id) загружает историю из MessageStore. Auto-persist в say() и stream() — сохраняет сообщения после каждого turn. Auto-compaction on resume через CompactionConfig (Phase 13). 40 новых тестов (18 JSONL unit + 10 resume unit + 12 integration). Judge: 4.30/5.0. Commit: d3602c5.
 
-**Прогресс Parity v2: 3/7 фаз завершено (43%). Общий прогресс: 13/17 фаз (76%).**
+**Прогресс Parity v2: 4/7 фаз завершено (57%). Общий прогресс: 14/17 фаз (82%).**
 
 **Предыдущие транши завершены**:
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -86,7 +86,8 @@ Phase 13 (Conversation Compaction) ЗАВЕРШЕНА: ConversationCompactionFil
 
 ## Тесты
 
-- Offline suite: `4859 passed, 3 skipped, 5 deselected` ← текущий (2026-04-13, Phase 13 done)
+- Offline suite: `4899 passed, 3 skipped, 5 deselected` ← текущий (2026-04-13, Phase 14 done)
+- Offline suite: `4859 passed, 3 skipped, 5 deselected` (после Phase 13)
 - Offline suite: `4824 passed, 3 skipped, 5 deselected` (после Phase 12)
 - Offline suite: `4778 passed, 3 skipped, 5 deselected` (после Phase 11)
 - Offline suite: `4249 passed, 3 skipped, 5 deselected` (после audit-remediation)
@@ -94,7 +95,7 @@ Phase 13 (Conversation Compaction) ЗАВЕРШЕНА: ConversationCompactionFil
 - Explicit integration: `31 passed, 5 skipped`
 - Live suite: `5 passed`
 - Postgres integration harness: `3 passed`
-- Source files: ~330 .py files ← текущий (2026-04-13, Phase 13 done)
+- Source files: ~332 .py files ← текущий (2026-04-13, Phase 14 done)
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests
 - Knowledge Bank (B1-B4): ~140 new tests

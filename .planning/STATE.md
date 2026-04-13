@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 
 ## Current Position
 
-Phase: 14 of 17 (Session Resume)
+Phase: 15 of 17 (Thinking Events)
 Plan: 0 of 1 in current phase
 Status: Ready to plan
-Last activity: 2026-04-13 -- Phase 13 Conversation Compaction completed (Judge 4.23/5.0)
+Last activity: 2026-04-13 -- Phase 14 Session Resume completed (Judge 4.30/5.0)
 
-Progress: [#############░░░░░░░] 76% (13/17 phases complete)
+Progress: [##############░░░░░░] 82% (14/17 phases complete)
 
 ## Performance Metrics
 
@@ -31,6 +31,7 @@ Progress: [#############░░░░░░░] 76% (13/17 phases complete)
 | 11 (Foundation Filters) | 1 | - | - |
 | 12 (Tool Surface Expansion) | 1 | - | - |
 | 13 (Conversation Compaction) | 1 | - | - |
+| 14 (Session Resume) | 1 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -64,5 +65,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-13
-Stopped at: Phase 13 complete, ready to plan Phase 14
+Stopped at: Phase 14 complete, ready to plan Phase 15
 Resume file: None

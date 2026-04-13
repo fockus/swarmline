@@ -642,3 +642,12 @@
 - Quality gates: pytest -q → 4859 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: ~330.
 - Parity v2 progress: 3/7 фаз (43%). Overall: 13/17 фаз (76%).
 - Next: Phase 14 — Session Resume (conversation history persistence + ThinRuntime resume wiring).
+[2026-04-13] Phase 14 (Session Resume) завершена — Judge 4.30/5.0, commit d3602c5.
+- Delivered:
+  - JsonlMessageStore: JSONL file-based message persistence. Filenames = SHA-256(session_id). Corrupted-line resilience (skip bad JSON, continue). Implements MessageStore protocol.
+  - Conversation.resume(session_id): loads full message history from MessageStore, applies auto-compaction via CompactionConfig (Phase 13 integration).
+  - Auto-persist in say() and stream(): saves messages after each turn without explicit caller action.
+  - 40 новых тестов: 18 JSONL unit + 10 resume unit + 12 integration.
+- Quality gates: pytest -q → 4899 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: ~332.
+- Parity v2 progress: 4/7 фаз (57%). Overall: 14/17 фаз (82%).
+- Next: Phase 15 — Thinking Events (ThinkingEvent domain type + ThinRuntime emission wiring).
