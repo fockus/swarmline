@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Parity v2 (Phases 11-17) -- IN PROGRESS
 
 - [x] **Phase 11: Foundation Filters** - Load project instructions and inject system reminders via InputFilter pipeline without modifying ThinRuntime.run()
-- [ ] **Phase 12: Tool Surface Expansion** - Add WebSearch/WebFetch built-in tools and MCP resource reading to extend agent capabilities
+- [x] **Phase 12: Tool Surface Expansion** - Add WebSearch/WebFetch built-in tools and MCP resource reading to extend agent capabilities
 - [ ] **Phase 13: Conversation Compaction** - 3-tier context management pipeline (tool collapse, LLM summarization, emergency truncation) to replace naive truncation
 - [ ] **Phase 14: Session Resume** - Persist and restore conversation history between run() calls with auto-compaction on resume
 - [ ] **Phase 15: Thinking Events** - Separate reasoning stream via thinking_delta events with Anthropic extended thinking integration
@@ -229,8 +229,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 12-01: WebSearch and WebFetch built-in tools with domain filtering
-- [ ] 12-02: McpClient resource reading extension and ReadMcpResource tool
+- [x] 12-01: WebSearch and WebFetch built-in tools with domain filtering + MCP resource reading
 
 ### Phase 13: Conversation Compaction
 **Goal**: Long-running agents maintain coherent context by automatically summarizing early conversation turns through LLM instead of losing them to naive truncation
@@ -324,7 +323,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Coding Context and Compatibility | Parity v1 | 1/1 | Complete | 2026-04-13 |
 | 10. Coding Subagent Inheritance and Validation | Parity v1 | 1/1 | Complete | 2026-04-13 |
 | 11. Foundation Filters | Parity v2 | 1/1 | Complete | 2026-04-13 |
-| 12. Tool Surface Expansion | Parity v2 | 0/2 | Not started | - |
+| 12. Tool Surface Expansion | Parity v2 | 1/1 | Complete | 2026-04-13 |
 | 13. Conversation Compaction | Parity v2 | 0/1 | Not started | - |
 | 14. Session Resume | Parity v2 | 0/1 | Not started | - |
 | 15. Thinking Events | Parity v2 | 0/1 | Not started | - |

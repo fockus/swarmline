@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 
 ## Current Position
 
-Phase: 12 of 17 (Tool Surface Expansion)
-Plan: 0 of 2 in current phase
+Phase: 13 of 17 (Conversation Compaction)
+Plan: 0 of 1 in current phase
 Status: Ready to plan
-Last activity: 2026-04-13 -- Phase 11 Foundation Filters completed (Judge 4.40/5.0)
+Last activity: 2026-04-13 -- Phase 12 Tool Surface Expansion completed (Judge 4.43/5.0)
 
-Progress: [###########░░░░░░░░░] 65% (11/17 phases complete)
+Progress: [############░░░░░░░░] 71% (12/17 phases complete)
 
 ## Performance Metrics
 
@@ -29,6 +29,7 @@ Progress: [###########░░░░░░░░░] 65% (11/17 phases complete)
 |-------|-------|-------|----------|
 | 1-10 (Parity v1) | 13 | - | - |
 | 11 (Foundation Filters) | 1 | - | - |
+| 12 (Tool Surface Expansion) | 1 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -62,5 +63,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-13
-Stopped at: Phase 11 complete, ready to plan Phase 12
+Stopped at: Phase 12 complete, ready to plan Phase 13
 Resume file: None

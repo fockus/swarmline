@@ -2,17 +2,18 @@
 
 ## Текущий приоритет
 
-**ThinRuntime Claude Code Parity v2** — IN PROGRESS (11/17 фаз выполнено, 65%).
+**ThinRuntime Claude Code Parity v2** — IN PROGRESS (12/17 фаз выполнено, 71%).
 - Parity v1 (фазы 1-10): COMPLETE
-- Parity v2 (фазы 11-17, milestone v1.5.0): 1/7 фаз выполнено
+- Parity v2 (фазы 11-17, milestone v1.5.0): 2/7 фаз выполнено
 - **Phase 11 (Foundation Filters): ✅ DONE** — ProjectInstructionFilter + SystemReminderFilter, 50 тестов, Judge 4.40/5.0
-- **Phase 12 (Tool Surface Expansion): ⬜ NEXT** — WebSearch + WebFetch + Thinking tool
+- **Phase 12 (Tool Surface Expansion): ✅ DONE** — web_fetch domain filter + MCP resource reading + read_mcp_resource tool, 46 тестов, Judge 4.43/5.0
+- **Phase 13 (Conversation Compaction): ⬜ NEXT** — LLM-суммаризация истории + token threshold trigger
 
 GSD Roadmap: `.planning/ROADMAP.md`
 
 ## Следующий шаг
 
-1. **Phase 12: Tool Surface Expansion** — WebSearch/WebFetch builtin tools + Thinking tool wiring
+1. **Phase 13: Conversation Compaction** — LLM-based history summarization, CompactionStrategy protocol, ThinRuntime wiring
 2. **v1.5.0 release** — после завершения всех 7 Parity v2 фаз
 
 ## Релизный контекст
@@ -24,11 +25,11 @@ GSD Roadmap: `.planning/ROADMAP.md`
 | Phase | Название | Приоритет | Статус |
 |-------|----------|-----------|--------|
 | 11 | Foundation Filters (ProjectInstruction + SystemReminder) | P1 | ✅ DONE |
-| 12 | Tool Surface Expansion (Web + Thinking) | P1 | ⬜ NEXT |
-| 13 | Conversation Compaction (LLM-суммаризация) | P1 | ⬜ |
+| 12 | Tool Surface Expansion (Web domain filter + MCP resources) | P1 | ✅ DONE |
+| 13 | Conversation Compaction (LLM-суммаризация) | P1 | ⬜ NEXT |
 | 14 | Session Resume (conversation history) | P1 | ⬜ |
 | 15 | Multimodal Input (images, PDF, notebooks) | P2 | ⬜ |
-| 16 | MCP Resource Reading | P2 | ⬜ |
+| 16 | Background Agents и Monitor Tool | P2 | ⬜ |
 | 17 | Git Worktree Isolation для субагентов | P2 | ⬜ |
 
 ## Завершённые фазы — Parity v1 (Phases 1-10) ✅ COMPLETE

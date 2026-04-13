@@ -8,10 +8,17 @@
 - ✅ 11.3 ThinRuntime filter wiring + integration tests + 14 tests
 - ✅ Quality gates: 4778 tests pass, ruff clean
 
-### Phase 12: Tool Surface Expansion ⬜ NEXT
-- ⬜ 12.1 Web tools builtin (WebSearch + WebFetch) — @tool functions + policy integration
-- ⬜ 12.2 Thinking tool (extended reasoning events) + ThinRuntime wiring
-- ⬜ 12.3 Integration tests + quality gate (ruff + mypy + full pytest)
+### Phase 12: Tool Surface Expansion ✅ DONE (Judge 4.43/5.0, 2026-04-13, commit 4d2d018)
+- ✅ 12.1 Domain allow/block filter for web_fetch (HttpxWebProvider) — 20 unit tests
+- ✅ 12.2 MCP resource reading in McpClient (list_resources + read_resource + caching) — 11 unit tests
+- ✅ 12.3 read_mcp_resource tool in ToolExecutor + ThinRuntime active_tools wiring — 15 integration tests
+- ✅ 12.4 RuntimeConfig web_allowed_domains/web_blocked_domains fields + ResourceDescriptor frozen dataclass exported
+- ✅ Quality gates: 4824 tests pass, ruff clean
+
+### Phase 13: Conversation Compaction ⬜ NEXT
+- ⬜ 13.1 LLM-суммаризация истории (summary prompt + CompactionStrategy protocol)
+- ⬜ 13.2 ThinRuntime compaction wiring (token threshold trigger)
+- ⬜ 13.3 Integration tests + quality gate (ruff + mypy + full pytest)
 
 ## ThinRuntime Claude Code Parity v1 (2026-04-12) — Phases 1-10 COMPLETE
 

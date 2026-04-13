@@ -623,3 +623,11 @@
 - Key commits: d6de9ea (phase-11 implementation), 7c4124f (docs: advance to Phase 12), 0fc6e15 (milestone roadmap), 1eb5c5b (requirements), a8c2384 (research).
 - Verification: pytest -q → 4778 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: 328.
 - Next: Phase 12 (Tool Surface Expansion) — WebSearch + WebFetch builtin tools + Thinking tool.
+[2026-04-13] Phase 12 (Tool Surface Expansion) завершена — Judge 4.43/5.0, commit 4d2d018.
+- Delivered:
+  - Domain allow/block filter for web_fetch in HttpxWebProvider: RuntimeConfig.web_allowed_domains/web_blocked_domains fields, domain validation on fetch(), 20 unit tests.
+  - MCP resource reading in McpClient: list_resources() + read_resource() with in-memory caching, ResourceDescriptor frozen dataclass exported from domain layer, 11 unit tests.
+  - read_mcp_resource tool registered in ToolExecutor + wired into ThinRuntime active_tools, 15 integration tests.
+- Quality gates: pytest -q → 4824 passed, 3 skipped, 5 deselected. ruff check src/ tests/ → all checks passed. Source files: ~330.
+- Parity v2 progress: 2/7 фаз (29%). Overall: 12/17 фаз (71%).
+- Next: Phase 13 — Conversation Compaction (LLM-суммаризация истории + token threshold trigger).
