@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from swarmline.agent.tool import ToolDefinition
     from swarmline.hooks.registry import HookRegistry
     from swarmline.runtime.capabilities import CapabilityRequirements
+    from swarmline.runtime.types import ModelRequestOptions, StructuredMode
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,11 @@ class AgentConfig:
     # If set and output_format is None, output_format is auto-generated
     # from model_json_schema(). Runtime validates and retries on error.
     output_type: type | None = None
+    structured_mode: "StructuredMode" = "prompt"
+    structured_schema_name: str | None = None
+    structured_strict: bool = True
+    max_model_retries: int | None = None
+    request_options: "ModelRequestOptions | None" = None
 
     # Working directory
     cwd: str | None = None

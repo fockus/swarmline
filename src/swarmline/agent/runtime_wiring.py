@@ -34,9 +34,18 @@ def build_portable_runtime_plan(
 
     runtime_config = RuntimeConfig(
         runtime_name=runtime_name,
+        max_model_retries=(
+            agent_config.max_model_retries
+            if agent_config.max_model_retries is not None
+            else RuntimeConfig().max_model_retries
+        ),
         model=factory.resolve_agent_model(agent_config),
         output_format=agent_config.output_format,
         output_type=agent_config.output_type,
+        structured_mode=agent_config.structured_mode,
+        structured_schema_name=agent_config.structured_schema_name,
+        structured_strict=agent_config.structured_strict,
+        request_options=agent_config.request_options,
         feature_mode=agent_config.feature_mode,
         required_capabilities=agent_config.require_capabilities,
         allow_native_features=agent_config.allow_native_features,

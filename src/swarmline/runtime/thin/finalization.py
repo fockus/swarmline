@@ -97,10 +97,21 @@ async def finalize_with_validation(
     tool_calls: int = 0,
     new_messages_prefix: list[Message] | None = None,
     checkpoint: CheckpointFn | None = None,
+    llm_call_kwargs: dict[str, Any] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Validate structured output, retry if needed, then emit a final event."""
+    llm_call_kwargs = dict(llm_call_kwargs or {})
     current_text = text
     current_messages = list(lm_messages)
+    if config.event_bus is not None and config.output_type is not None:
+        await config.event_bus.emit(
+            "structured_validation_start",
+            {
+                "model": config.model,
+                "structured_mode": config.structured_mode,
+                "schema_name": config.structured_schema_name,
+            },
+        )
     structured_output, error = try_resolve_structured_output(
         current_text,
         config.output_format,
@@ -108,6 +119,16 @@ async def finalize_with_validation(
     )
 
     if error is None or config.output_type is None:
+        if config.event_bus is not None and config.output_type is not None:
+            await config.event_bus.emit(
+                "structured_validation_end",
+                {
+                    "model": config.model,
+                    "structured_mode": config.structured_mode,
+                    "schema_name": config.structured_schema_name,
+                    "ok": error is None,
+                },
+            )
         checkpoint_event = await _run_checkpoint(checkpoint)
         if checkpoint_event is not None:
             yield checkpoint_event
@@ -134,6 +155,16 @@ async def finalize_with_validation(
                 "content": _RETRY_INSTRUCTION.format(error=error),
             }
         )
+        if config.event_bus is not None:
+            await config.event_bus.emit(
+                "structured_retry",
+                {
+                    "model": config.model,
+                    "structured_mode": config.structured_mode,
+                    "schema_name": config.structured_schema_name,
+                    "error": error,
+                },
+            )
 
         checkpoint_event = await _run_checkpoint(checkpoint)
         if checkpoint_event is not None:
@@ -141,7 +172,7 @@ async def finalize_with_validation(
             return
 
         try:
-            raw = await llm_call(retry_messages, prompt)
+            raw = await llm_call(retry_messages, prompt, **llm_call_kwargs)
         except ThinLlmError as exc:
             yield RuntimeEvent.error(exc.error)
             return
@@ -164,6 +195,16 @@ async def finalize_with_validation(
             config.output_type,
         )
         if error is None:
+            if config.event_bus is not None:
+                await config.event_bus.emit(
+                    "structured_validation_end",
+                    {
+                        "model": config.model,
+                        "structured_mode": config.structured_mode,
+                        "schema_name": config.structured_schema_name,
+                        "ok": True,
+                    },
+                )
             checkpoint_event = await _run_checkpoint(checkpoint)
             if checkpoint_event is not None:
                 yield checkpoint_event
@@ -181,6 +222,17 @@ async def finalize_with_validation(
             )
             return
 
+    if config.event_bus is not None:
+        await config.event_bus.emit(
+            "structured_validation_end",
+            {
+                "model": config.model,
+                "structured_mode": config.structured_mode,
+                "schema_name": config.structured_schema_name,
+                "ok": False,
+                "error": error,
+            },
+        )
     yield RuntimeEvent.error(
         RuntimeErrorData(
             kind="bad_model_output",

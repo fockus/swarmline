@@ -3,6 +3,7 @@
 import pytest
 from swarmline.runtime.types import (
     DEFAULT_MODEL,
+    ModelRequestOptions,
     RUNTIME_ERROR_KINDS,
     RUNTIME_EVENT_TYPES,
     Message,
@@ -312,6 +313,11 @@ class TestRuntimeConfig:
         assert cfg.max_tool_calls == 8
         assert cfg.max_model_retries == 2
         assert cfg.output_format is None
+        assert cfg.output_type is None
+        assert cfg.structured_mode == "prompt"
+        assert cfg.structured_schema_name is None
+        assert cfg.structured_strict is True
+        assert cfg.request_options is None
         assert cfg.feature_mode == "portable"
         assert cfg.required_capabilities is None
         assert cfg.allow_native_features is False
@@ -338,6 +344,25 @@ class TestRuntimeConfig:
     def test_extra_params(self) -> None:
         cfg = RuntimeConfig(extra={"temperature": 0.7})
         assert cfg.extra["temperature"] == 0.7
+
+    def test_request_options_are_stored(self) -> None:
+        options = ModelRequestOptions(
+            max_tokens=123,
+            temperature=0.2,
+            timeout_sec=30.0,
+            provider_options={"require_parameters": True},
+            plugins=[{"id": "response-healing"}],
+        )
+
+        cfg = RuntimeConfig(runtime_name="thin", request_options=options)
+
+        assert cfg.request_options is options
+        assert cfg.request_options.max_tokens == 123
+        assert cfg.request_options.provider_options == {"require_parameters": True}
+
+    def test_structured_mode_rejects_unknown_value(self) -> None:
+        with pytest.raises(ValueError, match="Unknown structured_mode"):
+            RuntimeConfig(runtime_name="thin", structured_mode="magic")  # type: ignore[arg-type]
 
     def test_default_model(self) -> None:
         """Po umolchaniyu - DEFAULT_MODEL."""

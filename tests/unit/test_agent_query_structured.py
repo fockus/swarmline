@@ -196,6 +196,30 @@ class TestQueryStructuredConfigPropagation:
         assert config.output_format is not None
         assert "properties" in config.output_format
 
+    async def test_sets_structured_mode_and_retry_override(self) -> None:
+        """query_structured() forwards structured mode and retry override."""
+        agent = _make_agent()
+        captured_configs: list[AgentConfig] = []
+
+        async def _spy_query(prompt: str, config: AgentConfig) -> Result:
+            captured_configs.append(config)
+            return Result(
+                text='{"name": "X", "age": 1}',
+                structured_output=SimpleModel(name="X", age=1),
+            )
+
+        with patch.object(agent, "_query_with_config", side_effect=_spy_query):
+            await agent.query_structured(
+                "Test",
+                SimpleModel,
+                structured_mode="native",
+                max_retries=5,
+            )
+
+        config = captured_configs[0]
+        assert config.structured_mode == "native"
+        assert config.max_model_retries == 5
+
     async def test_restores_original_config_after_success(self) -> None:
         """After query_structured(), the agent config is restored."""
         agent = _make_agent()

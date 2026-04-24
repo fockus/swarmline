@@ -6,6 +6,19 @@ Multi-phase execution engine for Swarmline agent graphs with quality gates, budg
 
 The Pipeline Engine orchestrates agent work across sequential phases. Each phase runs an agent graph through the orchestrator, and between phases the engine runs quality gates that decide whether execution should continue. Budget tracking enforces cost limits at the total, per-phase, and per-agent level.
 
+Swarmline intentionally keeps two composition primitives separate:
+
+| Primitive | Best for |
+|-----------|----------|
+| `WorkflowChain` (`TypedPipeline`) | Static typed workflows: generate -> validate -> review loop -> optional fork/join, with retries and fallback |
+| `WorkflowGraph` | Routing workflows: branches, loops, parallel fan-out/fan-in, HITL interrupts, nested subgraphs |
+| Agent Graph System | Multi-agent organizations with delegation, task boards, governance, and messaging |
+
+The recommended pattern is simple: use `WorkflowChain` for a strict recipe
+defined in code, and place that chain inside a `WorkflowGraph` node when routing
+itself becomes dynamic. A chain can include bounded review loops and small
+static fork/join stages, but it should not become a general graph engine.
+
 **When to use the Pipeline Engine:**
 
 - You need structured multi-step agent workflows (plan, execute, review, etc.)
@@ -23,6 +36,152 @@ The Pipeline Engine orchestrates agent work across sequential phases. Each phase
 | `BudgetTracker` | In-memory cost tracking and enforcement |
 | `PersistentBudgetStore` | Cross-run budget tracking with time windows |
 | `QualityGate` | Protocol for verification checkpoints between phases |
+
+## Workflow Chain
+
+`WorkflowChain` is the friendly public name for the typed chain primitive.
+`TypedPipeline` remains as a backward-compatible alias. Use it for SGR-style
+chains, reviewer loops, or deterministic workflows where stages have validators,
+retry limits, structured outputs, and fallbacks.
+
+```python
+from pydantic import BaseModel
+from swarmline import Agent
+from swarmline.pipeline import FallbackPolicy, WorkflowChain, WorkflowStep
+
+
+class Draft(BaseModel):
+    answer: str
+    confidence: float
+
+
+agent = Agent(model="openrouter/openai/gpt-oss-120b", output_type=Draft)
+
+
+async def draft(question: str) -> Draft:
+    return await agent.query_structured(
+        question,
+        output_type=Draft,
+        structured_mode="auto",
+        max_retries=3,
+    )
+
+
+async def judge(candidate: Draft) -> Draft:
+    if candidate.confidence < 0.7:
+        raise ValueError("confidence too low")
+    return candidate
+
+
+pipeline = WorkflowChain(
+    stages=[
+        WorkflowStep("draft", draft, max_attempts=2),
+        WorkflowStep("judge", judge, max_attempts=1),
+    ],
+    fallback_policy=FallbackPolicy(mode="last_valid"),
+)
+
+result = await pipeline.run("Explain the credit risks")
+```
+
+### Reviewer Loops
+
+Use `LoopPipelineStage` when a reviewer must approve the candidate before the
+chain can continue. The loop is always bounded.
+
+```python
+from swarmline.pipeline import LoopPipelineStage, WorkflowChain, WorkflowStep
+
+
+async def draft_report(payload, context):
+    last_review = context.read_artifact("last_review")
+    # Call your analyst model. Include last_review if present.
+    return await analyst(payload, review=last_review)
+
+
+async def review_report(candidate, context):
+    verdict = await reviewer(candidate)
+    context.write_artifact("last_review", verdict)
+    return verdict.passed
+
+
+chain = WorkflowChain(
+    stages=[
+        LoopPipelineStage(
+            "review_loop",
+            body=WorkflowStep("draft", draft_report),
+            reviewer=review_report,
+            max_iterations=3,
+        )
+    ]
+)
+```
+
+### Static Fork/Join
+
+Use `ParallelPipelineStage` for small static fan-out/fan-in cases. Branches share
+a `PipelineContext` for structured artifacts and compact messages; this is not a
+free-form agent chat bus.
+
+```python
+from swarmline.pipeline import ParallelPipelineStage, PipelineContext, WorkflowChain, WorkflowStep
+
+
+async def fast_model(question, context: PipelineContext):
+    context.add_message("fast", "candidate ready")
+    return await fast_agent.query(question)
+
+
+async def deep_model(question, context: PipelineContext):
+    context.write_artifact("deep_notes", {"model": "deep"})
+    return await deep_agent.query(question)
+
+
+async def join(outputs, context: PipelineContext):
+    return await judge_agent.query_structured({
+        "candidates": outputs,
+        "artifacts": context.artifacts,
+        "messages": context.messages,
+    })
+
+
+chain = WorkflowChain(
+    stages=[
+        ParallelPipelineStage(
+            "compare",
+            branches={
+                "fast": WorkflowStep("fast", fast_model),
+                "deep": WorkflowStep("deep", deep_model),
+            },
+            joiner=join,
+            failure_policy="require_all",
+        )
+    ]
+)
+```
+
+### WorkflowGraph Bridge
+
+The same chain can be used as one node inside `WorkflowGraph`:
+
+```python
+from swarmline.pipeline import WorkflowBridge
+
+
+async def analysis_node(state: dict) -> dict:
+    result = await pipeline.run(state["question"])
+    state["analysis"] = result.output
+    state["analysis_status"] = result.status
+    return state
+
+
+analysis_node = WorkflowBridge.chain_node(
+    pipeline,
+    input_key="question",
+    output_key="analysis",
+    result_key="analysis_result",
+)
+```
 
 ## Quick Start
 

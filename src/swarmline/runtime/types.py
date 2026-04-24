@@ -9,7 +9,7 @@ RuntimeConfig remains here as it depends on infrastructure (CancellationToken, e
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 # Re-export domain types for backward compatibility
 from swarmline.domain_types import (  # noqa: F401
@@ -32,6 +32,27 @@ from swarmline.runtime.cost import CostBudget  # noqa: TC001
 # ---------------------------------------------------------------------------
 # RuntimeConfig - runtime configuration (infrastructure, stays here)
 # ---------------------------------------------------------------------------
+
+StructuredMode = Literal["prompt", "native", "auto"]
+
+
+@dataclass(frozen=True)
+class ModelRequestOptions:
+    """Provider-neutral request options for LLM calls.
+
+    Common fields are forwarded by adapters when supported. Provider-specific
+    data stays in provider_options/plugins/extra so the public API remains
+    provider-neutral.
+    """
+
+    max_tokens: int | None = None
+    temperature: float | None = None
+    timeout_sec: float | None = None
+    response_format: dict[str, Any] | None = None
+    reasoning: dict[str, Any] | None = None
+    provider_options: dict[str, Any] = field(default_factory=dict)
+    plugins: list[dict[str, Any]] = field(default_factory=list)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 # ---------------------------------------------------------------------------
 # Models - delegated to ModelRegistry (models.yaml)
@@ -144,6 +165,17 @@ class RuntimeConfig:
     # If set and output_format=None, output_format is generated from model_json_schema()
     output_type: type | None = None
 
+    # Structured output mode:
+    # - prompt: portable prompt instruction + local validation (backward compatible)
+    # - native: provider-native JSON mode/schema when supported
+    # - auto: native when supported, otherwise prompt
+    structured_mode: StructuredMode = "prompt"
+    structured_schema_name: str | None = None
+    structured_strict: bool = True
+
+    # Provider-neutral inference/request options
+    request_options: ModelRequestOptions | None = None
+
     # Additional parameters (extensible)
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -206,6 +238,11 @@ class RuntimeConfig:
             raise ValueError(
                 f"Unknown feature_mode: '{self.feature_mode}'. "
                 f"Allowed: {', '.join(sorted(VALID_FEATURE_MODES))}"
+            )
+        if self.structured_mode not in {"prompt", "native", "auto"}:
+            raise ValueError(
+                "Unknown structured_mode: "
+                f"'{self.structured_mode}'. Allowed: auto, native, prompt"
             )
         if self.required_capabilities is not None:
             from swarmline.runtime.registry import resolve_runtime_capabilities

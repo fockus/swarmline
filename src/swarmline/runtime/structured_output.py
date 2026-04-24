@@ -139,6 +139,10 @@ def normalize_output_schema(output_format: dict[str, Any] | None) -> dict[str, A
     if not output_format:
         return None
     if output_format.get("type") == "json_schema":
+        json_schema = output_format.get("json_schema")
+        if isinstance(json_schema, dict):
+            schema = json_schema.get("schema")
+            return schema if isinstance(schema, dict) else None
         schema = output_format.get("schema")
         return schema if isinstance(schema, dict) else None
     return output_format
