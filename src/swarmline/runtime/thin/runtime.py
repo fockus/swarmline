@@ -39,6 +39,7 @@ from swarmline.runtime.thin.strategies import (
     run_planner,
     run_react,
 )
+from swarmline.runtime.structured_requests import resolve_structured_request_strategy
 from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
@@ -267,6 +268,19 @@ class ThinRuntime:
         # Pre-call budget check
         if tracker is not None and tracker.check_budget() == "exceeded":
             yield self._budget_exceeded_event(tracker, prefix="Cost budget exceeded before call")
+            return
+
+        try:
+            resolve_structured_request_strategy(effective_config)
+        except ValueError as exc:
+            yield RuntimeEvent.error(
+                RuntimeErrorData(
+                    kind="capability_unsupported",
+                    message=str(exc),
+                    recoverable=False,
+                    details={"model": effective_config.model},
+                )
+            )
             return
 
 

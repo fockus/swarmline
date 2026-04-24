@@ -8,6 +8,7 @@ except PackageNotFoundError:
     __version__ = "0.0.0-dev"
 
 from swarmline.agent import Agent, AgentConfig, Conversation, Result, tool
+from swarmline.agent_pack import AgentPackResolver, AgentPackResource, ResolvedAgentPack
 from swarmline.bootstrap import SwarmlineStack
 from swarmline.compaction import CompactionConfig, ConversationCompactionFilter
 from swarmline.project_instruction_filter import ProjectInstructionFilter
@@ -37,6 +38,7 @@ from swarmline.runtime.factory import RuntimeFactory
 from swarmline.runtime.thin.mcp_client import ResourceDescriptor
 from swarmline.runtime.types import (
     Message,
+    ModelRequestOptions,
     RuntimeConfig,
     RuntimeErrorData,
     RuntimeEvent,
@@ -52,6 +54,8 @@ from swarmline.types import ContextPack, SkillSet, TurnContext
 __all__ = [
     "Agent",
     "AgentConfig",
+    "AgentPackResolver",
+    "AgentPackResource",
     "AgentRuntime",
     "CompactionConfig",
     "ContentBlock",
@@ -67,11 +71,13 @@ __all__ = [
     "LocalToolResolver",
     "Message",
     "MessageStore",
+    "ModelRequestOptions",
     "ProjectInstructionFilter",
     "ModelSelector",
     "PhaseStore",
     "ResourceDescriptor",
     "Result",
+    "ResolvedAgentPack",
     "RoleRouter",
     "RoleSkillsProvider",
     "RuntimeConfig",

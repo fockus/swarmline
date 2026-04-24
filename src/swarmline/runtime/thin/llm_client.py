@@ -38,10 +38,11 @@ async def try_stream_llm_call(
     llm_call: Callable[..., Any],
     lm_messages: list[dict[str, str]],
     prompt: str,
+    **kwargs: Any,
 ) -> tuple[list[str], str] | None:
     """Try stream llm call."""
     try:
-        result = await llm_call(lm_messages, prompt, stream=True)
+        result = await llm_call(lm_messages, prompt, stream=True, **kwargs)
     except TypeError:
         # LLM not supports stream kwarg
         return None
@@ -74,16 +75,18 @@ async def run_buffered_llm_call(
     retry_policy: Any | None = None,
     cancellation_token: Any | None = None,
     on_retry: Callable[[int, float], None] | None = None,
+    llm_kwargs: dict[str, Any] | None = None,
 ) -> BufferedLlmAttempt:
     """Run buffered llm call."""
+    llm_kwargs = dict(llm_kwargs or {})
     attempt = 0
     while True:
         try:
             _raise_if_cancelled(cancellation_token)
             try:
-                result = await llm_call(lm_messages, prompt, stream=True)
+                result = await llm_call(lm_messages, prompt, stream=True, **llm_kwargs)
             except TypeError:
-                raw = await llm_call(lm_messages, prompt)
+                raw = await llm_call(lm_messages, prompt, **llm_kwargs)
                 if isinstance(raw, LlmCallResult):
                     return BufferedLlmAttempt(
                         raw=raw.text, chunks=[], used_stream=False, thinking=raw.thinking,
@@ -105,7 +108,7 @@ async def run_buffered_llm_call(
                     chunks.append(chunk)
                 return BufferedLlmAttempt(raw="".join(chunks), chunks=chunks, used_stream=True)
 
-            raw = await llm_call(lm_messages, prompt)
+            raw = await llm_call(lm_messages, prompt, **llm_kwargs)
             if isinstance(raw, LlmCallResult):
                 return BufferedLlmAttempt(
                     raw=raw.text, chunks=[], used_stream=False, thinking=raw.thinking,

@@ -116,6 +116,11 @@ def _apply_content_blocks(
     return result
 
 
+def _compact_kwargs(kwargs: dict[str, Any], allowed: set[str]) -> dict[str, Any]:
+    """Return only explicitly provided provider kwargs."""
+    return {key: value for key, value in kwargs.items() if key in allowed and value is not None}
+
+
 class AnthropicAdapter:
     """Adapter for Anthropic SDK (messages API)."""
 
@@ -152,6 +157,7 @@ class AnthropicAdapter:
             "max_tokens": kwargs.get("max_tokens", 4096),
             "system": system_prompt,
             "messages": api_messages,
+            **_compact_kwargs(kwargs, {"temperature", "timeout"}),
         }
         if thinking_config is not None:
             create_kwargs["thinking"] = {
@@ -194,6 +200,7 @@ class AnthropicAdapter:
             max_tokens=kwargs.get("max_tokens", 4096),
             system=system_prompt,
             messages=api_messages,  # type: ignore[arg-type]
+            **_compact_kwargs(kwargs, {"temperature", "timeout"}),
         ) as stream:
             async for text in stream.text_stream:
                 yield text
@@ -281,6 +288,10 @@ class OpenAICompatAdapter:
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
             max_tokens=kwargs.get("max_tokens", 4096),
+            **_compact_kwargs(
+                kwargs,
+                {"temperature", "timeout", "response_format", "extra_body"},
+            ),
         )
         return response.choices[0].message.content or ""
 
@@ -297,6 +308,10 @@ class OpenAICompatAdapter:
             messages=api_messages,  # type: ignore[arg-type]
             max_tokens=kwargs.get("max_tokens", 4096),
             stream=True,
+            **_compact_kwargs(
+                kwargs,
+                {"temperature", "timeout", "response_format", "extra_body"},
+            ),
         )
         async for chunk in cast(AsyncIterator[Any], response):
             content = chunk.choices[0].delta.content if chunk.choices else None
@@ -390,7 +405,13 @@ class GoogleAdapter:
         response: Any = self._client.models.generate_content(
             model=self._model,
             contents=cast(Any, contents),
-            config={"system_instruction": system_prompt},
+            config=cast(
+                Any,
+                {
+                    "system_instruction": system_prompt,
+                    **_compact_kwargs(kwargs, {"temperature"}),
+                },
+            ),
         )
         if inspect.isawaitable(response):
             response = await response

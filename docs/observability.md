@@ -44,6 +44,41 @@ class EventBus(Protocol):
 - Errors in callbacks are caught and ignored (fire-and-forget semantics)
 - Unsubscribing a non-existent ID is a no-op
 
+## JSONL Telemetry Sink
+
+Use `JsonlTelemetrySink` when you want durable append-only telemetry without
+bringing an observability backend. It works with any event type and redacts
+common secret fields recursively.
+
+```python
+from swarmline.observability import InMemoryEventBus, JsonlTelemetrySink
+
+bus = InMemoryEventBus()
+sink = JsonlTelemetrySink("output/swarmline_events.jsonl")
+
+sink.attach(
+    bus,
+    event_types=[
+        "llm_call_start",
+        "llm_call_end",
+        "structured_retry",
+        "pipeline_stage_end",
+        "fallback_selected",
+    ],
+)
+
+await bus.emit("pipeline_stage_end", {"stage": "judge", "ok": True})
+sink.detach()
+```
+
+You can also record directly:
+
+```python
+await sink.record("model_compare", {"provider": "openrouter", "model": "gpt-oss"})
+```
+
+Each row contains `schema_version`, `timestamp`, `event_type`, and `data`.
+
 ---
 
 ## Tracing

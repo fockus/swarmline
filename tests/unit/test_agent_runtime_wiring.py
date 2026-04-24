@@ -6,6 +6,7 @@ from typing import Any
 
 from swarmline.agent.config import AgentConfig
 from swarmline.agent.tool import tool
+from swarmline.runtime.types import ModelRequestOptions
 from swarmline.skills.types import McpServerSpec
 
 
@@ -67,6 +68,27 @@ class TestBuildPortableRuntimePlan:
         plan = build_portable_runtime_plan(config, "thin")
 
         assert plan.create_kwargs["mcp_servers"] == mcp_servers
+
+    def test_passes_structured_and_request_options_to_runtime_config(self) -> None:
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+
+        request_options = ModelRequestOptions(max_tokens=777, timeout_sec=15.0)
+        config = _make_config(
+            runtime="thin",
+            structured_mode="auto",
+            structured_schema_name="custom_schema_v1",
+            structured_strict=False,
+            max_model_retries=4,
+            request_options=request_options,
+        )
+
+        plan = build_portable_runtime_plan(config, "thin")
+
+        assert plan.config.structured_mode == "auto"
+        assert plan.config.structured_schema_name == "custom_schema_v1"
+        assert plan.config.structured_strict is False
+        assert plan.config.max_model_retries == 4
+        assert plan.config.request_options is request_options
 
 
 class TestResolveMcpServerUrl:

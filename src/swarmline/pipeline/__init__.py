@@ -36,10 +36,23 @@ from swarmline.pipeline.budget_types import (
     ThresholdResult,
 )
 from swarmline.pipeline.builder import PipelineBuilder
+from swarmline.pipeline.bridge import WorkflowBridge
 from swarmline.pipeline.gate import CallbackGate, CompositeGate
 from swarmline.pipeline.pipeline import Pipeline
 from swarmline.pipeline.protocols import CostTracker, GoalDecomposer, QualityGate
 from swarmline.pipeline.runner import PipelineRunner
+from swarmline.pipeline.typed import (
+    FallbackPolicy,
+    LoopPipelineStage,
+    ParallelPipelineStage,
+    PipelineContext,
+    TypedPipeline,
+    TypedPipelineResult,
+    TypedPipelineStage,
+    WorkflowChain,
+    WorkflowChainResult,
+    WorkflowStep,
+)
 from swarmline.pipeline.types import (
     BudgetPolicy,
     CostRecord,
@@ -65,15 +78,19 @@ __all__ = [
     "CostEvent",
     "CostRecord",
     "CostTracker",
+    "FallbackPolicy",
     "GateResult",
     "Goal",
     "GoalDecomposer",
     "InMemoryPersistentBudgetStore",
+    "LoopPipelineStage",
+    "ParallelPipelineStage",
     "PersistentBudgetStore",
     "PhaseResult",
     "PhaseStatus",
     "Pipeline",
     "PipelineBuilder",
+    "PipelineContext",
     "PipelinePhase",
     "PipelineResult",
     "PipelineRunner",
@@ -81,4 +98,11 @@ __all__ = [
     "SqlitePersistentBudgetStore",
     "ThresholdAction",
     "ThresholdResult",
+    "TypedPipeline",
+    "TypedPipelineResult",
+    "TypedPipelineStage",
+    "WorkflowBridge",
+    "WorkflowChain",
+    "WorkflowChainResult",
+    "WorkflowStep",
 ]

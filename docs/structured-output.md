@@ -172,6 +172,47 @@ print(sentiment.label)   # "positive"
 print(sentiment.score)   # 0.95
 ```
 
+### Native Provider Schema Mode
+
+By default, Swarmline keeps backward-compatible portable behavior: it appends
+schema instructions to the prompt and validates locally. For providers/models
+that support native structured output, opt into native or automatic mode:
+
+```python
+sentiment = await agent.query_structured(
+    "I love sunny days!",
+    Sentiment,
+    structured_mode="auto",  # "prompt" | "native" | "auto"
+    max_retries=3,
+)
+```
+
+- `prompt` — portable schema instruction + Pydantic validation.
+- `native` — provider-native JSON schema/JSON object request; fails fast if unsupported.
+- `auto` — uses native mode when provider capabilities allow it, otherwise falls back to prompt mode.
+
+For lower-level runtime use, pass provider-neutral request options:
+
+```python
+from swarmline import ModelRequestOptions
+
+config = AgentConfig(
+    system_prompt="Return typed JSON.",
+    runtime="thin",
+    model="openrouter:openai/gpt-oss-120b",
+    output_type=Sentiment,
+    structured_mode="native",
+    request_options=ModelRequestOptions(
+        max_tokens=1200,
+        temperature=0,
+        provider_options={"require_parameters": True},
+    ),
+)
+```
+
+Native mode still validates the final payload with Pydantic and retries invalid
+model outputs up to the configured retry limit.
+
 `query_structured()` handles:
 
 1. Setting `output_type` and `output_format` on a temporary config

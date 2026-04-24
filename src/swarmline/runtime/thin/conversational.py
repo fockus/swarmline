@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from swarmline.runtime.structured_output import append_structured_output_instruction
+from swarmline.runtime.structured_requests import build_llm_call_kwargs, structured_mode_uses_native
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.finalization import CheckpointFn, finalize_with_validation
 from swarmline.runtime.thin.helpers import (
@@ -33,15 +34,21 @@ async def run_conversational(
     on_retry: Callable[[int, float], None] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Run conversational."""
-    prompt = build_conversational_prompt(
-        append_structured_output_instruction(
+    native_structured = structured_mode_uses_native(config)
+    prompt_source = (
+        system_prompt
+        if native_structured
+        else append_structured_output_instruction(
             system_prompt,
             config.output_format,
             final_response_field="final_message",
         )
     )
+    prompt = build_conversational_prompt(prompt_source)
     lm_messages = _messages_to_lm(messages)
     buffered_postprocessing = _should_buffer_postprocessing(config)
+    llm_call_kwargs = build_llm_call_kwargs(config)
+    llm_call_kwargs.pop("_swarmline_structured_strategy", None)
 
     if buffered_postprocessing:
         try:
@@ -56,6 +63,7 @@ async def run_conversational(
                 retry_policy=config.retry_policy,
                 cancellation_token=config.cancellation_token,
                 on_retry=on_retry,
+                llm_kwargs=llm_call_kwargs,
             )
         except ThinLlmError as exc:
             yield RuntimeEvent.error(exc.error)
@@ -72,6 +80,19 @@ async def run_conversational(
             return
 
         raw = attempt.raw
+        if native_structured:
+            async for event in finalize_with_validation(
+                raw,
+                config,
+                lm_messages,
+                prompt,
+                llm_call,
+                start_time,
+                checkpoint=checkpoint,
+                llm_call_kwargs=llm_call_kwargs,
+            ):
+                yield event
+            return
         envelope = parse_envelope(raw)
         if envelope is not None and envelope.type == "final" and envelope.final_message:
             async for event in finalize_with_validation(
@@ -83,6 +104,7 @@ async def run_conversational(
                 start_time,
                 checkpoint=checkpoint,
                 assistant_metadata=thinking_metadata,
+                llm_call_kwargs=llm_call_kwargs,
             ):
                 yield event
             return
@@ -92,7 +114,7 @@ async def run_conversational(
             if checkpoint_event is not None:
                 yield checkpoint_event
                 return
-            raw = await llm_call(lm_messages, prompt)
+            raw = await llm_call(lm_messages, prompt, **llm_call_kwargs)
         except ThinLlmError as exc:
             yield RuntimeEvent.error(exc.error)
             return
@@ -121,6 +143,7 @@ async def run_conversational(
             llm_call,
             start_time,
             checkpoint=checkpoint,
+            llm_call_kwargs=llm_call_kwargs,
         ):
             yield event
         return
@@ -131,7 +154,12 @@ async def run_conversational(
         if checkpoint_event is not None:
             yield checkpoint_event
             return
-        stream_result = await try_stream_llm_call(llm_call, lm_messages, prompt)
+        stream_result = await try_stream_llm_call(
+            llm_call,
+            lm_messages,
+            prompt,
+            **llm_call_kwargs,
+        )
     except ThinLlmError as exc:
         yield RuntimeEvent.error(exc.error)
         return
@@ -143,6 +171,20 @@ async def run_conversational(
 
     if stream_result is not None:
         chunks, raw = stream_result
+
+        if native_structured:
+            async for event in finalize_with_validation(
+                raw,
+                config,
+                lm_messages,
+                prompt,
+                llm_call,
+                start_time,
+                checkpoint=checkpoint,
+                llm_call_kwargs=llm_call_kwargs,
+            ):
+                yield event
+            return
 
         # Emit per-chunk deltas
         for chunk in chunks:
@@ -160,6 +202,7 @@ async def run_conversational(
                 llm_call,
                 start_time,
                 checkpoint=checkpoint,
+                llm_call_kwargs=llm_call_kwargs,
             ):
                 yield event
             return
@@ -170,7 +213,7 @@ async def run_conversational(
             if checkpoint_event is not None:
                 yield checkpoint_event
                 return
-            raw = await llm_call(lm_messages, prompt)
+            raw = await llm_call(lm_messages, prompt, **llm_call_kwargs)
         except ThinLlmError as exc:
             yield RuntimeEvent.error(exc.error)
             return
@@ -189,6 +232,7 @@ async def run_conversational(
                 llm_call,
                 start_time,
                 checkpoint=checkpoint,
+                llm_call_kwargs=llm_call_kwargs,
             ):
                 yield event
             return
@@ -199,13 +243,27 @@ async def run_conversational(
         if checkpoint_event is not None:
             yield checkpoint_event
             return
-        raw = await llm_call(lm_messages, prompt)
+        raw = await llm_call(lm_messages, prompt, **llm_call_kwargs)
     except ThinLlmError as exc:
         yield RuntimeEvent.error(exc.error)
         return
     checkpoint_event = await _run_checkpoint(checkpoint)
     if checkpoint_event is not None:
         yield checkpoint_event
+        return
+
+    if native_structured:
+        async for event in finalize_with_validation(
+            raw,
+            config,
+            lm_messages,
+            prompt,
+            llm_call,
+            start_time,
+            checkpoint=checkpoint,
+            llm_call_kwargs=llm_call_kwargs,
+        ):
+            yield event
         return
 
     envelope = parse_envelope(raw)
@@ -215,7 +273,7 @@ async def run_conversational(
             if checkpoint_event is not None:
                 yield checkpoint_event
                 return
-            raw = await llm_call(lm_messages, prompt)
+            raw = await llm_call(lm_messages, prompt, **llm_call_kwargs)
         except ThinLlmError as exc:
             yield RuntimeEvent.error(exc.error)
             return
@@ -253,6 +311,7 @@ async def run_conversational(
         llm_call,
         start_time,
         checkpoint=checkpoint,
+        llm_call_kwargs=llm_call_kwargs,
     ):
         yield event
 

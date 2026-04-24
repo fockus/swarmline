@@ -126,6 +126,7 @@ class Agent:
         output_type: type[T],
         *,
         max_retries: int | None = None,
+        structured_mode: Any | None = None,
     ) -> T:
         """One-shot request returning a validated Pydantic model.
 
@@ -157,6 +158,10 @@ class Agent:
 
         # Build a temporary config with output_type set
         overrides: dict[str, Any] = {"output_type": output_type}
+        if max_retries is not None:
+            overrides["max_model_retries"] = max_retries
+        if structured_mode is not None:
+            overrides["structured_mode"] = structured_mode
         if self._config.output_format is None:
             schema_builder = getattr(output_type, "model_json_schema", None)
             if callable(schema_builder):
@@ -319,8 +324,18 @@ class Agent:
 
         return RuntimeConfig(
             runtime_name=runtime_name,
+            max_model_retries=(
+                effective_config.max_model_retries
+                if effective_config.max_model_retries is not None
+                else RuntimeConfig().max_model_retries
+            ),
             model=factory.resolve_agent_model(effective_config),
             output_format=effective_config.output_format,
+            output_type=effective_config.output_type,
+            structured_mode=effective_config.structured_mode,
+            structured_schema_name=effective_config.structured_schema_name,
+            structured_strict=effective_config.structured_strict,
+            request_options=effective_config.request_options,
             feature_mode=effective_config.feature_mode,
             required_capabilities=effective_config.require_capabilities,
             allow_native_features=effective_config.allow_native_features,
