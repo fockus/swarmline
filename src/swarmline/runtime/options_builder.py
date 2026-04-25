@@ -103,7 +103,9 @@ class ClaudeOptionsBuilder:
         if sdk_mcp_servers:
             all_mcp.update(sdk_mcp_servers)
 
-        sources: list[SettingSource] = setting_sources if setting_sources is not None else []
+        sources: list[SettingSource] = (
+            setting_sources if setting_sources is not None else []
+        )
 
         # Resolve thinking config: new `thinking` dict takes precedence,
         # fall back to deprecated `max_thinking_tokens` for backward compat.
@@ -134,7 +136,7 @@ class ClaudeOptionsBuilder:
             enable_file_checkpointing=enable_file_checkpointing,
             max_budget_usd=max_budget_usd,
             fallback_model=fallback_model,
-            hooks=hooks,  # type: ignore[arg-type]
+            hooks=hooks,  # ty: ignore[invalid-argument-type]  # claude_code_sdk hooks Literal keys vs str dict; runtime-equivalent
         )
         return opts
 

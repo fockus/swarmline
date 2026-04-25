@@ -213,7 +213,7 @@ class AnthropicAdapter:
             model=self._model,
             max_tokens=kwargs.get("max_tokens", 4096),
             system=system_prompt,
-            messages=api_messages,  # type: ignore[arg-type]
+            messages=api_messages,  # ty: ignore[invalid-argument-type]  # Anthropic MessageParam strict; runtime dict matches (stream)
             **_compact_kwargs(kwargs, {"temperature", "timeout"}),
         ) as stream:
             async for text in stream.text_stream:
@@ -240,8 +240,8 @@ class AnthropicAdapter:
             model=self._model,
             max_tokens=kwargs.get("max_tokens", 4096),
             system=system_prompt,
-            messages=api_messages,  # type: ignore[arg-type]
-            tools=tools,  # type: ignore[arg-type]
+            messages=api_messages,  # ty: ignore[invalid-argument-type]  # Anthropic MessageParam strict; runtime dict matches (create)
+            tools=tools,  # ty: ignore[invalid-argument-type]  # Anthropic ToolParam strict; runtime dict matches (create tools)
         )
         text_parts: list[str] = []
         tool_calls: list[NativeToolCall] = []
@@ -309,9 +309,9 @@ class OpenAICompatAdapter:
         api_messages = _apply_content_blocks(
             api_messages, _convert_content_blocks_openai
         )
-        response = await self._client.chat.completions.create(
+        response = await self._client.chat.completions.create(  # ty: ignore[no-matching-overload]  # OpenAI ChatCompletion overload — runtime dict structure matches (call)
             model=self._model,
-            messages=api_messages,  # type: ignore[arg-type]
+            messages=api_messages,
             max_tokens=kwargs.get("max_tokens", 4096),
             **_compact_kwargs(
                 kwargs,
@@ -330,9 +330,9 @@ class OpenAICompatAdapter:
         api_messages = _apply_content_blocks(
             api_messages, _convert_content_blocks_openai
         )
-        response = await self._client.chat.completions.create(
+        response = await self._client.chat.completions.create(  # ty: ignore[no-matching-overload]  # OpenAI ChatCompletion overload — runtime dict structure matches (stream)
             model=self._model,
-            messages=api_messages,  # type: ignore[arg-type]
+            messages=api_messages,
             max_tokens=kwargs.get("max_tokens", 4096),
             stream=True,
             **_compact_kwargs(
@@ -366,9 +366,9 @@ class OpenAICompatAdapter:
         )
         response = await self._client.chat.completions.create(
             model=self._model,
-            messages=api_messages,  # type: ignore[arg-type]
+            messages=api_messages,  # ty: ignore[invalid-argument-type]  # OpenAI MessageParam strict; runtime dict matches (call_with_tools)
             max_tokens=kwargs.get("max_tokens", 4096),
-            tools=tools,  # type: ignore[arg-type]
+            tools=tools,  # ty: ignore[invalid-argument-type]  # OpenAI ChatCompletionToolParam strict; runtime dict matches
         )
         choice = response.choices[0]
         text = choice.message.content or ""
@@ -505,7 +505,7 @@ class GoogleAdapter:
             model=self._model,
             contents=contents,  # type: ignore[arg-type]
             config=genai.types.GenerateContentConfig(
-                tools=google_tools,  # type: ignore[arg-type]
+                tools=google_tools,  # ty: ignore[invalid-argument-type]  # Google Tool union strict; runtime list matches
                 **config_kwargs,
             ),
         )

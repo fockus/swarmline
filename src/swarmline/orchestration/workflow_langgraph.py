@@ -24,7 +24,7 @@ def compile_to_langgraph(graph: WorkflowGraph) -> Any:
         raise ImportError(msg) from e
 
     # Build StateGraph with dict state
-    sg: Any = StateGraph(dict)  # type: ignore[type-var]
+    sg: Any = StateGraph(dict)  # ty: ignore[invalid-argument-type]  # langgraph TypedDictLikeV1 constraint; dict accepted at runtime
 
     # Add nodes (subgraphs are wrapped as regular nodes)
     for node_id, node_fn in graph._nodes.items():
@@ -36,7 +36,7 @@ def compile_to_langgraph(graph: WorkflowGraph) -> Any:
 
             sg.add_node(node_id, _sub_wrapper)
         else:
-            sg.add_node(node_id, node_fn)
+            sg.add_node(node_id, node_fn)  # ty: ignore[invalid-argument-type]  # langgraph _Node union strict; callable accepted at runtime
 
     for entry_id in graph._parallel_groups:
         if entry_id not in graph._nodes:

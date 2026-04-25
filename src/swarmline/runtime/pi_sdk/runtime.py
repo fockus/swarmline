@@ -236,7 +236,9 @@ class PiSdkRuntime:
         async for raw_line in self._process.stdout:
             yield raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
 
-    async def _handle_tool_request(self, data: dict[str, Any]) -> AsyncIterator[RuntimeEvent]:
+    async def _handle_tool_request(
+        self, data: dict[str, Any]
+    ) -> AsyncIterator[RuntimeEvent]:
         request_id = str(data.get("id", ""))
         name = str(data.get("name", ""))
         args = data.get("args") if isinstance(data.get("args"), dict) else {}
@@ -248,7 +250,7 @@ class PiSdkRuntime:
 
         ok = True
         try:
-            result = await self._execute_tool(name, args)
+            result = await self._execute_tool(name, args)  # ty: ignore[invalid-argument-type]  # args narrowed by isinstance dict check above
         except Exception as exc:
             ok = False
             result = f"{type(exc).__name__}: {exc}"
@@ -316,7 +318,11 @@ def _loads_json_object(line: str) -> dict[str, Any] | None:
 
 
 def _options_from_config(config: RuntimeConfig) -> PiSdkOptions:
-    raw = config.native_config.get("pi_sdk") if isinstance(config.native_config, dict) else None
+    raw = (
+        config.native_config.get("pi_sdk")
+        if isinstance(config.native_config, dict)
+        else None
+    )
     if isinstance(raw, PiSdkOptions):
         return raw
     if isinstance(raw, dict):

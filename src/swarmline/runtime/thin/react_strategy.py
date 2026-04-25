@@ -73,16 +73,25 @@ async def run_react(  # noqa: C901
             native_handled = False
             try:
                 tool_defs = [
-                    {"name": t.name, "description": t.description, "parameters": t.parameters}
+                    {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters,
+                    }
                     for t in tools
                 ]
                 native_result = await native_adapter.call_with_tools(
-                    lm_messages, prompt, tool_defs,
+                    lm_messages,
+                    prompt,
+                    tool_defs,
                 )
 
                 if native_result.tool_calls:
                     # Budget check (same as JSON-in-text path)
-                    if tool_calls_count + len(native_result.tool_calls) > config.max_tool_calls:
+                    if (
+                        tool_calls_count + len(native_result.tool_calls)
+                        > config.max_tool_calls
+                    ):
                         yield RuntimeEvent.error(
                             RuntimeErrorData(
                                 kind="budget_exceeded",
@@ -96,7 +105,10 @@ async def run_react(  # noqa: C901
                     # Parallel if >1, sequential otherwise
                     if len(native_result.tool_calls) > 1:
                         raw_results = await asyncio.gather(
-                            *[executor.execute(ntc.name, ntc.args) for ntc in native_result.tool_calls],
+                            *[
+                                executor.execute(ntc.name, ntc.args)
+                                for ntc in native_result.tool_calls
+                            ],
                             return_exceptions=True,
                         )
                         # Convert exceptions to JSON error strings
@@ -117,7 +129,9 @@ async def run_react(  # noqa: C901
                     # Emit tool_call_started/finished events and count
                     for ntc, result in zip(native_result.tool_calls, results):
                         yield RuntimeEvent.tool_call_started(
-                            name=ntc.name, args=ntc.args, correlation_id=ntc.id,
+                            name=ntc.name,
+                            args=ntc.args,
+                            correlation_id=ntc.id,
                         )
                         tool_ok = True
                         try:
@@ -136,12 +150,16 @@ async def run_react(  # noqa: C901
 
                     # Append messages for next turn
                     if native_result.text:
-                        lm_messages.append({"role": "assistant", "content": native_result.text})
+                        lm_messages.append(
+                            {"role": "assistant", "content": native_result.text}
+                        )
                     for ntc, result in zip(native_result.tool_calls, results):
-                        lm_messages.append({
-                            "role": "user",
-                            "content": f"Result {ntc.name}: {result}",
-                        })
+                        lm_messages.append(
+                            {
+                                "role": "user",
+                                "content": f"Result {ntc.name}: {result}",
+                            }
+                        )
                     new_messages.append(
                         Message(role="assistant", content=native_result.text or "")
                     )
@@ -192,7 +210,10 @@ async def run_react(  # noqa: C901
                 )
                 if attempt.thinking:
                     yield RuntimeEvent.thinking_delta(attempt.thinking)
-                    thinking_metadata = {"thinking": attempt.thinking, "non_compactable": True}
+                    thinking_metadata = {
+                        "thinking": attempt.thinking,
+                        "non_compactable": True,
+                    }
                 stream_chunks = attempt.chunks
                 raw = attempt.raw
             else:
@@ -227,7 +248,9 @@ async def run_react(  # noqa: C901
                     if checkpoint_event is not None:
                         yield checkpoint_event
                         return
-                    yield RuntimeEvent.status("LLM returned non-JSON output; using text fallback")
+                    yield RuntimeEvent.status(
+                        "LLM returned non-JSON output; using text fallback"
+                    )
                     async for event in finalize_with_validation(
                         fallback_text,
                         config,
@@ -283,14 +306,12 @@ async def run_react(  # noqa: C901
                 correlation_id=cid,
             )
 
-
             result = await executor.execute(tc.name, tc.args)
 
             checkpoint_event = await _run_checkpoint(checkpoint)
             if checkpoint_event is not None:
                 yield checkpoint_event
                 return
-
 
             tool_ok = True
             try:
@@ -309,11 +330,12 @@ async def run_react(  # noqa: C901
 
             tool_calls_count += 1
 
-
             new_messages.append(
                 Message(
                     role="assistant",
-                    content=tc.assistant_message if hasattr(tc, "assistant_message") else "",
+                    content=tc.assistant_message
+                    if hasattr(tc, "assistant_message")
+                    else "",  # ty: ignore[invalid-argument-type]  # tc.assistant_message hasattr-narrow not propagated by ty
                     metadata={"tool_call": tc.name},
                 )
             )
@@ -325,7 +347,9 @@ async def run_react(  # noqa: C901
                 )
             )
             lm_messages.append({"role": "assistant", "content": f"Вызываю {tc.name}"})
-            lm_messages.append({"role": "user", "content": f"Результат {tc.name}: {result}"})
+            lm_messages.append(
+                {"role": "user", "content": f"Результат {tc.name}: {result}"}
+            )
 
             if envelope.assistant_message:
                 yield RuntimeEvent.status(envelope.assistant_message)

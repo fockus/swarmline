@@ -80,11 +80,10 @@ def _extract_metrics(data: dict[str, Any]) -> TurnMetrics | None:
     if not isinstance(metrics, dict):
         return None
     return TurnMetrics(
-        input_tokens=_int_or_zero(metrics.get("input_tokens")),
-        output_tokens=_int_or_zero(metrics.get("output_tokens")),
-        total_tokens=_int_or_zero(metrics.get("total_tokens")),
+        tokens_in=_int_or_zero(metrics.get("input_tokens")),
+        tokens_out=_int_or_zero(metrics.get("output_tokens")),
         tool_calls_count=_int_or_zero(metrics.get("tool_calls_count")),
-        model=_optional_str(metrics.get("model")),
+        model=_optional_str(metrics.get("model")) or "",
     )
 
 

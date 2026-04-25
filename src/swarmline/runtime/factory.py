@@ -60,10 +60,8 @@ class RuntimeFactory:
         if runtime_override and self._is_valid_name(runtime_override):
             return runtime_override
 
-
         if config and self._is_valid_name(config.runtime_name):
             return config.runtime_name
-
 
         env_runtime = os.environ.get("SWARMLINE_RUNTIME", "").strip().lower()
         if self._is_valid_name(env_runtime):
@@ -143,7 +141,7 @@ class RuntimeFactory:
         from swarmline.runtime.types import resolve_model_name
 
         model = config.model if hasattr(config, "model") else config
-        return resolve_model_name(model)
+        return resolve_model_name(model)  # ty: ignore[invalid-argument-type]  # model narrowed by hasattr check above; ty doesn't propagate
 
     def create(
         self,
@@ -154,8 +152,6 @@ class RuntimeFactory:
         """Create."""
         name = self.resolve_runtime_name(config, runtime_override)
         effective_config = config or RuntimeConfig(runtime_name=name)
-
-
 
         if runtime_override and name != getattr(config, "runtime_name", name):
             cap_error = self.validate_capabilities(
@@ -266,7 +262,9 @@ class RuntimeFactory:
             return _ErrorRuntime(
                 RuntimeErrorData(
                     kind="dependency_missing",
-                    message=("anthropic is not installed. Install: pip install swarmline[thin]"),
+                    message=(
+                        "anthropic is not installed. Install: pip install swarmline[thin]"
+                    ),
                     recoverable=False,
                 )
             )

@@ -36,9 +36,9 @@ def configure_logging(level: str = "info", fmt: str = "json") -> None:
     ]
 
     if fmt == "json":
-        processors.append(structlog.processors.JSONRenderer())
+        processors.append(structlog.processors.JSONRenderer())  # ty: ignore[invalid-argument-type]  # structlog Processor union strict; concrete renderer accepted at runtime
     else:
-        processors.append(structlog.dev.ConsoleRenderer())
+        processors.append(structlog.dev.ConsoleRenderer())  # ty: ignore[invalid-argument-type]  # structlog Processor union strict; concrete renderer accepted at runtime
 
     structlog.configure(
         processors=processors,  # type: ignore[arg-type]

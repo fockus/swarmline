@@ -103,7 +103,7 @@ async def plan_approve(
         plan = await session.plan_store.load(plan_id)
         if plan is None:
             return {"ok": False, "error": f"Plan not found: {plan_id}"}
-        updated = plan.approve(approved_by)  # type: ignore[arg-type]
+        updated = plan.approve(approved_by)  # ty: ignore[invalid-argument-type]  # Plan.approve(by) Literal narrow not propagated by ty
         await session.plan_store.save(updated)
         return {"ok": True, "data": _plan_to_dict(updated)}
     except ValueError as exc:

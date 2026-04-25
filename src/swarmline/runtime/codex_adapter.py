@@ -8,7 +8,11 @@ from typing import Any
 import structlog
 
 from swarmline.multi_agent.graph_types import LifecycleMode
-from swarmline.protocols.host_adapter import AgentAuthority, AgentHandle, AgentHandleStatus
+from swarmline.protocols.host_adapter import (
+    AgentAuthority,
+    AgentHandle,
+    AgentHandleStatus,
+)
 from swarmline.runtime.model_registry import get_registry
 
 _log = structlog.get_logger(component="codex_adapter")
@@ -21,7 +25,9 @@ class CodexAdapter:
     Uses ModelRegistry for model name resolution ("codex" → "codex-mini").
     """
 
-    def __init__(self, default_model: str = "codex", api_key: str | None = None) -> None:
+    def __init__(
+        self, default_model: str = "codex", api_key: str | None = None
+    ) -> None:
         self._default_model = default_model
         self._api_key = api_key
         self._sessions: dict[str, dict[str, Any]] = {}
@@ -80,7 +86,11 @@ class CodexAdapter:
             ) from None
 
         try:
-            client = openai.AsyncOpenAI(api_key=self._api_key) if self._api_key else openai.AsyncOpenAI()
+            client = (
+                openai.AsyncOpenAI(api_key=self._api_key)
+                if self._api_key
+                else openai.AsyncOpenAI()
+            )
 
             messages = [
                 {"role": "system", "content": session["system_prompt"]},
@@ -90,7 +100,7 @@ class CodexAdapter:
 
             response = await client.chat.completions.create(
                 model=session["model"],
-                messages=messages,
+                messages=messages,  # ty: ignore[invalid-argument-type]  # OpenAI ChatCompletionMessageParam strict; runtime dict structure matches
             )
 
             result = response.choices[0].message.content or "(no response)"
