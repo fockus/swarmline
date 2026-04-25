@@ -115,16 +115,48 @@ Pattern applied: `# ty: ignore[unresolved-import]  # optional dep` (ty-native, s
 ---
 
 <!-- mb-stage:2 -->
-### Stage 2: <!-- title -->
+### Stage 2: Unresolved-attribute batch — 4 mixed fixes ✅ DONE (2026-04-25)
+
+**Result (verified):** ty 40 → 36 (-4, 100% of unresolved-attribute closed).
+Test `tests/unit/test_attribute_resolution_fixes.py` introduced (8 cases, 3 invariants).
+3 source files touched. Pattern split: 3× ty-native ignore (`# ty: ignore[unresolved-attribute]`),
+1× structural cast (Sprint 1A's `cast(CursorResult, result).rowcount`). Bonus cleanup: removed
+2 dead `# type: ignore[union-attr]` (lines 349/350 pre-format) in llm_providers.py while in the file.
+
+**Real distribution (verified 2026-04-25 against baseline=40):**
+4 unresolved-attribute diagnostics, **three distinct patterns** (not all DecoratedTool as the scaffold suggested):
+
+| # | Location | Pattern | Approach |
+|---|---|---|---|
+| 1 | `runtime/thin/executor.py:280` | Manual marker assignment (`fn.__tool_definition__ = True`) on plain function | ty-native ignore (no decorator → no Protocol opportunity; rewriting flow is out-of-scope cleanup) |
+| 2 | `runtime/thin/llm_providers.py:418` | `response.text` after `await` — runtime is duck-typed, no Protocol available | ty-native ignore |
+| 3 | `runtime/thin/llm_providers.py:478` | `content.parts` on `Unknown \| Content \| None` (Google Gemini SDK return) | ty-native ignore (gated by `response.candidates` truthy check at runtime) |
+| 4 | `session/backends_postgres.py:61` | `result.rowcount` on abstract `Result[Any]` — IDENTICAL to Sprint 1A `agent_registry_postgres.py` Stage 3 fix | `cast(CursorResult, result).rowcount` — structural, type-safe |
 
 **What to do:**
--
+- Cases 1-3: replace dead `# type: ignore[attr-defined|return-value|union-attr]` with ty-native `# ty: ignore[unresolved-attribute]  # <reason>`. Each reason explains *why* a structural fix is unwarranted (e.g. duck-typed third-party SDK return, runtime-gated invariant).
+- Case 4: apply Sprint 1A's CursorResult cast pattern verbatim:
+  - Add `from typing import cast`
+  - Add `from sqlalchemy import CursorResult` (next to existing `text` import)
+  - Replace `result.rowcount > 0  # type: ignore[attr-defined]` → `cast(CursorResult, result).rowcount > 0`
+- Same canonical reason-comment policy as Stage 1 (`# optional dep` → here `# <pattern reason>`), enforced by tests.
 
-**Testing (TDD):**
--
+**Testing (TDD — tests BEFORE implementation):**
+- New `tests/unit/test_attribute_resolution_fixes.py` parametrized over the 4 locations:
+  - `test_each_location_has_expected_fix` — line content matches expected token (`# ty: ignore[unresolved-attribute]` for cases 1-3; `cast(CursorResult` for case 4).
+  - `test_no_dead_mypy_attr_codes_in_affected_files` — sweep the 3 affected files for `# type: ignore[attr-defined]`, `# type: ignore[union-attr]`, `# type: ignore[return-value]` referencing these contexts; cleanup invariant.
+  - `test_backends_postgres_imports_cursor_result_and_cast` — source-level guard that the structural fix (case 4) actually pulls in `cast` and `CursorResult` at module top.
 
-**DoD:**
-- [ ]
+**DoD (Definition of Done) — SMART:**
+- [ ] `ty check src/swarmline/ 2>&1 | grep "unresolved-attribute" | wc -l` → **0**
+- [ ] `ty check src/swarmline/ 2>&1 | grep "Found .* diagnostics"` → **≤36** (40 − 4 = 36, no regressions in other categories)
+- [ ] `tests/architecture/ty_baseline.txt` updated to **36**
+- [ ] `tests/unit/test_attribute_resolution_fixes.py` exists, all parametrized cases green
+- [ ] Full offline `pytest -q` green (5200+ tests, no regressions)
+- [ ] `ruff check` and `ruff format --check` clean on touched files
+- [ ] `git diff --stat src/` shows changes only in 3 listed files (scope discipline)
+
+**Code rules:** SOLID, DRY (mirror Sprint 1A's CursorResult pattern verbatim), KISS, YAGNI.
 
 ---
 

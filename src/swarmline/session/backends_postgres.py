@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import text
+from sqlalchemy import CursorResult, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 POSTGRES_SESSION_SCHEMA = """
@@ -46,10 +46,12 @@ class PostgresSessionBackend:
 
     async def load(self, key: str) -> dict[str, Any] | None:
         async with self._session() as session:
-            row = (await session.execute(
-                text("SELECT state FROM sessions WHERE key = :key"),
-                {"key": key},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT state FROM sessions WHERE key = :key"),
+                    {"key": key},
+                )
+            ).fetchone()
             return row[0] if row else None
 
     async def delete(self, key: str) -> bool:
@@ -58,7 +60,11 @@ class PostgresSessionBackend:
                 text("DELETE FROM sessions WHERE key = :key"),
                 {"key": key},
             )
-            return result.rowcount > 0  # type: ignore[attr-defined]
+            # SQLAlchemy 2.x: session.execute() returns abstract Result[Any]
+            # without rowcount; CursorResult (DML statements) has it. Cast
+            # rather than silence ty with type:ignore (mirror Sprint 1A
+            # agent_registry_postgres.py Stage 3 pattern).
+            return cast(CursorResult, result).rowcount > 0
 
     async def list_keys(self) -> list[str]:
         async with self._session() as session:

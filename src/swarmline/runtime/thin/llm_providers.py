@@ -76,9 +76,7 @@ def _convert_content_blocks_openai(
     for block in content_blocks:
         if block.get("type") == "image":
             data_uri = f"data:{block['media_type']};base64,{block['data']}"
-            result.append(
-                {"type": "image_url", "image_url": {"url": data_uri}}
-            )
+            result.append({"type": "image_url", "image_url": {"url": data_uri}})
         else:
             result.append({"type": "text", "text": block.get("text", "")})
     return result
@@ -92,7 +90,12 @@ def _convert_content_blocks_google(
     for block in content_blocks:
         if block.get("type") == "image":
             result.append(
-                {"inline_data": {"mime_type": block["media_type"], "data": block["data"]}}
+                {
+                    "inline_data": {
+                        "mime_type": block["media_type"],
+                        "data": block["data"],
+                    }
+                }
             )
         else:
             result.append({"text": block.get("text", "")})
@@ -118,7 +121,11 @@ def _apply_content_blocks(
 
 def _compact_kwargs(kwargs: dict[str, Any], allowed: set[str]) -> dict[str, Any]:
     """Return only explicitly provided provider kwargs."""
-    return {key: value for key, value in kwargs.items() if key in allowed and value is not None}
+    return {
+        key: value
+        for key, value in kwargs.items()
+        if key in allowed and value is not None
+    }
 
 
 class AnthropicAdapter:
@@ -150,7 +157,9 @@ class AnthropicAdapter:
     ) -> str | Any:
         thinking_config = kwargs.pop("_thinking_config", None)
         api_messages = _filter_chat_messages(messages)
-        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_anthropic)
+        api_messages = _apply_content_blocks(
+            api_messages, _convert_content_blocks_anthropic
+        )
 
         create_kwargs: dict[str, Any] = {
             "model": self._model,
@@ -171,7 +180,10 @@ class AnthropicAdapter:
             text_parts: list[str] = []
             thinking_parts: list[str] = []
             for block in response.content:
-                if hasattr(block, "thinking") and getattr(block, "type", None) == "thinking":
+                if (
+                    hasattr(block, "thinking")
+                    and getattr(block, "type", None) == "thinking"
+                ):
                     thinking_parts.append(block.thinking)
                 elif hasattr(block, "text"):
                     text_parts.append(block.text)
@@ -194,7 +206,9 @@ class AnthropicAdapter:
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         api_messages = _filter_chat_messages(messages)
-        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_anthropic)
+        api_messages = _apply_content_blocks(
+            api_messages, _convert_content_blocks_anthropic
+        )
         async with self._client.messages.stream(
             model=self._model,
             max_tokens=kwargs.get("max_tokens", 4096),
@@ -213,10 +227,15 @@ class AnthropicAdapter:
         **kwargs: Any,
     ) -> Any:
         """Call Anthropic API with native tool calling."""
-        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+        from swarmline.runtime.thin.native_tools import (
+            NativeToolCall,
+            NativeToolCallResult,
+        )
 
         api_messages = _filter_chat_messages(messages)
-        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_anthropic)
+        api_messages = _apply_content_blocks(
+            api_messages, _convert_content_blocks_anthropic
+        )
         response = await self._client.messages.create(
             model=self._model,
             max_tokens=kwargs.get("max_tokens", 4096),
@@ -266,8 +285,12 @@ class OpenAICompatAdapter:
         self._client = openai.AsyncOpenAI(**client_kwargs)
 
     @staticmethod
-    def _prepare(messages: list[dict[str, Any]], system_prompt: str) -> list[dict[str, Any]]:
-        api_messages: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
+    def _prepare(
+        messages: list[dict[str, Any]], system_prompt: str
+    ) -> list[dict[str, Any]]:
+        api_messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system_prompt}
+        ]
         for m in messages:
             if m["role"] in ("user", "assistant"):
                 d: dict[str, Any] = {"role": m["role"], "content": m["content"]}
@@ -283,7 +306,9 @@ class OpenAICompatAdapter:
         **kwargs: Any,
     ) -> str:
         api_messages = self._prepare(messages, system_prompt)
-        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_openai)
+        api_messages = _apply_content_blocks(
+            api_messages, _convert_content_blocks_openai
+        )
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
@@ -302,7 +327,9 @@ class OpenAICompatAdapter:
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         api_messages = self._prepare(messages, system_prompt)
-        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_openai)
+        api_messages = _apply_content_blocks(
+            api_messages, _convert_content_blocks_openai
+        )
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
@@ -328,10 +355,15 @@ class OpenAICompatAdapter:
         """Call OpenAI-compatible API with native tool calling."""
         import json as _json
 
-        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+        from swarmline.runtime.thin.native_tools import (
+            NativeToolCall,
+            NativeToolCallResult,
+        )
 
         api_messages = self._prepare(messages, system_prompt)
-        api_messages = _apply_content_blocks(api_messages, _convert_content_blocks_openai)
+        api_messages = _apply_content_blocks(
+            api_messages, _convert_content_blocks_openai
+        )
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # type: ignore[arg-type]
@@ -346,8 +378,10 @@ class OpenAICompatAdapter:
                 tool_calls.append(
                     NativeToolCall(
                         id=tc.id,
-                        name=tc.function.name,  # type: ignore[union-attr]
-                        args=_json.loads(tc.function.arguments) if tc.function.arguments else {},  # type: ignore[union-attr]
+                        name=tc.function.name,
+                        args=_json.loads(tc.function.arguments)
+                        if tc.function.arguments
+                        else {},
                     )
                 )
         return NativeToolCallResult(
@@ -415,7 +449,7 @@ class GoogleAdapter:
         )
         if inspect.isawaitable(response):
             response = await response
-        return response.text  # type: ignore[return-value]
+        return response.text  # ty: ignore[unresolved-attribute]  # awaited duck-typed SDK return
 
     async def stream(
         self,
@@ -454,7 +488,10 @@ class GoogleAdapter:
         """Call Google Gemini API with native tool calling."""
         import google.genai as genai
 
-        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+        from swarmline.runtime.thin.native_tools import (
+            NativeToolCall,
+            NativeToolCallResult,
+        )
 
         contents = self._prepare(messages)
         tool_declarations = [genai.types.FunctionDeclaration(**t) for t in tools]
@@ -475,15 +512,19 @@ class GoogleAdapter:
         text = ""
         tool_calls: list[NativeToolCall] = []
         if response.candidates:
-            for part in response.candidates[0].content.parts:  # type: ignore[union-attr]
+            for part in response.candidates[0].content.parts:  # ty: ignore[unresolved-attribute]  # Gemini Content.parts — gated by candidates truthy check
                 if hasattr(part, "text") and part.text:
                     text += part.text
                 elif hasattr(part, "function_call") and part.function_call:
                     fc = part.function_call
                     tool_calls.append(
                         NativeToolCall(
-                            id=str(fc.id) if hasattr(fc, "id") and fc.id else f"google_{len(tool_calls)}",
-                            name=str(fc.name) if fc.name else f"unknown_{len(tool_calls)}",
+                            id=str(fc.id)
+                            if hasattr(fc, "id") and fc.id
+                            else f"google_{len(tool_calls)}",
+                            name=str(fc.name)
+                            if fc.name
+                            else f"unknown_{len(tool_calls)}",
                             args=dict(fc.args) if fc.args else {},
                         )
                     )

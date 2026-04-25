@@ -72,7 +72,10 @@ class ToolExecutor:
                     {"error": f"Hook blocked: {hook_result.message}"},
                     ensure_ascii=False,
                 )
-            if hook_result.action == "modify" and hook_result.modified_input is not None:
+            if (
+                hook_result.action == "modify"
+                and hook_result.modified_input is not None
+            ):
                 args = hook_result.modified_input
 
         # Policy check (after hooks, before execution)
@@ -92,7 +95,10 @@ class ToolExecutor:
             decision = self._tool_policy.can_use_tool(tool_name, args, state)
             if isinstance(decision, PermissionDeny):
                 return json.dumps({"error": decision.message}, ensure_ascii=False)
-            if isinstance(decision, PermissionAllow) and decision.updated_input is not None:
+            if (
+                isinstance(decision, PermissionAllow)
+                and decision.updated_input is not None
+            ):
                 args = decision.updated_input
 
         # Local tool
@@ -158,7 +164,9 @@ class ToolExecutor:
         return result
 
     @staticmethod
-    def _should_call_with_kwargs(func: Callable[..., Any], args: dict[str, Any]) -> bool:
+    def _should_call_with_kwargs(
+        func: Callable[..., Any], args: dict[str, Any]
+    ) -> bool:
         """Should call with kwargs."""
         if hasattr(func, "__tool_definition__"):
             return True
@@ -277,7 +285,7 @@ class ToolExecutor:
                 )
             return json.dumps(result, ensure_ascii=False, default=str)
 
-        read_mcp_resource.__tool_definition__ = True  # type: ignore[attr-defined]
+        read_mcp_resource.__tool_definition__ = True  # ty: ignore[unresolved-attribute]  # marker attr set by tool registration
         return read_mcp_resource
 
     @property
