@@ -16,7 +16,6 @@ commands:
   format: "ruff format src/ tests/"
   format_check: "ruff format --check src/ tests/"
   typecheck: "ty check src/swarmline/"
-  typecheck_mypy: "mypy src/swarmline/"
   lint_imports: "ruff check src/ --select I"
 
 quality_gates:

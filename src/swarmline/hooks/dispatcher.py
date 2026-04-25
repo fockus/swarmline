@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from typing import Any, Literal, Protocol, runtime_checkable
 
+from swarmline.hooks._helpers import _hook_name
 from swarmline.hooks.registry import HookRegistry
 
 logger = logging.getLogger(__name__)
@@ -103,7 +104,7 @@ class DefaultHookDispatcher:
             except Exception:
                 logger.warning(
                     "PreToolUse hook %r raised an exception, allowing execution (fail-open)",
-                    entry.callback.__name__,
+                    _hook_name(entry.callback),
                     exc_info=True,
                 )
                 continue
@@ -111,7 +112,10 @@ class DefaultHookDispatcher:
             hook_result = self._coerce_pre_tool_result(result)
             if hook_result.action == "block":
                 return hook_result
-            if hook_result.action == "modify" and hook_result.modified_input is not None:
+            if (
+                hook_result.action == "modify"
+                and hook_result.modified_input is not None
+            ):
                 current_input = hook_result.modified_input
                 was_modified = True
 
@@ -155,7 +159,7 @@ class DefaultHookDispatcher:
             except Exception:
                 logger.warning(
                     "PostToolUse hook %r raised an exception, skipping (fail-open)",
-                    entry.callback.__name__,
+                    _hook_name(entry.callback),
                     exc_info=True,
                 )
                 continue
@@ -191,7 +195,7 @@ class DefaultHookDispatcher:
             except Exception:
                 logger.warning(
                     "Stop hook %r raised an exception, continuing (fail-open)",
-                    entry.callback.__name__,
+                    _hook_name(entry.callback),
                     exc_info=True,
                 )
 
@@ -204,7 +208,7 @@ class DefaultHookDispatcher:
             except Exception:
                 logger.warning(
                     "UserPromptSubmit hook %r raised an exception, keeping current prompt (fail-open)",
-                    entry.callback.__name__,
+                    _hook_name(entry.callback),
                     exc_info=True,
                 )
                 continue

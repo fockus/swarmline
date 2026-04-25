@@ -214,6 +214,7 @@ markers = [
     "requires_langchain: requires langchain (pip install swarmline[deepagents])",
     "live: requires network access (web search, API calls)",
     "integration: integration tests with external dependencies",
+    "slow: tests that take >5 seconds (e.g. subprocess invocations of ty/ruff)",
 ]
 
 [tool.ruff]

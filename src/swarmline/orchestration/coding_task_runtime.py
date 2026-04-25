@@ -20,7 +20,7 @@ from swarmline.orchestration.coding_task_types import (
 )
 
 if TYPE_CHECKING:
-    from swarmline.protocols.graph_task import GraphTaskBoard
+    from swarmline.orchestration.coding_task_ports import CodingTaskBoardPort
     from swarmline.session.task_session_store import TaskSessionStore
 
 
@@ -41,7 +41,7 @@ class DefaultCodingTaskRuntime:
 
     def __init__(
         self,
-        board: GraphTaskBoard,
+        board: CodingTaskBoardPort,
         session_store: TaskSessionStore,
         *,
         namespace: str = "coding",
@@ -70,7 +70,9 @@ class DefaultCodingTaskRuntime:
     async def _persist_snapshot(self, snapshot: CodingTaskSnapshot) -> None:
         """Save a snapshot through the session store."""
         await self._session_store.save(
-            self._namespace, snapshot.task_id, snapshot.to_dict(),
+            self._namespace,
+            snapshot.task_id,
+            snapshot.to_dict(),
         )
 
     async def _build_snapshot(
@@ -94,9 +96,9 @@ class DefaultCodingTaskRuntime:
             created_at=created_at or (existing.created_at if existing else now),
             updated_at=now,
             metadata=MappingProxyType(
-                dict(metadata) if metadata is not None else (
-                    dict(existing.metadata) if existing else {}
-                ),
+                dict(metadata)
+                if metadata is not None
+                else (dict(existing.metadata) if existing else {}),
             ),
         )
 
@@ -185,7 +187,8 @@ class DefaultCodingTaskRuntime:
         return [b.id for b in blockers]
 
     async def list_by_status(
-        self, status: CodingTaskStatus,
+        self,
+        status: CodingTaskStatus,
     ) -> list[CodingTaskSnapshot]:
         task_status_val = _CODING_TO_TASK[status.value]
         task_status = TaskStatus(task_status_val)

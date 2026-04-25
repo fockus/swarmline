@@ -85,7 +85,11 @@ def create_graph_tools(
                 return f"Denied: hiring '{name}' was rejected by approval gate."
 
         agent_id = uuid.uuid4().hex[:10]
-        tools_tuple = tuple(t.strip() for t in allowed_tools.split(",") if t.strip()) if allowed_tools else ()
+        tools_tuple = (
+            tuple(t.strip() for t in allowed_tools.split(",") if t.strip())
+            if allowed_tools
+            else ()
+        )
 
         node = AgentNode(
             id=agent_id,
@@ -174,7 +178,9 @@ def create_graph_tools(
 
         if communication is not None:
             await communication.escalate(
-                from_agent_id, message, task_id=task_id or None,
+                from_agent_id,
+                message,
+                task_id=task_id or None,
             )
         else:
             # Fallback: walk chain manually and log
@@ -193,7 +199,7 @@ def create_graph_tools(
         )
 
     return [
-        hire_agent.__tool_definition__,  # type: ignore[attr-defined]
-        delegate_task.__tool_definition__,  # type: ignore[attr-defined]
-        escalate.__tool_definition__,  # type: ignore[attr-defined]
+        hire_agent.__tool_definition__,
+        delegate_task.__tool_definition__,
+        escalate.__tool_definition__,
     ]

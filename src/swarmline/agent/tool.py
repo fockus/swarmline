@@ -9,8 +9,9 @@ import inspect
 import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, get_args, get_origin
+from typing import Any, cast, get_args, get_origin
 
+from swarmline.agent.tool_protocol import ToolFunction
 from swarmline.runtime.types import ToolSpec
 
 # Mapping Python types -> JSON Schema types
@@ -46,7 +47,7 @@ def tool(
     description: str | None = None,
     *,
     schema: dict[str, Any] | None = None,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> Callable[[Callable[..., Any]], ToolFunction]:
     """Standalone decorator for defining tools.
 
     Args:
@@ -55,11 +56,14 @@ def tool(
         schema: explicit JSON Schema (if None, auto-inferred from type hints).
 
     Returns:
-        Decorator that adds __tool_definition__ to the function.
+        Decorator that adds __tool_definition__ to the function and returns
+        a ToolFunction-typed callable.
     """
 
-    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
-        resolved_desc = description if description is not None else _extract_description(fn)
+    def decorator(fn: Callable[..., Any]) -> ToolFunction:
+        resolved_desc = (
+            description if description is not None else _extract_description(fn)
+        )
         params = schema if schema is not None else _infer_schema(fn)
         handler = _ensure_async(fn)
 
@@ -69,8 +73,12 @@ def tool(
             parameters=params,
             handler=handler,
         )
-        fn.__tool_definition__ = tool_def  # type: ignore[attr-defined]
-        return fn
+        # Stamp __tool_definition__ via a typed cast — the function object
+        # gains the attribute at runtime (Python is dynamic), and the cast
+        # tells `ty` that downstream callers can read it without errors.
+        typed_fn = cast(ToolFunction, fn)
+        typed_fn.__tool_definition__ = tool_def
+        return typed_fn
 
     return decorator
 
@@ -139,7 +147,9 @@ def _parse_google_docstring_args(fn: Callable[..., Any]) -> dict[str, str]:
             if current_param is not None:
                 result[current_param] = " ".join(current_desc_lines).strip()
             current_param = param_match.group(1)
-            current_desc_lines = [param_match.group(2).strip()] if param_match.group(2).strip() else []
+            current_desc_lines = (
+                [param_match.group(2).strip()] if param_match.group(2).strip() else []
+            )
         elif current_param is not None and stripped:
             # Continuation line for the current param
             current_desc_lines.append(stripped)

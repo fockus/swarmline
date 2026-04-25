@@ -80,7 +80,7 @@ class ProjectInstructionFilter:
 
         Returns contents ordered from outermost parent to cwd (ready for merge).
         """
-        segments: list[tuple[int, str]] = []
+        segments: list[tuple[int, list[str]]] = []
         current = self._cwd
         depth = 0
 

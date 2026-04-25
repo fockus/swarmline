@@ -14,6 +14,7 @@ from swarmline.agent.middleware import (
 from swarmline.agent.result import Result
 from swarmline.agent.structured import StructuredOutputError
 from swarmline.agent.tool import ToolDefinition, tool
+from swarmline.agent.tool_protocol import ToolFunction
 
 __all__ = [
     "Agent",
@@ -25,8 +26,9 @@ __all__ = [
     "Result",
     "StructuredOutputError",
     "SecurityGuard",
+    "ToolDefinition",
+    "ToolFunction",
     "ToolOutputCompressor",
     "build_middleware_stack",
-    "ToolDefinition",
     "tool",
 ]

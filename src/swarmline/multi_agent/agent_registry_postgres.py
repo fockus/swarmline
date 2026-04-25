@@ -6,9 +6,9 @@ import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import asdict
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import text
+from sqlalchemy import CursorResult, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
@@ -53,10 +53,12 @@ class PostgresAgentRegistry:
 
     async def register(self, record: AgentRecord) -> None:
         async with self._session(commit=True) as session:
-            existing = (await session.execute(
-                text("SELECT 1 FROM agent_registry WHERE id = :id"),
-                {"id": record.id},
-            )).fetchone()
+            existing = (
+                await session.execute(
+                    text("SELECT 1 FROM agent_registry WHERE id = :id"),
+                    {"id": record.id},
+                )
+            ).fetchone()
             if existing:
                 raise ValueError(f"Agent '{record.id}' already registered")
             await session.execute(
@@ -65,21 +67,27 @@ class PostgresAgentRegistry:
                     "VALUES (:id, :role, :status, :parent_id, CAST(:data AS jsonb))"
                 ),
                 {
-                    "id": record.id, "role": record.role,
-                    "status": record.status.value, "parent_id": record.parent_id,
+                    "id": record.id,
+                    "role": record.role,
+                    "status": record.status.value,
+                    "parent_id": record.parent_id,
                     "data": json.dumps(self._serialize(record)),
                 },
             )
 
     async def get(self, agent_id: str) -> AgentRecord | None:
         async with self._session() as session:
-            row = (await session.execute(
-                text("SELECT data FROM agent_registry WHERE id = :id"),
-                {"id": agent_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM agent_registry WHERE id = :id"),
+                    {"id": agent_id},
+                )
+            ).fetchone()
             return self._deserialize(row[0]) if row else None
 
-    async def list_agents(self, filters: AgentFilter | None = None) -> list[AgentRecord]:
+    async def list_agents(
+        self, filters: AgentFilter | None = None
+    ) -> list[AgentRecord]:
         async with self._session() as session:
             conditions: list[str] = []
             params: dict[str, Any] = {}
@@ -94,33 +102,46 @@ class PostgresAgentRegistry:
                     conditions.append("parent_id = :parent_id")
                     params["parent_id"] = filters.parent_id
             where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-            rows = (await session.execute(
-                text(f"SELECT data FROM agent_registry {where}"), params,
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(f"SELECT data FROM agent_registry {where}"),
+                    params,
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def update_status(self, agent_id: str, status: AgentStatus) -> bool:
         async with self._session(commit=True) as session:
-            row = (await session.execute(
-                text("SELECT data FROM agent_registry WHERE id = :id FOR UPDATE"),
-                {"id": agent_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM agent_registry WHERE id = :id FOR UPDATE"),
+                    {"id": agent_id},
+                )
+            ).fetchone()
             if not row:
                 return False
             record = self._deserialize(row[0])
             updated = AgentRecord(
-                id=record.id, name=record.name, role=record.role,
-                parent_id=record.parent_id, runtime_name=record.runtime_name,
-                runtime_config=record.runtime_config, status=status,
-                budget_limit_usd=record.budget_limit_usd, metadata=record.metadata,
+                id=record.id,
+                name=record.name,
+                role=record.role,
+                parent_id=record.parent_id,
+                runtime_name=record.runtime_name,
+                runtime_config=record.runtime_config,
+                status=status,
+                budget_limit_usd=record.budget_limit_usd,
+                metadata=record.metadata,
             )
             await session.execute(
                 text(
                     "UPDATE agent_registry SET status = :status, "
                     "data = CAST(:data AS jsonb) WHERE id = :id"
                 ),
-                {"id": agent_id, "status": status.value,
-                 "data": json.dumps(self._serialize(updated))},
+                {
+                    "id": agent_id,
+                    "status": status.value,
+                    "data": json.dumps(self._serialize(updated)),
+                },
             )
             return True
 
@@ -130,4 +151,7 @@ class PostgresAgentRegistry:
                 text("DELETE FROM agent_registry WHERE id = :id"),
                 {"id": agent_id},
             )
-            return result.rowcount > 0  # type: ignore[attr-defined]
+            # SQLAlchemy 2.x: session.execute() returns abstract Result[Any]
+            # without rowcount; CursorResult (DML statements) has it. Cast
+            # rather than silence ty with type:ignore (Stage 3, Sprint 1A).
+            return cast(CursorResult, result).rowcount > 0
