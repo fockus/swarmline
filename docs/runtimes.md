@@ -1,6 +1,8 @@
 # Runtimes
 
-Swarmline supports four runtimes. All implement the same `AgentRuntime` Protocol, so you can switch between them without changing business logic.
+Swarmline supports six public Agent API runtimes. All implement the same `AgentRuntime` protocol, so you can switch between them without changing business logic.
+
+`headless` is not a public Agent API runtime. It is an internal MCP/code-agent mode used by `swarmline-mcp` and `swarmline mcp-serve`.
 
 For API keys, provider environment variables, and `base_url` patterns, see the canonical reference:
 
@@ -8,16 +10,14 @@ For API keys, provider environment variables, and `base_url` patterns, see the c
 
 ## Comparison
 
-| Feature | Claude SDK | ThinRuntime | CLI Runtime | DeepAgents |
-| ------- | ---------- | ----------- | ----------- | ---------- |
-| **LLM** | Claude (via SDK subprocess) | Anthropic + OpenAI-compatible + Google | External CLI with NDJSON stream | Anthropic baseline; OpenAI/Google via provider package |
-| **MCP** | Native support | Built-in MCP client | No portable guarantee | Not in portable baseline |
-| **Sandbox** | Native Read/Write/Bash | Via SandboxProvider | Depends on wrapped CLI | Via SandboxProvider |
-| **Planning** | Native plan mode | ThinPlannerMode | Depends on wrapped CLI | DeepAgentsPlannerMode |
-| **Subagents** | Native Task tool | asyncio.Task | No portable guarantee | Native `task` / LangGraph |
-| **Team mode** | ClaudeTeamOrchestrator | (backlog) | No portable guarantee | DeepAgentsTeamOrchestrator |
-| **Extras** | `swarmline[claude]` | `swarmline[thin]` | N/A | `swarmline[deepagents]` |
-| **Offline** | No | Yes (via local/proxy `base_url`) | Depends on wrapped CLI | Depends on provider/local endpoint; not guaranteed |
+| Runtime | Best for | LLM/provider path | Tools and MCP | Install/runtime dependency |
+| ------- | -------- | ----------------- | ------------- | -------------------------- |
+| `thin` | Fast default, direct API calls, provider override | Anthropic, OpenAI-compatible, Google, DeepSeek | Local tools + Swarmline MCP bridge | `swarmline[thin]` |
+| `claude_sdk` | Claude Code/Agent SDK parity | Claude SDK subprocess | Native MCP, native permissions, native subagents | `swarmline[claude]` |
+| `deepagents` | LangGraph/DeepAgents workflows | DeepAgents provider packages | Local tools, graph semantics, Swarmline MCP bridge | `swarmline[deepagents]` |
+| `cli` | Process-isolated CLI agents | Whatever the wrapped CLI supports | Parser-dependent; PI RPC preset available | `swarmline[cli]` |
+| `openai_agents` | OpenAI Agents SDK applications | OpenAI Agents SDK | Local `@tool` bridge; unsupported MCP config fails fast | `swarmline[openai-agents]` |
+| `pi_sdk` | PI coding-agent SDK integration | PI model registry/providers | Local `@tool` bridge; PI built-in tools are opt-in | Node + `@mariozechner/pi-coding-agent` |
 
 ## Portable Matrix (current coverage)
 
@@ -27,7 +27,9 @@ For API keys, provider environment variables, and `base_url` patterns, see the c
   - `Conversation.say()`
 - `deepagents` native built-ins and store/resume surface are covered by separate offline graph tests, outside the portable matrix.
 - `thin` remains a `light` tier runtime and is not a target for full parity with `claude_sdk` / `deepagents`.
-- `cli` is a light-tier subprocess NDJSON runtime for external CLI agents; MCP/subagents parity is not guaranteed.
+- `cli` is a light-tier subprocess runtime for external CLI agents; MCP/subagents parity is not guaranteed.
+- `pi_sdk` is the preferred PI integration when you want typed SDK events and local Swarmline tools.
+- `runtime="cli"` with `CliConfig.pi()` is the process-isolated PI fallback using `pi --mode rpc`.
 - Provider-specific risks confirmed by live smoke tests:
   - `Gemini + DeepAgents built-ins` on tool-heavy prompts remains an unstable provider-specific path. For minimal migration cost, use `feature_mode="portable"`.
 
@@ -162,6 +164,84 @@ config = RuntimeConfig(runtime_name="cli")
 
 Tier: **light**. No additional capability flags.
 
+## OpenAI Agents Runtime
+
+Wraps the OpenAI Agents SDK behind the Swarmline `AgentRuntime` contract.
+
+```python
+from swarmline import Agent, AgentConfig, tool
+
+@tool
+async def calc(x: int) -> str:
+    return str(x + 1)
+
+agent = Agent(AgentConfig(
+    system_prompt="You are a helpful assistant.",
+    runtime="openai_agents",
+    tools=(calc.__tool_definition__,),
+))
+```
+
+Local `@tool` handlers are bridged into OpenAI function tools. `mcp_servers` currently fails fast with a clear error instead of being ignored; use `thin` or `deepagents` for Swarmline MCP bridge support, or OpenAI Agents native MCP configuration when wiring that SDK directly.
+
+### OpenAI Agents -- capabilities
+
+Tier: **full**. Supports: `mcp`, `provider_override`.
+
+## PI SDK Runtime
+
+`pi_sdk` embeds PI through a packaged Node bridge that imports `@mariozechner/pi-coding-agent`. This is the preferred PI path because Swarmline receives typed SDK events and can execute local `@tool` handlers through a callback.
+
+```python
+from swarmline import Agent, AgentConfig, tool
+from swarmline.runtime.pi_sdk import PiSdkOptions
+
+@tool
+async def calc(x: int) -> str:
+    return str(x + 1)
+
+agent = Agent(AgentConfig(
+    system_prompt="You are a helpful assistant.",
+    runtime="pi_sdk",
+    tools=(calc.__tool_definition__,),
+    runtime_options=PiSdkOptions(toolset="none"),
+))
+```
+
+Security default: PI built-in coding tools are disabled by default. Enable them explicitly:
+
+```python
+PiSdkOptions(toolset="readonly")  # read/grep/find/ls style tools
+PiSdkOptions(toolset="coding")    # read/bash/edit/write style coding tools
+```
+
+Install PI separately:
+
+```bash
+npm install -g @mariozechner/pi-coding-agent
+```
+
+### PI CLI preset
+
+Use the CLI path when you want process isolation or already operate PI as a CLI:
+
+```python
+from swarmline import Agent, AgentConfig
+from swarmline.runtime.cli import CliConfig
+
+agent = Agent(AgentConfig(
+    system_prompt="You are a helpful assistant.",
+    runtime="cli",
+    runtime_options=CliConfig.pi(),
+))
+```
+
+`CliConfig.pi()` runs `pi --mode rpc --no-session` and parses PI RPC JSONL events with `PiRpcParser`.
+
+### PI SDK -- capabilities
+
+Tier: **full**. Supports: `resume`, `interrupt`, `provider_override`.
+
 ## Switching Runtimes
 
 Runtime selection is configuration-driven -- business code stays the same:
@@ -180,6 +260,12 @@ config = RuntimeConfig(runtime_name="deepagents")
 
 # CLI subprocess runtime
 config = RuntimeConfig(runtime_name="cli")
+
+# OpenAI Agents SDK
+config = RuntimeConfig(runtime_name="openai_agents")
+
+# PI SDK through Node bridge
+config = RuntimeConfig(runtime_name="pi_sdk")
 ```
 
 Resolution priority: `runtime_override` > `RuntimeConfig.runtime_name` > `SWARMLINE_RUNTIME` env var > default (`claude_sdk`).

@@ -4,7 +4,7 @@ Connect Swarmline's persistent memory, planning, and team coordination to OpenCo
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - OpenCode installed and working
 
 ```bash

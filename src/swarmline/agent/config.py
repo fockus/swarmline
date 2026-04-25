@@ -31,7 +31,7 @@ class AgentConfig:
     # Model (alias or full name)
     model: str = "sonnet"
 
-    # Runtime: claude_sdk | thin | deepagents | openai_agents | cli
+    # Runtime: thin | claude_sdk | deepagents | cli | openai_agents | pi_sdk
     runtime: str = "claude_sdk"
 
     # Base URL for LLM API (OpenRouter, proxy, etc.). None = provider default.
@@ -98,6 +98,7 @@ class AgentConfig:
     require_capabilities: CapabilityRequirements | None = None
     allow_native_features: bool = False
     native_config: dict[str, Any] = field(default_factory=dict)
+    runtime_options: Any | None = None
 
     def __post_init__(self) -> None:
         if not self.system_prompt or not self.system_prompt.strip():

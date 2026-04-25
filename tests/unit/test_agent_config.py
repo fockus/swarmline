@@ -38,6 +38,7 @@ class TestAgentConfigDefaults:
         assert cfg.require_capabilities is None
         assert cfg.allow_native_features is False
         assert cfg.native_config == {}
+        assert cfg.runtime_options is None
         assert cfg.setting_sources == ()
 
 
@@ -68,6 +69,7 @@ class TestAgentConfigFull:
             require_capabilities=CapabilityRequirements(tier="full"),
             allow_native_features=True,
             native_config={"deepagents": {"use_native_todo": True}},
+            runtime_options={"kind": "custom"},
             setting_sources=("project", "user"),
         )
         assert cfg.model == "opus"
@@ -85,6 +87,7 @@ class TestAgentConfigFull:
         assert cfg.require_capabilities == CapabilityRequirements(tier="full")
         assert cfg.allow_native_features is True
         assert cfg.native_config == {"deepagents": {"use_native_todo": True}}
+        assert cfg.runtime_options == {"kind": "custom"}
         assert cfg.setting_sources == ("project", "user")
 
 

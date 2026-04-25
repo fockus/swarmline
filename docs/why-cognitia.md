@@ -1,4 +1,4 @@
-# Why Swarmline?
+# Why Swarmline? (Legacy Page)
 
 ## The Problem
 
@@ -47,9 +47,15 @@ agent = Agent(AgentConfig(system_prompt="...", runtime="deepagents"))
 
 # External CLI subprocess runtime
 agent = Agent(AgentConfig(system_prompt="...", runtime="cli"))
+
+# OpenAI Agents SDK runtime
+agent = Agent(AgentConfig(system_prompt="...", runtime="openai_agents"))
+
+# PI SDK runtime
+agent = Agent(AgentConfig(system_prompt="...", runtime="pi_sdk"))
 ```
 
-All four runtimes implement the same `AgentRuntime` protocol. Your application code stays the same.
+All six public runtimes implement the same `AgentRuntime` protocol. Your application code stays the same. `headless` is internal MCP/code-agent mode, not a normal Agent API runtime.
 
 ### 3. Composable Capabilities
 
@@ -94,7 +100,7 @@ Use any LLM provider with human-friendly aliases:
 | --------- | ----------------------- |
 | **Clean Architecture** | Infrastructure → Application → Domain. Domain has zero external deps |
 | **SOLID** | SRP (focused modules), OCP (extend via protocols), LSP (substitutable implementations), ISP (≤5 methods per protocol), DIP (depend on abstractions) |
-| **DRY** | Shared protocols across 3 memory providers. One AgentRuntime contract for 4 runtimes |
+| **DRY** | Shared protocols across 3 memory providers. One AgentRuntime contract for 6 public runtimes |
 | **KISS** | Agent facade: 3 lines for a working agent. Complexity opt-in via capabilities |
 | **YAGNI** | No capability loads unless explicitly toggled. Core has 3 dependencies |
 

@@ -11,6 +11,7 @@ from swarmline.agent.runtime_factory_port import RuntimeFactoryPort, build_runti
 from swarmline.runtime.types import RuntimeConfig, ToolSpec
 
 _PORTABLE_MCP_RUNTIMES = frozenset({"thin", "deepagents"})
+_FAIL_FAST_MCP_RUNTIMES = frozenset({"openai_agents", "pi_sdk"})
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,7 @@ def build_portable_runtime_plan(
             else RuntimeConfig().max_model_retries
         ),
         model=factory.resolve_agent_model(agent_config),
+        base_url=agent_config.base_url,
         output_format=agent_config.output_format,
         output_type=agent_config.output_type,
         structured_mode=agent_config.structured_mode,
@@ -66,6 +68,11 @@ def build_portable_runtime_plan(
     }
     if runtime_name in _PORTABLE_MCP_RUNTIMES and agent_config.mcp_servers:
         create_kwargs["mcp_servers"] = agent_config.mcp_servers
+    elif runtime_name in _FAIL_FAST_MCP_RUNTIMES and agent_config.mcp_servers:
+        create_kwargs["mcp_servers"] = agent_config.mcp_servers
+
+    if agent_config.runtime_options is not None:
+        _apply_runtime_options(runtime_name, agent_config.runtime_options, create_kwargs)
 
     # Merge hooks from config + middleware for portable runtimes
     merged_hooks = merge_hooks(agent_config.hooks, agent_config.middleware)
@@ -185,3 +192,38 @@ def build_portable_runtime_plan(
         create_kwargs=create_kwargs,
         active_tools=active_tools,
     )
+
+
+def _apply_runtime_options(
+    runtime_name: str,
+    runtime_options: Any,
+    create_kwargs: dict[str, Any],
+) -> None:
+    """Map typed runtime options into factory kwargs."""
+    if runtime_name == "pi_sdk":
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        if not isinstance(runtime_options, PiSdkOptions):
+            raise ValueError("runtime='pi_sdk' expects runtime_options=PiSdkOptions(...)")
+        create_kwargs["pi_options"] = runtime_options
+        return
+
+    if runtime_name == "cli":
+        from swarmline.runtime.cli.types import CliConfig
+
+        if not isinstance(runtime_options, CliConfig):
+            raise ValueError("runtime='cli' expects runtime_options=CliConfig(...)")
+        create_kwargs["cli_config"] = runtime_options
+        return
+
+    if runtime_name == "openai_agents":
+        from swarmline.runtime.openai_agents.types import OpenAIAgentsConfig
+
+        if not isinstance(runtime_options, OpenAIAgentsConfig):
+            raise ValueError(
+                "runtime='openai_agents' expects runtime_options=OpenAIAgentsConfig(...)"
+            )
+        create_kwargs["agents_config"] = runtime_options
+        return
+
+    raise ValueError(f"runtime_options are not supported for runtime='{runtime_name}'")

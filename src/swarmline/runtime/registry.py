@@ -1,6 +1,7 @@
 """RuntimeRegistry - extensible adapter registry for runtime factories.
 
-Built-in runtimes (`claude_sdk`, `deepagents`, `thin`, `cli`, `openai_agents`, `headless`)
+Built-in runtimes (`claude_sdk`, `deepagents`, `thin`, `cli`, `openai_agents`,
+`pi_sdk`, `headless`)
 are registered automatically. Third-party runtimes can be registered via
 register() or entry points (group="swarmline.runtimes").
 """
@@ -131,23 +132,39 @@ def _create_headless(config: RuntimeConfig, **kwargs: Any) -> Any:
 def _create_openai_agents(config: RuntimeConfig, **kwargs: Any) -> Any:
     """Lazy factory for OpenAIAgentsRuntime."""
     from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+    from swarmline.runtime.openai_agents.tool_bridge import build_tool_executor
 
-    # These kwargs come from the generic factory interface but are not
-    # supported by OpenAIAgentsRuntime yet — log a warning if non-empty.
-    for key in ("tool_executors", "local_tools", "mcp_servers"):
-        val = kwargs.pop(key, None)
-        if val:
-            logger.warning(
-                "openai_agents factory: kwarg %r ignored (not yet supported), "
-                "got %d item(s)",
-                key,
-                len(val) if hasattr(val, "__len__") else 1,
-            )
+    tool_handlers = dict(kwargs.pop("local_tools", {}) or {})
+    tool_handlers.update(kwargs.pop("tool_executors", {}) or {})
+    if tool_handlers and "tool_executor" not in kwargs:
+        kwargs["tool_executor"] = build_tool_executor(tool_handlers)
+
+    mcp_servers = kwargs.pop("mcp_servers", None)
+    if mcp_servers:
+        raise ValueError(
+            "runtime='openai_agents' does not support AgentConfig.mcp_servers yet. "
+            "Use OpenAIAgentsConfig.codex_enabled for Codex MCP, or choose runtime='thin' "
+            "or runtime='deepagents' for Swarmline MCP bridge support."
+        )
     return OpenAIAgentsRuntime(config=config, **kwargs)
 
 
+def _create_pi_sdk(config: RuntimeConfig, **kwargs: Any) -> Any:
+    """Lazy factory for PiSdkRuntime."""
+    from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
+
+    mcp_servers = kwargs.pop("mcp_servers", None)
+    if mcp_servers:
+        raise ValueError(
+            "runtime='pi_sdk' does not support AgentConfig.mcp_servers. "
+            "Use PI extensions/skills inside PI, or choose runtime='thin' or runtime='deepagents' "
+            "for Swarmline MCP bridge support."
+        )
+    return PiSdkRuntime(config=config, **kwargs)
+
+
 def _register_builtins(registry: RuntimeRegistry) -> None:
-    """Register built-in runtimes: claude_sdk, deepagents, thin, cli, openai_agents, headless."""
+    """Register built-in runtimes."""
     registry.register(
         "claude_sdk",
         _create_claude_sdk,
@@ -172,6 +189,11 @@ def _register_builtins(registry: RuntimeRegistry) -> None:
         "openai_agents",
         _create_openai_agents,
         capabilities=get_runtime_capabilities("openai_agents"),
+    )
+    registry.register(
+        "pi_sdk",
+        _create_pi_sdk,
+        capabilities=get_runtime_capabilities("pi_sdk"),
     )
     registry.register(
         "headless",
@@ -249,7 +271,9 @@ def reset_default_registry() -> None:
 # Dynamic valid runtime names
 # ---------------------------------------------------------------------------
 
-_BUILTIN_NAMES = frozenset({"claude_sdk", "deepagents", "thin", "cli", "openai_agents", "headless"})
+_BUILTIN_NAMES = frozenset(
+    {"claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"}
+)
 
 
 def get_valid_runtime_names() -> frozenset[str]:

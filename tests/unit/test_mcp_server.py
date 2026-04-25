@@ -70,3 +70,35 @@ class TestCreateServer:
             importlib.reload(_server)
             with pytest.raises(ImportError, match="FastMCP is required"):
                 _server.create_server(mode="headless")
+
+
+class TestMcpCliMain:
+    def test_parse_args_supports_help(self) -> None:
+        from swarmline.mcp._server import parse_args
+
+        with pytest.raises(SystemExit) as exc:
+            parse_args(["--help"])
+
+        assert exc.value.code == 0
+
+    def test_parse_args_supports_mode_flag(self) -> None:
+        from swarmline.mcp._server import parse_args
+
+        args = parse_args(["--mode", "headless"])
+
+        assert args.mode == "headless"
+
+    def test_parse_args_supports_positional_mode(self) -> None:
+        from swarmline.mcp._server import parse_args
+
+        args = parse_args(["full"])
+
+        assert args.mode == "full"
+
+    def test_parse_args_rejects_conflicting_modes(self) -> None:
+        from swarmline.mcp._server import parse_args
+
+        with pytest.raises(SystemExit) as exc:
+            parse_args(["full", "--mode", "headless"])
+
+        assert exc.value.code == 2

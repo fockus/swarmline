@@ -66,6 +66,8 @@ __all__ = [
     "ModelRequestOptions",
     "ModelPolicy",
     "ModelRegistry",
+    "PiSdkOptions",
+    "PiSdkRuntime",
     "RuntimeCapabilities",
     "RuntimeConfig",
     "RuntimeErrorData",
@@ -112,6 +114,16 @@ _OPTIONAL_EXPORTS: dict[str, tuple[str, str, str]] = {
         "swarmline.runtime.adapter",
         "RuntimeAdapter",
         "Install claude-agent-sdk to use RuntimeAdapter.",
+    ),
+    "PiSdkOptions": (
+        "swarmline.runtime.pi_sdk",
+        "PiSdkOptions",
+        "Install Node.js and @mariozechner/pi-coding-agent to execute PiSdkRuntime.",
+    ),
+    "PiSdkRuntime": (
+        "swarmline.runtime.pi_sdk",
+        "PiSdkRuntime",
+        "Install Node.js and @mariozechner/pi-coding-agent to execute PiSdkRuntime.",
     ),
     "QueryResult": (
         "swarmline.runtime.sdk_query",

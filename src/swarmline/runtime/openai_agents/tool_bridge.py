@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable
+import inspect
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
 import structlog
@@ -14,6 +15,8 @@ _log = structlog.get_logger(component="openai_agents_tool_bridge")
 
 # Type for the executor callback: (tool_name, kwargs) -> result_str
 ToolExecutorFn = Callable[[str, dict[str, Any]], Awaitable[str]]
+
+RawToolExecutor = Callable[..., Any]
 
 
 def toolspec_to_function_tool(
@@ -71,3 +74,26 @@ def toolspecs_to_agent_tools(
         for spec in specs
         if spec.is_local
     ]
+
+
+def build_tool_executor(
+    tool_executors: Mapping[str, RawToolExecutor],
+) -> ToolExecutorFn:
+    """Build an OpenAI Agents SDK executor from Swarmline local tool handlers."""
+
+    async def _execute(tool_name: str, kwargs: dict[str, Any]) -> str:
+        handler = tool_executors.get(tool_name)
+        if handler is None:
+            return json.dumps({"error": f"Unknown local tool '{tool_name}'"})
+        try:
+            result = handler(**kwargs)
+            if inspect.isawaitable(result):
+                result = await result
+        except Exception as exc:
+            _log.warning("tool_executor_failed", tool=tool_name, error=str(exc))
+            return json.dumps({"error": str(exc)})
+        if isinstance(result, str):
+            return result
+        return json.dumps(result, ensure_ascii=False, default=str)
+
+    return _execute

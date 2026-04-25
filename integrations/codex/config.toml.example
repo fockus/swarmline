@@ -1,7 +1,7 @@
-# Codex CLI MCP configuration for Cognitia
+# Codex CLI MCP configuration for Swarmline
 # Add to your Codex CLI config file
 
-[mcp.cognitia]
+[mcp.swarmline]
 transport = "stdio"
-command = "cognitia-mcp"
+command = "swarmline-mcp"
 args = ["--mode", "auto"]

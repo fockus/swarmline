@@ -53,6 +53,14 @@ class TestRuntimeCapabilities:
         assert caps.tier == "light"
         assert caps.supports_provider_override is True
 
+    def test_pi_sdk_is_full_tier(self) -> None:
+        caps = get_runtime_capabilities("pi_sdk")
+        assert caps.runtime_name == "pi_sdk"
+        assert caps.tier == "full"
+        assert caps.supports_interrupt is True
+        assert caps.supports_resume is True
+        assert caps.supports_provider_override is True
+
     def test_supports_returns_false_for_missing_requirements(self) -> None:
         caps = get_runtime_capabilities("thin")
         req = CapabilityRequirements(

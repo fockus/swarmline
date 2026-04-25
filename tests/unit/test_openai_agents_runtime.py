@@ -393,6 +393,29 @@ class TestToolBridge:
         assert "error" in result
         assert "No executor" in result
 
+    @pytest.mark.asyncio
+    async def test_build_tool_executor_calls_swarmline_handler(self) -> None:
+        from swarmline.runtime.openai_agents.tool_bridge import build_tool_executor
+
+        async def calc(x: int) -> int:
+            return x + 1
+
+        executor = build_tool_executor({"calc": calc})
+
+        result = await executor("calc", {"x": 41})
+
+        assert result == "42"
+
+    @pytest.mark.asyncio
+    async def test_build_tool_executor_unknown_tool_fails_fast(self) -> None:
+        from swarmline.runtime.openai_agents.tool_bridge import build_tool_executor
+
+        executor = build_tool_executor({})
+
+        result = await executor("missing", {})
+
+        assert "Unknown local tool" in result
+
 
 # ---------------------------------------------------------------------------
 # Multi-turn input tests
@@ -453,3 +476,33 @@ class TestBuildInput:
             Message(role="user", content="last"),
         ]
         assert OpenAIAgentsRuntime._extract_user_input(messages) == "last"
+
+
+class TestOpenAIAgentsFactory:
+    def test_factory_passes_tool_executors_to_runtime(self) -> None:
+        from swarmline.runtime.registry import _create_openai_agents
+        from swarmline.runtime.types import RuntimeConfig
+
+        fake_runtime = object()
+        fake_cls = MagicMock(return_value=fake_runtime)
+
+        handler = MagicMock()
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr("swarmline.runtime.openai_agents.runtime.OpenAIAgentsRuntime", fake_cls)
+            runtime = _create_openai_agents(
+                RuntimeConfig(runtime_name="openai_agents"),
+                tool_executors={"calc": handler},
+            )
+
+        assert runtime is fake_runtime
+        assert fake_cls.call_args.kwargs["tool_executor"] is not None
+
+    def test_factory_rejects_mcp_servers_until_bridge_is_implemented(self) -> None:
+        from swarmline.runtime.registry import _create_openai_agents
+        from swarmline.runtime.types import RuntimeConfig
+
+        with pytest.raises(ValueError, match="mcp_servers"):
+            _create_openai_agents(
+                RuntimeConfig(runtime_name="openai_agents"),
+                mcp_servers={"srv": "https://mcp.test"},
+            )

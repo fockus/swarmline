@@ -203,7 +203,7 @@ build-backend = "hatchling.build"
 name = "$project_slug"
 version = "0.1.0"
 description = "AI agent built with Swarmline"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "swarmline>=1.0",
 $extra_deps

@@ -330,6 +330,7 @@ class Agent:
                 else RuntimeConfig().max_model_retries
             ),
             model=factory.resolve_agent_model(effective_config),
+            base_url=effective_config.base_url,
             output_format=effective_config.output_format,
             output_type=effective_config.output_type,
             structured_mode=effective_config.structured_mode,

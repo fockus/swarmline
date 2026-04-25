@@ -7,7 +7,7 @@ import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from swarmline.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser
+from swarmline.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser, PiRpcParser
 from swarmline.runtime.cli.types import CliConfig
 from swarmline.runtime.types import Message, RuntimeConfig
 
@@ -32,6 +32,14 @@ class TestCliRuntimeParserSelection:
         cli_config = CliConfig(command=["my-agent", "--json"])
         rt = CliAgentRuntime(config=config, cli_config=cli_config)
         assert isinstance(rt._parser, GenericNdjsonParser)
+
+    def test_cli_runtime_default_parser_pi_rpc_preset(self) -> None:
+        """PI RPC preset selects PiRpcParser."""
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
+
+        config = RuntimeConfig(runtime_name="cli")
+        rt = CliAgentRuntime(config=config, cli_config=CliConfig.pi())
+        assert isinstance(rt._parser, PiRpcParser)
 
     def test_cli_runtime_explicit_parser_overrides_auto(self) -> None:
         """Explicitly provided parser takes precedence."""
@@ -160,6 +168,20 @@ class TestCliRuntimePromptSerialization:
         )
 
         assert payload == "Conversation:\nuser: hello"
+
+    def test_build_cli_input_payload_pi_rpc_wraps_prompt_command(self) -> None:
+        from swarmline.runtime.cli.runtime import _build_cli_input_payload
+
+        payload = _build_cli_input_payload(
+            cli_config=CliConfig.pi(),
+            messages=[Message(role="user", content="hello")],
+            system_prompt="be helpful",
+        )
+
+        data = json.loads(payload)
+        assert data["type"] == "prompt"
+        assert "System instructions:\nbe helpful" in data["message"]
+        assert payload.endswith("\n")
 
 
 class TestCliRuntimeEnvironment:

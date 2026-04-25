@@ -73,3 +73,14 @@ class TestCliConfig:
         assert cfg.env == {"API_KEY": "test"}
         assert cfg.inherit_host_env is True
         assert cfg.env_allowlist == frozenset({"PATH"})
+
+    def test_cli_config_pi_preset_uses_rpc_mode(self) -> None:
+        """PI preset uses pi RPC JSONL mode."""
+        from swarmline.runtime.cli.types import CliConfig, CliPreset
+
+        cfg = CliConfig.pi(no_session=True)
+
+        assert cfg.preset == CliPreset.PI
+        assert cfg.command == ["pi", "--mode", "rpc", "--no-session"]
+        assert cfg.output_format == "pi-rpc"
+        assert cfg.input_format == "pi-rpc"

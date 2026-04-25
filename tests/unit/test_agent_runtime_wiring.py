@@ -90,6 +90,26 @@ class TestBuildPortableRuntimePlan:
         assert plan.config.max_model_retries == 4
         assert plan.config.request_options is request_options
 
+    def test_passes_base_url_to_runtime_config(self) -> None:
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+
+        config = _make_config(runtime="thin", base_url="https://llm-proxy.test/v1")
+
+        plan = build_portable_runtime_plan(config, "thin")
+
+        assert plan.config.base_url == "https://llm-proxy.test/v1"
+
+    def test_pi_sdk_runtime_options_are_passed_to_factory_kwargs(self) -> None:
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        options = PiSdkOptions(toolset="readonly", cwd="/workspace")
+        config = _make_config(runtime="pi_sdk", runtime_options=options)
+
+        plan = build_portable_runtime_plan(config, "pi_sdk")
+
+        assert plan.create_kwargs["pi_options"] is options
+
 
 class TestResolveMcpServerUrl:
     def test_resolves_plain_dict_server_config(self) -> None:

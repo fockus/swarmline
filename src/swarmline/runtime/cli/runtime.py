@@ -7,12 +7,18 @@ NDJSON output from stdout into RuntimeEvent stream.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 from collections.abc import AsyncIterator
 from typing import Any
 
-from swarmline.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser, NdjsonParser
+from swarmline.runtime.cli.parser import (
+    ClaudeNdjsonParser,
+    GenericNdjsonParser,
+    NdjsonParser,
+    PiRpcParser,
+)
 from swarmline.runtime.cli.types import CliConfig
 from swarmline.runtime.types import (
     Message,
@@ -50,11 +56,31 @@ def _build_stdin_payload(messages: list[Message], system_prompt: str) -> str:
     return "\n\n".join(sections)
 
 
+def _build_cli_input_payload(
+    *,
+    cli_config: CliConfig,
+    messages: list[Message],
+    system_prompt: str,
+) -> str:
+    """Serialize runtime input according to the selected CLI protocol."""
+    prompt = _build_stdin_payload(messages, system_prompt)
+    if cli_config.input_format == "pi-rpc":
+        return json.dumps({"type": "prompt", "message": prompt}, ensure_ascii=False) + "\n"
+    return prompt
+
+
 def _is_claude_command(command: list[str]) -> bool:
     """Is claude command."""
     if not command:
         return False
     return os.path.basename(command[0]) == "claude"
+
+
+def _is_pi_command(command: list[str]) -> bool:
+    """Return True for PI CLI commands."""
+    if not command:
+        return False
+    return os.path.basename(command[0]) == "pi"
 
 
 def _normalize_claude_command(command: list[str], output_format: str) -> list[str]:
@@ -106,6 +132,8 @@ class CliAgentRuntime:
             self._parser = parser
         elif _is_claude_command(self._cli_config.command):
             self._parser = ClaudeNdjsonParser()
+        elif self._cli_config.output_format == "pi-rpc" or _is_pi_command(self._cli_config.command):
+            self._parser = PiRpcParser()
         else:
             self._parser = GenericNdjsonParser()
         self._process: asyncio.subprocess.Process | None = None
@@ -121,7 +149,11 @@ class CliAgentRuntime:
         mode_hint: str | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
         """Execute CLI agent and yield RuntimeEvents from its NDJSON output."""
-        prompt = _build_stdin_payload(messages, system_prompt)
+        prompt = _build_cli_input_payload(
+            cli_config=self._cli_config,
+            messages=messages,
+            system_prompt=system_prompt,
+        )
         cmd = _normalize_claude_command(
             self._cli_config.command,
             self._cli_config.output_format,

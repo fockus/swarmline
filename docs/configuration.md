@@ -79,7 +79,7 @@ config = AgentConfig(
     system_prompt="You are a helpful assistant.",
 
     model="sonnet",                          # alias or full model name
-    runtime="claude_sdk",                    # claude_sdk | thin | deepagents
+    runtime="claude_sdk",                    # thin | claude_sdk | deepagents | cli | openai_agents | pi_sdk
 
     tools=(),                                # tuple of @tool-decorated ToolDefinitions
     middleware=(),                            # middleware chain (applied in order)
@@ -95,6 +95,7 @@ config = AgentConfig(
     # Runtime convergence
     feature_mode="portable",                 # portable | native
     allow_native_features=False,
+    runtime_options=None,                    # typed runtime-specific options, e.g. PiSdkOptions
 )
 ```
 
@@ -108,7 +109,7 @@ config = AgentConfig(
 from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
-    runtime_name="thin",                        # claude_sdk | thin | deepagents
+    runtime_name="thin",                        # thin | claude_sdk | deepagents | cli | openai_agents | pi_sdk
     model="claude-sonnet-4-20250514",           # or alias: "sonnet", "opus", "haiku"
     base_url=None,                              # for compatible APIs (OpenRouter, Groq, Together)
     max_iterations=6,                           # ReAct iteration limit (thin runtime)

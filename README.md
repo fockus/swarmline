@@ -3,7 +3,7 @@
 **Build AI agents in Python** — from a single assistant to hierarchical multi-agent systems.
 
 [![PyPI version](https://img.shields.io/pypi/v/swarmline.svg)](https://pypi.org/project/swarmline/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-4200%2B%20passed-brightgreen.svg)](https://github.com/fockus/swarmline)
 [![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://swarmline.readthedocs.io/)
@@ -28,7 +28,7 @@ Swarmline covers the full spectrum: **simple single-agent assistants** that you 
 - Human-in-the-Loop — approval patterns at tool, plan, and output level
 
 **For both:**
-- 4 pluggable runtimes — `thin`, `claude_sdk`, `deepagents`, `cli` — same business code
+- 6 public runtimes — `thin`, `claude_sdk`, `deepagents`, `cli`, `openai_agents`, `pi_sdk` — same business code
 - Clean Architecture with 20+ ISP-compliant protocols — swap any component without touching the rest
 - Default-secure — deny-all tool policy, host execution is opt-in, input validation
 
@@ -41,6 +41,7 @@ Swarmline covers the full spectrum: **simple single-agent assistants** that you 
 | **AutoGen (Microsoft)** | Structured task boards with DAG dependencies, budget enforcement, knowledge bank with search |
 | **Claude Code SDK** | LLM-agnostic (4 providers), multi-agent graphs, pipeline engine, evaluation framework |
 | **OpenAI Agents SDK** | Multi-runtime (not locked to OpenAI), persistent episodic/procedural memory, HITL approval patterns |
+| **PI** | PI can be used either as a typed SDK runtime (`pi_sdk`) or as an isolated CLI RPC preset |
 | **Semantic Kernel** | Python-native (not C# port), simpler API (3-line agent), built-in knowledge consolidation |
 
 ## Install
@@ -50,6 +51,8 @@ pip install swarmline                # core (protocols, types, in-memory provide
 pip install swarmline[thin]          # + lightweight built-in multi-provider runtime
 pip install swarmline[claude]        # + Claude Agent SDK runtime (subprocess + MCP)
 pip install swarmline[deepagents]    # + DeepAgents runtime baseline (native graph + Anthropic path)
+pip install swarmline[openai-agents] # + OpenAI Agents SDK runtime
+npm install -g @mariozechner/pi-coding-agent  # optional PI SDK/CLI external runtime
 ```
 
 For DeepAgents provider overrides install the provider bridge explicitly:
@@ -66,6 +69,8 @@ Provider credentials depend on the runtime and provider path you choose:
 - `thin` reads provider credentials from the current process environment
 - `claude_sdk` can use local Claude login state or explicit `ANTHROPIC_API_KEY`
 - `deepagents` uses provider-specific LangChain credentials
+- `openai_agents` uses OpenAI Agents SDK credentials
+- `pi_sdk` uses PI auth storage or provider environment variables through the Node bridge
 - `cli` passes through whatever env the wrapped CLI expects
 
 Canonical reference:
@@ -285,7 +290,7 @@ print(result.status)
 | Feature | Description |
 |---------|-------------|
 | **Agent Facade** | High-level API: `query()`, `stream()`, `conversation()` — build agents in 3-5 lines |
-| **4 Pluggable Runtimes** | `thin` (built-in multi-provider loop), `claude_sdk` (Claude Agent SDK), `deepagents` (LangChain), `cli` (subprocess NDJSON runtime) |
+| **6 Public Runtimes** | `thin`, `claude_sdk`, `deepagents`, `cli`, `openai_agents`, `pi_sdk`; `headless` is an internal MCP/code-agent mode |
 | **@tool Decorator** | Define tools with auto-inferred JSON Schema from Python type hints |
 | **Middleware Chain** | Pluggable request/response interceptors: `CostTracker`, `SecurityGuard`, custom |
 | **14 ISP Protocols** | Every interface has ≤5 methods. Depend on abstractions, swap implementations freely |
@@ -353,7 +358,7 @@ print(result.status)
 
 ## Runtimes
 
-Swarmline supports 4 interchangeable runtimes. Switch with a single config change — your business code stays the same:
+Swarmline supports 6 public interchangeable runtimes. Switch with a single config change — your business code stays the same:
 
 ```python
 # Built-in lightweight loop (direct multi-provider API)
@@ -367,6 +372,12 @@ agent = Agent(AgentConfig(system_prompt="...", runtime="deepagents"))
 
 # CLI subprocess runtime (NDJSON stream, light tier)
 agent = Agent(AgentConfig(system_prompt="...", runtime="cli"))
+
+# OpenAI Agents SDK runtime
+agent = Agent(AgentConfig(system_prompt="...", runtime="openai_agents"))
+
+# PI SDK runtime (Node bridge over @mariozechner/pi-coding-agent)
+agent = Agent(AgentConfig(system_prompt="...", runtime="pi_sdk"))
 ```
 
 Or via environment variable:
@@ -380,6 +391,10 @@ export SWARMLINE_RUNTIME=thin
 | `claude_sdk` | Full Claude ecosystem, native MCP, subagents | Claude only | Native | `swarmline[claude]` |
 | `deepagents` | DeepAgents graph runtime, LangGraph workflows | Anthropic baseline; OpenAI/Google via provider package | Not a portable guarantee | `swarmline[deepagents]` |
 | `cli` | External CLI agents, NDJSON subprocess integrations | Whatever the wrapped CLI provides | No portable MCP guarantee | `swarmline` |
+| `openai_agents` | OpenAI Agents SDK apps and Codex-style integrations | OpenAI / Agents SDK providers | Native SDK path; Swarmline MCP config fails fast until bridged | `swarmline[openai-agents]` |
+| `pi_sdk` | PI coding-agent SDK as a typed runtime | PI-supported providers | Use PI extensions/skills; Swarmline MCP config fails fast | Node + `@mariozechner/pi-coding-agent` |
+
+`headless` is intentionally not listed as an Agent API runtime. It is an internal MCP/code-agent mode used by `swarmline-mcp` and `swarmline mcp-serve`.
 
 ### Runtime Feature Matrix
 
@@ -488,6 +503,7 @@ Your Application
 ║  │  memory/      InMemory │ PostgreSQL │ SQLite        │ ║
 ║  │               + Episodic · Procedural · Consolidation│ ║
 ║  │  runtime/     thin │ claude_sdk │ deepagents │ cli  │ ║
+║  │               openai_agents │ pi_sdk          │ ║
 ║  │  multi_agent/ AgentGraph · TaskBoard · Communication│ ║
 ║  │               Governance · Knowledge Bank            │ ║
 ║  │  pipeline/    Pipeline · Builder · Budget · Gates   │ ║
@@ -597,6 +613,8 @@ Supported providers: **Anthropic** (Claude), **OpenAI** (GPT-4o, o3), **Google**
 | `thin` | anthropic, httpx | Built-in lightweight runtime |
 | `claude` | claude-agent-sdk | Claude Agent SDK runtime |
 | `deepagents` | langchain-core, langchain-anthropic | LangChain runtime |
+| `openai-agents` | openai-agents, openai | OpenAI Agents SDK runtime |
+| External: PI SDK | Node package | `pi_sdk` runtime via `@mariozechner/pi-coding-agent` |
 | `postgres` | asyncpg, sqlalchemy | PostgreSQL memory provider |
 | `sqlite` | aiosqlite, sqlalchemy | SQLite memory provider |
 | `web` | httpx | Web fetch (base) |

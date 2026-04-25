@@ -4,7 +4,7 @@ Connect Swarmline's persistent memory, planning, and team coordination to Claude
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Claude Code CLI installed and working
 
 ```bash

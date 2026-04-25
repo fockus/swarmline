@@ -52,7 +52,7 @@ from swarmline import AgentConfig
 |-------|------|---------|-------------|
 | `system_prompt` | `str` | **required** | System prompt for the agent |
 | `model` | `str` | `"sonnet"` | Model alias or full ID |
-| `runtime` | `str` | `"claude_sdk"` | Runtime: `"claude_sdk"` \| `"thin"` \| `"deepagents"` \| `"cli"` |
+| `runtime` | `str` | `"claude_sdk"` | Runtime: `"thin"` \| `"claude_sdk"` \| `"deepagents"` \| `"cli"` \| `"openai_agents"` \| `"pi_sdk"` |
 | `tools` | `tuple[ToolDefinition, ...]` | `()` | Tools from `@tool` decorator |
 | `middleware` | `tuple[Middleware, ...]` | `()` | Middleware chain |
 | `mcp_servers` | `dict[str, Any]` | `{}` | Remote MCP server configs |
@@ -68,6 +68,7 @@ from swarmline import AgentConfig
 | `fallback_model` | `str \| None` | `None` | Fallback model on failure |
 | `permission_mode` | `str` | `"bypassPermissions"` | SDK permission mode |
 | `setting_sources` | `tuple[str, ...]` | `()` | SDK setting sources |
+| `runtime_options` | runtime-specific dataclass | `None` | Typed options such as `CliConfig` or `PiSdkOptions` |
 | `feature_mode` | `str` | `"portable"` | `"portable"` \| `"hybrid"` \| `"native_first"` |
 | `require_capabilities` | `CapabilityRequirements \| None` | `None` | Fail-fast capability check |
 | `allow_native_features` | `bool` | `False` | Allow runtime-native features |
@@ -292,7 +293,7 @@ Static factory methods: `RuntimeEvent.assistant_delta(text)`, `RuntimeEvent.stat
 from swarmline.runtime.types import RuntimeConfig
 
 config = RuntimeConfig(
-    runtime_name="thin",              # claude_sdk | thin | deepagents | cli
+    runtime_name="thin",              # thin | claude_sdk | deepagents | cli | openai_agents | pi_sdk
     model="claude-sonnet-4-20250514", # or alias
     max_iterations=6,                 # ReAct loop limit
     max_tool_calls=8,                 # tool calls per turn limit
@@ -356,6 +357,8 @@ caps.enabled_flags()   # frozenset({"mcp", "resume", "interrupt"})
 | `deepagents` | `full` | No | Yes | No | Yes |
 | `thin` | `light` | Yes | No | No | Yes |
 | `cli` | `light` | No | No | No | No |
+| `openai_agents` | `full` | Yes | No | No | Yes |
+| `pi_sdk` | `full` | No | Yes | Yes | Yes |
 
 ### CapabilityRequirements
 

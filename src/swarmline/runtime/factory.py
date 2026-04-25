@@ -196,6 +196,10 @@ class RuntimeFactory:
             from swarmline.runtime.registry import _create_openai_agents
 
             return _create_openai_agents(effective_config, **kwargs)
+        elif name == "pi_sdk":
+            from swarmline.runtime.registry import _create_pi_sdk
+
+            return _create_pi_sdk(effective_config, **kwargs)
         else:
             raise ValueError(
                 f"Unknown runtime: '{name}'. "

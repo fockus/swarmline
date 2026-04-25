@@ -1,6 +1,6 @@
-# Cognitia Examples
+# Swarmline Examples
 
-Standalone runnable examples demonstrating Cognitia features.
+Standalone runnable examples demonstrating Swarmline features.
 Examples 01-23 use mock data and run without API keys.
 Complex scenarios (24-27) run mock pipelines by default.
 Examples 24 and 27 also expose optional `--live` modes with `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY`; 25 and 26 are mock-only demos.

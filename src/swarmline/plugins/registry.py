@@ -21,7 +21,7 @@ EP_GROUPS = {
 
 
 def _entry_points(group: str) -> list[Any]:
-    """Load entry points compatible with Python 3.10+."""
+    """Load entry points compatible with Python 3.11+."""
     if sys.version_info >= (3, 12):
         from importlib.metadata import entry_points
 

@@ -47,7 +47,9 @@ class HookRegistry:
     def _add(self, event: str, callback: HookCallback, matcher: str = "") -> None:
         if event not in self._hooks:
             self._hooks[event] = []
-        self._hooks[event].append(HookEntry(event=event, callback=callback, matcher=matcher))
+        self._hooks[event].append(
+            HookEntry(event=event, callback=callback, matcher=matcher)
+        )
 
     def get_hooks(self, event: str) -> list[HookEntry]:
         """Get hooks for an event."""

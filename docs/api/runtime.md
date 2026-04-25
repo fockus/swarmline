@@ -18,6 +18,12 @@ Runtime types, events, and registry for pluggable execution engines.
 
 ::: swarmline.runtime.registry.RuntimeRegistry
 
+## PI SDK Runtime
+
+::: swarmline.runtime.pi_sdk.PiSdkOptions
+
+::: swarmline.runtime.pi_sdk.PiSdkRuntime
+
 ## CostBudget
 
 ::: swarmline.runtime.cost.CostBudget

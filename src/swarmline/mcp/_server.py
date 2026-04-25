@@ -12,6 +12,7 @@ Modes:
 
 from __future__ import annotations
 
+import argparse
 import sys
 from typing import Any
 
@@ -44,6 +45,34 @@ from swarmline.mcp._tools_team import (
 )
 
 logger = structlog.get_logger(__name__)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse swarmline-mcp arguments.
+
+    Supports the legacy positional mode and the newer ``--mode`` flag.
+    """
+    parser = argparse.ArgumentParser(
+        prog="swarmline-mcp",
+        description="Start the Swarmline MCP server over stdio.",
+    )
+    parser.add_argument(
+        "positional_mode",
+        nargs="?",
+        choices=("auto", "headless", "full"),
+        help="Server mode (legacy positional form).",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("auto", "headless", "full"),
+        help="Server mode.",
+    )
+    args = parser.parse_args(argv)
+    if args.positional_mode and args.mode and args.positional_mode != args.mode:
+        parser.error("positional mode and --mode must match when both are provided")
+    args.mode = args.mode or args.positional_mode or "auto"
+    delattr(args, "positional_mode")
+    return args
 
 
 def create_server(*, mode: str = "auto", enable_host_exec: bool = False) -> Any:
@@ -269,10 +298,7 @@ def create_server(*, mode: str = "auto", enable_host_exec: bool = False) -> Any:
 
 def main() -> None:
     """Entry point for swarmline-mcp and python -m swarmline.mcp."""
-    mode = sys.argv[1] if len(sys.argv) > 1 else "auto"
-    if mode not in ("auto", "headless", "full"):
-        logger.error("invalid_mode", mode=mode, valid=["auto", "headless", "full"])
-        sys.exit(1)
+    args = parse_args(sys.argv[1:])
 
-    server = create_server(mode=mode)
+    server = create_server(mode=args.mode)
     server.run(transport="stdio")

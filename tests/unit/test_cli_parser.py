@@ -20,6 +20,12 @@ class TestNdjsonParserProtocol:
 
         assert isinstance(GenericNdjsonParser(), NdjsonParser)
 
+    def test_ndjson_parser_protocol_pi_rpc_isinstance(self) -> None:
+        """PiRpcParser satisfies NdjsonParser Protocol."""
+        from swarmline.runtime.cli.parser import NdjsonParser, PiRpcParser
+
+        assert isinstance(PiRpcParser(), NdjsonParser)
+
 
 class TestClaudeNdjsonParser:
     """ClaudeNdjsonParser maps Claude Code NDJSON to RuntimeEvent."""
@@ -137,3 +143,111 @@ class TestGenericNdjsonParser:
 
         parser = GenericNdjsonParser()
         assert parser.parse_line("") is None
+
+
+class TestPiRpcParser:
+    """PiRpcParser maps PI RPC JSONL events to RuntimeEvent."""
+
+    def test_message_update_text_delta(self) -> None:
+        from swarmline.runtime.cli.parser import PiRpcParser
+
+        parser = PiRpcParser()
+        line = json.dumps(
+            {
+                "type": "message_update",
+                "assistantMessageEvent": {"type": "text_delta", "delta": "hello"},
+            }
+        )
+
+        event = parser.parse_line(line)
+
+        assert event is not None
+        assert event.type == "assistant_delta"
+        assert event.data["text"] == "hello"
+
+    def test_message_update_thinking_delta(self) -> None:
+        from swarmline.runtime.cli.parser import PiRpcParser
+
+        parser = PiRpcParser()
+        line = json.dumps(
+            {
+                "type": "message_update",
+                "assistantMessageEvent": {"type": "thinking_delta", "delta": "plan"},
+            }
+        )
+
+        event = parser.parse_line(line)
+
+        assert event is not None
+        assert event.type == "thinking_delta"
+        assert event.data["text"] == "plan"
+
+    def test_tool_execution_events(self) -> None:
+        from swarmline.runtime.cli.parser import PiRpcParser
+
+        parser = PiRpcParser()
+        started = parser.parse_line(
+            json.dumps(
+                {
+                    "type": "tool_execution_start",
+                    "toolCallId": "call-1",
+                    "toolName": "bash",
+                    "args": {"command": "pwd"},
+                }
+            )
+        )
+        finished = parser.parse_line(
+            json.dumps(
+                {
+                    "type": "tool_execution_end",
+                    "toolCallId": "call-1",
+                    "toolName": "bash",
+                    "result": {"content": [{"type": "text", "text": "/tmp"}]},
+                    "isError": False,
+                }
+            )
+        )
+
+        assert started is not None
+        assert started.type == "tool_call_started"
+        assert started.data["name"] == "bash"
+        assert started.data["correlation_id"] == "call-1"
+        assert finished is not None
+        assert finished.type == "tool_call_finished"
+        assert finished.data["ok"] is True
+        assert "/tmp" in finished.data["result_summary"]
+
+    def test_agent_end_extracts_last_assistant_text(self) -> None:
+        from swarmline.runtime.cli.parser import PiRpcParser
+
+        parser = PiRpcParser()
+        line = json.dumps(
+            {
+                "type": "agent_end",
+                "messages": [
+                    {"role": "user", "content": "hi"},
+                    {"role": "assistant", "content": "done"},
+                ],
+            }
+        )
+
+        event = parser.parse_line(line)
+
+        assert event is not None
+        assert event.type == "final"
+        assert event.data["text"] == "done"
+
+    def test_failed_response_maps_to_error(self) -> None:
+        from swarmline.runtime.cli.parser import PiRpcParser
+
+        parser = PiRpcParser()
+        line = json.dumps(
+            {"type": "response", "command": "prompt", "success": False, "error": "bad"}
+        )
+
+        event = parser.parse_line(line)
+
+        assert event is not None
+        assert event.type == "error"
+        assert event.data["kind"] == "runtime_crash"
+        assert "bad" in event.data["message"]

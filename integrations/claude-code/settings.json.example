@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "cognitia": {
-      "command": "cognitia-mcp",
+    "swarmline": {
+      "command": "swarmline-mcp",
       "args": ["--mode", "auto"],
       "env": {}
     }

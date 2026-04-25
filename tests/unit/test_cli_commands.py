@@ -57,6 +57,11 @@ class TestCLIHelp:
         assert result.exit_code == 0
         assert "mode" in result.output.lower()
 
+    def test_status_help(self, runner: CliRunner) -> None:
+        result = runner.invoke(cli, ["status", "--help"])
+        assert result.exit_code == 0
+        assert "status" in result.output.lower()
+
 
 # ---------------------------------------------------------------------------
 # Memory commands
@@ -166,6 +171,17 @@ class TestRunCommand:
         result = runner.invoke(cli, ["run", "--timeout", "5", "print('hello')"])
         assert result.exit_code == 0
         assert "hello" in result.output
+
+
+class TestStatusCommand:
+    def test_status_returns_runtime_story(self, runner: CliRunner) -> None:
+        result = runner.invoke(cli, ["--format", "json", "status"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["ok"] is True
+        assert "pi_sdk" in data["data"]["public_runtimes"]
+        assert data["data"]["internal_modes"] == ["headless"]
 
 
 # ---------------------------------------------------------------------------

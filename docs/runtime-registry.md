@@ -4,13 +4,17 @@ Thread-safe, extensible registry for runtime factories with plugin discovery via
 
 ## Built-in Runtimes
 
-Three runtimes are registered automatically:
+Six public Agent API runtimes are registered automatically. `headless` is also registered for internal MCP/code-agent mode, but it is not advertised as a normal `Agent` runtime.
 
 | Name | Class | Extra |
 |------|-------|-------|
 | `thin` | `ThinRuntime` | `swarmline[thin]` |
 | `claude_sdk` | `ClaudeCodeRuntime` | `swarmline[claude]` |
 | `deepagents` | `DeepAgentsRuntime` | `swarmline[deepagents]` |
+| `cli` | `CliAgentRuntime` | `swarmline[cli]` |
+| `openai_agents` | `OpenAIAgentsRuntime` | `swarmline[openai-agents]` |
+| `pi_sdk` | `PiSdkRuntime` | Node + `@mariozechner/pi-coding-agent` |
+| `headless` | `HeadlessRuntime` | internal MCP/code-agent mode |
 
 ## Using the Registry
 
@@ -20,7 +24,7 @@ from swarmline.runtime.registry import get_default_registry
 registry = get_default_registry()
 
 # List available runtimes
-registry.list_available()  # ["thin", "claude_sdk", "deepagents"]
+registry.list_available()  # includes thin, claude_sdk, deepagents, cli, openai_agents, pi_sdk
 
 # Check if registered
 registry.is_registered("thin")  # True
@@ -41,7 +45,7 @@ from swarmline.runtime.capabilities import RuntimeCapabilities
 def my_factory(config, **kwargs):
     return MyCustomRuntime(config=config, **kwargs)
 
-caps = RuntimeCapabilities(streaming=True, tools=True)
+caps = RuntimeCapabilities(runtime_name="my_runtime", tier="light")
 get_default_registry().register("my_runtime", my_factory, capabilities=caps)
 
 # Now usable in config:
@@ -67,7 +71,7 @@ from swarmline.runtime.capabilities import RuntimeCapabilities
 def get_runtime():
     def factory(config, **kwargs):
         return MyRuntime(config=config, **kwargs)
-    caps = RuntimeCapabilities(streaming=True, tools=True)
+    caps = RuntimeCapabilities(runtime_name="my_runtime", tier="light")
     return factory, caps
 ```
 

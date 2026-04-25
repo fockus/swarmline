@@ -127,30 +127,28 @@ class TestBuiltinRegistration:
     """Built-in runtimes auto-registered in default registry."""
 
     def test_list_available_includes_builtins(self) -> None:
-        """Default registry includes claude_sdk, deepagents, thin."""
+        """Default registry includes all public builtins and internal headless mode."""
         from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
         available = registry.list_available()
-        assert "claude_sdk" in available
-        assert "deepagents" in available
-        assert "thin" in available
+        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"):
+            assert name in available
 
     def test_is_registered_builtins(self) -> None:
         """All builtins are registered."""
         from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
-        assert registry.is_registered("claude_sdk")
-        assert registry.is_registered("deepagents")
-        assert registry.is_registered("thin")
+        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"):
+            assert registry.is_registered(name)
 
     def test_get_capabilities_builtins(self) -> None:
         """Builtins have capabilities registered."""
         from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
-        for name in ("claude_sdk", "deepagents", "thin"):
+        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"):
             caps = registry.get_capabilities(name)
             assert caps is not None
             assert caps.runtime_name == name

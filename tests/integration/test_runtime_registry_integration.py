@@ -105,7 +105,7 @@ class TestFactoryBackwardCompatAllRuntimes:
         registry = get_default_registry()
         factory = RuntimeFactory(registry=registry)
 
-        for name in ("claude_sdk", "deepagents", "thin", "cli"):
+        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk"):
             runtime = factory.create(config=RuntimeConfig(runtime_name=name))
             # May be real runtime or _ErrorRuntime (deps missing), but must not crash
             assert runtime is not None

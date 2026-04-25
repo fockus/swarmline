@@ -1,6 +1,6 @@
 # CLI Agent Runtime
 
-The CLI Agent Runtime runs external command-line agents as subprocesses and parses their NDJSON output into Swarmline's `RuntimeEvent` stream. This enables integration with any CLI-based agent (Claude Code, custom scripts, third-party tools) without tight coupling.
+The CLI Agent Runtime runs external command-line agents as subprocesses and parses JSONL/NDJSON output into Swarmline's `RuntimeEvent` stream. This enables integration with any CLI-based agent (Claude Code, PI RPC mode, custom scripts, third-party tools) without tight coupling.
 
 ## Overview
 
@@ -36,6 +36,7 @@ from swarmline.runtime.cli.types import CliConfig
 config = CliConfig(
     command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"],
     output_format="stream-json",
+    input_format="plain",
     timeout_seconds=300.0,
     max_output_bytes=4_000_000,
     env={"ANTHROPIC_API_KEY": "sk-..."},
@@ -46,6 +47,8 @@ config = CliConfig(
 |-------|------|---------|-------------|
 | `command` | `list[str]` | required | CLI command and arguments |
 | `output_format` | `str` | `"stream-json"` | Expected output format |
+| `input_format` | `"plain"` / `"pi-rpc"` | `"plain"` | Stdin protocol |
+| `preset` | `CliPreset \| None` | `None` | Known preset marker |
 | `timeout_seconds` | `float` | `300.0` | Max execution time before SIGTERM |
 | `max_output_bytes` | `int` | `4_000_000` | Max stdout bytes before truncation |
 | `env` | `dict[str, str]` | `{}` | Extra environment variables (merged with `os.environ`) |
@@ -100,6 +103,27 @@ event = parser.parse_line('{"step": "processing", "progress": 0.5}')
 
 Invalid JSON lines return `None` and are silently skipped.
 
+### PiRpcParser
+
+Parses PI CLI RPC mode (`pi --mode rpc`) events:
+
+```python
+from swarmline.runtime.cli import CliConfig
+
+cli_config = CliConfig.pi()
+```
+
+Event mapping:
+
+| PI RPC Event | RuntimeEvent |
+|-------------|--------------|
+| `message_update` + `text_delta` | `assistant_delta` |
+| `message_update` + `thinking_delta` | `thinking_delta` |
+| `tool_execution_start` | `tool_call_started` |
+| `tool_execution_end` | `tool_call_finished` |
+| `agent_end` | `final` |
+| failed `response` | `error` |
+
 ## CliAgentRuntime
 
 The main runtime class. Implements the `AgentRuntime` protocol and supports async context manager.
@@ -122,6 +146,7 @@ runtime = CliAgentRuntime(
 Parser auto-selection:
 
 - Command basename is `"claude"` -- uses `ClaudeNdjsonParser`
+- Command basename is `"pi"` or `output_format="pi-rpc"` -- uses `PiRpcParser`
 - Any other command -- uses `GenericNdjsonParser`
 - Explicit `parser=` argument overrides auto-selection
 
@@ -159,6 +184,12 @@ assistant: ...
 ```
 
 If `system_prompt` is empty, only the `Conversation:` section is sent.
+
+For PI RPC mode, Swarmline wraps that payload as one JSONL prompt command:
+
+```json
+{"type": "prompt", "message": "System instructions:\n..."}
+```
 
 ### Error Handling
 
@@ -265,8 +296,26 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
 ```
+
+## Example: Running PI CLI RPC Mode
+
+```python
+from swarmline import Agent, AgentConfig
+from swarmline.runtime.cli import CliConfig
+
+agent = Agent(AgentConfig(
+    system_prompt="You are a helpful coding assistant.",
+    runtime="cli",
+    runtime_options=CliConfig.pi(),
+))
+
+result = await agent.query("Summarize the current project.")
+print(result.text)
+```
+
+Use `runtime="pi_sdk"` instead when you want the preferred typed PI SDK bridge with local Swarmline tools.
 
 ## Custom Parser
 

@@ -3,7 +3,7 @@ include LICENSE
 include CHANGELOG.md
 include CONTRIBUTING.md
 include pyproject.toml
-recursive-include src *.py *.yaml py.typed
+recursive-include src *.py *.yaml *.mjs py.typed
 prune .github
 prune docs
 prune tests

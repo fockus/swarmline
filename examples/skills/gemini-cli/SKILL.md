@@ -24,4 +24,4 @@ Use Gemini CLI for code generation and analysis tasks powered by Google's Gemini
 - Gemini CLI must be installed: `npm install -g @google/gemini-cli`
 - Set `GOOGLE_API_KEY` or `GEMINI_API_KEY` environment variable
 - Best for: code review, refactoring suggestions, documentation generation
-- JSON output mode provides structured responses parseable by Cognitia
+- JSON output mode provides structured responses parseable by Swarmline
