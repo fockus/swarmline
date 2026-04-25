@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(none yet)
+
+## [1.5.0] - 2026-04-25
+
+This is a substantial release that brings ThinRuntime to feature parity with Claude Code's
+agent loop and adds two new runtime adapters, multimodal input, parallel agents, session
+resume, conversation compaction, and a typed thinking-events surface.
+
+### Added
+
+#### ThinRuntime Claude Code parity (Phases 1–10)
+
+- **Hook dispatch** — full `PreToolUse` / `PostToolUse` / `Stop` / `UserPromptSubmit` lifecycle in ThinRuntime via `HookRegistry`.
+- **Tool policy enforcement** — `DefaultToolPolicy` is now wired through `ToolExecutor`; default-deny applies to ThinRuntime (parity with `claude_sdk` adapter).
+- **LLM-initiated subagents** — `spawn_agent` builtin tool lets the model delegate work to a child Agent. Configurable via `AgentConfig.subagent_config: SubagentToolConfig`.
+- **Command routing** — slash-command registry recognized inside ThinRuntime conversations. Configurable via `AgentConfig.command_registry`.
+- **Native tool calling** — parallel tool execution path using provider-native function-call APIs (Anthropic `tool_use`, OpenAI `tools`, Google `functionDeclarations`).
+- **Coding profile** — opt-in `CodingProfileConfig` enables a curated coding-agent tool surface (sandbox, web, thinking) with hardened policy. Set `AgentConfig.coding_profile`.
+
+#### ThinRuntime Parity v2 (Phases 11–17)
+
+- **Phase 11 — Foundation filters**: `ProjectInstructionFilter` walks up from cwd loading `CLAUDE.md` / `AGENTS.md` / `RULES.md` / `GEMINI.md` into the system prompt; `SystemReminderFilter` injects dynamic context blocks.
+- **Phase 12 — Tool surface expansion**: `web_fetch` honours `web_allowed_domains` / `web_blocked_domains` filters; new MCP resource tools (`list_resources`, `read_resource`, builtin `read_mcp_resource`) with TTL caching; `ResourceDescriptor` exported.
+- **Phase 13 — Conversation compaction**: 3-tier cascade (tool-result collapse → LLM summarization → emergency truncation) via `ConversationCompactionFilter` + `CompactionConfig`.
+- **Phase 14 — Session resume**: `JsonlMessageStore` (SHA-256 filenames, corrupted-line resilience) + `Conversation.resume(session_id)` with auto-persist and auto-compaction.
+- **Phase 15 — Thinking events**: typed `ThinkingConfig` union (`ThinkingConfigEnabled` / `ThinkingConfigAdaptive` / `ThinkingConfigDisabled`); `RuntimeEvent.thinking_delta` factory; `LlmCallResult` envelope; AnthropicAdapter extracts thinking blocks.
+- **Phase 16 — Multimodal input**: `ContentBlock` / `TextBlock` / `ImageBlock` types; `Message.content_blocks` additive field; multimodal converters for Anthropic / OpenAI / Google adapters; `BinaryReadProvider`; PDF and Jupyter notebook extractors.
+- **Phase 17 — Parallel agents**: `SubagentSpec.isolation` (`shared` / `worktree`); per-agent git worktree lifecycle for `spawn_agent`; `RuntimeEvent.background_complete`; new `monitor_agent` builtin tool.
+
+#### New runtime adapters
+
+- **`runtime="pi_sdk"`** — Pi SDK adapter via Node.js bridge. Fourth runtime in the matrix.
+- **`runtime="openai_agents"`** — OpenAI Agents SDK adapter (Codex + OpenAI models). Fifth runtime in the matrix.
+
+#### Other additions
+
+- **Agent packs** — `AgentPackResolver`, `AgentPackResource`, `ResolvedAgentPack` for declarative agent-bundle loading. See `docs/agent-pack.md`.
+- **Typed pipeline primitives** — structured workflow building blocks (`pipeline/typed.py`, `pipeline/bridge.py`, chain extensions).
+- **JSONL telemetry sink** — `JsonlTelemetrySink` subscribes to `EventBus`, writes append-only JSONL events to disk with non-blocking I/O and serialized concurrent writes. Built-in key-name redaction for secrets.
+- **Subagent worktree isolation** — `SubagentToolConfig` exposes worktree-isolation knobs to LLM-initiated subagents.
+
+### Changed
+
+- **Default runtime** — `AgentConfig.runtime` default flipped from `"claude_sdk"` → `"thin"`. Existing code that passes `runtime="claude_sdk"` explicitly is unaffected; only callers that relied on the implicit default see new behaviour. Recommendation: pin `runtime=...` explicitly. (See `docs/migration/v1.4-to-v1.5.md`.)
+- **Python 3.10 dropped** — minimum supported interpreter is now `>=3.11`. CI matrix updated in `.github/workflows/publish.yml`.
+- **`ty` strict-mode baseline = 0** — Sprints 1A/1B drove diagnostics from 75 → 0 (locked in `tests/architecture/ty_baseline.txt`).
+- LLM error messages standardised on English in `runtime/thin/errors.py` and `runtime/thin/llm_client.py` (was Russian).
+- `docs/agent-facade.md` corrected — `system_prompt` (not `runtime`) is the only required `AgentConfig` parameter.
+
+### Deprecated
+
+- **`AgentConfig.max_thinking_tokens`** — use `AgentConfig.thinking={"type":"enabled","budget_tokens":N}` (or one of the typed `ThinkingConfigEnabled` / `ThinkingConfigAdaptive` / `ThinkingConfigDisabled` dataclasses) instead. Backwards-compatible mapping is preserved in `runtime/options_builder.py`; the field will be removed in a future release.
+
+### Fixed
+
+- **C-1 / C-3** — test isolation: `observability/logger.py` no longer calls `logging.basicConfig(force=True)` on every reconfigure and now routes stdlib logging to `stderr`. This eliminates cross-test contamination and preserves the CLI JSON contract on `stdout`.
+- **C-2** — `JsonlTelemetrySink.record()` no longer blocks the event loop: file I/O wrapped in `asyncio.to_thread()` and concurrent writes serialized via a lazy `asyncio.Lock`.
+- **C-9** — Russian error string in `runtime/thin/errors.py` translated to English ("LLM API error" replaces "Ошибка LLM API").
+- **C-10** — `docs/agent-facade.md` accuracy: `system_prompt` is the only required field; `runtime` defaults to `"thin"`.
+- E402 `noqa` placement on multi-line imports in `tests/unit/test_otel_exporter.py`.
+
+### Documentation
+
+- New: `docs/migration/v1.4-to-v1.5.md` — migration guide for the 1.4 → 1.5 transition.
+- New / extended: `docs/agent-pack.md`, `docs/observability.md`, `docs/structured-output.md`, `docs/pipeline.md` — parity v2 surface and JSONL telemetry coverage.
+- `CLAUDE.md` and `AGENTS.md` aligned to Python 3.11+.
+
+### Internal
+
+- Sprint 1A — `ty` strict-mode foundation (75 → 62 diagnostics).
+- Sprint 1B — six staged batches (62 → 0): OptDep, unresolved-attribute, callable narrow, argument-type, miscellaneous, baseline lock.
+
+## [1.4.1] - 2026-04-11
+
+### Changed
+
+- **Branding**: package renamed `cognitia` → `swarmline`. PyPI distribution is `swarmline==1.4.1`. All 4263 tests pass post-rename.
+- CI: GitHub Actions workflows updated to Node.js 24-compatible action versions.
+
+### Fixed
+
+- `docs` extra: missing `mkdocstrings` dependency added so `mkdocs build` works in a clean install.
+
+### Tests
+
+- Added contract tests for `Agent.query()` `messages` parameter behaviour.
+
 ## [1.4.0] - 2026-04-11
 
 ### Changed
@@ -390,7 +477,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/swarmline/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/fockus/swarmline/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/fockus/swarmline/compare/v1.4.1...v1.5.0
+[1.4.1]: https://github.com/fockus/swarmline/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/fockus/swarmline/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/fockus/swarmline/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/fockus/swarmline/compare/v1.1.0...v1.2.0
