@@ -77,7 +77,7 @@ class OpenShellSandboxProvider:
 
             # Real SDK import (lazy — only when actually used)
             try:
-                from openshell import SandboxClient  # type: ignore[import-untyped]
+                from openshell import SandboxClient  # ty: ignore[unresolved-import]  # optional dep
             except ImportError as exc:
                 raise RuntimeError(
                     "openshell not installed. Run: pip install swarmline[openshell]"

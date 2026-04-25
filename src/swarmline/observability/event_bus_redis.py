@@ -51,7 +51,7 @@ class RedisEventBus:
     async def connect(self) -> None:
         """Initialize Redis connection and start background listener."""
         try:
-            from redis.asyncio import Redis
+            from redis.asyncio import Redis  # ty: ignore[unresolved-import]  # optional dep
         except ImportError as exc:
             raise ImportError(
                 "redis package required: pip install 'swarmline[redis]' "

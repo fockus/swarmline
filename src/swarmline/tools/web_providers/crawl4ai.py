@@ -14,8 +14,8 @@ import structlog
 _log = structlog.get_logger(component="web_fetch.crawl4ai")
 
 try:
-    from crawl4ai import AsyncWebCrawler, CrawlerRunConfig  # type: ignore[import-not-found]
-    from crawl4ai.markdown_generation_strategy import (  # type: ignore[import-not-found]
+    from crawl4ai import AsyncWebCrawler, CrawlerRunConfig  # ty: ignore[unresolved-import]  # optional dep
+    from crawl4ai.markdown_generation_strategy import (  # ty: ignore[unresolved-import]  # optional dep
         DefaultMarkdownGenerator,
     )
 except ImportError:

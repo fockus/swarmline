@@ -41,8 +41,8 @@ def _try_import_otel() -> tuple[Any, Any]:
         (trace module, StatusCode enum) or raises ImportError with install hint.
     """
     try:
-        from opentelemetry import trace  # type: ignore[import-untyped]
-        from opentelemetry.trace import StatusCode  # type: ignore[import-untyped]
+        from opentelemetry import trace  # ty: ignore[unresolved-import]  # optional dep
+        from opentelemetry.trace import StatusCode  # ty: ignore[unresolved-import]  # optional dep
 
         return trace, StatusCode
     except ImportError:

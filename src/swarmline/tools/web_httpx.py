@@ -18,7 +18,7 @@ from swarmline.observability.security import log_security_decision
 from swarmline.tools.web_protocols import SearchResult, WebFetchProvider, WebSearchProvider
 
 try:
-    import trafilatura
+    import trafilatura  # ty: ignore[unresolved-import]  # optional dep
 except ImportError:
     trafilatura = None  # type: ignore[assignment]
 

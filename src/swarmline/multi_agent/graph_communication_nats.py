@@ -45,7 +45,7 @@ class NatsGraphCommunication:
     async def connect(self) -> None:
         """Initialize NATS connection and JetStream context."""
         try:
-            import nats
+            import nats  # ty: ignore[unresolved-import]  # optional dep
         except ImportError as exc:
             raise ImportError(
                 "nats-py package required: pip install 'swarmline[nats]' "

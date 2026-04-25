@@ -53,7 +53,7 @@ class E2BSandboxProvider:
             return self._sandbox
 
         try:
-            from e2b_code_interpreter import Sandbox  # type: ignore[import-not-found]
+            from e2b_code_interpreter import Sandbox  # ty: ignore[unresolved-import]  # optional dep
         except ImportError as exc:
             raise RuntimeError(
                 "E2B SDK is not installed. Install the optional e2b_code_interpreter dependency.",

@@ -41,21 +41,76 @@
 ## Stages
 
 <!-- mb-stage:1 -->
-### Stage 1: <!-- title -->
+### Stage 1: OptDep batch — 22 unresolved-import → 0 ✅ DONE (2026-04-25)
+
+**Result (verified):** ty 62 → 40 (-22, 100% of unresolved-import closed).
+Test `tests/unit/test_optdep_imports.py` introduced (82 parametrized cases, 4 invariants).
+16 source files touched (not 13 — plan undercounted) covering all 18 distinct optional modules.
+Pattern applied: `# ty: ignore[unresolved-import]  # optional dep` (ty-native, since
+`respect-type-ignore-comments = false` makes classic `# type: ignore` inert).
+
+**Real diagnostic distribution (verified 2026-04-25 against baseline=62):**
+22 unique unresolved-import diagnostics across 12 source files / 18 distinct optional modules:
+
+| Module(s) | File(s) | Errors |
+|---|---|---|
+| `tavily` | `tools/web_providers/tavily.py` | 1 |
+| `crawl4ai`, `crawl4ai.markdown_generation_strategy` | `tools/web_providers/crawl4ai.py` | 2 |
+| `trafilatura` | `tools/web_httpx.py` | 1 |
+| `pymupdf4llm`, `fitz`, `nbformat` | `tools/extractors.py` | 3 |
+| `claude_code_sdk` (×2) | `runtime/agent_sdk_adapter.py` | 2 |
+| `agents`, `agents.mcp` | `runtime/openai_agents/runtime.py` | 2 |
+| `nats` | `observability/event_bus_nats.py` | 1 |
+| `redis.asyncio` | `observability/event_bus_redis.py` | 1 |
+| `nats` | `multi_agent/graph_communication_nats.py` | 1 |
+| `redis.asyncio` | `multi_agent/graph_communication_redis.py` | 1 |
+| `opentelemetry`, `opentelemetry.trace` | `observability/otel_exporter.py` | 2 |
+| `e2b_code_interpreter` | `tools/sandbox_e2b.py` | 1 |
+| `openshell` | `tools/sandbox_openshell.py` | 1 |
+| `docker` | `tools/sandbox_docker.py` | 1 |
+| `fastmcp` | `mcp/_server.py` | 1 |
+| `agents` | `runtime/openai_agents/tool_bridge.py` | 1 |
+| **Total** | **13 files** | **22** |
+
+**Discovery 2026-04-25:** `respect-type-ignore-comments = false` makes classic `# type: ignore[...]` comments INERT under ty strict-mode. Use ty-native `# ty: ignore[unresolved-import]` instead (verified to suppress diagnostics on a one-line probe).
 
 **What to do:**
-- <!-- concrete actions -->
+- Apply OptDep pattern (from `notes/2026-04-25_ty-strict-decisions.md`) to each module:
+  ```python
+  from typing import TYPE_CHECKING
+
+  if TYPE_CHECKING:
+      from <module> import <symbols>          # ty resolves through stubs
+
+  try:
+      from <module> import <symbols>          # runtime — real install
+  except ImportError:
+      <symbols> = None  # type: ignore[unresolved-import,assignment]  # optional dep
+  ```
+- Reason-comments are mandatory (`# optional dep`) per project policy on `type: ignore`.
+- Idempotency: if a file already has TYPE_CHECKING block → only enrich it; do not duplicate.
+- Where the same module is imported twice in one file (e.g. `claude_code_sdk` in `agent_sdk_adapter.py` lines 45+85) — only the import statement(s) need patching; downstream usage already gates on `<symbol> is not None`.
 
 **Testing (TDD — tests BEFORE implementation):**
-- <!-- unit tests: what they verify, edge cases -->
-- <!-- integration tests: which components interact -->
+- New `tests/unit/test_optdep_imports.py` parametrized over (module, file, public symbol):
+  - `test_module_importable_when_installed` — installs only what's available; asserts import path resolves and the public symbol is non-None.
+  - `test_module_falls_back_to_none_when_missing` — uses `monkeypatch.setitem(sys.modules, '<module>', None)` (sentinel pattern from `test_import_isolation.py`); asserts the affected swarmline module imports without raising and exposes `None` for the missing symbol.
+  - `test_no_naked_type_ignore` — source-level scan: every `# type: ignore[unresolved-import,assignment]` is followed by a reason-comment containing "optional dep".
+- Reuse the established `test_import_isolation.py` style for monkeypatching `sys.modules`.
+- No integration tests required — pattern is mechanical and unit-testable.
 
-**DoD (Definition of Done):**
-- [ ] <!-- concrete, measurable criterion (SMART) -->
-- [ ] tests pass
-- [ ] lint clean
+**DoD (Definition of Done) — SMART:**
+- [ ] `ty check src/swarmline/ 2>&1 | grep "unresolved-import" | wc -l` → **0** (verified by re-running after each file)
+- [ ] `ty check src/swarmline/ 2>&1 | grep "Found .* diagnostics"` → **≤40** (62 − 22 = 40, no regressions)
+- [ ] `tests/architecture/ty_baseline.txt` updated to **40**
+- [ ] `tests/unit/test_optdep_imports.py` exists, all parametrized cases green (≥18 cases × 3 = 54 assertions minimum)
+- [ ] Full offline `pytest -q` green (5200+ tests, no regressions)
+- [ ] `ruff check src/swarmline/ tests/` clean
+- [ ] `ruff format --check src/swarmline/ tests/` clean
+- [ ] No new `# type: ignore` without `# optional dep` reason-comment (grep audit)
+- [ ] `git diff --stat src/` shows changes only in the 12 listed files (scope discipline)
 
-**Code rules:** SOLID, DRY, KISS, YAGNI, Clean Architecture
+**Code rules:** SOLID, DRY (single canonical pattern), KISS (no abstractions over plain try/except), YAGNI, Clean Architecture (touches Infrastructure layer only — domain/protocols/types untouched).
 
 ---
 

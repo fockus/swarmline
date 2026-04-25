@@ -63,7 +63,7 @@ class OpenAIAgentsRuntime:
         and converts events to RuntimeEvent.
         """
         try:
-            from agents import Agent, Runner
+            from agents import Agent, Runner  # ty: ignore[unresolved-import]  # optional dep
         except ImportError:
             yield RuntimeEvent.error(
                 RuntimeErrorData(
@@ -211,7 +211,7 @@ class OpenAIAgentsRuntime:
         Passes env vars from config to the MCP server process.
         """
         try:
-            from agents.mcp import MCPServerStdio
+            from agents.mcp import MCPServerStdio  # ty: ignore[unresolved-import]  # optional dep
 
             cfg = self._agents_config
             params: dict[str, Any] = {

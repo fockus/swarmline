@@ -50,7 +50,7 @@ class NatsEventBus:
     async def connect(self) -> None:
         """Initialize NATS connection."""
         try:
-            import nats
+            import nats  # ty: ignore[unresolved-import]  # optional dep
         except ImportError as exc:
             raise ImportError(
                 "nats-py package required: pip install 'swarmline[nats]' "

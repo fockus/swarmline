@@ -31,7 +31,7 @@ def toolspec_to_function_tool(
             Signature: ``async def executor(tool_name: str, kwargs: dict) -> str``.
             If None, tool returns an error indicating no executor is configured.
     """
-    from agents import FunctionTool
+    from agents import FunctionTool  # ty: ignore[unresolved-import]  # optional dep
 
     tool_name = spec.name
     tool_executor = executor

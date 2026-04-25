@@ -23,7 +23,7 @@ async def extract_pdf(source: str | bytes) -> str:
         ImportError: pymupdf4llm is not installed.
     """
     try:
-        import pymupdf4llm
+        import pymupdf4llm  # ty: ignore[unresolved-import]  # optional dep
     except ImportError:
         raise ImportError(
             "pymupdf4llm is required for PDF extraction. "
@@ -32,7 +32,7 @@ async def extract_pdf(source: str | bytes) -> str:
 
     if isinstance(source, bytes):
         try:
-            import fitz
+            import fitz  # ty: ignore[unresolved-import]  # optional dep
         except ImportError:
             raise ImportError(
                 "pymupdf is required for PDF extraction from bytes. "
@@ -65,7 +65,7 @@ async def extract_jupyter(source: str | bytes) -> str:
         ImportError: nbformat is not installed.
     """
     try:
-        import nbformat
+        import nbformat  # ty: ignore[unresolved-import]  # optional dep
     except ImportError:
         raise ImportError(
             "nbformat is required for Jupyter extraction. "

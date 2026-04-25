@@ -13,7 +13,7 @@ import structlog
 from swarmline.tools.web_protocols import SearchResult
 
 try:
-    from tavily import TavilyClient  # type: ignore[import-untyped]
+    from tavily import TavilyClient  # ty: ignore[unresolved-import]  # optional dep
 except ImportError:
     TavilyClient = None  # type: ignore[assignment,misc]
 

@@ -42,7 +42,7 @@ class AgentSDKAdapter:
     ) -> AgentHandle:
         """Spawn a Claude agent via Agent SDK."""
         try:
-            from claude_code_sdk import (  # type: ignore[import-not-found,import-untyped]  # noqa: F401
+            from claude_code_sdk import (  # ty: ignore[unresolved-import]  # noqa: F401  # optional dep
                 Agent,
                 AgentOptions,
             )
@@ -82,7 +82,7 @@ class AgentSDKAdapter:
         self._statuses[handle.id] = AgentHandleStatus.RUNNING
 
         try:
-            from claude_code_sdk import (  # type: ignore[import-not-found,import-untyped]
+            from claude_code_sdk import (  # ty: ignore[unresolved-import]  # optional dep
                 Agent,
                 AgentOptions,
             )
