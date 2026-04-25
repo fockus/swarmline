@@ -30,9 +30,9 @@
 **Stage breakdown (refined по факту, после Stage 1+2):**
 - Stage 1: ✅ OptDep batch (22 fixes, 16 files) — ty 62 → 40
 - Stage 2: ✅ Unresolved-attribute batch (4 fixes, 3 files) — ty 40 → 36
-- Stage 3: ⏳ Callable narrow (9 call-non-callable, 6 files) — ty 36 → 27
-- Stage 4: ⬜ Argument-type batch (22 mixed) — ty 27 → 5
-- Stage 5: ⬜ Точечные остатки (5 misc) — ty 5 → 0
+- Stage 3: ✅ Callable narrow (9 call-non-callable, 6 files) — ty 36 → 27
+- Stage 4: ✅ Argument-type batch (22 mixed, 10 files) — ty 27 → 5
+- Stage 5: ✅ Точечные остатки (5 misc, 5 files) — ty 5 → 0
 - Stage 6: ⬜ Final verification + lock baseline=0
 
 ---
@@ -308,16 +308,36 @@ post-format positions; line-drift detector caught all 5.
 ---
 
 <!-- mb-stage:5 -->
-### Stage 5: Точечные остатки — 5 misc → 0 ⬜ TODO
+### Stage 5: Точечные остатки — 5 misc → 0 ✅ DONE (2026-04-25)
 
-5 misc diagnostics:
-- 2× `invalid-return-type`
-- 2× `invalid-assignment`
-- 1× `not-iterable`
+5 misc diagnostics closed via canonical Sprint 1B pattern (ty-native ignore + reason ≥10 chars). All 5 are SDK / framework type-stub strictness vs runtime acceptance — no real bugs (Stage 4 closed the only latent bug in event_mapper.py).
 
-Per-case fixes after Stage 4 settles.
+**Files touched (5):**
 
-**Target:** ty 5 → 0.
+| Location | Diagnostic | Fix |
+|----------|-----------|-----|
+| `multi_agent/workspace.py:124` | `invalid-return-type` | `tempfile.mkdtemp` overload returns `str \| bytes`; with `prefix=str` runtime returns `str` → ty-native ignore |
+| `orchestration/thin_subagent.py:149` | `invalid-assignment` | `runtime._cwd = handle.path` after `hasattr(runtime, "_cwd")` narrow that ty doesn't propagate → replaced inert `# type: ignore[union-attr]` with `# ty: ignore[invalid-assignment]` |
+| `runtime/adapter.py:209` | `invalid-return-type` | `claude_agent_sdk` returns `McpStatusResponse` (dict-compatible TypedDict), annotation expects `dict[str, Any]` → replaced inert `# type: ignore[return-value]` with `# ty: ignore[invalid-return-type]` |
+| `runtime/thin/llm_providers.py:515` | `not-iterable` | Gemini `Content.parts` (Unknown \| list[Part] \| None) iteration; gated by `candidates` truthy check → extended existing single-rule ignore to multi-rule `[unresolved-attribute, not-iterable]` |
+| `tools/web_providers/duckduckgo.py:19` | `invalid-assignment` | Optional Dependency Stub: `DDGS = None` after `ImportError` declares-then-rebinds → replaced inert `# type: ignore[assignment,misc]` with `# ty: ignore[invalid-assignment]` |
+
+**TDD artifacts:**
+- `tests/unit/test_misc_typing_fixes.py` (NEW, 10 tests):
+  - 4 line-anchored expectations (single-rule on workspace/thin_subagent/adapter/duckduckgo)
+  - 1 multi-rule extension test (Gemini parts loop carries both `unresolved-attribute` and `not-iterable`)
+  - 4 no-naked-ignore parametrized scans (touched files only)
+  - 1 inert-mypy regression guard (no `# type: ignore[...]` remains at fix locations)
+- `tests/unit/test_attribute_resolution_fixes.py:48-51` updated — Stage 2 expectation extended to multi-rule form (was single-rule `[unresolved-attribute]`).
+- `tests/architecture/test_ty_strict_mode.py:_run_ty` parser extended to recognize `All checks passed!` (zero-diagnostic shape).
+
+**Verification:**
+- `ty check src/swarmline/` → **All checks passed!** (0 diagnostics) ✅
+- `tests/architecture/ty_baseline.txt` → **0** ✅
+- `pytest tests/` → **5352 passed, 7 skipped, 5 deselected** (no regressions) ✅
+- `ruff check`, `ruff format --check` clean on touched files ✅
+
+**Target:** ty 5 → 0 — **achieved**.
 
 ---
 

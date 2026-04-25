@@ -47,6 +47,10 @@ def _run_ty() -> int:
         check=False,
     )
     combined = proc.stdout + proc.stderr
+    # ty prints "All checks passed!" when there are zero diagnostics,
+    # otherwise "Found N diagnostics". Recognize both shapes.
+    if "All checks passed" in combined:
+        return 0
     match = _FOUND_DIAGNOSTICS_RE.search(combined)
     if match is None:
         pytest.fail(

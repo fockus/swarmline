@@ -125,13 +125,9 @@ class ThinSubagentOrchestrator:
             )
         if spec.isolation == "worktree":
             if self._base_path is None:
-                raise ValueError(
-                    "base_path is required for worktree isolation"
-                )
+                raise ValueError("base_path is required for worktree isolation")
             if len(self._worktree_handles) >= self._max_worktrees:
-                raise ValueError(
-                    f"Max worktrees limit ({self._max_worktrees}) reached"
-                )
+                raise ValueError(f"Max worktrees limit ({self._max_worktrees}) reached")
             self._ensure_stale_cleanup()
 
         active_count = sum(1 for t in self._tasks.values() if not t.done())
@@ -150,7 +146,7 @@ class ThinSubagentOrchestrator:
 
             runtime = self._create_runtime(spec)
             if handle is not None and hasattr(runtime, "_cwd"):
-                runtime._cwd = handle.path  # type: ignore[union-attr]
+                runtime._cwd = handle.path  # ty: ignore[invalid-assignment]  # _cwd narrowed via hasattr check above; ty doesn't propagate
 
             if spec.run_in_background:
                 coro = self._run_background_agent(agent_id, runtime, task)
@@ -164,7 +160,9 @@ class ThinSubagentOrchestrator:
                 await self._cleanup_worktree(handle)
             raise
 
-    async def _run_agent(self, agent_id: str, runtime: _SubagentRuntime, task: str) -> str:
+    async def _run_agent(
+        self, agent_id: str, runtime: _SubagentRuntime, task: str
+    ) -> str:
         """Run agent with worktree cleanup in finally."""
         started = datetime.now(tz=UTC)
         try:
@@ -184,7 +182,9 @@ class ThinSubagentOrchestrator:
             self._results[agent_id] = SubagentResult(
                 agent_id=agent_id,
                 status=SubagentStatus(
-                    state="cancelled", started_at=started, finished_at=datetime.now(tz=UTC)
+                    state="cancelled",
+                    started_at=started,
+                    finished_at=datetime.now(tz=UTC),
                 ),
                 output="",
             )
@@ -324,9 +324,7 @@ class ThinSubagentOrchestrator:
             return
         self._stale_cleanup_done = True
         if self._stale_cleanup_fn is not None:
-            self._stale_cleanup_task = asyncio.create_task(
-                self._run_stale_cleanup()
-            )
+            self._stale_cleanup_task = asyncio.create_task(self._run_stale_cleanup())
 
     async def _run_stale_cleanup(self) -> None:
         """Execute the stale cleanup callback (fire-and-forget)."""

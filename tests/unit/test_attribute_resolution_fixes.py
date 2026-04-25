@@ -46,8 +46,8 @@ EXPECTED_FIXES: list[tuple[str, int, str, str]] = [
     (
         "src/swarmline/runtime/thin/llm_providers.py",
         515,
-        "# ty: ignore[unresolved-attribute]",
-        "Gemini Content.parts gated by candidates check",
+        "# ty: ignore[unresolved-attribute, not-iterable]",
+        "Gemini Content.parts gated by candidates check (Stage 5 extends with not-iterable)",
     ),
     (
         "src/swarmline/session/backends_postgres.py",

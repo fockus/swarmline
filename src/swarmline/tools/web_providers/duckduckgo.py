@@ -16,7 +16,7 @@ from swarmline.tools.web_protocols import SearchResult
 try:
     from ddgs import DDGS  # type: ignore[import-not-found]
 except ImportError:
-    DDGS = None  # type: ignore[assignment,misc]
+    DDGS = None  # ty: ignore[invalid-assignment]  # Optional Dependency Stub: DDGS=None when ddgs not installed (optional dependency)
 
 _log = structlog.get_logger(component="web_search.duckduckgo")
 
@@ -48,7 +48,9 @@ class DuckDuckGoSearchProvider:
 
         def _sync_search() -> list[dict]:
             try:
-                return list(DDGS().text(query, max_results=max_results, timeout=self._timeout))
+                return list(
+                    DDGS().text(query, max_results=max_results, timeout=self._timeout)
+                )
             except Exception as exc:
                 _log.warning("ddgs_search_failed", query=query[:100], error=str(exc))
                 return []

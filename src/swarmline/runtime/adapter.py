@@ -88,7 +88,6 @@ def _format_system_message(message: SystemMessage) -> str | None:
         if isinstance(status, str) and isinstance(summary, str) and summary:
             return f"Task {status}: {summary}"
 
-
     description = getattr(message, "description", None)
     if isinstance(description, str) and description:
         return description
@@ -107,7 +106,6 @@ def _format_system_message(message: SystemMessage) -> str | None:
 class RuntimeAdapter:
     """Runtime Adapter implementation."""
 
-
     CONNECT_TIMEOUT_SECONDS = 60.0
 
     def __init__(self, options: ClaudeAgentOptions) -> None:
@@ -118,7 +116,6 @@ class RuntimeAdapter:
     async def connect(self) -> None:
         """Connect."""
         from dataclasses import replace
-
 
         if self._options.stderr is None:
             self._options = replace(self._options, stderr=self._on_stderr)
@@ -209,7 +206,7 @@ class RuntimeAdapter:
     async def get_mcp_status(self) -> dict[str, Any]:
         """Get mcp status."""
         client = self._require_client()
-        return await client.get_mcp_status()  # type: ignore[return-value]
+        return await client.get_mcp_status()  # ty: ignore[invalid-return-type]  # claude_agent_sdk McpStatusResponse is dict-compatible at runtime
 
     async def rewind_files(self, user_message_id: str) -> None:
         """Rewind files."""
@@ -221,7 +218,6 @@ class RuntimeAdapter:
         if not self._client:
             yield StreamEvent(type="error", text="SDK клиент не подключён")
             return
-
 
         logger.info("stream_reply: отправка query (len=%d)", len(user_text))
         for attempt in range(2):
@@ -249,7 +245,6 @@ class RuntimeAdapter:
                 yield StreamEvent(type="error", text=f"Ошибка SDK query: {exc}")
                 return
 
-
         logger.info("stream_reply: ожидание receive_response()")
         full_text = ""
         msg_count = 0
@@ -263,14 +258,15 @@ class RuntimeAdapter:
                 msg_type = type(message).__name__
                 logger.info("stream_reply: msg #%d type=%s", msg_count, msg_type)
 
-
                 if isinstance(message, ResultMessage):
                     saw_result_message = True
                     result_meta = {
                         "session_id": getattr(message, "session_id", None),
                         "total_cost_usd": getattr(message, "total_cost_usd", None),
                         "usage": getattr(message, "usage", None),
-                        "structured_output": getattr(message, "structured_output", None),
+                        "structured_output": getattr(
+                            message, "structured_output", None
+                        ),
                     }
 
                 if self._options.include_partial_messages and isinstance(
@@ -313,7 +309,6 @@ class RuntimeAdapter:
             )
             return
 
-
         yield StreamEvent(
             type="done",
             text=full_text,
@@ -332,7 +327,10 @@ class RuntimeAdapter:
             return
 
         low = stripped.lower()
-        if any(kw in low for kw in ("error", "fail", "timeout", "refused", "broken", "exception")):
+        if any(
+            kw in low
+            for kw in ("error", "fail", "timeout", "refused", "broken", "exception")
+        ):
             logger.warning("claude-cli stderr: %s", stripped)
         else:
             logger.info("claude-cli stderr: %s", stripped)
@@ -350,15 +348,15 @@ class RuntimeAdapter:
                     if not suppress_text:
                         yield StreamEvent(type="text_delta", text=block.text)
                 elif isinstance(block, ThinkingBlock):
-
-
                     logger.debug(
                         "ThinkingBlock (len=%d)",
                         len(block.thinking),
                     )
                 elif isinstance(block, ToolUseBlock):
                     correlation_id = (
-                        getattr(block, "id", "") or getattr(block, "tool_use_id", "") or ""
+                        getattr(block, "id", "")
+                        or getattr(block, "tool_use_id", "")
+                        or ""
                     )
                     if correlation_id:
                         self._tool_names_by_id[correlation_id] = block.name
@@ -369,7 +367,9 @@ class RuntimeAdapter:
                         correlation_id=correlation_id,
                     )
                 elif isinstance(block, ToolResultBlock):
-                    result_text = str(block.content) if hasattr(block, "content") else ""
+                    result_text = (
+                        str(block.content) if hasattr(block, "content") else ""
+                    )
                     correlation_id = getattr(block, "tool_use_id", "") or ""
                     tool_name = self._tool_names_by_id.pop(correlation_id, "")
                     yield StreamEvent(
@@ -384,6 +384,4 @@ class RuntimeAdapter:
             if status_text:
                 yield StreamEvent(type="status", text=status_text)
         elif isinstance(message, ResultMessage):
-
-
             pass

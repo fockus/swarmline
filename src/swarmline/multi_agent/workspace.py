@@ -121,16 +121,14 @@ class LocalWorkspace:
         raise ValueError(msg)
 
     async def _create_temp_dir(self, agent_id: str, task_id: str) -> str:
-        return await asyncio.to_thread(
+        return await asyncio.to_thread(  # ty: ignore[invalid-return-type]  # tempfile.mkdtemp overload returns str|bytes; str when prefix is str
             tempfile.mkdtemp, prefix=f"swarmline_{agent_id}_{task_id}_"
         )
 
     async def _create_git_worktree(
         self, spec: WorkspaceSpec, agent_id: str, task_id: str
     ) -> tuple[str, str]:
-        branch_name = spec.branch_template.format(
-            agent_name=agent_id, task_id=task_id
-        )
+        branch_name = spec.branch_template.format(agent_name=agent_id, task_id=task_id)
         target_path = os.path.join(
             spec.base_path, ".worktrees", f"{agent_id}_{task_id}"
         )

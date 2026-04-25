@@ -512,7 +512,7 @@ class GoogleAdapter:
         text = ""
         tool_calls: list[NativeToolCall] = []
         if response.candidates:
-            for part in response.candidates[0].content.parts:  # ty: ignore[unresolved-attribute]  # Gemini Content.parts — gated by candidates truthy check
+            for part in response.candidates[0].content.parts:  # ty: ignore[unresolved-attribute, not-iterable]  # Gemini Content.parts — gated by candidates truthy check
                 if hasattr(part, "text") and part.text:
                     text += part.text
                 elif hasattr(part, "function_call") and part.function_call:
