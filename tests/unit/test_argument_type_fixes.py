@@ -44,14 +44,14 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/observability/logger.py",
-        39,
+        56,
         "# ty: ignore[invalid-argument-type]",
         "structlog",
         "structlog Processor union strict; concrete renderer accepted at runtime",
     ),
     (
         "src/swarmline/observability/logger.py",
-        41,
+        58,
         "# ty: ignore[invalid-argument-type]",
         "structlog",
         "structlog Processor union strict; concrete renderer accepted at runtime",

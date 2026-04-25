@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import pytest
 
 from swarmline.tools.sandbox_local import LocalSandboxProvider
 from swarmline.tools.types import SandboxConfig
+
+
+@pytest.fixture(autouse=True)
+def _reset_root_logger() -> Any:
+    """Reset root logger between tests so `configure_logging()` pollution does not leak.
+
+    Stage 5 fix: ensures that any test which calls `configure_logging()` cannot
+    contaminate the next test's `capsys`/`capfd` captures or log handler stack.
+    """
+    yield
+    root = logging.getLogger()
+    for h in list(root.handlers):
+        root.removeHandler(h)
 
 
 @pytest.fixture()

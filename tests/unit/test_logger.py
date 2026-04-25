@@ -55,7 +55,9 @@ class TestAgentLogger:
 
     def test_session_created(self, logger: AgentLogger) -> None:
         """session_created not fails."""
-        logger.session_created(user_id="u1", topic_id="t1", role_id="coach", is_rehydrated=True)
+        logger.session_created(
+            user_id="u1", topic_id="t1", role_id="coach", is_rehydrated=True
+        )
 
     def test_turn_start(self, logger: AgentLogger) -> None:
         """turn_start not fails, obrezaet preview do 50 simvolov."""

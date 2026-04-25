@@ -1,4 +1,12 @@
-"""StructuredLogger — structured logging for the agent."""
+"""StructuredLogger — structured logging for the agent.
+
+All log output is routed to **stderr** (both stdlib `logging` and `structlog`).
+
+Why stderr: the Swarmline CLI emits machine-readable JSON on stdout when invoked
+with ``--format json``. Mixing log lines into stdout would corrupt that contract
+for downstream consumers (jq, shell pipelines, CI tooling). Logs on stderr keep
+stdout reserved for command output.
+"""
 
 from __future__ import annotations
 
@@ -10,21 +18,30 @@ import structlog
 
 
 def configure_logging(level: str = "info", fmt: str = "json") -> None:
-    """Configure structlog + standard logging to stdout.
+    """Configure structlog + standard logging to write to stderr.
 
     Standard logging is needed because many modules (adapter, service, session_factory)
     use ``logging.getLogger(__name__)`` instead of structlog.
     Without basicConfig, their output is silently lost.
+
+    Idempotent: repeated calls do not stack handlers on the root logger, only
+    refresh the configured level and structlog processor pipeline. This keeps
+    ``capsys``/``capfd`` capture stable across pytest test files.
     """
     numeric_level = _level_to_int(level)
 
     # --- Standard logging (for logging.getLogger) ---
-    logging.basicConfig(
-        level=numeric_level,
-        stream=sys.stdout,
-        format="%(levelname)s %(name)s: %(message)s",
-        force=True,  # reconfigure even if basicConfig was already called
-    )
+    # Idempotent install: only attach a handler the first time. Subsequent
+    # calls just adjust the level so we never duplicate stderr emission.
+    root = logging.getLogger()
+    if not root.handlers:
+        logging.basicConfig(
+            level=numeric_level,
+            stream=sys.stderr,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+    else:
+        root.setLevel(numeric_level)
 
     # --- structlog (for AgentLogger) ---
     processors = [
@@ -44,7 +61,7 @@ def configure_logging(level: str = "info", fmt: str = "json") -> None:
         processors=processors,  # type: ignore[arg-type]
         wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
         cache_logger_on_first_use=True,
     )
 
