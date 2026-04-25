@@ -33,7 +33,7 @@ config = AgentConfig(
 )
 ```
 
-All fields have sensible defaults. Only `runtime` is typically required.
+`system_prompt` is required (rejected if empty by `AgentConfig.__post_init__`); `runtime` defaults to `"thin"`. All other fields have sensible defaults.
 
 ## Agent
 

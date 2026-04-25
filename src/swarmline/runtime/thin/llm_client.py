@@ -89,13 +89,18 @@ async def run_buffered_llm_call(
                 raw = await llm_call(lm_messages, prompt, **llm_kwargs)
                 if isinstance(raw, LlmCallResult):
                     return BufferedLlmAttempt(
-                        raw=raw.text, chunks=[], used_stream=False, thinking=raw.thinking,
+                        raw=raw.text,
+                        chunks=[],
+                        used_stream=False,
+                        thinking=raw.thinking,
                     )
                 return BufferedLlmAttempt(raw=raw, chunks=[], used_stream=False)
 
             if isinstance(result, LlmCallResult):
                 return BufferedLlmAttempt(
-                    raw=result.text, chunks=[result.text], used_stream=False,
+                    raw=result.text,
+                    chunks=[result.text],
+                    used_stream=False,
                     thinking=result.thinking,
                 )
 
@@ -106,12 +111,17 @@ async def run_buffered_llm_call(
                 chunks: list[str] = []
                 async for chunk in result:
                     chunks.append(chunk)
-                return BufferedLlmAttempt(raw="".join(chunks), chunks=chunks, used_stream=True)
+                return BufferedLlmAttempt(
+                    raw="".join(chunks), chunks=chunks, used_stream=True
+                )
 
             raw = await llm_call(lm_messages, prompt, **llm_kwargs)
             if isinstance(raw, LlmCallResult):
                 return BufferedLlmAttempt(
-                    raw=raw.text, chunks=[], used_stream=False, thinking=raw.thinking,
+                    raw=raw.text,
+                    chunks=[],
+                    used_stream=False,
+                    thinking=raw.thinking,
                 )
             return BufferedLlmAttempt(raw=raw, chunks=[], used_stream=False)
         except ThinLlmError as exc:
@@ -148,7 +158,7 @@ async def _stream_with_error_normalization(
     except ThinLlmError:
         raise
     except Exception as exc:
-        logger.error("Ошибка LLM API (%s)", provider, exc_info=True)
+        logger.error("LLM API error (%s)", provider, exc_info=True)
         raise provider_runtime_crash(provider, exc) from exc
 
 
@@ -181,7 +191,9 @@ async def default_llm_call(
     except ThinLlmError:
         raise
     except Exception as exc:
-        logger.error("Ошибка инициализации LLM адаптера (%s)", resolved.provider, exc_info=True)
+        logger.error(
+            "Ошибка инициализации LLM адаптера (%s)", resolved.provider, exc_info=True
+        )
         raise provider_runtime_crash(resolved.provider, exc) from exc
 
     try:
@@ -200,7 +212,7 @@ async def default_llm_call(
     except ThinLlmError:
         raise
     except Exception as exc:
-        logger.error("Ошибка LLM API (%s)", resolved.provider, exc_info=True)
+        logger.error("LLM API error (%s)", resolved.provider, exc_info=True)
         raise provider_runtime_crash(resolved.provider, exc) from exc
 
 

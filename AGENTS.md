@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project
 
-**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Python 3.10+. Published on [PyPI](https://pypi.org/project/swarmline/).
+**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Python 3.11+. Published on [PyPI](https://pypi.org/project/swarmline/).
 
 ## Commands
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.4.1, Python 3.10+.
+**Swarmline** — LLM-agnostic Python framework for building AI agents with pluggable runtimes, persistent memory, tool management, and structured observability. Version 1.4.1, Python 3.11+.
 
 ## Commands
 
@@ -171,7 +171,7 @@ Active at `.memory-bank/`. Core files: `STATUS.md`, `checklist.md`, `plan.md`, `
 - **Contract-first**: Protocol/ABC → contract tests → implementation.
 - **Clean Architecture**: Domain (protocols) → Application → Infrastructure. Hooks/policy = domain, wiring = infrastructure.
 - **ISP**: Protocol ≤ 5 methods. HookDispatcher Protocol — max 5 methods.
-- **Python 3.10+**: min version, type hints, async-first.
+- **Python 3.11+**: min version, type hints, async-first.
 - **Versioning**: вся работа = один minor release v1.5.0. Без промежуточных бампов.
 <!-- GSD:project-end -->
 

@@ -244,7 +244,10 @@ class TestGoogleAdapterCall:
         mock_module, mock_client = mock_google
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             adapter = GoogleAdapter(model="gemini-2.5-pro")
             adapter._client = mock_client
@@ -258,20 +261,28 @@ class TestGoogleAdapterCall:
         mock_module, _mock_client = mock_google
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             GoogleAdapter(
                 model="gemini-2.5-pro",
                 base_url="https://proxy.example.com",
             )
             call_kwargs = mock_module.Client.call_args.kwargs
-            assert call_kwargs["http_options"]["base_url"] == "https://proxy.example.com"
+            assert (
+                call_kwargs["http_options"]["base_url"] == "https://proxy.example.com"
+            )
 
     def test_call_without_base_url_keeps_default_constructor(self, mock_google) -> None:
         mock_module, _mock_client = mock_google
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             GoogleAdapter(model="gemini-2.5-pro")
             assert mock_module.Client.call_args.kwargs == {}
@@ -286,7 +297,9 @@ class TestCreateLlmAdapter:
     """create_llm_adapter() dispatches by sdk_type."""
 
     def test_anthropic_type(self) -> None:
-        resolved = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
+        resolved = ResolvedProvider(
+            "claude-sonnet-4-20250514", "anthropic", "anthropic", None
+        )
         with patch.dict("sys.modules", {"anthropic": _make_mock_anthropic_module()}):
             adapter = create_llm_adapter(resolved)
             assert isinstance(adapter, AnthropicAdapter)
@@ -311,7 +324,9 @@ class TestCreateLlmAdapter:
             assert isinstance(adapter, GoogleAdapter)
 
     def test_openai_compat_with_base_url(self) -> None:
-        resolved = ResolvedProvider("llama3", "ollama", "openai_compat", "http://localhost:11434/v1")
+        resolved = ResolvedProvider(
+            "llama3", "ollama", "openai_compat", "http://localhost:11434/v1"
+        )
         with patch.dict("sys.modules", {"openai": _make_mock_openai_module()}):
             adapter = create_llm_adapter(resolved)
             assert isinstance(adapter, OpenAICompatAdapter)
@@ -362,7 +377,9 @@ class TestAdapterCaching:
         """Odin and tot zhe ResolvedProvider -> tot zhe adapter."""
         from swarmline.runtime.thin.llm_providers import get_cached_adapter
 
-        r1 = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
+        r1 = ResolvedProvider(
+            "claude-sonnet-4-20250514", "anthropic", "anthropic", None
+        )
         with patch.dict("sys.modules", {"anthropic": _make_mock_anthropic_module()}):
             a1 = get_cached_adapter(r1)
             a2 = get_cached_adapter(r1)
@@ -372,7 +389,9 @@ class TestAdapterCaching:
         """Raznye model_id -> raznye adaptery."""
         from swarmline.runtime.thin.llm_providers import get_cached_adapter
 
-        r1 = ResolvedProvider("claude-sonnet-4-20250514", "anthropic", "anthropic", None)
+        r1 = ResolvedProvider(
+            "claude-sonnet-4-20250514", "anthropic", "anthropic", None
+        )
         r2 = ResolvedProvider("claude-opus-4-20250514", "anthropic", "anthropic", None)
         with patch.dict("sys.modules", {"anthropic": _make_mock_anthropic_module()}):
             a1 = get_cached_adapter(r1)
@@ -384,7 +403,9 @@ class TestAdapterCaching:
         from swarmline.runtime.thin.llm_providers import get_cached_adapter
 
         r1 = ResolvedProvider("gpt-4o", "openai", "openai_compat", None)
-        r2 = ResolvedProvider("gpt-4o", "openai", "openai_compat", "https://proxy.com/v1")
+        r2 = ResolvedProvider(
+            "gpt-4o", "openai", "openai_compat", "https://proxy.com/v1"
+        )
         with patch.dict("sys.modules", {"openai": _make_mock_openai_module()}):
             a1 = get_cached_adapter(r1)
             a2 = get_cached_adapter(r2)
@@ -449,11 +470,12 @@ class TestDefaultLlmCallDispatch:
             model="gpt-4o",
             base_url="https://proxy.example.com/v1",
         )
-        with patch(
-            "swarmline.runtime.thin.llm_client.resolve_provider"
-        ) as mock_resolve, patch(
-            "swarmline.runtime.thin.llm_client.get_cached_adapter"
-        ) as mock_factory:
+        with (
+            patch("swarmline.runtime.thin.llm_client.resolve_provider") as mock_resolve,
+            patch(
+                "swarmline.runtime.thin.llm_client.get_cached_adapter"
+            ) as mock_factory,
+        ):
             mock_resolve.return_value = ResolvedProvider(
                 "gpt-4o", "openai", "openai_compat", "https://proxy.example.com/v1"
             )
@@ -484,7 +506,7 @@ class TestDefaultLlmCallDispatch:
             mock_adapter.call = AsyncMock(side_effect=Exception("API Error"))
             mock_factory.return_value = mock_adapter
 
-            with pytest.raises(ThinLlmError, match="Ошибка LLM API") as exc:
+            with pytest.raises(ThinLlmError, match="LLM API error") as exc:
                 await default_llm_call(
                     config,
                     [{"role": "user", "content": "hi"}],
@@ -633,7 +655,9 @@ class TestGoogleAdapterStream:
             yield chunk1
             yield chunk2
 
-        mock_client.models.generate_content_stream = AsyncMock(return_value=_aiter_chunks())
+        mock_client.models.generate_content_stream = AsyncMock(
+            return_value=_aiter_chunks()
+        )
         mock_module.Client.return_value = mock_client
         return mock_module, mock_client
 
@@ -642,7 +666,10 @@ class TestGoogleAdapterStream:
         mock_module, mock_client = mock_google_stream
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             adapter = GoogleAdapter(model="gemini-2.5-pro")
             adapter._client = mock_client
@@ -915,7 +942,9 @@ class TestConvertContentBlocksGoogle:
         result = _convert_content_blocks_google(blocks)
         assert len(result) == 2
         assert result[0] == {"text": "Analyze:"}
-        assert result[1] == {"inline_data": {"mime_type": "image/gif", "data": "aW1hZ2U="}}
+        assert result[1] == {
+            "inline_data": {"mime_type": "image/gif", "data": "aW1hZ2U="}
+        }
 
     def test_empty_blocks_returns_empty(self) -> None:
         from swarmline.runtime.thin.llm_providers import _convert_content_blocks_google
@@ -947,7 +976,9 @@ class TestAnthropicAdapterContentBlocks:
         return mock_module, mock_client
 
     @pytest.mark.asyncio
-    async def test_call_with_content_blocks_sends_multipart(self, mock_anthropic) -> None:
+    async def test_call_with_content_blocks_sends_multipart(
+        self, mock_anthropic
+    ) -> None:
         mock_module, mock_client = mock_anthropic
         with patch.dict("sys.modules", {"anthropic": mock_module}):
             adapter = AnthropicAdapter(model="claude-sonnet-4-20250514")
@@ -958,7 +989,11 @@ class TestAnthropicAdapterContentBlocks:
                     "content": "What is this?",
                     "content_blocks": [
                         {"type": "text", "text": "What is this?"},
-                        {"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"},
+                        {
+                            "type": "image",
+                            "data": "aW1hZ2U=",
+                            "media_type": "image/png",
+                        },
                     ],
                 }
             ]
@@ -971,7 +1006,9 @@ class TestAnthropicAdapterContentBlocks:
             assert msg["content"][1]["source"]["type"] == "base64"
 
     @pytest.mark.asyncio
-    async def test_call_without_content_blocks_uses_string(self, mock_anthropic) -> None:
+    async def test_call_without_content_blocks_uses_string(
+        self, mock_anthropic
+    ) -> None:
         mock_module, mock_client = mock_anthropic
         with patch.dict("sys.modules", {"anthropic": mock_module}):
             adapter = AnthropicAdapter(model="claude-sonnet-4-20250514")
@@ -1010,7 +1047,11 @@ class TestOpenAIAdapterContentBlocks:
                     "content": "What is this?",
                     "content_blocks": [
                         {"type": "text", "text": "What is this?"},
-                        {"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"},
+                        {
+                            "type": "image",
+                            "data": "aW1hZ2U=",
+                            "media_type": "image/png",
+                        },
                     ],
                 }
             ]
@@ -1056,7 +1097,10 @@ class TestGoogleAdapterContentBlocks:
         mock_module, mock_client = mock_google
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             adapter = GoogleAdapter(model="gemini-2.5-pro")
             adapter._client = mock_client
@@ -1066,7 +1110,11 @@ class TestGoogleAdapterContentBlocks:
                     "content": "What is this?",
                     "content_blocks": [
                         {"type": "text", "text": "What is this?"},
-                        {"type": "image", "data": "aW1hZ2U=", "media_type": "image/png"},
+                        {
+                            "type": "image",
+                            "data": "aW1hZ2U=",
+                            "media_type": "image/png",
+                        },
                     ],
                 }
             ]
@@ -1076,14 +1124,19 @@ class TestGoogleAdapterContentBlocks:
             parts = contents[0]["parts"]
             assert len(parts) == 2
             assert parts[0] == {"text": "What is this?"}
-            assert parts[1] == {"inline_data": {"mime_type": "image/png", "data": "aW1hZ2U="}}
+            assert parts[1] == {
+                "inline_data": {"mime_type": "image/png", "data": "aW1hZ2U="}
+            }
 
     @pytest.mark.asyncio
     async def test_call_without_content_blocks_uses_text(self, mock_google) -> None:
         mock_module, mock_client = mock_google
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             adapter = GoogleAdapter(model="gemini-2.5-pro")
             adapter._client = mock_client
@@ -1128,8 +1181,16 @@ class TestFilterChatMessagesContentBlocks:
         from swarmline.runtime.thin.llm_providers import _filter_chat_messages
 
         messages = [
-            {"role": "system", "content": "sys", "content_blocks": [{"type": "text", "text": "sys"}]},
-            {"role": "user", "content": "hi", "content_blocks": [{"type": "text", "text": "hi"}]},
+            {
+                "role": "system",
+                "content": "sys",
+                "content_blocks": [{"type": "text", "text": "sys"}],
+            },
+            {
+                "role": "user",
+                "content": "hi",
+                "content_blocks": [{"type": "text", "text": "hi"}],
+            },
         ]
         result = _filter_chat_messages(messages)
         assert len(result) == 1

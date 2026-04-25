@@ -18,7 +18,11 @@ from swarmline.observability.event_bus import InMemoryEventBus
 otel_sdk = pytest.importorskip("opentelemetry.sdk")
 
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider  # noqa: E402
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult  # noqa: E402
+from opentelemetry.sdk.trace.export import (  # noqa: E402
+    SimpleSpanProcessor,
+    SpanExporter,
+    SpanExportResult,
+)
 from opentelemetry.trace import StatusCode  # noqa: E402
 
 from swarmline.observability.otel_exporter import OTelExporter  # noqa: E402
@@ -422,9 +426,7 @@ class TestOTelExporterLifecycle:
         exporter = OTelExporter(event_bus, tracer_provider=provider)
         exporter.attach()
 
-        await event_bus.emit(
-            "tool_call_end", {"name": "calc", "correlation_id": "c1"}
-        )
+        await event_bus.emit("tool_call_end", {"name": "calc", "correlation_id": "c1"})
 
         exporter.detach()
 

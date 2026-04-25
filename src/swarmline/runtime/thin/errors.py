@@ -42,7 +42,7 @@ def provider_runtime_crash(provider: str, exc: Exception) -> ThinLlmError:
     return ThinLlmError(
         RuntimeErrorData(
             kind="runtime_crash",
-            message=f"Ошибка LLM API ({provider}): {type(exc).__name__}: {exc}",
+            message=f"LLM API error ({provider}): {type(exc).__name__}: {exc}",
             recoverable=False,
             details={
                 "provider": provider,
