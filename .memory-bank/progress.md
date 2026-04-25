@@ -728,3 +728,47 @@
 - ⌥ `.memory-bank/BACKLOG.md` (ADR-003 filled)
 - ⌥ `.memory-bank/checklist.md` (6 stages marked DONE)
 
+### Sprint 1B (Phase 01b: ty-bulk-cleanup) — COMPLETE [Stage 1 → 6, ty 62 → 0]
+
+**Goal:** Drive `ty check src/swarmline/` from 62 → 0 diagnostics by applying the 3 canonical patterns from Sprint 1A's decisions note (OptDep stub / DecoratedTool ToolFunction / CallableUnion). Lock baseline=0 as the v1.5.0 release gate.
+
+**Result:** **ACHIEVED.** 6 stages, 5 commits, ~70 new tests, baseline=0 locked, ADR-003 outcome confirmed (ty strict-mode = sole release gate).
+
+**Per-stage breakdown:**
+
+| Stage | Goal | ty | Commit | New tests |
+|-------|------|----|----|-----------|
+| 1 | OptDep batch (22 unresolved-import) | 62 → 40 | 88d51d5 | 23 |
+| 2 | Unresolved-attribute batch (4 fixes) | 40 → 36 | e4f1d70 | ~5 |
+| 3 | Callable narrow (9 call-non-callable) | 36 → 27 | a5fb6fe | 10 |
+| 4 | Argument-type batch (22 mixed → 5) + STRUCTURAL `event_mapper.py` | 27 → 5 | 65f08af | 29 |
+| 5 | Точечные остатки (5 misc → 0) | 5 → 0 | 2299dff | 10 |
+| 6 | Final verification + lock baseline=0 | 0 (locked) | (this commit) | 0 |
+
+**Key learnings:**
+- `# type: ignore[<rule>]` is INERT under `respect-type-ignore-comments = false`. Project policy: ty-native `# ty: ignore[<rule>]  # <reason ≥10 chars>` everywhere; Stage 4+5 cleaned 22 inert legacy ignores.
+- Real bug found in `pi_sdk/event_mapper.py` (Stage 4): `TurnMetrics(input_tokens=...)` would raise `TypeError` at runtime; renamed to canonical `tokens_in`/`tokens_out`/`tool_calls_count`/`model`. ty caught a latent bug — exactly the value of strict typing as a gate.
+- Line-anchored tests are the right scaffolding for ignore-style fixes. They catch line drift after `ruff format` immediately and prevent silent re-introduction.
+- Multi-rule ty ignore syntax `# ty: ignore[rule-1, rule-2]` works (Stage 5 Gemini parts loop).
+- Architecture meta-test parser must recognize both `Found N diagnostics` AND `All checks passed!` — added in Stage 5.
+
+**Sprint 1B Gate verification:**
+- ✅ `ty check src/swarmline/` → All checks passed! (0 diagnostics)
+- ✅ `tests/architecture/ty_baseline.txt` = **0**
+- ✅ Full offline `pytest` → 5352 passed, 7 skipped, 5 deselected (no regressions)
+- ✅ `ruff check`, `ruff format --check` clean on all touched files
+- ✅ ADR-003 outcome: ty strict-mode = sole release gate (no mypy)
+
+**Tests cumulative:** 5138 (post-1A) + 77 (1B) ≈ 5215 → actual 5352 (some overlap with concurrent feature work). Net Sprint 1B addition: ~77 line-anchored / structural / no-naked / multi-rule / inert-mypy regression tests.
+
+**Files modified/added (Sprint 1B):**
+- ✚ `tests/unit/test_optdep_typing_fixes.py`, `tests/unit/test_attribute_resolution_fixes.py`, `tests/unit/test_callable_narrow_fixes.py`, `tests/unit/test_argument_type_fixes.py`, `tests/unit/test_misc_typing_fixes.py`
+- ⌥ `tests/architecture/test_ty_strict_mode.py` (parser recognizes "All checks passed!")
+- ⌥ `tests/architecture/ty_baseline.txt` (62 → 40 → 36 → 27 → 5 → **0** locked)
+- ⌥ ~30 source files across `src/swarmline/` (line-anchored ignore + reason; only 1 structural fix in `pi_sdk/event_mapper.py`)
+- ⌥ `.memory-bank/checklist.md` (Sprint 1B section, 6 stages DONE)
+- ⌥ `.memory-bank/STATUS.md` (release gate green; Sprint 1A/1B in roadmap; tests=5352; v1.5.0 gate table)
+- ⌥ `.memory-bank/plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md` (all 6 stages DONE)
+
+**Next step:** v1.5.0 release branch. `release/v1.5.0` → bump `pyproject.toml` → finalize CHANGELOG → merge to main → tag v1.5.0 → `./scripts/sync-public.sh --tags` → public PyPI via OIDC Trusted Publishing.
+

@@ -2,13 +2,13 @@
 
 ## Текущий фокус
 
-**ThinRuntime Claude Code Parity v2** (2026-04-13) — расширение ThinRuntime до полного набора возможностей Claude Code. Parity v1 (фазы 1-10) — ЗАВЕРШЕНО. Текущая работа: **Parity v2** (фазы 11-17, milestone v1.5.0).
+**Production v2.0 — Sprint 1 (ty-strict gate)** (2026-04-25) — закрытие release gate перед v1.5.0. Sprint 1A (Phase 01a) и Sprint 1B (Phase 01b) **COMPLETE**: ty diagnostics 75 → 0, baseline locked = 0. ADR-003 fulfilled (ty strict-mode = sole release gate, no mypy).
 
-**Текущая фаза: ALL PHASES COMPLETE** — Parity v2 завершён (7/7 фаз). Следующий шаг: v1.5.0 release.
+**Release gate status:** **GREEN** — `ty check src/swarmline/` → All checks passed! (0 diagnostics). Готово к v1.5.0 release.
 
-Phase 17 (Parallel Agent Infrastructure) ЗАВЕРШЕНА: SubagentSpec.isolation="worktree" + worktree lifecycle (create/cleanup/stale/max 5). RuntimeEvent.background_complete + fire-and-forget spawn + output buffering + monitor_agent tool + ThinRuntime bg event wiring. 54 новых теста. Judge: 4.15/5.0. Commit: 2e2c800.
+**Предыдущая фаза:** ThinRuntime Claude Code Parity v2 (2026-04-13) — Parity COMPLETE 17/17 фаз. Phase 17 commit 2e2c800.
 
-**Прогресс Parity v2: 7/7 фаз завершено (100%). Общий прогресс: 17/17 фаз (100%). PARITY COMPLETE.**
+**Прогресс Production v2.0:** Phase 01a ✅ + Phase 01b ✅ (Sprint 1 ty-strict gate complete). Следующий шаг: v1.5.0 release (release branch + bump pyproject + CHANGELOG + tag + sync to public).
 
 **Предыдущие транши завершены**:
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -86,7 +86,8 @@ Phase 17 (Parallel Agent Infrastructure) ЗАВЕРШЕНА: SubagentSpec.isolat
 
 ## Тесты
 
-- Offline suite: `5096 passed, 5 skipped, 5 deselected` ← текущий (2026-04-13, Phase 17 done, ALL COMPLETE)
+- Offline suite: `5352 passed, 7 skipped, 5 deselected` ← текущий (2026-04-25, Sprint 1B Stage 6 done, ty=0)
+- Offline suite: `5096 passed, 5 skipped, 5 deselected` (2026-04-13, Phase 17 done)
 - Offline suite: `5042 passed, 5 skipped, 5 deselected` (после Phase 16)
 - Offline suite: `4959 passed, 3 skipped, 5 deselected` (после Phase 15)
 - Offline suite: `4899 passed, 3 skipped, 5 deselected` (после Phase 14)
@@ -143,5 +144,20 @@ Phase 17 (Parallel Agent Infrastructure) ЗАВЕРШЕНА: SubagentSpec.isolat
 ## Active plans
 
 <!-- mb-active-plans -->
-- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — feature — production-v2-phase-01a-ty-strict-foundation
+_No active plans — Sprint 1B (Phase 01b) closed 2026-04-25, baseline=0 locked. Next: v1.5.0 release branch._
 <!-- /mb-active-plans -->
+
+## Recently done plans
+
+- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — Sprint 1A: ty 75 → 62, foundation + decisions + ADR-003
+- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md](plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md) — Sprint 1B: ty 62 → 0, baseline locked = 0
+
+## Release gate (v1.5.0)
+
+| Gate | Status | Evidence |
+|------|--------|----------|
+| `ty check src/swarmline/` | ✅ GREEN | 0 diagnostics (was 75 pre-Sprint 1) |
+| `tests/architecture/ty_baseline.txt` | ✅ LOCKED | 0 |
+| Full offline pytest | ✅ GREEN | 5352 passed, 7 skipped, 5 deselected |
+| ruff check | ✅ GREEN | only pre-existing F401 in test_pi_sdk_runtime.py (out-of-scope) |
+| ADR-003 outcome | ✅ FULFILLED | ty strict-mode = sole type-check release gate, no mypy |

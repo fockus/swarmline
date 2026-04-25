@@ -312,6 +312,56 @@
 - ✅ `progress.md` append для Sprint 1A completion (6 stages, 21 tests, 7 condition Gate)
 - ✅ Sprint Gate verified — все 7 conditions green (ty ≤62, baseline=62, decisions note, Sprint 1B plan, ADR-003, CI gate, no regressions)
 
+## Production v2.0 — Phase 01b: ty-bulk-cleanup (2026-04-25)
+
+> Plan: [plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md](plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md)
+> Sprint Gate: 62 → 0 ty diagnostics; baseline locked = 0; canonical `# ty: ignore[<rule>]  # <reason>` pattern across all suppressions; 6 stages, ~60+ tests added; ADR-003 outcome confirmed.
+
+### Stage 1: OptDep batch — 22 unresolved-import → 0 ✅ DONE (2026-04-25)
+- ✅ 22 `unresolved-import` ошибок закрыты ty-native ignore + reason на 16 файлах
+- ✅ 22 `# type: ignore[import-not-found]` (inert mypy-style) удалены
+- ✅ `tests/unit/test_optdep_typing_fixes.py` — 23 cases (22 line-anchored + 1 no-naked scan)
+- ✅ `tests/architecture/ty_baseline.txt` → 40 (62 → 40, ✓ -22)
+- ✅ Full offline pytest green; ruff/format clean
+
+### Stage 2: Unresolved-attribute batch — 4 fixes ✅ DONE (2026-04-25)
+- ✅ 4 `unresolved-attribute` закрыты — 3 ty-native ignore + 1 structural fix (cast `CursorResult` для SQLAlchemy 2.x)
+- ✅ `tests/unit/test_attribute_resolution_fixes.py` — 4 cases line-anchored + structural invariant
+- ✅ `tests/architecture/ty_baseline.txt` → 36 (40 → 36, ✓ -4)
+- ✅ Full offline pytest green; ruff/format clean
+
+### Stage 3: Callable narrow — 9 call-non-callable → 0 ✅ DONE (2026-04-25)
+- ✅ 9 `call-non-callable` ошибок закрыты ty-native ignore + reason на 6 файлах
+- ✅ Декораторы (`@functools.wraps`, `@track_metrics`) и SDK callable-union strict cases
+- ✅ `tests/unit/test_callable_narrow_fixes.py` — 9 line-anchored + 1 no-naked scan
+- ✅ `tests/architecture/ty_baseline.txt` → 27 (36 → 27, ✓ -9)
+- ✅ Full offline pytest green; ruff/format clean
+
+### Stage 4: Argument-type batch — 22 mixed → 5 ✅ DONE (2026-04-25)
+- ✅ 22 ошибок закрыты: 17 invalid-argument-type + 3 unknown-argument + 2 no-matching-overload
+- ✅ 18 ty-native ignore (SDK strictness) + STRUCTURAL fix в `pi_sdk/event_mapper.py` (4 errors → 0)
+- ✅ Real bug closure: `TurnMetrics(input_tokens=...)` → canonical `tokens_in`/`tokens_out`/`tool_calls_count`/`model` (TypeError at runtime if uncaught)
+- ✅ `tests/unit/test_argument_type_fixes.py` — 18 line-anchored + 2 event_mapper structural + 9 no-naked-scans = 29 tests
+- ✅ `tests/architecture/ty_baseline.txt` → 5 (27 → 5, ✓ -22)
+- ✅ Full offline pytest 5341 green; ruff/format clean
+
+### Stage 5: Точечные остатки — 5 misc → 0 ✅ DONE (2026-04-25)
+- ✅ 5 ошибок закрыты ty-native ignore + reason: 2× invalid-return-type + 2× invalid-assignment + 1× not-iterable
+- ✅ 4 inert `# type: ignore[...]` (mypy-style) заменены на ty-native syntax
+- ✅ Multi-rule extension: `[unresolved-attribute, not-iterable]` на Gemini parts loop
+- ✅ `tests/unit/test_misc_typing_fixes.py` — 4 line-anchored + 1 multi-rule + 4 no-naked + 1 inert-mypy guard = 10 tests
+- ✅ `tests/architecture/test_ty_strict_mode.py` parser extended (recognizes `All checks passed!` zero-diagnostic shape)
+- ✅ `tests/architecture/ty_baseline.txt` → 0 (5 → 0, ✓ -5)
+- ✅ Full offline pytest 5352 green; ruff/format clean
+
+### Stage 6: Final verification + lock baseline=0 ✅ DONE (2026-04-25)
+- ✅ `ty check src/swarmline/` → **All checks passed!** (0 diagnostics)
+- ✅ `tests/architecture/ty_baseline.txt` = **0** (locked)
+- ✅ STATUS.md updated — release gate green; ty strict-mode = sole release gate (ADR-003 outcome confirmed)
+- ✅ checklist.md Sprint 1B section closed (6 stages all DONE)
+- ✅ progress.md append for Sprint 1B completion (6 stages, ~70 new tests)
+- ✅ Sprint Gate verified — все conditions green (ty=0, baseline=0, full pytest 5352 passed, ruff clean, ADR-003 fulfilled)
+
 ## P1/P2 Audit Gaps (2026-03-30)
 ⬜ Этап 1: P1 false-green completion + task board state consistency
 ⬜ Этап 2: P1 ThinRuntime per-call config for LLM path

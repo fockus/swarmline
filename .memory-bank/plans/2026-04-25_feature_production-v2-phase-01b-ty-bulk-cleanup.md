@@ -342,14 +342,22 @@ post-format positions; line-drift detector caught all 5.
 ---
 
 <!-- mb-stage:6 -->
-### Stage 6: Final verification + lock baseline=0 ⬜ TODO
+### Stage 6: Final verification + lock baseline=0 ✅ DONE (2026-04-25)
 
-- [ ] `ty check src/swarmline/` → **Found 0 diagnostics**
-- [ ] `tests/architecture/ty_baseline.txt` = **0**
-- [ ] STATUS.md release gate updated (`ty check` green)
-- [ ] checklist.md Sprint 1B section closed
-- [ ] progress.md append for Sprint 1B completion (6 stages, ~50+ tests)
-- [ ] ADR-003 outcome: ty strict-mode = sole release gate confirmed
+- ✅ `ty check src/swarmline/` → **All checks passed!** (0 diagnostics)
+- ✅ `tests/architecture/ty_baseline.txt` = **0** (locked)
+- ✅ STATUS.md release gate updated — Sprint 1A + 1B both DONE; v1.5.0 gate table green; tests=5352 passed; ADR-003 outcome row added
+- ✅ checklist.md Sprint 1B section closed — `## Production v2.0 — Phase 01b: ty-bulk-cleanup` with all 6 stages ✅ DONE
+- ✅ progress.md append for Sprint 1B completion — per-stage table, key learnings, Gate verification, files modified
+- ✅ ADR-003 outcome: ty strict-mode = sole release gate **confirmed** (zero mypy invocations remain in workflow)
+
+**Sprint 1B Gate (entry conditions for v1.5.0 release):**
+- ✅ `ty check` → 0 diagnostics
+- ✅ baseline=0 locked in `tests/architecture/ty_baseline.txt`
+- ✅ Full offline pytest 5352 passed (no regressions)
+- ✅ ruff check, ruff format clean on all touched files
+- ✅ Architecture meta-test green (parser recognizes "All checks passed!")
+- ✅ All 5 batches of legacy `# type: ignore[...]` (mypy-style) cleaned — only ty-native `# ty: ignore[<rule>]  # <reason ≥10 chars>` remains in suppressed locations
 
 ---
 
