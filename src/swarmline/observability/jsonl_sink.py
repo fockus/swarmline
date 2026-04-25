@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Iterable
 from datetime import UTC, datetime
@@ -40,6 +41,7 @@ class JsonlTelemetrySink:
         self._redact_keys = frozenset(key.lower() for key in redact_keys)
         self._schema_version = schema_version
         self._subscriptions: list[tuple[Any, str]] = []
+        self._lock: asyncio.Lock | None = None
 
     @property
     def path(self) -> Path:
@@ -47,24 +49,33 @@ class JsonlTelemetrySink:
         return self._path
 
     async def record(self, event_type: str, data: dict[str, Any]) -> None:
-        """Append a telemetry record for one event."""
+        """Append a telemetry record for one event (non-blocking)."""
         record = {
             "schema_version": self._schema_version,
             "timestamp": datetime.now(tz=UTC).isoformat(),
             "event_type": event_type,
             "data": _make_json_safe(_redact(data, self._redact_keys)),
         }
+        line = json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n"
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        async with self._lock:
+            await asyncio.to_thread(self._append_line, line)
+
+    def _append_line(self, line: str) -> None:
+        """Sync filesystem append; called via asyncio.to_thread() from record()."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True))
-            handle.write("\n")
+            handle.write(line)
 
     def attach(self, event_bus: Any, *, event_types: Iterable[str]) -> None:
         """Subscribe this sink to selected event types on an EventBus."""
         for event_type in event_types:
             event_name = str(event_type)
 
-            async def _callback(data: dict[str, Any], *, _event_name: str = event_name) -> None:
+            async def _callback(
+                data: dict[str, Any], *, _event_name: str = event_name
+            ) -> None:
                 await self.record(_event_name, data)
 
             subscription_id = event_bus.subscribe(event_name, _callback)
