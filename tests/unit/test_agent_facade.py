@@ -118,7 +118,9 @@ class TestAgentQueryBasic:
                 is_final=True,
                 session_id="s1",
             )
-            event.new_messages = [message.to_dict() for message in expected_new_messages]
+            event.new_messages = [
+                message.to_dict() for message in expected_new_messages
+            ]
             yield event
 
         with patch.object(agent, "_execute_stream", side_effect=fake_stream):
@@ -147,7 +149,9 @@ class TestAgentQueryBasic:
         agent = Agent(config)
 
         class FakeLLM:
-            async def __call__(self, messages: list[dict[str, str]], system_prompt: str) -> str:
+            async def __call__(
+                self, messages: list[dict[str, str]], system_prompt: str
+            ) -> str:
                 _ = (messages, system_prompt)
                 return json.dumps(
                     {
@@ -162,7 +166,9 @@ class TestAgentQueryBasic:
             llm_call=FakeLLM(),
         )
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             result = await agent.query("John is 30 years old")
 
         assert result.ok is True
@@ -253,12 +259,12 @@ class TestAgentQueryWithTools:
 class TestAgentRuntimeCapabilities:
     """Agent exposes runtime capability descriptor."""
 
-    def test_runtime_capabilities_for_default_claude(self) -> None:
+    def test_runtime_capabilities_for_default_thin(self) -> None:
         agent = Agent(_make_config())
         caps = agent.runtime_capabilities
 
-        assert caps.runtime_name == "claude_sdk"
-        assert caps.tier == "full"
+        assert caps.runtime_name == "thin"
+        assert caps.tier == "light"
 
     def test_runtime_capabilities_for_thin(self) -> None:
         agent = Agent(_make_config(runtime="thin"))
@@ -277,7 +283,9 @@ class TestAgentRuntimeCapabilities:
             tier="light",
             supports_provider_override=True,
         )
-        registry.register("custom_caps_rt", lambda config, **kwargs: object(), capabilities=caps)
+        registry.register(
+            "custom_caps_rt", lambda config, **kwargs: object(), capabilities=caps
+        )
         try:
             agent = Agent(_make_config(runtime="custom_caps_rt"))
             resolved = agent.runtime_capabilities
@@ -394,7 +402,9 @@ class TestAgentRuntimeFactoryWiring:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in agent._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -402,7 +412,9 @@ class TestAgentRuntimeFactoryWiring:
         assert events[-1].type == "done"
         create_kwargs = fake_factory.create.call_args.kwargs
         assert "tool_executors" in create_kwargs
-        assert create_kwargs["tool_executors"]["calc"] is calc.__tool_definition__.handler
+        assert (
+            create_kwargs["tool_executors"]["calc"] is calc.__tool_definition__.handler
+        )
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_passes_mcp_servers(self) -> None:
@@ -427,7 +439,9 @@ class TestAgentRuntimeFactoryWiring:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in agent._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -459,7 +473,9 @@ class TestAgentRuntimeFactoryWiring:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in agent._execute_agent_runtime("hello", "cli"):
                 events.append(event)
@@ -469,13 +485,19 @@ class TestAgentRuntimeFactoryWiring:
         assert "mcp_servers" not in create_kwargs
 
     @pytest.mark.asyncio
-    async def test_execute_agent_runtime_cli_query_works_with_mocked_subprocess(self) -> None:
+    async def test_execute_agent_runtime_cli_query_works_with_mocked_subprocess(
+        self,
+    ) -> None:
         agent = Agent(_make_config(runtime="cli"))
 
-        result_line = json.dumps({"type": "result", "result": "cli reply"}).encode() + b"\n"
+        result_line = (
+            json.dumps({"type": "result", "result": "cli reply"}).encode() + b"\n"
+        )
         mock_process = _make_cli_process([result_line])
 
-        with patch("asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)):
+        with patch(
+            "asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)
+        ):
             result = await agent.query("hello from cli")
 
         assert result.ok is True
@@ -485,11 +507,15 @@ class TestAgentRuntimeFactoryWiring:
         )
 
     @pytest.mark.asyncio
-    async def test_execute_agent_runtime_cli_query_without_final_returns_error(self) -> None:
+    async def test_execute_agent_runtime_cli_query_without_final_returns_error(
+        self,
+    ) -> None:
         agent = Agent(_make_config(runtime="cli"))
         mock_process = _make_cli_process([b'{"step":"processing"}\n'])
 
-        with patch("asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)):
+        with patch(
+            "asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)
+        ):
             result = await agent.query("hello from cli")
 
         assert result.ok is False
@@ -654,11 +680,15 @@ class TestCollectStreamResult:
 
         async def stream():
             event = FakeStreamEvent("done", text="Final answer", is_final=True)
-            event.new_messages = [message.to_dict() for message in expected_new_messages]
+            event.new_messages = [
+                message.to_dict() for message in expected_new_messages
+            ]
             yield event
 
         result = await collect_stream_result(stream())
-        assert result["new_messages"] == [message.to_dict() for message in expected_new_messages]
+        assert result["new_messages"] == [
+            message.to_dict() for message in expected_new_messages
+        ]
 
     @pytest.mark.asyncio
     async def test_error_event(self) -> None:
@@ -774,7 +804,9 @@ class TestRuntimeEventAdapter:
     def test_assistant_delta_maps_to_text_delta(self) -> None:
         from swarmline.agent.agent import _RuntimeEventAdapter
 
-        adapted = _RuntimeEventAdapter(self._make_event("assistant_delta", {"text": "Hello"}))
+        adapted = _RuntimeEventAdapter(
+            self._make_event("assistant_delta", {"text": "Hello"})
+        )
         assert adapted.type == "text_delta"
         assert adapted.text == "Hello"
         assert adapted.is_final is False
@@ -809,7 +841,9 @@ class TestRuntimeEventAdapter:
     def test_error_maps_to_error(self) -> None:
         from swarmline.agent.agent import _RuntimeEventAdapter
 
-        adapted = _RuntimeEventAdapter(self._make_event("error", {"message": "Something broke"}))
+        adapted = _RuntimeEventAdapter(
+            self._make_event("error", {"message": "Something broke"})
+        )
         assert adapted.type == "error"
         assert adapted.text == "Something broke"
 
@@ -834,7 +868,9 @@ class TestRuntimeEventAdapter:
         from swarmline.agent.agent import _RuntimeEventAdapter
 
         adapted = _RuntimeEventAdapter(
-            self._make_event("tool_call_finished", {"name": "calc", "result_summary": "42"})
+            self._make_event(
+                "tool_call_finished", {"name": "calc", "result_summary": "42"}
+            )
         )
         assert adapted.type == "tool_use_result"
         assert adapted.tool_name == "calc"
@@ -844,7 +880,9 @@ class TestRuntimeEventAdapter:
     def test_unknown_event_passthrough(self) -> None:
         from swarmline.agent.agent import _RuntimeEventAdapter
 
-        adapted = _RuntimeEventAdapter(self._make_event("status", {"text": "thinking..."}))
+        adapted = _RuntimeEventAdapter(
+            self._make_event("status", {"text": "thinking..."})
+        )
         assert adapted.type == "status"
         assert adapted.text == "thinking..."
         assert adapted.is_final is False
@@ -904,7 +942,9 @@ class TestRuntimeEventAdapter:
         """Vse StreamEvent-like atributy vsegda prisutstvuyut."""
         from swarmline.agent.agent import _RuntimeEventAdapter
 
-        adapted = _RuntimeEventAdapter(self._make_event("assistant_delta", {"text": "x"}))
+        adapted = _RuntimeEventAdapter(
+            self._make_event("assistant_delta", {"text": "x"})
+        )
         assert adapted.session_id is None
         assert adapted.total_cost_usd is None
         assert adapted.usage is None

@@ -31,8 +31,8 @@ class AgentConfig:
     # Model (alias or full name)
     model: str = "sonnet"
 
-    # Runtime: thin | claude_sdk | deepagents | cli | openai_agents | pi_sdk
-    runtime: str = "claude_sdk"
+    # Runtime: thin (default — lightweight, multi-provider) | claude_sdk | deepagents | cli | openai_agents | pi_sdk
+    runtime: str = "thin"
 
     # Base URL for LLM API (OpenRouter, proxy, etc.). None = provider default.
     base_url: str | None = None
@@ -75,7 +75,9 @@ class AgentConfig:
     # SDK-specific (claude_sdk runtime only)
     betas: tuple[str, ...] = ()
     sandbox: dict[str, Any] | None = None
-    thinking: dict[str, Any] | None = None  # {"type": "enabled", "budget_tokens": N} | {"type": "adaptive"} | {"type": "disabled"}
+    thinking: dict[str, Any] | None = (
+        None  # {"type": "enabled", "budget_tokens": N} | {"type": "adaptive"} | {"type": "disabled"}
+    )
     max_thinking_tokens: int | None = None  # Deprecated: use thinking instead
     fallback_model: str | None = None
     permission_mode: str = "bypassPermissions"

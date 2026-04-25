@@ -19,7 +19,7 @@ class TestAgentConfigDefaults:
         cfg = AgentConfig(system_prompt="Ты — помощник")
         assert cfg.system_prompt == "Ты — помощник"
         assert cfg.model == "sonnet"
-        assert cfg.runtime == "claude_sdk"
+        assert cfg.runtime == "thin"
         assert cfg.tools == ()
         assert cfg.middleware == ()
         assert cfg.mcp_servers == {}
@@ -144,7 +144,9 @@ class TestAgentConfigValidation:
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="custom_agent_rt", tier="light")
-        registry.register("custom_agent_rt", lambda config, **kwargs: object(), capabilities=caps)
+        registry.register(
+            "custom_agent_rt", lambda config, **kwargs: object(), capabilities=caps
+        )
         try:
             cfg = AgentConfig(
                 system_prompt="test",
@@ -182,7 +184,9 @@ class TestAgentRuntimeBoundaryValidation:
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="custom_agent_rt", tier="light")
-        registry.register("custom_agent_rt", lambda config, **kwargs: object(), capabilities=caps)
+        registry.register(
+            "custom_agent_rt", lambda config, **kwargs: object(), capabilities=caps
+        )
         try:
             agent = Agent(
                 AgentConfig(
@@ -194,6 +198,20 @@ class TestAgentRuntimeBoundaryValidation:
             assert agent.config.runtime == "custom_agent_rt"
         finally:
             registry.unregister("custom_agent_rt")
+
+
+class TestRuntimeDefault:
+    """Default runtime selection — must be 'thin' (lightweight, multi-provider)."""
+
+    def test_default_runtime_is_thin(self) -> None:
+        """Default runtime is 'thin' — lightweight, multi-provider, no SDK dependency."""
+        config = AgentConfig(system_prompt="hello")
+        assert config.runtime == "thin"
+
+    def test_explicit_claude_sdk_runtime_preserved(self) -> None:
+        """Explicit override still works for users on Claude Agent SDK path."""
+        config = AgentConfig(system_prompt="hello", runtime="claude_sdk")
+        assert config.runtime == "claude_sdk"
 
 
 class TestAgentConfigModelResolution:
