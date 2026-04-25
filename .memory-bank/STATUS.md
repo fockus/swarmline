@@ -139,3 +139,9 @@ Phase 17 (Parallel Agent Infrastructure) ЗАВЕРШЕНА: SubagentSpec.isolat
 - LLM-facing instructions in English (structured output, prompts)
 - ConsoleTracer lazy-imports structlog to keep Protocol layer dependency-free
 - ThinRuntime buffers assistant text whenever guardrails, output validation, or retry can still reject/replace the response
+
+## Active plans
+
+<!-- mb-active-plans -->
+- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — feature — production-v2-phase-01a-ty-strict-foundation
+<!-- /mb-active-plans -->

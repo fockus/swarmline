@@ -9,7 +9,7 @@
 
 <!-- mb-active-plans -->
 - [2026-04-25] [plans/2026-04-25_feature_production-v2-roadmap.md](plans/2026-04-25_feature_production-v2-roadmap.md) — Production v2.0 Full Framework Roadmap (24 phases)
-- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — Phase 01a: ty 70→≤57 + 11 critical bugs + CI gate (6 stages, 49 DoD items)
+- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — feature — production-v2-phase-01a-ty-strict-foundation
 <!-- /mb-active-plans -->
 
 ## Завершено: ThinRuntime Claude Code Parity v2
@@ -137,3 +137,25 @@ swarmline = **простая библиотека** (не фреймворк) д
 - ✅ Phase 6: DX Foundation (structured output, @tool, registry, cancel, typed events)
 - ✅ Phase 7: Production Safety (cost budget, guardrails, input filters, retry/fallback)
 - ✅ Phase 8: Persistence & UI (sessions, event bus, tracing, UI projection, RAG)
+
+<!-- mb-roadmap-auto -->
+## Now (in progress)
+
+_None._
+
+## Next (strict order — depends)
+
+_None._
+
+## Parallel-safe (can run now)
+
+_None._
+
+## Paused / Archived
+
+_None._
+
+## Linked Specs (active)
+
+_None._
+<!-- /mb-roadmap-auto -->

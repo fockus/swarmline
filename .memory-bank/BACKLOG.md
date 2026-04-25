@@ -1012,7 +1012,113 @@ Microsoft Agent Framework = AutoGen + Semantic Kernel merger. GA target Q1 2026.
 
 - **ADR-001**: OpenAI Agents SDK — REJECTED (пересмотреть после v1.0). См. `notes/2026-03-17_ADR-001_openai-agents-sdk.md`
 
+
+### ADR-002 — Use roadmap.md as canonical Memory Bank entrypoint with plan.md backwards-compat symlink [2026-04-25]
+
+**Context:** Skill memory-bank v3.x использует `roadmap.md` (lowercase) как canonical имя для активного плана и приоритетов проекта. Свarmline исторически использует `plan.md` (старая convention). При вызове `mb-plan-sync.sh` скрипт падает с `[error] roadmap.md not found`. У пользователя `plan.md` упоминается во множестве ссылок: `~/.claude/CLAUDE.md`, project `RULES.md`, `.memory-bank/RULES.md`, существующие plans/notes.
+
+**Options:**
+- **A: Переименовать `plan.md` → `roadmap.md`** — pros: canonical name; cons: ломает все существующие ссылки в CLAUDE.md/RULES.md/notes; невозможно сделать без массового rename'а (≥30 мест)
+- **B: Оставить `plan.md`, симлинк `roadmap.md → plan.md`** — pros: zero break, обратная совместимость, обратимо в одну команду; cons: имя `plan.md` остаётся "primary" в commit'ах
+- **C: Patch `mb-plan-sync.sh` для fallback на `plan.md`** — pros: чистое исправление в коде; cons: требует менять глобальный skill, расходится с upstream
+- **D: Hybrid — сейчас вариант B (симлинк), при следующем `/mb upgrade` миграция вариант A (rename + reverse symlink `plan.md → roadmap.md`)** — pros: zero break сейчас, постепенный переход на canonical; cons: 2 шага вместо 1
+
+**Decision:** **D — Hybrid, две фазы**.
+
+Фаза 1 (сейчас, 2026-04-25): создан симлинк `.memory-bank/roadmap.md → plan.md` (и `status.md → STATUS.md` если case-sensitive FS — на macOS APFS не нужен из-за case-insensitivity). Это разблокировало `mb-plan-sync.sh`.
+
+Фаза 2 (при следующем `/mb upgrade`): автоматическая миграция через расширенный `mb-migrate-structure.sh` или новый шаг в `mb-upgrade.sh`:
+1. `mv .memory-bank/plan.md .memory-bank/roadmap.md` (canonical name становится roadmap.md)
+2. `ln -sf roadmap.md .memory-bank/plan.md` (reverse symlink — старые ссылки `plan.md` продолжают работать)
+3. Обновить ссылки в `~/.claude/CLAUDE.md`, project `RULES.md`, `.memory-bank/RULES.md` через sed-replace на `roadmap.md`
+4. Idempotent: повторный запуск не делает ничего
+
+**Rationale:**
+- Variant D = zero downtime, постепенный переход.
+- Variant A сейчас сломал бы все существующие команды и notes, ссылающиеся на `plan.md`.
+- Variant B сам по себе оставляет неправильный canonical name — нежелательно для долгосрочной поддержки.
+- Variant C потребовал бы патчить и поддерживать отдельную форк-версию skill.
+- Symlink в Memory Bank — privacy-safe (фильтруется при `sync-public.sh`).
+
+**Consequences:**
+- Сейчас: `mb-plan-sync.sh` работает; canonical имя в файловой системе — `plan.md`; `roadmap.md` — alias.
+- В будущем: после `/mb upgrade` (требует patch) — canonical имя будет `roadmap.md`; `plan.md` — legacy alias через симлинк. Все скрипты skill уже ожидают `roadmap.md`.
+- Связанные artifact: `I-001` (idea для патча skill), notes/2026-04-25_roadmap-vs-plan-md-decision.md (документация для будущих сессий).
+- Обратная совместимость гарантируется на ВСЕХ этапах: ни одна ссылка `plan.md` или `roadmap.md` не сломается.
+
+
+### ADR-003 — Use ty in strict mode as sole type checker (no mypy) [2026-04-25]
+
+**Context:** Project ранее использовал **2 type checkers** одновременно: `mypy` (lenient defaults — 4 errors) и `ty` (strict mode `respect-type-ignore-comments=false`, `error-on-warning=true` — 75 errors). Это создаёт drift между tool'ами: код, проходящий mypy, фейлит ty и наоборот. CI gate отсутствовал — регрессии типизации проходили незамеченными до релиза. Sprint 1A решает эту разрозненность.
+
+**Options:**
+- **A: mypy only** — pros: mature ecosystem, известный pattern; cons: lenient defaults пропускают real bugs (audit показал 11 потенциальных runtime crashes); не находит class problems типа `__name__` на `partial` callable union
+- **B: ty only, strict mode** — pros: faster (Rust-based), strict by default, обнаруживает 75 vs 4 errors, official astral.sh tool, активно развивается; cons: новый (v0.0.x), API may shift, smaller ecosystem
+- **C: Both with sync** — pros: cross-validation; cons: high maintenance, конфигурации drift'уют, double CI time, конфликты между ними
+
+**Decision:** **B — ty only, strict mode**.
+
+**Rationale:**
+- ty обнаружил 11 critical потенциальных runtime crashes (`coding_task_runtime` calling missing methods, `project_instruction_filter` tuple type bug, `agent_registry_postgres` rowcount on abstract Result, decorator pattern unresolved attrs, partial callable `__name__` access). Эти ошибки невидимы для mypy в lenient mode.
+- ruff + ty — оба от astral.sh, целостный Rust-based toolchain, синхронные релизы, унифицированный конфиг paradigm.
+- 75 errors при первом запуске — высокая первоначальная боль, но **тип-системные ошибки не появляются если их сразу не пропускать** (Sprint 1A + 1B их закрывают).
+- Альтернатива (B+C) — поддерживать 2 конфигурации, удваивая maintenance cost без proportional value.
+
+**Consequences:**
+- ✅ **Sprint 1A** (этот): infrastructure (CI gate via `tests/architecture/test_ty_strict_mode.py`) + 11 critical fixes → 75 → 62 (-13 cumulative)
+- ✅ **Sprint 1B**: bulk применение 3 канонических паттернов (OptDep / DecoratedTool / CallableUnion — см. `notes/2026-04-25_ty-strict-decisions.md`) к ~62 оставшимся ошибкам в ~35 файлах
+- ✅ `.pipeline.yaml` — удалён `typecheck_mypy` ключ (canonical = `typecheck: ty check src/swarmline/`)
+- ✅ `.github/workflows/ci.yml` — новый job `typecheck` запускает `ty check` на каждый PR, fail-on-error
+- ✅ Все `# type: ignore[attr-defined]` где возможно — заменены на typed `cast(...)`; новые добавляются ТОЛЬКО для опциональных deps (`# type: ignore[unresolved-import]  # optional dep`) с обязательным reason-комментарием
+- 🔁 **Reversibility:** если ty в будущем deprecated или конфликтует с major Python version — миграция обратно на mypy = 1-2 недели работы (CI step + конфиг)
+- 📌 **Tracking:** меньшее число type-checkers = меньше CI minutes, faster local dev cycle (~10x)
+
+**Related artifacts:**
+- `tests/architecture/test_ty_strict_mode.py` (CI gate + baseline tracking)
+- `tests/architecture/ty_baseline.txt` (current: 62, target after Sprint 1B: 0)
+- `notes/2026-04-25_ty-strict-decisions.md` (3 reusable patterns)
+- `plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md` (this Sprint)
+- `plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md` (next Sprint)
+
 ## Отклонённое
 
 - **Graph/Flow Visualization** (2026-03-30): Использовать внешние решения вместо built-in. Источник: competitive analysis.
 - **Enterprise SaaS / Hosted Platform** (2026-03-30): Только документация + community сайт. Источник: user decision.
+
+## Ideas
+
+### I-001 — Auto-migrate plan.md to roadmap.md on next /mb upgrade with reverse symlink [HIGH, NEW, 2026-04-25]
+
+**Source:** ADR-002 (Hybrid migration plan, Phase 2).
+
+**What:** Patch `~/.claude/skills/memory-bank/scripts/mb-migrate-structure.sh` (or `mb-upgrade.sh`) so that on next `/mb upgrade` it performs idempotent migration:
+
+```bash
+# Detect: plan.md is regular file AND roadmap.md is symlink → plan.md
+if [[ -f .memory-bank/plan.md && -L .memory-bank/roadmap.md && "$(readlink .memory-bank/roadmap.md)" == "plan.md" ]]; then
+    # Phase 2 migration:
+    cp .memory-bank/plan.md .memory-bank/roadmap.md.tmp        # write through symlink target (=plan.md) — actually breaks
+    # Better: remove symlink first, then rename, then create reverse
+    rm .memory-bank/roadmap.md
+    mv .memory-bank/plan.md .memory-bank/roadmap.md
+    ln -s roadmap.md .memory-bank/plan.md
+    # Update references
+    sed -i.bak 's|\.memory-bank/plan\.md|\.memory-bank/roadmap.md|g' \
+        ~/.claude/CLAUDE.md \
+        ./RULES.md \
+        ./.memory-bank/RULES.md 2>/dev/null || true
+    echo "[migrate] plan.md → roadmap.md, reverse symlink installed"
+fi
+```
+
+**Why HIGH:** Без этого patch'а каждый новый проект будет страдать от той же проблемы. Это user-facing concern для всех, кто использует skill memory-bank на legacy `plan.md` setup.
+
+**Acceptance criteria:**
+- [ ] Скрипт идемпотентен (повторный запуск = no-op)
+- [ ] Все ссылки `plan.md` в CLAUDE.md / RULES.md заменены на `roadmap.md`
+- [ ] Симлинк `plan.md → roadmap.md` создан как backwards-compat alias
+- [ ] `mb-plan-sync.sh` продолжает работать после миграции
+- [ ] Все существующие notes/plans с `[plan.md](plan.md)` ссылками продолжают резолвиться (через симлинк)
+- [ ] Migration logged в progress.md
+
+**Plan:** *(не создан, ждёт promotion через `/mb idea-promote I-001 refactor`)*

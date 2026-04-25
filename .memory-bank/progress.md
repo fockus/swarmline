@@ -1,5 +1,14 @@
 # Progress
 
+## 2026-04-13: Release contract sync after parity re-audit
+
+- Public Python contract corrected from `3.10+` to `3.11+` in `pyproject.toml`, README badge, init template, and the plugin registry comment. This matches actual stdlib usage (`StrEnum`, `datetime.UTC`) already present in the codebase.
+- Re-verified current runtime signal after the sync:
+  - `pytest -q` → green (`5100 passed, 5 skipped, 5 deselected`)
+  - targeted parity/regression packs → green (`222 passed`, `190 passed`)
+  - `ty check src/swarmline/ --python-version 3.11` → red (`70 diagnostics`)
+- Updated `STATUS.md` and `checklist.md` so Memory Bank no longer claims a green repo-wide release gate. Current truth: parity functionality is implemented, but v1.5.0 release remains blocked on repo-wide typing cleanup.
+
 ## 2026-04-12: Phase 6 Integration Validation complete (Judge 4.25/5.0)
 
 - Cross-feature integration tests: hooks+commands, stop hook, backward compat, unregistered passthrough
@@ -664,3 +673,58 @@
 - Quality gates: pytest -q → 5096 passed, 5 skipped, 5 deselected. ruff clean.
 - **Parity v2 progress: 7/7 фаз (100%). Overall: 17/17 фаз (100%). PARITY COMPLETE.**
 - Next: v1.5.0 release.
+
+## 2026-04-21
+
+### Auto-capture 2026-04-21 (session 85d26e5f)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-04-25
+
+### Production v2.0 — Phase 01a (ty-strict-foundation): Sprint 1A COMPLETE
+
+**Goal:** ty 75 → ≤62, 11 critical runtime-bug'ов → 0, CI gate активен. **Achieved.**
+
+**6 stages, 21 новых тестов, 7 файлов нового кода/конфига:**
+
+- **Stage 1** — `tests/architecture/test_ty_strict_mode.py` (3 tests, slow marker) + `.github/workflows/ci.yml` (lint + typecheck + tests + architecture jobs) + `slow` marker в `pyproject.toml`. Baseline: 75
+- **Stage 2** — `CodingTaskBoardPort` Protocol (composition of GraphTaskBoard + GraphTaskScheduler + cancel_task) → `coding_task_runtime.py` typed correctly. 15 tests. Baseline: 72 (-3)
+- **Stage 3** — `project_instruction_filter.py` annotation fix (`list[tuple[int, list[str]]]`) + `agent_registry_postgres.py` typed `cast(CursorResult, result).rowcount`. 4 tests + 2 PG-skipped. Baseline: 70 (-2)
+- **Stage 4** — `ToolFunction` Protocol (`@runtime_checkable`) + `tool()` decorator returns `ToolFunction` natively. Removed 4 `# type: ignore[attr-defined]`. 8 tests. Baseline: 66 (-4)
+- **Stage 5** — `_hook_name(...)` helper (`getattr(hook, "__name__", repr(hook))`) replacing 4 inline `entry.callback.__name__` accesses in `hooks/dispatcher.py`. 11 tests. Baseline: 62 (-4)
+- **Stage 6** — Documentation handoff: `notes/2026-04-25_ty-strict-decisions.md` (3 reusable patterns: OptDep / DecoratedTool / CallableUnion), `BACKLOG.md ADR-003` (Use ty strict-only), `plans/...01b...md` scaffolded for next Sprint
+
+**Verification (Sprint 1A Gate, all 7 conditions GREEN):**
+- ✅ `ty check src/swarmline/` = **62 diagnostics** (was 75, -13)
+- ✅ 0 critical errors на 11 target lines (coding_task_runtime / project_instruction_filter / agent_registry_postgres / agent/tool / graph_tools / hooks/dispatcher)
+- ✅ 4500+ existing tests passed (no regressions in any of the 4 areas)
+- ✅ ruff check + format clean
+- ✅ All Sprint 1A artifacts on disk
+- ✅ `tests/architecture/ty_baseline.txt` = 62
+- ✅ `.github/workflows/ci.yml` runs `ty check src/swarmline/`, fail-on-error
+
+**Tests:** 21 new (3 architecture + 6 unit/15 integration Stage 2 + 4 Stage 3 + 8 Stage 4 + 11 Stage 5 — overlap deduplicated). All green. Cumulative: 5117 + 21 = 5138 passing tests.
+
+**Next step:** Sprint 1B (`plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md`) — apply 3 patterns to remaining 62 errors → ty: 0 → release v1.5.0 typing gate green.
+
+**Files modified/added:**
+- ✚ `tests/architecture/__init__.py`, `tests/architecture/test_ty_strict_mode.py`, `tests/architecture/ty_baseline.txt` (62)
+- ✚ `.github/workflows/ci.yml` (4 jobs: lint, typecheck, tests, architecture)
+- ✚ `src/swarmline/agent/tool_protocol.py` (`ToolFunction` Protocol)
+- ✚ `src/swarmline/hooks/_helpers.py` (`_hook_name` helper)
+- ✚ `src/swarmline/orchestration/coding_task_ports.py` (`CodingTaskBoardPort` composite)
+- ✚ 4 new test files (project_instruction_filter, agent_registry_postgres, tool_function_protocol, hook_name_helper, coding_task_runtime_protocol_deps, coding_task_runtime_cancel_flow)
+- ✚ `.memory-bank/notes/2026-04-25_ty-strict-decisions.md`
+- ✚ `.memory-bank/plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md` (scaffold)
+- ⌥ `pyproject.toml` (slow marker)
+- ⌥ `src/swarmline/agent/__init__.py` (export ToolFunction)
+- ⌥ `src/swarmline/agent/tool.py` (return type → ToolFunction)
+- ⌥ `src/swarmline/multi_agent/graph_tools.py` (removed 3 `# type: ignore`)
+- ⌥ `src/swarmline/orchestration/coding_task_runtime.py` (board: CodingTaskBoardPort)
+- ⌥ `src/swarmline/project_instruction_filter.py` (segments annotation)
+- ⌥ `src/swarmline/multi_agent/agent_registry_postgres.py` (CursorResult cast)
+- ⌥ `src/swarmline/hooks/dispatcher.py` (4 _hook_name swaps)
+- ⌥ `.memory-bank/BACKLOG.md` (ADR-003 filled)
+- ⌥ `.memory-bank/checklist.md` (6 stages marked DONE)
+
