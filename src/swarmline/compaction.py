@@ -164,7 +164,7 @@ class ConversationCompactionFilter:
             dialog_lines.append(f"{msg.role}: {msg.content}")
         dialog_text = "\n".join(dialog_lines)
 
-        summary = await self._llm_call(_SUMMARIZE_PROMPT, dialog_text)  # type: ignore[misc]
+        summary = await self._llm_call(_SUMMARIZE_PROMPT, dialog_text)  # ty: ignore[call-non-callable]  # Optional Callable gated by caller config
         summary_msg = Message(
             role="system",
             content=f"[Conversation summary]: {summary}",
@@ -184,7 +184,8 @@ class ConversationCompactionFilter:
         budget = self._config.threshold_tokens - estimate_tokens(system_prompt)
         if budget <= 0:
             non_compactable = [
-                m for m in messages[:-1]
+                m
+                for m in messages[:-1]
                 if m.metadata and m.metadata.get("non_compactable")
             ]
             return [*non_compactable, messages[-1]]
@@ -217,7 +218,9 @@ class ConversationCompactionFilter:
         if preserve >= len(pairs):
             return messages
 
-        collapse_set = {idx for a, t in pairs[: len(pairs) - preserve] for idx in (a, t)}
+        collapse_set = {
+            idx for a, t in pairs[: len(pairs) - preserve] for idx in (a, t)
+        }
 
         result: list[Message] = []
         i = 0

@@ -15,9 +15,9 @@ from swarmline.orchestration.types import ApprovalSource, Plan, PlanStep
 class PlanManager:
     """Plan management - a single entry point for the application.
 
-  SRP: orchestration only. The LLM lives in `PlannerMode`.
-  Persistence lives in `PlanStore`.
-  """
+    SRP: orchestration only. The LLM lives in `PlannerMode`.
+    Persistence lives in `PlanStore`.
+    """
 
     def __init__(self, planner: PlannerMode, plan_store: PlanStore) -> None:
         self._planner = planner
@@ -31,10 +31,12 @@ class PlanManager:
         auto_approve: bool = False,
     ) -> Plan:
         """Create a plan and auto-approve it when requested."""
-        plan = await self._planner.generate_plan(goal, context=f"user={user_id}, topic={topic_id}")
+        plan = await self._planner.generate_plan(
+            goal, context=f"user={user_id}, topic={topic_id}"
+        )
         # Set the namespace for multi-tenant isolation when the store supports it.
         if hasattr(self._store, "set_namespace"):
-            self._store.set_namespace(user_id, topic_id)
+            self._store.set_namespace(user_id, topic_id)  # ty: ignore[call-non-callable]  # hasattr-narrow on optional Protocol method not propagated by ty
         await self._store.save(plan)
 
         if auto_approve:

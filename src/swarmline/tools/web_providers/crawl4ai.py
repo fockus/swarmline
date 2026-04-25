@@ -49,8 +49,8 @@ class Crawl4AIFetchProvider:
             return ""
 
         try:
-            config = CrawlerRunConfig(
-                markdown_generator=DefaultMarkdownGenerator(),
+            config = CrawlerRunConfig(  # ty: ignore[call-non-callable]  # gated by AsyncWebCrawler is None check above
+                markdown_generator=DefaultMarkdownGenerator(),  # ty: ignore[call-non-callable]  # gated by AsyncWebCrawler is None check above
             )
             async with AsyncWebCrawler() as crawler:
                 result = await asyncio.wait_for(

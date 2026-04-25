@@ -27,14 +27,13 @@
 - `tests/architecture/ty_baseline.txt` — current value: 62, target: 0
 - `.github/workflows/ci.yml` — CI gate (typecheck job, fail-on-error)
 
-**Stage breakdown (preliminary, must be refined в отдельной сессии):**
-- Stage 1: OptDep batch (~22 fixes, ~5-7 файлов)
-- Stage 2: DecoratedTool batch (~5 fixes, 2-3 файла)
-- Stage 3: CallableUnion batch (~10 fixes, 4-6 файлов)
-- Stage 4: Single-case errors (~25 fixes, по группам severity)
-- Stage 5: Final verification + lock baseline at 0 + remove "outdated baseline" warning logic if any
-
-**Refinement note:** этот план — **scaffold, не финальный**. Перед началом Sprint 1B запустить отдельную `/mb plan feature` сессию для детального наполнения каждой Stage с TDD/SMART DoD/edge cases (как делалось для Sprint 1A).
+**Stage breakdown (refined по факту, после Stage 1+2):**
+- Stage 1: ✅ OptDep batch (22 fixes, 16 files) — ty 62 → 40
+- Stage 2: ✅ Unresolved-attribute batch (4 fixes, 3 files) — ty 40 → 36
+- Stage 3: ⏳ Callable narrow (9 call-non-callable, 6 files) — ty 36 → 27
+- Stage 4: ⬜ Argument-type batch (22 mixed) — ty 27 → 5
+- Stage 5: ⬜ Точечные остатки (5 misc) — ty 5 → 0
+- Stage 6: ⬜ Final verification + lock baseline=0
 
 ---
 
@@ -157,6 +156,119 @@ Test `tests/unit/test_attribute_resolution_fixes.py` introduced (8 cases, 3 inva
 - [ ] `git diff --stat src/` shows changes only in 3 listed files (scope discipline)
 
 **Code rules:** SOLID, DRY (mirror Sprint 1A's CursorResult pattern verbatim), KISS, YAGNI.
+
+---
+
+<!-- mb-stage:3 -->
+### Stage 3: Callable narrow — 9 call-non-callable → 0 ✅ DONE (2026-04-25)
+
+**Result (verified):** ty 36 → 27 (-9, 100% of call-non-callable closed).
+Test `tests/unit/test_callable_narrow_fixes.py` introduced (16 cases: 9 location asserts
++ 1 mypy-misc cleanup invariant + 6 no-naked-ignore parametrized scans).
+6 source files touched. Pattern uniform: ty-native `# ty: ignore[call-non-callable]`
++ reason-comment per location. Bonus cleanup: dead `# type: ignore[misc]` removed
+from compaction.py (inert under `respect-type-ignore-comments = false`).
+
+**Real fix locations (post-format line numbers):**
+- `compaction.py:167` — Optional Callable hook (replaces dead `[misc]`)
+- `multi_agent/graph_orchestrator.py:363, 393` — hasattr-narrow on `_task_board.cancel_task`
+- `orchestration/generic_workflow_engine.py:53, 61` — hasattr-narrow on Protocol-or-Callable
+- `orchestration/manager.py:39` — hasattr-narrow on optional Protocol method
+- `tools/web_providers/crawl4ai.py:52, 53` — Optional class instantiation gated by sibling None check
+- `tools/web_providers/tavily.py:51` — nested-function scope loses outer narrow
+
+**Line drift note:** Initial draft used pre-format lines (319, 345, 59, 37). After
+`ruff format` reflowed multi-line `def`/method calls in 3 files, the test was updated
+to post-format positions. The line-drift detector (the test itself) caught all 4 shifts.
+
+
+
+**Real distribution (verified 2026-04-25 against baseline=36):**
+9 `call-non-callable` diagnostics across 6 source files, **three distinct narrowing failures**:
+
+| # | Location | Pattern | Why ty cannot narrow |
+|---|---|---|---|
+| 1 | `compaction.py:167` | Optional Callable hook (`Unknown \| ((str, str, /) -> Awaitable[str]) \| None`) | `_llm_call` typed as Optional Callable; runtime guard at instantiation, not call site |
+| 2 | `multi_agent/graph_orchestrator.py:319` | `hasattr(self._task_board, "cancel_task")` then `await self._task_board.cancel_task(...)` | ty does not narrow on `hasattr` — `_task_board` typed as object-Protocol without `cancel_task` |
+| 3 | `multi_agent/graph_orchestrator.py:345` | identical to #2 (excepting `asyncio.CancelledError` branch) | same |
+| 4 | `orchestration/generic_workflow_engine.py:53` | `hasattr(self._executor, "execute")` then `await self._executor.execute(...)` | duck-typed Protocol-or-Callable union; `hasattr` doesn't narrow |
+| 5 | `orchestration/generic_workflow_engine.py:59` | `hasattr(self._verifier, "verify")` then `await self._verifier.verify(...)` | same |
+| 6 | `orchestration/manager.py:37` | `hasattr(self._store, "set_namespace")` then `self._store.set_namespace(...)` | optional Protocol method extension via duck typing |
+| 7 | `tools/web_providers/crawl4ai.py:52` | `CrawlerRunConfig(...)` after `if AsyncWebCrawler is None` guard | three optional symbols share one try/except, but ty narrows only the explicitly-checked name |
+| 8 | `tools/web_providers/crawl4ai.py:53` | `DefaultMarkdownGenerator()` after same guard | same |
+| 9 | `tools/web_providers/tavily.py:51` | `TavilyClient(...)` inside nested `_sync_search` after outer `if TavilyClient is None` guard | nested-function scope loses outer narrowing |
+
+**What to do (uniform ty-native ignore + reason — minimum-viable diff):**
+
+All 9 cases are runtime-correct duck-typed call sites that ty cannot narrow through. Three approaches were considered:
+1. ty-native `# ty: ignore[call-non-callable]` + reason  ← chosen (consistency with Stage 1/2)
+2. Structural narrow (`assert ... is not None`) — works for compaction/tavily but adds runtime asserts
+3. Protocol declarations with optional methods + isinstance — out-of-scope for Sprint 1B (refactor, not closure)
+
+Decision: **uniform ty-native ignore** (option 1). Behavioral parity is preserved (zero runtime change), and the trailing reason-comment documents WHY the fix is mechanical:
+- For #2-6 (hasattr-narrow): `# ty: ignore[call-non-callable]  # hasattr-narrow not propagated by ty`
+- For #1 (compaction): `# ty: ignore[call-non-callable]  # Optional Callable gated by caller config` (also replaces dead `# type: ignore[misc]`)
+- For #7-8 (crawl4ai): `# ty: ignore[call-non-callable]  # gated by AsyncWebCrawler is None check above`
+- For #9 (tavily): `# ty: ignore[call-non-callable]  # nested function — outer narrow lost`
+
+This mirrors Stage 1/2 where ty-native ignores carry mandatory reason-comments. NO `assert` statements are introduced — they would change runtime behavior subtly under PYTHONOPTIMIZE/-O and add noise to call graphs without removing the underlying type-system limitation.
+
+**Testing (TDD — tests BEFORE implementation):**
+- New `tests/unit/test_callable_narrow_fixes.py` parametrized over the 9 locations:
+  - `test_each_location_has_call_non_callable_ignore` — line content includes `# ty: ignore[call-non-callable]` AND a reason-comment substring (per location).
+  - `test_no_dead_mypy_misc_in_compaction` — source-level guard: `compaction.py` no longer carries `# type: ignore[misc]` near `_llm_call(` invocation (cleanup invariant — would otherwise stay inert).
+  - `test_no_naked_call_non_callable_ignores` — every `# ty: ignore[call-non-callable]` in touched files has at least 10 chars of reason comment after it.
+
+**DoD (Definition of Done) — SMART:**
+- [ ] `ty check src/swarmline/ 2>&1 | grep "call-non-callable" | wc -l` → **0**
+- [ ] `ty check src/swarmline/ 2>&1 | grep "Found .* diagnostics"` → **≤27** (36 − 9 = 27, no regressions in other categories)
+- [ ] `tests/architecture/ty_baseline.txt` updated to **27**
+- [ ] `tests/unit/test_callable_narrow_fixes.py` exists, all 9+ parametrized cases green
+- [ ] Full offline `pytest -q` green (no regressions in 5200+ tests)
+- [ ] `ruff check` and `ruff format --check` clean on touched files
+- [ ] `git diff --stat src/` shows changes only in 6 listed files (scope discipline)
+
+**Code rules:** SOLID, DRY (single canonical `# ty: ignore[call-non-callable]` + reason pattern), KISS (no asserts, no Protocol redesigns), YAGNI, Clean Architecture (touches Infrastructure/Application — domain/protocols untouched).
+
+---
+
+<!-- mb-stage:4 -->
+### Stage 4: Argument-type batch — 22 mixed → 5 ⬜ TODO
+
+Distribution will be detailed before execution. Categories from baseline=27 ty output:
+- 17× `invalid-argument-type`
+- 3× `unknown-argument`
+- 2× `no-matching-overload`
+
+Per-case point fixes (annotation/overload corrections — not pattern-uniform).
+
+**Target:** ty 27 → 5.
+
+---
+
+<!-- mb-stage:5 -->
+### Stage 5: Точечные остатки — 5 misc → 0 ⬜ TODO
+
+5 misc diagnostics:
+- 2× `invalid-return-type`
+- 2× `invalid-assignment`
+- 1× `not-iterable`
+
+Per-case fixes after Stage 4 settles.
+
+**Target:** ty 5 → 0.
+
+---
+
+<!-- mb-stage:6 -->
+### Stage 6: Final verification + lock baseline=0 ⬜ TODO
+
+- [ ] `ty check src/swarmline/` → **Found 0 diagnostics**
+- [ ] `tests/architecture/ty_baseline.txt` = **0**
+- [ ] STATUS.md release gate updated (`ty check` green)
+- [ ] checklist.md Sprint 1B section closed
+- [ ] progress.md append for Sprint 1B completion (6 stages, ~50+ tests)
+- [ ] ADR-003 outcome: ty strict-mode = sole release gate confirmed
 
 ---
 

@@ -68,9 +68,11 @@ class DefaultGraphOrchestrator:
         try:
             sig = inspect.signature(agent_runner)
             params = [
-                p for p in sig.parameters.values()
+                p
+                for p in sig.parameters.values()
                 if p.default is inspect.Parameter.empty
-                and p.kind in (
+                and p.kind
+                in (
                     inspect.Parameter.POSITIONAL_ONLY,
                     inspect.Parameter.POSITIONAL_OR_KEYWORD,
                 )
@@ -85,7 +87,9 @@ class DefaultGraphOrchestrator:
         self._gate = approval_gate
 
         self._semaphore = asyncio.Semaphore(max_concurrent)
-        self._context_builder = GraphContextBuilder(graph_query=graph, task_board=task_board)
+        self._context_builder = GraphContextBuilder(
+            graph_query=graph, task_board=task_board
+        )
         self._config_resolver = GraphRuntimeResolver(graph_query=graph)
 
         # run_id -> mutable run state
@@ -110,24 +114,31 @@ class DefaultGraphOrchestrator:
         root_task_id = f"root-{run_id}"
 
         # Create root task on the board and checkout immediately
-        await self._task_board.create_task(GraphTaskItem(
-            id=root_task_id,
-            title=goal,
-            assignee_agent_id=root.id,
-        ))
+        await self._task_board.create_task(
+            GraphTaskItem(
+                id=root_task_id,
+                title=goal,
+                assignee_agent_id=root.id,
+            )
+        )
         await self._task_board.checkout_task(root_task_id, root.id)
 
         run_state = self._run_store.create(run_id, root_task_id, root.id)
 
-        await self._emit("graph.orchestrator.started", {
-            "run_id": run_id,
-            "goal": goal,
-        })
+        await self._emit(
+            "graph.orchestrator.started",
+            {
+                "run_id": run_id,
+                "goal": goal,
+            },
+        )
 
         # Launch root agent execution
         self._run_store.append_execution(run_state, root.id, root_task_id)
         task = asyncio.create_task(
-            self._execute_agent(root.id, root_task_id, goal, self._max_retries, run_state)
+            self._execute_agent(
+                root.id, root_task_id, goal, self._max_retries, run_state
+            )
         )
         self._bg_tasks[root_task_id] = task
 
@@ -149,34 +160,48 @@ class DefaultGraphOrchestrator:
                 {"agent_id": request.agent_id, "goal": request.goal},
             )
             if not approved:
-                await self._emit("graph.orchestrator.denied", {
-                    "task_id": request.task_id,
-                    "agent_id": request.agent_id,
-                })
+                await self._emit(
+                    "graph.orchestrator.denied",
+                    {
+                        "task_id": request.task_id,
+                        "agent_id": request.agent_id,
+                    },
+                )
                 return
 
         # Create subtask on the board and checkout immediately
-        await self._task_board.create_task(GraphTaskItem(
-            id=request.task_id,
-            title=request.goal,
-            assignee_agent_id=request.agent_id,
-            parent_task_id=request.parent_task_id,
-            stage=request.stage,
-        ))
+        await self._task_board.create_task(
+            GraphTaskItem(
+                id=request.task_id,
+                title=request.goal,
+                assignee_agent_id=request.agent_id,
+                parent_task_id=request.parent_task_id,
+                stage=request.stage,
+            )
+        )
         await self._task_board.checkout_task(request.task_id, request.agent_id)
 
-        await self._emit("graph.orchestrator.delegated", {
-            "task_id": request.task_id,
-            "agent_id": request.agent_id,
-            "goal": request.goal,
-        })
+        await self._emit(
+            "graph.orchestrator.delegated",
+            {
+                "task_id": request.task_id,
+                "agent_id": request.agent_id,
+                "goal": request.goal,
+            },
+        )
 
         self._run_store.append_execution(run, request.agent_id, request.task_id)
 
         # Launch async execution
-        max_retries = request.max_retries if request.max_retries is not None else self._max_retries
+        max_retries = (
+            request.max_retries
+            if request.max_retries is not None
+            else self._max_retries
+        )
         task = asyncio.create_task(
-            self._execute_agent(request.agent_id, request.task_id, request.goal, max_retries, run)
+            self._execute_agent(
+                request.agent_id, request.task_id, request.goal, max_retries, run
+            )
         )
         self._bg_tasks[request.task_id] = task
 
@@ -184,7 +209,9 @@ class DefaultGraphOrchestrator:
     # Protocol: wait_for_task (GraphTaskWaiter)
     # ------------------------------------------------------------------
 
-    async def wait_for_task(self, task_id: str, timeout: float | None = None) -> str | None:
+    async def wait_for_task(
+        self, task_id: str, timeout: float | None = None
+    ) -> str | None:
         """Wait for a background task to complete. Returns result or None."""
         bg = self._bg_tasks.get(task_id)
         if bg is None:
@@ -228,9 +255,12 @@ class DefaultGraphOrchestrator:
             if bg and not bg.done():
                 bg.cancel()
 
-        await self._emit("graph.orchestrator.stopped", {
-            "run_id": run_id,
-        })
+        await self._emit(
+            "graph.orchestrator.stopped",
+            {
+                "run_id": run_id,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Internal: agent execution with retry
@@ -254,7 +284,11 @@ class DefaultGraphOrchestrator:
                     try:
                         # Update state
                         if run:
-                            state = AgentRunState.RETRYING if attempt > 0 else AgentRunState.RUNNING
+                            state = (
+                                AgentRunState.RETRYING
+                                if attempt > 0
+                                else AgentRunState.RUNNING
+                            )
                             self._run_store.update_execution(
                                 run,
                                 task_id,
@@ -265,8 +299,12 @@ class DefaultGraphOrchestrator:
 
                         # Build structured execution context
                         try:
-                            exec_ctx = await self._context_builder.build_execution_context(
-                                agent_id, task_id, goal,
+                            exec_ctx = (
+                                await self._context_builder.build_execution_context(
+                                    agent_id,
+                                    task_id,
+                                    goal,
+                                )
                             )
                         except ValueError:
                             exec_ctx = AgentExecutionContext(
@@ -283,7 +321,10 @@ class DefaultGraphOrchestrator:
                         else:
                             legacy_runner = cast(AgentRunner, self._runner)
                             result = await legacy_runner(
-                                agent_id, task_id, goal, exec_ctx.system_prompt,
+                                agent_id,
+                                task_id,
+                                goal,
+                                exec_ctx.system_prompt,
                             )
 
                         # Success
@@ -298,10 +339,13 @@ class DefaultGraphOrchestrator:
                             finished_at=time.time(),
                         )
 
-                        await self._emit("graph.orchestrator.agent_completed", {
-                            "agent_id": agent_id,
-                            "task_id": task_id,
-                        })
+                        await self._emit(
+                            "graph.orchestrator.agent_completed",
+                            {
+                                "agent_id": agent_id,
+                                "task_id": task_id,
+                            },
+                        )
 
                         # Lifecycle mode handling
                         await self._handle_lifecycle(agent_id, task_id)
@@ -316,7 +360,7 @@ class DefaultGraphOrchestrator:
 
             # Exhausted retries → mark failed on board and in run state, escalate
             if hasattr(self._task_board, "cancel_task"):
-                await self._task_board.cancel_task(task_id)
+                await self._task_board.cancel_task(task_id)  # ty: ignore[call-non-callable]  # hasattr-narrow not propagated by ty
 
             self._run_store.update_execution(
                 run,
@@ -326,23 +370,27 @@ class DefaultGraphOrchestrator:
                 finished_at=time.time(),
             )
 
-            await self._emit("graph.orchestrator.escalated", {
-                "agent_id": agent_id,
-                "task_id": task_id,
-                "error": last_error,
-            })
+            await self._emit(
+                "graph.orchestrator.escalated",
+                {
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                    "error": last_error,
+                },
+            )
 
             # Escalate via communication if available
             if self._comm is not None:
                 await self._comm.escalate(
-                    agent_id, f"Failed after {max_retries} retries: {last_error}",
+                    agent_id,
+                    f"Failed after {max_retries} retries: {last_error}",
                     task_id=task_id,
                 )
 
         except asyncio.CancelledError:
             # Graceful stop -- cancel task on the board, do NOT retry
             if hasattr(self._task_board, "cancel_task"):
-                await self._task_board.cancel_task(task_id)
+                await self._task_board.cancel_task(task_id)  # ty: ignore[call-non-callable]  # hasattr-narrow not propagated by ty
             return
         finally:
             self._bg_tasks.pop(task_id, None)
@@ -367,12 +415,16 @@ class DefaultGraphOrchestrator:
                 await self._graph.remove_node(agent_id)
             await self._emit("graph.agent.self_terminated", {"agent_id": agent_id})
         elif node.lifecycle == LifecycleMode.SUPERVISED:
-            await self._emit("graph.agent.awaiting_review", {
-                "agent_id": agent_id,
-                "task_id": task_id,
-            })
+            await self._emit(
+                "graph.agent.awaiting_review",
+                {
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                },
+            )
         elif node.lifecycle == LifecycleMode.PERSISTENT:
             from swarmline.multi_agent.registry_types import AgentStatus
+
             if hasattr(self._graph, "update_status"):
                 await self._graph.update_status(agent_id, AgentStatus.IDLE)
             await self._emit("graph.agent.ready", {"agent_id": agent_id})

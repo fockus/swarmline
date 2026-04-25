@@ -48,7 +48,7 @@ class TavilySearchProvider:
 
         def _sync_search() -> dict:
             try:
-                client = TavilyClient(api_key=self._api_key)
+                client = TavilyClient(api_key=self._api_key)  # ty: ignore[call-non-callable]  # nested function — outer narrow lost
                 return client.search(query=query, max_results=max_results)
             except Exception as exc:
                 _log.warning("tavily_search_failed", query=query[:100], error=str(exc))

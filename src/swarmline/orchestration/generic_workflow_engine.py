@@ -50,13 +50,15 @@ class GenericWorkflowEngine:
     async def _call_executor(self, task: str, ctx: dict[str, Any]) -> str:
         """Call executor - supports both callable and object-with-execute styles."""
         if hasattr(self._executor, "execute"):
-            return await self._executor.execute(task)
+            return await self._executor.execute(task)  # ty: ignore[call-non-callable]  # hasattr-narrow not propagated by ty (Protocol-or-Callable union)
         return await self._executor(task, ctx)
 
-    async def _call_verifier(self, output: str, ctx: dict[str, Any]) -> tuple[bool, str]:
+    async def _call_verifier(
+        self, output: str, ctx: dict[str, Any]
+    ) -> tuple[bool, str]:
         """Call verifier - supports both callable and object-with-verify styles."""
         if hasattr(self._verifier, "verify"):
-            return await self._verifier.verify(output)
+            return await self._verifier.verify(output)  # ty: ignore[call-non-callable]  # hasattr-narrow not propagated by ty (Protocol-or-Callable union)
         return await self._verifier(output, ctx)
 
     async def run(
