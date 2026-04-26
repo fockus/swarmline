@@ -10,8 +10,14 @@ _SAFE_SEGMENT_CHARS = frozenset(
 
 
 def validate_namespace_segment(name: str, label: str) -> str:
-    """Validate a namespace/path segment and return it unchanged."""
-    if not name or ".." in name or "/" in name or "\\" in name:
+    """Validate a namespace/path segment and return it unchanged.
+
+    Rejects ``"."`` and ``".."`` explicitly: under ``Path("/root") / "." / "alice"``
+    the dot collapses, so ``user_id="."`` and ``user_id="alice"`` would resolve to
+    the same workspace and break tenant isolation. ``".."`` is also rejected via
+    the substring guard, but the explicit set membership documents intent.
+    """
+    if not name or name in {".", ".."} or ".." in name or "/" in name or "\\" in name:
         raise ValueError(f"Invalid {label}: {name!r}")
     if not all(ch in _SAFE_SEGMENT_CHARS for ch in name):
         raise ValueError(f"Invalid characters in {label}: {name!r}")
