@@ -155,21 +155,25 @@ def create_app(
     Mirrors the loopback gates in ``a2a/server.py`` and ``daemon/health.py``:
     the unauthenticated control plane is local-only by design.
 
-    For backward compatibility, ``host=None`` (the v1.4.x signature) is still
-    accepted but logs a security warning so operators can audit unauthenticated
-    surface area.
+    As of v1.5.0 (security audit closure, audit P2 #5), ``host=None`` raises
+    ``ValueError`` when ``allow_unauthenticated_query=True``. The v1.4.x
+    backward-compatibility fallback that emitted a deprecation warning has
+    graduated to a hard error so operators cannot accidentally combine the
+    legacy signature with ``uvicorn --host 0.0.0.0`` and expose unauthenticated
+    ``/v1/query`` publicly. Pass ``host="127.0.0.1"`` for local-only mode, or
+    ``auth_token=...`` for production.
     """
     if allow_unauthenticated_query and auth_token is None:
-        # v1.5.1: the v1.5.0 deprecation warning for host=None has graduated
-        # to a hard ValueError (audit P2 #5). Without this gate, an operator
-        # could combine the legacy signature with `uvicorn --host 0.0.0.0`
-        # and silently expose unauthenticated /v1/query publicly.
+        # v1.5.0 (security audit closure): the host=None deprecation warning
+        # graduated to a hard ValueError (audit P2 #5). Without this gate, an
+        # operator could combine the legacy signature with `uvicorn --host
+        # 0.0.0.0` and silently expose unauthenticated /v1/query publicly.
         if not host:
             raise ValueError(
                 "serve.create_app(allow_unauthenticated_query=True) requires an "
-                "explicit host= argument since v1.5.1. Pass host='127.0.0.1' "
-                "(or another loopback) for local-only mode, or pass auth_token= "
-                "for production."
+                "explicit host= argument since v1.5.0 (security audit closure). "
+                "Pass host='127.0.0.1' (or another loopback) for local-only mode, "
+                "or pass auth_token= for production."
             )
         if not is_loopback_host(host):
             raise ValueError(
