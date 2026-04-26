@@ -86,3 +86,22 @@ jobs:
 
       - name: Run architecture tests (incl. ty baseline meta-test)
         run: pytest tests/architecture/ -v -m slow
+
+  audit:
+    name: Security audit (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Install project (with all optional deps for full coverage)
+        run: pip install -e ".[dev,all]"
+
+      - name: Run pip-audit
+        run: pip-audit --strict --desc

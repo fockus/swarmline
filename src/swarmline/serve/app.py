@@ -12,6 +12,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
+from swarmline.network_safety import is_loopback_host
 from swarmline.observability.security import log_security_decision
 
 _VERSION = "1.4.0"
@@ -84,16 +85,20 @@ class _QueryClosedMiddleware:
 def _make_health_handler() -> Any:
     async def health(request: Request) -> Response:
         return JSONResponse({"status": "ok", "timestamp": time.time()})
+
     return health
 
 
 def _make_info_handler(endpoints: list[str]) -> Any:
     async def info(request: Request) -> Response:
-        return JSONResponse({
-            "name": "swarmline",
-            "version": _VERSION,
-            "endpoints": endpoints,
-        })
+        return JSONResponse(
+            {
+                "name": "swarmline",
+                "version": _VERSION,
+                "endpoints": endpoints,
+            }
+        )
+
     return info
 
 
@@ -113,11 +118,13 @@ def _make_query_handler(agent: Any) -> Any:
 
         try:
             result = await agent.query(prompt)
-            return JSONResponse({
-                "text": result.text,
-                "ok": result.ok,
-                "error": result.error,
-            })
+            return JSONResponse(
+                {
+                    "text": result.text,
+                    "ok": result.ok,
+                    "error": result.error,
+                }
+            )
         except Exception as exc:
             return JSONResponse(
                 {"error": str(exc), "ok": False},
@@ -138,8 +145,44 @@ def create_app(
     auth_token: str | None = None,
     allow_unauthenticated_query: bool = False,
     cors_origins: list[str] | None = None,
+    host: str | None = None,
 ) -> Starlette:
-    """Create a Starlette ASGI app serving the given agent."""
+    """Create a Starlette ASGI app serving the given agent.
+
+    When ``allow_unauthenticated_query=True`` and ``host`` is provided, the host
+    must be a loopback address (``localhost`` / ``127.0.0.1`` / ``::1``).
+    Mirrors the loopback gates in ``a2a/server.py`` and ``daemon/health.py``:
+    the unauthenticated control plane is local-only by design.
+
+    For backward compatibility, ``host=None`` (the v1.4.x signature) is still
+    accepted but logs a security warning so operators can audit unauthenticated
+    surface area.
+    """
+    if allow_unauthenticated_query and auth_token is None:
+        if host is not None:
+            if not is_loopback_host(host):
+                raise ValueError(
+                    "serve.create_app(allow_unauthenticated_query=True) is only "
+                    "allowed on loopback hosts (localhost / 127.0.0.1 / ::1). "
+                    f"Refused host={host!r}. Pass auth_token= or bind to a "
+                    "loopback host."
+                )
+        else:
+            log_security_decision(
+                _log,
+                component="serve",
+                event_name="allow_unauthenticated_query",
+                decision="allow",
+                reason=(
+                    "host=None — loopback enforcement skipped for backward "
+                    "compatibility. Pass host= explicitly in v1.5+."
+                ),
+            )
+            _log.warning(
+                "create_app called with allow_unauthenticated_query=True and no host; "
+                "unable to enforce loopback. Pin host= in v1.5+.",
+            )
+
     query_enabled = auth_token is not None or allow_unauthenticated_query
 
     routes = [
