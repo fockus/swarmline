@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from swarmline.network_safety import is_loopback_host
+from swarmline.observability.redaction import redact_secrets
 from swarmline.observability.security import log_security_decision
 
 _VERSION = "1.5.0"
@@ -127,7 +128,7 @@ def _make_query_handler(agent: Any) -> Any:
             )
         except Exception as exc:
             return JSONResponse(
-                {"error": str(exc), "ok": False},
+                {"error": redact_secrets(str(exc)), "ok": False},
                 status_code=500,
             )
 

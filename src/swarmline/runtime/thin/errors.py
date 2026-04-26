@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from swarmline.errors import SwarmlineError
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.types import RuntimeErrorData
 
 
@@ -39,11 +40,18 @@ def dependency_missing_error(
 
 
 def provider_runtime_crash(provider: str, exc: Exception) -> ThinLlmError:
-    """Normalize provider/API exceptions to a runtime_crash error."""
+    """Normalize provider/API exceptions to a runtime_crash error.
+
+    The exception ``str(exc)`` is run through ``redact_secrets`` so that
+    Bearer tokens, sk-* keys, URL userinfo and KEY=value env strings carried
+    inside provider/SDK exceptions never reach RuntimeEvent.error.message
+    (audit P2 #6).
+    """
+    safe_message = redact_secrets(f"LLM API error ({provider}): {type(exc).__name__}: {exc}")
     return ThinLlmError(
         RuntimeErrorData(
             kind="runtime_crash",
-            message=f"LLM API error ({provider}): {type(exc).__name__}: {exc}",
+            message=safe_message,
             recoverable=False,
             details={
                 "provider": provider,

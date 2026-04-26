@@ -13,6 +13,7 @@ import os
 from collections.abc import AsyncIterator
 from typing import Any
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime._subprocess_env import build_subprocess_env
 from swarmline.runtime.cli.parser import (
     ClaudeNdjsonParser,
@@ -244,7 +245,7 @@ class CliAgentRuntime:
                 yield RuntimeEvent.error(
                     RuntimeErrorData(
                         kind="runtime_crash",
-                        message=(
+                        message=redact_secrets(
                             f"Process exited with code {self._process.returncode}: "
                             f"{stderr_data.decode(errors='replace')}"
                         ),

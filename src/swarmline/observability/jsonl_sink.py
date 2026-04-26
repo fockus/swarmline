@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from swarmline.observability.redaction import DEFAULT_SECRET_PATTERNS
 
 DEFAULT_REDACT_KEYS = frozenset(
     {
@@ -41,15 +42,11 @@ DEFAULT_REDACT_KEYS = frozenset(
 )
 
 # Value-level patterns: matched against any string leaf, regardless of key.
-# Conservative — must avoid matching benign user content. Each pattern is
-# anchored by a distinctive prefix (sk-, Bearer, ://userinfo@).
-DEFAULT_REDACT_VALUE_PATTERNS: tuple[re.Pattern[str], ...] = (
-    # OpenAI / Anthropic / OpenRouter API keys: sk-<20+ chars>
-    re.compile(r"sk-[A-Za-z0-9_\-]{20,}"),
-    # Bearer / bearer tokens
-    re.compile(r"[Bb]earer\s+[A-Za-z0-9._\-]+"),
-    # URL userinfo: scheme://user:password@host
-    re.compile(r"://[^/\s:@]+:[^/\s@]+@"),
+# Sourced from observability/redaction.DEFAULT_SECRET_PATTERNS so the JSONL
+# sink and runtime/serve error paths share one canonical pattern set (DRY,
+# Stage 6 of plans/2026-04-27_fix_security-audit.md).
+DEFAULT_REDACT_VALUE_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    pattern for pattern, _replacement in DEFAULT_SECRET_PATTERNS
 )
 
 
