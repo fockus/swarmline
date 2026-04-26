@@ -16,7 +16,7 @@ from swarmline.network_safety import is_loopback_host
 from swarmline.observability.redaction import redact_secrets
 from swarmline.observability.security import log_security_decision
 
-_VERSION = "1.5.0"
+_VERSION = "1.5.1"
 _log = structlog.get_logger(component="serve")
 
 

@@ -47,7 +47,9 @@ def provider_runtime_crash(provider: str, exc: Exception) -> ThinLlmError:
     inside provider/SDK exceptions never reach RuntimeEvent.error.message
     (audit P2 #6).
     """
-    safe_message = redact_secrets(f"LLM API error ({provider}): {type(exc).__name__}: {exc}")
+    safe_message = redact_secrets(
+        f"LLM API error ({provider}): {type(exc).__name__}: {exc}"
+    )
     return ThinLlmError(
         RuntimeErrorData(
             kind="runtime_crash",

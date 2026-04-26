@@ -222,9 +222,7 @@ class TestE2BShellWrapperDenylist:
         result = await provider.execute("sh -c 'echo rm not really called'")
         assert result.exit_code == 0
 
-    async def test_e2b_shell_wrapper_without_dash_c_is_unchanged(
-        self, config
-    ) -> None:
+    async def test_e2b_shell_wrapper_without_dash_c_is_unchanged(self, config) -> None:
         """`sh script.sh` (no -c) proceeds — only -c form triggers recursion."""
         from swarmline.tools.sandbox_e2b import E2BSandboxProvider
 
