@@ -2,23 +2,28 @@
 
 ## Текущий фокус
 
-**Production v2.0 — Sprint 1 (ty-strict gate)** (2026-04-25) — закрытие release gate перед v1.5.0. Sprint 1A (Phase 01a) и Sprint 1B (Phase 01b) **COMPLETE**: ty diagnostics 75 → 0, baseline locked = 0. ADR-003 fulfilled (ty strict-mode = sole release gate, no mypy).
+**v1.5.0 SHIPPED locally** (2026-04-25, tag `v1.5.0` → commit `3fae1b2`). 21-stage release-blockers plan (Tier 1 lint/runtime/docs + Tier 2 CHANGELOG/migration + Tier 3 DX paper-cuts + Tier 4 security) executed end-to-end on `main`. Tag pushed to private `origin` (`github.com/fockus/swarmline-dev`).
 
-**Release gate status:** **GREEN** — `ty check src/swarmline/` → All checks passed! (0 diagnostics). Готово к v1.5.0 release.
+**Pending (next step):** public sync via `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC. Awaiting user approval before destructive remote write.
 
-**Предыдущая фаза:** ThinRuntime Claude Code Parity v2 (2026-04-13) — Parity COMPLETE 17/17 фаз. Phase 17 commit 2e2c800.
+**Release gate status (verified 2026-04-27):**
+- `ty check src/swarmline/` → All checks passed! (0 diagnostics, baseline locked = 0)
+- `pytest --tb=no -q` → **5452 passed, 7 skipped, 5 deselected, 0 failed** (~52s)
+- `ruff check src/ tests/` → All checks passed!
+- Working tree clean except `.memory-bank/codebase/` (untracked, /mb graph output, not part of release)
 
-**Прогресс Production v2.0:** Phase 01a ✅ + Phase 01b ✅ (Sprint 1 ty-strict gate complete). Следующий шаг: v1.5.0 release (release branch + bump pyproject + CHANGELOG + tag + sync to public).
-
-**Предыдущие транши завершены**:
+**Предыдущие фазы**:
+- ThinRuntime Claude Code Parity v2 (2026-04-13) — Parity COMPLETE 17/17 фаз. Phase 17 commit `2e2c800`.
+- Production v2.0 Sprint 1 (2026-04-25) — ty diagnostics 75 → 0, baseline locked = 0. ADR-003 fulfilled (ty strict-mode = sole release gate, no mypy).
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
 - v1.4.1 Rename (2026-04-11) — cognitia → swarmline, PyPI published, deprecated wrapper
 - Repo housekeeping (2026-04-12) — remotes, docs, memory bank aligned
 
 ## Версии
 
-- swarmline: 1.4.1 (published on PyPI)
-- cognitia: 1.5.0 (deprecated wrapper → swarmline)
+- swarmline: **1.5.0** (tagged 2026-04-25, commit `3fae1b2`; pyproject.toml + serve/app.py both at 1.5.0; not yet on PyPI — pending public sync)
+- swarmline: 1.4.1 (currently published on PyPI; will be superseded by 1.5.0)
+- cognitia: 1.5.0 (deprecated wrapper → swarmline; legacy)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
 
 ## Roadmap
@@ -86,7 +91,8 @@
 
 ## Тесты
 
-- Offline suite: `5352 passed, 7 skipped, 5 deselected` ← текущий (2026-04-25, Sprint 1B Stage 6 done, ty=0)
+- Offline suite: **5452 passed, 7 skipped, 5 deselected, 0 failed** ← текущий (2026-04-27, post-v1.5.0 release tag, full suite ~52s via `rtk proxy pytest --tb=no -q`)
+- Offline suite: `5352 passed, 7 skipped, 5 deselected` (2026-04-25, Sprint 1B Stage 6 done, ty=0)
 - Offline suite: `5096 passed, 5 skipped, 5 deselected` (2026-04-13, Phase 17 done)
 - Offline suite: `5042 passed, 5 skipped, 5 deselected` (после Phase 16)
 - Offline suite: `4959 passed, 3 skipped, 5 deselected` (после Phase 15)
@@ -99,7 +105,8 @@
 - Explicit integration: `31 passed, 5 skipped`
 - Live suite: `5 passed`
 - Postgres integration harness: `3 passed`
-- Source files: ~336 .py files ← текущий (2026-04-13, Phase 16 done)
+- Source files: **385 .py files** under `src/swarmline/` (817 total files) ← текущий (2026-04-27, post-v1.5.0)
+- Source files: ~336 .py files (2026-04-13, Phase 16 done)
 - Coverage: 89%+ overall
 - Graph Agents (A1-A5): ~102 new tests
 - Knowledge Bank (B1-B4): ~140 new tests
@@ -144,21 +151,38 @@
 ## Active plans
 
 <!-- mb-active-plans -->
-_No active plans — Sprint 1B (Phase 01b) closed 2026-04-25, baseline=0 locked. Next: v1.5.0 release branch._
-- [2026-04-25] [plans/2026-04-25_fix_v150-release-blockers.md](plans/2026-04-25_fix_v150-release-blockers.md) — fix — v1.5.0 release-blockers
+_No active plans — v1.5.0 shipped 2026-04-25. Next single deliverable: public sync (manual, awaiting user approval). Production v2.0 roadmap (Sprints 2-6) on hold pending post-release tasks._
 <!-- /mb-active-plans -->
 
 ## Recently done plans
 
+- [2026-04-25] [plans/2026-04-25_fix_v150-release-blockers.md](plans/2026-04-25_fix_v150-release-blockers.md) — fix — v1.5.0 release-blockers — **SHIPPED 2026-04-25** (21/21 stages ✅, tag `v1.5.0` on commit `3fae1b2`)
 - [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — Sprint 1A: ty 75 → 62, foundation + decisions + ADR-003
 - [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md](plans/2026-04-25_feature_production-v2-phase-01b-ty-bulk-cleanup.md) — Sprint 1B: ty 62 → 0, baseline locked = 0
 
-## Release gate (v1.5.0)
+## Last release
+
+| Field | Value |
+|-------|-------|
+| Tag | `v1.5.0` |
+| Commit | `3fae1b2` (`release: v1.5.0`) |
+| Date (local) | 2026-04-25 |
+| Pushed to | private `origin` (`github.com/fockus/swarmline-dev`) |
+| Public sync | ⬜ pending — `./scripts/sync-public.sh --tags` not yet executed (awaiting user approval) |
+| PyPI | ⬜ not yet — auto-publishes via OIDC after public sync triggers GitHub Actions |
+| `pyproject.toml` version | 1.5.0 |
+| `src/swarmline/serve/app.py` `_VERSION` | 1.5.0 |
+
+## Release gate (v1.5.0) — verified at tag time
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| `ty check src/swarmline/` | ✅ GREEN | 0 diagnostics (was 75 pre-Sprint 1) |
+| `ty check src/swarmline/` | ✅ GREEN | 0 diagnostics (was 75 pre-Sprint 1, baseline locked at 0) |
 | `tests/architecture/ty_baseline.txt` | ✅ LOCKED | 0 |
-| Full offline pytest | ✅ GREEN | 5352 passed, 7 skipped, 5 deselected |
-| ruff check | ✅ GREEN | only pre-existing F401 in test_pi_sdk_runtime.py (out-of-scope) |
+| Full offline pytest | ✅ GREEN | 5452 passed, 7 skipped, 5 deselected, 0 failed (verified 2026-04-27) |
+| `ruff check src/ tests/` | ✅ GREEN | All checks passed! (auto-fixed F401 in `test_pi_sdk_runtime.py` during Stage 1) |
+| `ruff format --check` | ✅ GREEN | applied via Stage 1 (commit `0badf89` + format pass `1511f65`) |
 | ADR-003 outcome | ✅ FULFILLED | ty strict-mode = sole type-check release gate, no mypy |
+| CHANGELOG `[1.5.0]` entry | ✅ DONE | commit `d541edb` (Tier 2) |
+| Migration guide v1.4 → v1.5 | ✅ DONE | commit `d541edb` (Tier 2) |
+| Tier 4 security gates (M-1, M-3, pip-audit) | ✅ DONE | commit `913cb5c` |

@@ -1,10 +1,15 @@
 # Checklist
 
-## ThinRuntime Claude Code Parity v2 — v1.5.0 (Phases 11-17)
+## v1.5.0 — SHIPPED (2026-04-25, tag `v1.5.0` on commit `3fae1b2`)
 
-- ✅ Functional implementation for phases 11-17 is complete and full offline `pytest -q` is green (`5100 passed, 5 skipped, 5 deselected`)
-- ⬜ Release gate is **not** green yet: repo-wide `ty check src/swarmline/` currently reports `70 diagnostics`
+All 21 stages of [`plans/2026-04-25_fix_v150-release-blockers.md`](plans/2026-04-25_fix_v150-release-blockers.md) executed end-to-end on `main`. Tag pushed to private `origin` only.
+
+- ✅ Functional implementation for phases 11-17 is complete and full offline `pytest -q` is green (post-release: **5452 passed, 7 skipped, 5 deselected, 0 failed** verified 2026-04-27)
+- ✅ Release gate green: `ty check src/swarmline/` → All checks passed! (0 diagnostics, baseline locked = 0)
 - ✅ Public Python support contract synced to **3.11+**
+- ⬜ **Public sync to PyPI** — `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC (NOT YET RUN, awaiting user approval)
+
+## ThinRuntime Claude Code Parity v2 — v1.5.0 (Phases 11-17)
 
 ### Phase 11: Foundation Filters ✅ DONE (Judge 4.40/5.0, 2026-04-13)
 - ✅ 11.1 InputFilter protocol + ProjectInstructionFilter (CLAUDE.md loading) + 19 unit tests
@@ -386,85 +391,97 @@
 ⬜ S15: [nats]/[redis] extras в pyproject.toml
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## v1.5.0 release-blockers plan — ALL STAGES DONE (2026-04-25, tag `v1.5.0` → `3fae1b2`)
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 1: CI lint cleanup — `ruff check --fix && ruff format`
-- ⬜ CI lint cleanup — `ruff check --fix && ruff format`
+- ✅ CI lint cleanup — `ruff check --fix && ruff format` (commit `0badf89` Tier 1, format pass `1511f65`)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 2: Default runtime fix — `claude_sdk` → `thin`
-- ⬜ Default runtime fix — `claude_sdk` → `thin`
+- ✅ Default runtime fix — `claude_sdk` → `thin` (commit `3bdd7ab`, C-8)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 3: Russian error string fix
-- ⬜ Russian error string fix
+- ✅ Russian error string fix (commit `0badf89` Tier 1)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 4: Docs lie fix — `agent-facade.md:36`
-- ⬜ Docs lie fix — `agent-facade.md:36`
+- ✅ Docs lie fix — `agent-facade.md:36` (commit `0badf89` Tier 1)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 5: Test isolation fix — drop `force=True`, route stdlib logging to stderr
-- ⬜ Test isolation fix — drop `force=True`, route stdlib logging to stderr
+- ✅ Test isolation fix — drop `force=True`, route stdlib logging to stderr (commit `5cbc326`, C-1, C-3)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 6: JsonlTelemetrySink async fix — wrap I/O in `asyncio.to_thread()` + add lock
-- ⬜ JsonlTelemetrySink async fix — wrap I/O in `asyncio.to_thread()` + add lock
+- ✅ JsonlTelemetrySink async fix — wrap I/O in `asyncio.to_thread()` + add lock (commit `32fe1af`, C-2)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 7: Drop Python 3.10 from `publish.yml` matrix
-- ⬜ Drop Python 3.10 from `publish.yml` matrix
+- ✅ Drop Python 3.10 from `publish.yml` matrix (commit `0badf89` Tier 1)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 8: Update CLAUDE.md / AGENTS.md to Python 3.11+
-- ⬜ Update CLAUDE.md / AGENTS.md to Python 3.11+
+- ✅ Update CLAUDE.md / AGENTS.md to Python 3.11+ (commit `0badf89` Tier 1)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 9: Bump version to 1.5.0
-- ⬜ Bump version to 1.5.0
+- ✅ Bump version to 1.5.0 (final release commit `3fae1b2`; `pyproject.toml` + `serve/app.py` `_VERSION` both at 1.5.0)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 10: CHANGELOG.md `[1.5.0]` entry
-- ⬜ CHANGELOG.md `[1.5.0]` entry
+- ✅ CHANGELOG.md `[1.5.0]` entry (commit `d541edb` Tier 2)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 11: Migration guide v1.4 → v1.5
-- ⬜ Migration guide v1.4 → v1.5
+- ✅ Migration guide v1.4 → v1.5 (commit `d541edb` Tier 2)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 12: Feature docs for new v1.5.0 features
-- ⬜ Feature docs for new v1.5.0 features
+- ✅ Feature docs for new v1.5.0 features — 5 docs added (commit `d541edb` Tier 2)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 13: Add `examples/00_hello_world.py` — 10-line minimal example
-- ⬜ Add `examples/00_hello_world.py` — 10-line minimal example
+- ✅ Add `examples/00_hello_world.py` — 10-line minimal example (commit `d7f2a55` Tier 3, file present at `examples/00_hello_world.py`)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 14: Trim `swarmline/__init__.py __all__`
-- ⬜ Trim `swarmline/__init__.py __all__`
+- ✅ Trim `swarmline/__init__.py __all__` (commit `d7f2a55` Tier 3)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 15: Add `SwarmlineError` base exception class
-- ⬜ Add `SwarmlineError` base exception class
+- ✅ Add `SwarmlineError` base exception class (commit `d7f2a55` Tier 3 — errors hierarchy)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 16: Move `_MockBasicsRuntime` to `swarmline.testing.MockRuntime`
-- ⬜ Move `_MockBasicsRuntime` to `swarmline.testing.MockRuntime`
+- ✅ Move `_MockBasicsRuntime` to `swarmline.testing.MockRuntime` (commit `d7f2a55` Tier 3)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 17: Promote `AgentConfig.thinking: dict` → `ThinkingConfig` typed
-- ⬜ Promote `AgentConfig.thinking: dict` → `ThinkingConfig` typed
+- ✅ Promote `AgentConfig.thinking: dict` → `ThinkingConfig` typed (commit `d7f2a55` Tier 3 — thinking typing)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 18: Remove deprecated `max_thinking_tokens`
-- ⬜ Remove deprecated `max_thinking_tokens`
+- ✅ Remove deprecated `max_thinking_tokens` (commit `d7f2a55` Tier 3)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 19: M-1 fix — enforce loopback host in `serve.create_app(allow_unauthenticated_query=True)`
-- ⬜ M-1 fix — enforce loopback host in `serve.create_app(allow_unauthenticated_query=True)`
+- ✅ M-1 fix — enforce loopback host in `serve.create_app(allow_unauthenticated_query=True)` (commit `913cb5c` Tier 4)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 20: M-3 fix — extend `JsonlTelemetrySink` redaction (key + value-level regex)
-- ⬜ M-3 fix — extend `JsonlTelemetrySink` redaction (key + value-level regex)
+- ✅ M-3 fix — extend `JsonlTelemetrySink` redaction (key + value-level regex) (commit `913cb5c` Tier 4)
 
 <!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
 ## Stage 21: Add `pip-audit` to CI
-- ⬜ Add `pip-audit` to CI
+- ✅ Add `pip-audit` to CI (commit `913cb5c` Tier 4)
+
+<!-- v1.5.0 follow-up -->
+## v1.5.0 follow-up — full-suite isolation fixes
+- ✅ Fix two full-suite-only failures from Tier 2/4 (commit `b2fd673`)
+- ✅ Apply ruff format pass + sync `test_optdep_imports` line numbers (commit `1511f65`)
+- ✅ Record v1.5.0 release plan + 5 audit reports in Memory Bank (commit `82f00cf`)
+
+## v1.5.0 release — pending
+- ⬜ Public sync — `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC (awaiting user approval)

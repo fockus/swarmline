@@ -2,16 +2,19 @@
 
 ## Текущий приоритет
 
-**Production v2.0 — Phase 01a: ty-strict-foundation** — IN PROGRESS (план создан 2026-04-25).
-- Sprint 1A: measurement infra + 11 critical bugs + 3 pattern docs (~1.5 рабочих дня)
-- Sprint 1B (отдельный план): bulk cleanup ~64 оставшихся ошибок (~35 файлов)
-- Roadmap: 6 Sprintов, 24 фазы, ~22 рабочих дня до v2.0
+**v1.5.0 SHIPPED locally** (2026-04-25, tag `v1.5.0` → commit `3fae1b2`). 21/21 release-blockers stages ✅. Pending: public sync to PyPI (awaiting user approval).
+
+After public sync: Production v2.0 roadmap (Sprints 2-6, 24 phases, ~22 working days) reactivates. Sprint 1 (ty-strict gate) ✅ done as prerequisite for v1.5.0 (ty diagnostics 75 → 0, baseline locked = 0).
 
 <!-- mb-active-plans -->
-- [2026-04-25] [plans/2026-04-25_feature_production-v2-roadmap.md](plans/2026-04-25_feature_production-v2-roadmap.md) — Production v2.0 Full Framework Roadmap (24 phases)
-- [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — feature — production-v2-phase-01a-ty-strict-foundation
-- [2026-04-25] [plans/2026-04-25_fix_v150-release-blockers.md](plans/2026-04-25_fix_v150-release-blockers.md) — fix — v1.5.0 release-blockers
+_No active plans — v1.5.0 done, public sync awaits user approval. Production v2.0 roadmap on hold._
 <!-- /mb-active-plans -->
+
+## Завершено: v1.5.0 release (2026-04-25)
+
+Plan: [`plans/2026-04-25_fix_v150-release-blockers.md`](plans/2026-04-25_fix_v150-release-blockers.md). All 21 stages merged on `main`, tag `v1.5.0` on commit `3fae1b2`. Tier 1 (lint + default runtime + russian + docs + logger isolation + jsonl async + python 3.11+) + Tier 2 (CHANGELOG, migration v1.4→v1.5, 5 feature docs) + Tier 3 (errors hierarchy, `__all__` trim, `MockRuntime`, `ThinkingConfig` typed, drop `max_thinking_tokens`) + Tier 4 (M-1 loopback enforcement, M-3 JSONL redaction, pip-audit).
+
+Verified post-release (2026-04-27): pytest **5452 passed / 0 failed**, `ty check` 0 diagnostics, `ruff check` clean.
 
 ## Завершено: ThinRuntime Claude Code Parity v2
 
@@ -30,11 +33,12 @@ GSD Roadmap: `.planning/ROADMAP.md`
 
 ## Следующий шаг
 
-1. **v1.5.0 release** — все 17 фаз завершены, готово к релизу
+1. **v1.5.0 public sync to PyPI** — `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC. **NOT YET RUN** — awaiting user approval.
+2. After PyPI publish — reactivate Production v2.0 roadmap (Sprints 2-6).
 
 ## Релизный контекст
 
-**v1.4.1** опубликован на PyPI (swarmline). Следующий release: **v1.5.0** после завершения ThinRuntime parity.
+**v1.4.1** опубликован на PyPI (swarmline). **v1.5.0** локально подготовлен и tagged 2026-04-25 (commit `3fae1b2`); pushed to private `origin` only. Public sync to PyPI pending user approval.
 
 ## Активный план — Parity v2 (Phases 11-17)
 
