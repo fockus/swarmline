@@ -778,3 +778,21 @@
 ### Auto-capture 2026-04-25 (session 88291e92)
 - Session ended without an explicit /mb done
 - Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-04-27
+
+### Post-v1.5.0 housekeeping — MB actualize + review
+
+- `/mb update` actualized 4 core files with verified facts:
+  - `STATUS.md`: marked v1.5.0 SHIPPED, added "Last release" table + 2026-04-27 metrics block (`5452 passed / 7 skipped / 5 deselected / 0 failed`, ~52s; src count 385 .py / 817 total; release-gate matrix confirmed green).
+  - `checklist.md`: 21 release-blockers stages flipped ⬜→✅ with commit attribution (Tier 1 `0badf89`, Tier 2 `d541edb`, Tier 3 `d7f2a55`, Tier 4 `913cb5c`, misc `3bdd7ab`/`5cbc326`/`32fe1af`/`1511f65`/`b2fd673`).
+  - `plan.md`: cleared active-plans block, pinned next-step to public sync; Production v2.0 roadmap reactivation noted post-publish.
+  - `roadmap.md`: same `v1.5.0 SHIPPED 2026-04-25` structure.
+- `/review` produced `.memory-bank/reports/2026-04-27_review_post-v1.5.0-mb-actualize.md` (untracked). Findings:
+  - **Critical:** none.
+  - **Serious #1:** `.memory-bank/codebase/` is 51MB **untracked** dir without `.gitignore` protection (`.archive/` 30M of pre-release codebase snapshots, `.cache/` 14M of `/mb graph` cache, `graph.json` 7.5M). Risk: accidental `git add -A` blows up repo. Recommendation: gitignore `.archive/` + `.cache/` + `graph.json`, optionally track only the 4 small `.md` maps.
+  - **Serious #2:** `plans/2026-04-25_fix_v150-release-blockers.md` still has 21 stage-level DoD checkboxes ⬜ at line `- ⬜ <stage description>` immediately under each `## Stage N` heading. Rolled-up `checklist.md` was actualized correctly with cite-by-commit, but the **plan file itself wasn't touched** by `/mb update`. `/mb verify` (if run) will surface this drift.
+  - Notes: minor DRY between plan.md/roadmap.md "Next Step #1" duplicate; double src-count in STATUS is intentional timeline.
+- Committed `b335090` — `chore(memory-bank): post-v1.5.0 actualize` (4 files, +109/-57). HEAD now at `b335090`.
+- Two open decisions for the user: (a) `.gitignore` for `.memory-bank/codebase/`, (b) inner DoD ⬜ checkboxes in the v1.5.0 plan file.
+- Next step: public sync (`./scripts/sync-public.sh --tags`) — awaiting explicit user approval before destructive remote write.
