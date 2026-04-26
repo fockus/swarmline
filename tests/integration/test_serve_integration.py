@@ -37,7 +37,7 @@ class TestServeIntegration:
 
     async def test_query_via_httpx(self) -> None:
         agent = _mock_agent({"What is 2+2?": "4"})
-        app = create_app(agent, allow_unauthenticated_query=True)
+        app = create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1")
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -80,7 +80,7 @@ class TestServeIntegration:
 
     async def test_multiple_queries(self) -> None:
         agent = _mock_agent({"q1": "a1", "q2": "a2"})
-        app = create_app(agent, allow_unauthenticated_query=True)
+        app = create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1")
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:

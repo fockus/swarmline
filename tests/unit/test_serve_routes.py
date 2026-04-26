@@ -39,7 +39,7 @@ def open_query_client():
     from starlette.testclient import TestClient
 
     agent = _mock_agent()
-    app = create_app(agent, allow_unauthenticated_query=True)
+    app = create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1")
     return TestClient(app), agent
 
 
@@ -132,7 +132,7 @@ class TestQuery:
         from starlette.testclient import TestClient
 
         agent = _mock_agent(error="LLM timeout")
-        tc = TestClient(create_app(agent, allow_unauthenticated_query=True))
+        tc = TestClient(create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1"))
         resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 200  # HTTP 200, error in body
         data = resp.json()
@@ -144,7 +144,7 @@ class TestQuery:
 
         agent = MagicMock()
         agent.query = AsyncMock(side_effect=RuntimeError("boom"))
-        tc = TestClient(create_app(agent, allow_unauthenticated_query=True))
+        tc = TestClient(create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1"))
         resp = tc.post("/v1/query", json={"prompt": "Hello"})
         assert resp.status_code == 500
         assert "boom" in resp.json()["error"]

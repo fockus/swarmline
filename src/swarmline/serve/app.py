@@ -160,28 +160,23 @@ def create_app(
     surface area.
     """
     if allow_unauthenticated_query and auth_token is None:
-        if host is not None:
-            if not is_loopback_host(host):
-                raise ValueError(
-                    "serve.create_app(allow_unauthenticated_query=True) is only "
-                    "allowed on loopback hosts (localhost / 127.0.0.1 / ::1). "
-                    f"Refused host={host!r}. Pass auth_token= or bind to a "
-                    "loopback host."
-                )
-        else:
-            log_security_decision(
-                _log,
-                component="serve",
-                event_name="allow_unauthenticated_query",
-                decision="allow",
-                reason=(
-                    "host=None — loopback enforcement skipped for backward "
-                    "compatibility. Pass host= explicitly in v1.5+."
-                ),
+        # v1.5.1: the v1.5.0 deprecation warning for host=None has graduated
+        # to a hard ValueError (audit P2 #5). Without this gate, an operator
+        # could combine the legacy signature with `uvicorn --host 0.0.0.0`
+        # and silently expose unauthenticated /v1/query publicly.
+        if not host:
+            raise ValueError(
+                "serve.create_app(allow_unauthenticated_query=True) requires an "
+                "explicit host= argument since v1.5.1. Pass host='127.0.0.1' "
+                "(or another loopback) for local-only mode, or pass auth_token= "
+                "for production."
             )
-            _log.warning(
-                "create_app called with allow_unauthenticated_query=True and no host; "
-                "unable to enforce loopback. Pin host= in v1.5+.",
+        if not is_loopback_host(host):
+            raise ValueError(
+                "serve.create_app(allow_unauthenticated_query=True) is only "
+                "allowed on loopback hosts (localhost / 127.0.0.1 / ::1). "
+                f"Refused host={host!r}. Pass auth_token= or bind to a "
+                "loopback host."
             )
 
     query_enabled = auth_token is not None or allow_unauthenticated_query

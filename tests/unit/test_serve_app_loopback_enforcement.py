@@ -46,34 +46,20 @@ def test_unauthenticated_query_with_loopback_host_ok(host: str) -> None:
     assert app is not None
 
 
-def test_unauthenticated_query_no_host_warns_and_succeeds(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Backward-compat: legacy callers with no host param keep working but log a warning.
-
-    Patches ``log_security_decision`` directly to verify the hook fires, instead
-    of capturing structlog stderr (which is fragile under full-suite ordering
-    when other tests swap stdio handles).
+def test_unauthenticated_query_no_host_raises_in_v151() -> None:
+    """v1.5.1 closes audit P2 #5 — host=None + allow_unauthenticated_query=True
+    now raises ValueError. The v1.5.0 deprecation warning has graduated to a
+    hard error so the legacy combination cannot accidentally combine with
+    ``uvicorn --host 0.0.0.0`` to expose unauthenticated /v1/query publicly.
     """
-    calls: list[dict[str, object]] = []
+    with pytest.raises(ValueError, match="explicit host="):
+        create_app(_DummyAgent(), allow_unauthenticated_query=True)
 
-    def _capture(logger: object, **kwargs: object) -> None:
-        calls.append(dict(kwargs))
 
-    monkeypatch.setattr(
-        "swarmline.serve.app.log_security_decision",
-        _capture,
-    )
-
-    app = create_app(
-        _DummyAgent(),
-        allow_unauthenticated_query=True,
-    )
-    assert app is not None
-    assert calls, "log_security_decision must fire for the legacy host=None path"
-    assert any(
-        call.get("event_name") == "allow_unauthenticated_query" for call in calls
-    )
+def test_unauthenticated_query_empty_string_host_raises() -> None:
+    """Empty host string is treated like None — must raise."""
+    with pytest.raises(ValueError, match="explicit host="):
+        create_app(_DummyAgent(), allow_unauthenticated_query=True, host="")
 
 
 @pytest.mark.parametrize(
