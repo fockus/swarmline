@@ -25,9 +25,9 @@ class LLMCallable(Protocol):
 class ThinPlannerMode:
     """PlannerMode for ThinRuntime - lightweight multi-turn planner.
 
-  SRP: delegates LLM calls to the LLM and persistence to `plan_store`.
-  Bounded: max_steps=10.
-  """
+    SRP: delegates LLM calls to the LLM and persistence to `plan_store`.
+    Bounded: max_steps=10.
+    """
 
     def __init__(
         self,
@@ -85,7 +85,9 @@ class ThinPlannerMode:
             for s in plan.steps
             if s.status == "completed" and s.result
         ]
-        context = "\n".join(prev_results) if prev_results else "Нет предыдущих результатов"
+        context = (
+            "\n".join(prev_results) if prev_results else "Нет предыдущих результатов"
+        )
 
         prompt = (
             f"План: {plan.goal}\n"
@@ -126,7 +128,9 @@ class ThinPlannerMode:
                 execution_failed = True
                 break
 
-        if not execution_failed and all(step.status == "completed" for step in plan.steps):
+        if not execution_failed and all(
+            step.status == "completed" for step in plan.steps
+        ):
             plan = plan.mark_completed()
             await self._store.save(plan)
 

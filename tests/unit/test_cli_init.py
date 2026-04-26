@@ -29,7 +29,6 @@ def _project_files(base: Path) -> set[str]:
 
 
 class TestInitBasic:
-
     def test_creates_directory(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
@@ -92,7 +91,6 @@ class TestInitBasic:
 
 
 class TestInitNameInjection:
-
     def test_agent_name_in_agent_py(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
@@ -128,7 +126,6 @@ class TestInitNameInjection:
 
 
 class TestInitRuntime:
-
     def test_default_runtime_is_thin(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
@@ -156,13 +153,16 @@ class TestInitRuntime:
 
 
 class TestInitMemory:
-
     def test_default_memory_is_inmemory(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
             _invoke(runner, ["init", "bot"])
             content = Path("bot/config.yaml").read_text()
-            assert "inmemory" in content or "in_memory" in content or "memory: false" in content
+            assert (
+                "inmemory" in content
+                or "in_memory" in content
+                or "memory: false" in content
+            )
 
     def test_memory_sqlite(self, tmp_path: Path) -> None:
         runner = CliRunner()
@@ -184,7 +184,6 @@ class TestInitMemory:
 
 
 class TestInitFull:
-
     def test_full_creates_dockerfile(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
@@ -226,7 +225,6 @@ class TestInitFull:
 
 
 class TestInitOutput:
-
     def test_output_creates_in_target_dir(self, tmp_path: Path) -> None:
         runner = CliRunner()
         target = str(tmp_path / "projects")
@@ -241,14 +239,15 @@ class TestInitOutput:
 
 
 class TestInitErrors:
-
     def test_error_if_directory_exists(self, tmp_path: Path) -> None:
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path):
             Path("bot").mkdir()
             result = runner.invoke(cli, ["init", "bot"])
             assert result.exit_code != 0
-            assert "exists" in result.output.lower() or "already" in result.output.lower()
+            assert (
+                "exists" in result.output.lower() or "already" in result.output.lower()
+            )
 
     def test_force_overwrites_existing(self, tmp_path: Path) -> None:
         runner = CliRunner()
@@ -264,7 +263,6 @@ class TestInitErrors:
 
 
 class TestInitContentValidity:
-
     def test_agent_py_is_importable_syntax(self, tmp_path: Path) -> None:
         """Generated agent.py must be valid Python (parse without error)."""
         import ast

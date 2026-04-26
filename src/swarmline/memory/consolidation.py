@@ -53,10 +53,14 @@ class KeywordFactExtractor:
         # Group episodes by outcome
         outcomes = Counter(ep.outcome for ep in episodes)
         if outcomes.get("success", 0) >= self._min_freq:
-            tools = Counter(t for ep in episodes for t in ep.tools_used if ep.outcome == "success")
+            tools = Counter(
+                t for ep in episodes for t in ep.tools_used if ep.outcome == "success"
+            )
             if tools:
                 top_tool = tools.most_common(1)[0][0]
-                facts.append(f"Tool '{top_tool}' is frequently used in successful tasks")
+                facts.append(
+                    f"Tool '{top_tool}' is frequently used in successful tasks"
+                )
 
         # Tag-based patterns
         tag_counts = Counter(t for ep in episodes for t in ep.tags)

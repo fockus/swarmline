@@ -47,13 +47,17 @@ class PersistentGraphOrchestrator:
         self._current_goal: GoalEntry | None = None
         self._process_task: asyncio.Task[None] | None = None
 
-    async def submit_goal(self, goal: str, *, metadata: dict[str, Any] | None = None) -> str:
+    async def submit_goal(
+        self, goal: str, *, metadata: dict[str, Any] | None = None
+    ) -> str:
         """Submit a goal to the persistent graph. Returns goal_id."""
         entry = self._goal_queue.submit(goal, metadata=metadata)
         _log.info("goal_submitted", goal_id=entry.id, goal=goal)
 
         if self._bus is not None:
-            await self._bus.emit("persistent.goal.submitted", {"goal_id": entry.id, "goal": goal})
+            await self._bus.emit(
+                "persistent.goal.submitted", {"goal_id": entry.id, "goal": goal}
+            )
 
         # Auto-start processing if idle
         if self._auto_process and not self._processing:
@@ -122,18 +126,26 @@ class PersistentGraphOrchestrator:
                     _log.info("goal_completed", goal_id=entry.id, run_id=run_id)
 
                     if self._bus is not None:
-                        await self._bus.emit("persistent.goal.completed", {
-                            "goal_id": entry.id, "run_id": run_id,
-                        })
+                        await self._bus.emit(
+                            "persistent.goal.completed",
+                            {
+                                "goal_id": entry.id,
+                                "run_id": run_id,
+                            },
+                        )
 
                 except Exception as exc:  # noqa: BLE001
                     self._goal_queue.mark_failed(entry.id)
                     _log.error("goal_failed", goal_id=entry.id, error=str(exc))
 
                     if self._bus is not None:
-                        await self._bus.emit("persistent.goal.failed", {
-                            "goal_id": entry.id, "error": str(exc),
-                        })
+                        await self._bus.emit(
+                            "persistent.goal.failed",
+                            {
+                                "goal_id": entry.id,
+                                "error": str(exc),
+                            },
+                        )
 
                 self._current_goal = None
 

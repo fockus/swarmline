@@ -7,7 +7,10 @@ from typing import Any
 
 from swarmline.agent.config import AgentConfig
 from swarmline.agent.runtime_dispatch import merge_hooks
-from swarmline.agent.runtime_factory_port import RuntimeFactoryPort, build_runtime_factory
+from swarmline.agent.runtime_factory_port import (
+    RuntimeFactoryPort,
+    build_runtime_factory,
+)
 from swarmline.runtime.types import RuntimeConfig, ToolSpec
 
 _PORTABLE_MCP_RUNTIMES = frozenset({"thin", "deepagents"})
@@ -72,7 +75,9 @@ def build_portable_runtime_plan(
         create_kwargs["mcp_servers"] = agent_config.mcp_servers
 
     if agent_config.runtime_options is not None:
-        _apply_runtime_options(runtime_name, agent_config.runtime_options, create_kwargs)
+        _apply_runtime_options(
+            runtime_name, agent_config.runtime_options, create_kwargs
+        )
 
     # Merge hooks from config + middleware for portable runtimes
     merged_hooks = merge_hooks(agent_config.hooks, agent_config.middleware)
@@ -99,7 +104,9 @@ def build_portable_runtime_plan(
     if agent_config.command_registry is not None:
         create_kwargs["command_registry"] = agent_config.command_registry
 
-    active_tools = [tool_definition.to_tool_spec() for tool_definition in agent_config.tools]
+    active_tools = [
+        tool_definition.to_tool_spec() for tool_definition in agent_config.tools
+    ]
 
     # Coding profile: inject coding tool pack + policy scope (after active_tools built)
     if (
@@ -109,7 +116,10 @@ def build_portable_runtime_plan(
     ):
         from swarmline.context.coding_input_filter import CodingContextInputFilter
         from swarmline.policy.tool_policy import DefaultToolPolicy
-        from swarmline.runtime.thin.coding_toolpack import CODING_TOOL_NAMES, build_coding_toolpack
+        from swarmline.runtime.thin.coding_toolpack import (
+            CODING_TOOL_NAMES,
+            build_coding_toolpack,
+        )
         from swarmline.tools.sandbox_local import LocalSandboxProvider
         from swarmline.tools.types import SandboxConfig
 
@@ -143,7 +153,9 @@ def build_portable_runtime_plan(
         # Build/merge policy: coding tools allowed + any existing policy
         coding_allowed = set(CODING_TOOL_NAMES)
         if isinstance(agent_config.tool_policy, DefaultToolPolicy):
-            coding_allowed = coding_allowed | set(agent_config.tool_policy.allowed_system_tools)
+            coding_allowed = coding_allowed | set(
+                agent_config.tool_policy.allowed_system_tools
+            )
         create_kwargs["tool_policy"] = DefaultToolPolicy(
             allowed_system_tools=coding_allowed,
         )
@@ -152,8 +164,12 @@ def build_portable_runtime_plan(
         search_context = agent_config.native_config.get("coding_search_context")
         skill_profile_text = agent_config.native_config.get("coding_skill_profile")
         session_store = agent_config.native_config.get("task_session_store")
-        session_agent_id = agent_config.native_config.get("task_session_agent_id", "coding")
-        budget_tokens_raw = agent_config.native_config.get("coding_context_budget_tokens", 2000)
+        session_agent_id = agent_config.native_config.get(
+            "task_session_agent_id", "coding"
+        )
+        budget_tokens_raw = agent_config.native_config.get(
+            "coding_context_budget_tokens", 2000
+        )
         if skill_profile_text is None:
             skill_profile_text = (
                 "Coding profile enabled. "
@@ -167,7 +183,9 @@ def build_portable_runtime_plan(
                 skill_profile_text=str(skill_profile_text),
                 task_session_store=session_store,
                 task_session_agent_id=(
-                    str(session_agent_id) if isinstance(session_agent_id, str) else "coding"
+                    str(session_agent_id)
+                    if isinstance(session_agent_id, str)
+                    else "coding"
                 ),
                 task_session_task_id=session_id,
                 budget_tokens=(
@@ -181,7 +199,10 @@ def build_portable_runtime_plan(
         # LLM-initiated child agents need the same sandbox template so the
         # worker runtime can rebind coding tools to a per-worktree sandbox.
         runtime_subagent_cfg = create_kwargs.get("subagent_config")
-        if runtime_subagent_cfg is not None and getattr(runtime_subagent_cfg, "sandbox_config", None) is None:
+        if (
+            runtime_subagent_cfg is not None
+            and getattr(runtime_subagent_cfg, "sandbox_config", None) is None
+        ):
             create_kwargs["subagent_config"] = replace(
                 runtime_subagent_cfg,
                 sandbox_config=sandbox_config,
@@ -204,7 +225,9 @@ def _apply_runtime_options(
         from swarmline.runtime.pi_sdk.types import PiSdkOptions
 
         if not isinstance(runtime_options, PiSdkOptions):
-            raise ValueError("runtime='pi_sdk' expects runtime_options=PiSdkOptions(...)")
+            raise ValueError(
+                "runtime='pi_sdk' expects runtime_options=PiSdkOptions(...)"
+            )
         create_kwargs["pi_options"] = runtime_options
         return
 

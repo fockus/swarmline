@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 class ClaudeCodeRuntime:
     """AgentRuntime wrapper around Claude-agent-SDK.
 
-  Uses the existing RuntimeAdapter to communicate with the SDK.
-  The SDK manages its own history internally (warm subprocess handle).
-  """
+    Uses the existing RuntimeAdapter to communicate with the SDK.
+    The SDK manages its own history internally (warm subprocess handle).
+    """
 
     def __init__(
         self,
@@ -42,11 +42,11 @@ class ClaudeCodeRuntime:
     ) -> None:
         """Initialize the runtime.
 
-    Args:
-      config: Runtime configuration (model and budgets are used).
-      adapter: Existing RuntimeAdapter (DIP: injected from outside).
-           If None, it is created on first use.
-    """
+        Args:
+          config: Runtime configuration (model and budgets are used).
+          adapter: Existing RuntimeAdapter (DIP: injected from outside).
+               If None, it is created on first use.
+        """
         self._config = config or RuntimeConfig(runtime_name="claude_sdk")
         self._adapter = adapter
 
@@ -70,9 +70,9 @@ class ClaudeCodeRuntime:
     ) -> AsyncIterator[RuntimeEvent]:
         """Execute one turn through Claude-agent-SDK.
 
-    Extracts the last user message, delegates to the SDK,
-    and converts StreamEvent -> RuntimeEvent.
-    """
+        Extracts the last user message, delegates to the SDK,
+        and converts StreamEvent -> RuntimeEvent.
+        """
         logger.info(
             "ClaudeCodeRuntime.run(): начало (adapter=%s)",
             type(self._adapter).__name__ if self._adapter else "None",
@@ -89,7 +89,9 @@ class ClaudeCodeRuntime:
             )
             return
 
-        logger.info("ClaudeCodeRuntime.run(): is_connected=%s", self._adapter.is_connected)
+        logger.info(
+            "ClaudeCodeRuntime.run(): is_connected=%s", self._adapter.is_connected
+        )
         if not self._adapter.is_connected:
             yield RuntimeEvent.error(
                 RuntimeErrorData(
@@ -113,7 +115,10 @@ class ClaudeCodeRuntime:
             )
             return
 
-        logger.info("ClaudeCodeRuntime.run(): передаю в adapter.stream_reply(%r)", user_text[:50])
+        logger.info(
+            "ClaudeCodeRuntime.run(): передаю в adapter.stream_reply(%r)",
+            user_text[:50],
+        )
 
         # Stream through the SDK
         full_text = ""
@@ -143,7 +148,9 @@ class ClaudeCodeRuntime:
                         "session_id": getattr(stream_event, "session_id", None),
                         "total_cost_usd": getattr(stream_event, "total_cost_usd", None),
                         "usage": getattr(stream_event, "usage", None),
-                        "structured_output": getattr(stream_event, "structured_output", None),
+                        "structured_output": getattr(
+                            stream_event, "structured_output", None
+                        ),
                     }
         except Exception as e:
             logger.exception("ClaudeCodeRuntime.run(): ошибка стриминга")
@@ -197,13 +204,13 @@ class ClaudeCodeRuntime:
     def _convert_event(stream_event: Any) -> RuntimeEvent | None:
         """Convert StreamEvent -> RuntimeEvent.
 
-    Mapping:
-    - text_delta -> assistant_delta
-    - tool_use_start -> tool_call_started
-    - tool_use_result -> tool_call_finished
-    - error -> error
-    - done -> None (we build final ourselves)
-    """
+        Mapping:
+        - text_delta -> assistant_delta
+        - tool_use_start -> tool_call_started
+        - tool_use_result -> tool_call_finished
+        - error -> error
+        - done -> None (we build final ourselves)
+        """
         etype = stream_event.type
 
         if etype == "text_delta":

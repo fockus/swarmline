@@ -60,19 +60,25 @@ class TestDenyList:
         """Vse tooly from ALWAYS_DENIED_TOOLS zapreshcheny."""
         for tool_name in ALWAYS_DENIED_TOOLS:
             result = policy.can_use_tool(tool_name, {}, _make_state())
-            assert isinstance(result, PermissionDeny), f"{tool_name} должен быть запрещён"
+            assert isinstance(result, PermissionDeny), (
+                f"{tool_name} должен быть запрещён"
+            )
 
 
 class TestMcpTools:
     """Tests on MCP tooly."""
 
-    def test_mcp_tool_allowed_when_skill_active(self, policy: DefaultToolPolicy) -> None:
+    def test_mcp_tool_allowed_when_skill_active(
+        self, policy: DefaultToolPolicy
+    ) -> None:
         """MCP tool razreshen, if server in aktivnyh skilah."""
         state = _make_state(active_skills=["iss"])
         result = policy.can_use_tool("mcp__iss__search_bonds", {}, state)
         assert isinstance(result, PermissionAllow)
 
-    def test_mcp_tool_denied_when_skill_inactive(self, policy: DefaultToolPolicy) -> None:
+    def test_mcp_tool_denied_when_skill_inactive(
+        self, policy: DefaultToolPolicy
+    ) -> None:
         """MCP tool zapreshchen, if server not in aktivnyh skilah."""
         state = _make_state(active_skills=["finuslugi"])
         result = policy.can_use_tool("mcp__iss__search_bonds", {}, state)
@@ -92,7 +98,9 @@ class TestLocalTools:
     def test_local_tool_allowed(self, policy: DefaultToolPolicy) -> None:
         """Lokalnyy tool razreshen if in allowed_local_tools."""
         state = _make_state(local_tools={"mcp__freedom_tools__calculate_goal_plan"})
-        result = policy.can_use_tool("mcp__freedom_tools__calculate_goal_plan", {}, state)
+        result = policy.can_use_tool(
+            "mcp__freedom_tools__calculate_goal_plan", {}, state
+        )
         assert isinstance(result, PermissionAllow)
 
     def test_unknown_tool_denied(self, policy: DefaultToolPolicy) -> None:

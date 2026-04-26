@@ -72,7 +72,10 @@ class TestTypedPipeline:
         bus = InMemoryEventBus()
         observed: list[tuple[str, dict[str, Any]]] = []
         for event_type in ("pipeline_stage_start", "pipeline_stage_end"):
-            bus.subscribe(event_type, lambda data, event_type=event_type: observed.append((event_type, data)))
+            bus.subscribe(
+                event_type,
+                lambda data, event_type=event_type: observed.append((event_type, data)),
+            )
 
         pipeline = TypedPipeline(
             stages=[TypedPipelineStage("draft", lambda value: f"{value}-draft")],

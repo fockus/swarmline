@@ -92,19 +92,21 @@ class AgentPackResolver:
             layer_order=layer_order,
         )
 
-    def _collect_layer_refs(self, raw: dict[str, Any]) -> tuple[dict[str, str], tuple[str, ...]]:
+    def _collect_layer_refs(
+        self, raw: dict[str, Any]
+    ) -> tuple[dict[str, str], tuple[str, ...]]:
         generic_layers = raw.get("layers")
         if generic_layers is not None:
             layers = _as_mapping(generic_layers, field_name="layers")
             return layers, tuple(layers)
 
         layers = {
-            key: str(raw[key])
-            for key in _LEGACY_LAYER_KEYS
-            if raw.get(key) is not None
+            key: str(raw[key]) for key in _LEGACY_LAYER_KEYS if raw.get(key) is not None
         }
         if not layers:
-            raise ValueError("agent pack manifest requires 'layers' or legacy layer keys")
+            raise ValueError(
+                "agent pack manifest requires 'layers' or legacy layer keys"
+            )
         return layers, tuple(key for key in _LEGACY_LAYER_KEYS if key in layers)
 
     def _resolve_resource_map(
@@ -119,7 +121,9 @@ class AgentPackResolver:
     def _read_resource(self, name: str, relative_path: str) -> AgentPackResource:
         path = self._resolve_path(relative_path)
         if not path.is_file():
-            raise FileNotFoundError(f"agent pack resource does not exist: {relative_path}")
+            raise FileNotFoundError(
+                f"agent pack resource does not exist: {relative_path}"
+            )
         return AgentPackResource(
             name=name,
             path=path,

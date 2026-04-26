@@ -14,7 +14,6 @@ def registry():
 
 
 class TestCrud:
-
     async def test_register_and_get(self, registry) -> None:
         record = AgentRecord(id="a1", name="Agent 1", role="engineer")
         await registry.register(record)
@@ -33,7 +32,6 @@ class TestCrud:
 
 
 class TestList:
-
     async def test_list_all(self, registry) -> None:
         await registry.register(AgentRecord(id="a1", name="A1", role="eng"))
         await registry.register(AgentRecord(id="a2", name="A2", role="qa"))
@@ -55,7 +53,6 @@ class TestList:
 
 
 class TestUpdateAndRemove:
-
     async def test_update_status(self, registry) -> None:
         await registry.register(AgentRecord(id="a1", name="A1", role="eng"))
         ok = await registry.update_status("a1", AgentStatus.RUNNING)

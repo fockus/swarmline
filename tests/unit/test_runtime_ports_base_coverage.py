@@ -32,7 +32,9 @@ class TestConvertEvent:
         assert convert_event(e) is None
 
     def test_convert_tool_call_started(self) -> None:
-        e = RuntimeEvent(type="tool_call_started", data={"name": "read", "args": {"p": 1}})
+        e = RuntimeEvent(
+            type="tool_call_started", data={"name": "read", "args": {"p": 1}}
+        )
         result = convert_event(e)
         assert result is not None
         assert result.type == "tool_use_start"
@@ -158,11 +160,13 @@ class TestBaseRuntimePortStreamReply:
         assert "not connected" in events[0].text.lower()
 
     async def test_stream_reply_happy_path(self) -> None:
-        port = FakeRuntimePort(events=[
-            RuntimeEvent(type="assistant_delta", data={"text": "Hello "}),
-            RuntimeEvent(type="assistant_delta", data={"text": "world"}),
-            RuntimeEvent(type="final", data={"text": "Hello world"}),
-        ])
+        port = FakeRuntimePort(
+            events=[
+                RuntimeEvent(type="assistant_delta", data={"text": "Hello "}),
+                RuntimeEvent(type="assistant_delta", data={"text": "world"}),
+                RuntimeEvent(type="final", data={"text": "Hello world"}),
+            ]
+        )
         await port.connect()
         events = [e async for e in port.stream_reply("hi")]
         text_events = [e for e in events if e.type == "text_delta"]
@@ -173,9 +177,11 @@ class TestBaseRuntimePortStreamReply:
         assert done_events[0].is_final is True
 
     async def test_stream_reply_final_fallback(self) -> None:
-        port = FakeRuntimePort(events=[
-            RuntimeEvent(type="final", data={"text": "final answer"}),
-        ])
+        port = FakeRuntimePort(
+            events=[
+                RuntimeEvent(type="final", data={"text": "final answer"}),
+            ]
+        )
         await port.connect()
         events = [e async for e in port.stream_reply("hi")]
         text_events = [e for e in events if e.type == "text_delta"]
@@ -198,10 +204,12 @@ class TestBaseRuntimePortStreamReply:
         assert "connection lost" in error_events[0].text
 
     async def test_stream_reply_appends_history(self) -> None:
-        port = FakeRuntimePort(events=[
-            RuntimeEvent(type="assistant_delta", data={"text": "reply"}),
-            RuntimeEvent(type="final", data={"text": "reply"}),
-        ])
+        port = FakeRuntimePort(
+            events=[
+                RuntimeEvent(type="assistant_delta", data={"text": "reply"}),
+                RuntimeEvent(type="final", data={"text": "reply"}),
+            ]
+        )
         await port.connect()
         _ = [e async for e in port.stream_reply("hello")]
         assert len(port._history) == 2

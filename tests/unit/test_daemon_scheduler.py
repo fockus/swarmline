@@ -11,7 +11,6 @@ from swarmline.daemon.scheduler import Scheduler
 
 
 class TestSchedulerRegistration:
-
     def test_every_returns_name(self) -> None:
         sched = Scheduler()
         name = sched.every(10, _noop, name="test")
@@ -65,7 +64,6 @@ class TestSchedulerRegistration:
 
 
 class TestSchedulerPauseResume:
-
     def test_initial_not_paused(self) -> None:
         sched = Scheduler()
         assert sched.is_paused is False
@@ -110,7 +108,6 @@ class TestSchedulerPauseResume:
 
 
 class TestSchedulerExecution:
-
     async def test_every_fires_periodically(self) -> None:
         counter = _Counter()
         sched = Scheduler(tick_interval=0.05)
@@ -182,9 +179,9 @@ class TestSchedulerExecution:
 
 
 class TestSchedulerProtocol:
-
     def test_protocol_compliance(self) -> None:
         from swarmline.daemon.protocols import TaskScheduler
+
         sched = Scheduler()
         assert isinstance(sched, TaskScheduler)
 
@@ -192,6 +189,7 @@ class TestSchedulerProtocol:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _noop() -> None:
     pass

@@ -51,14 +51,18 @@ class TestParts:
         assert restored.data == {"key": "value"}
 
     def test_file_part_with_uri(self) -> None:
-        part = FilePart(file=FileContent(name="doc.pdf", uri="https://example.com/doc.pdf"))
+        part = FilePart(
+            file=FileContent(name="doc.pdf", uri="https://example.com/doc.pdf")
+        )
         data = part.model_dump()
         assert data["type"] == "file"
         assert data["file"]["name"] == "doc.pdf"
         assert data["file"]["uri"] == "https://example.com/doc.pdf"
 
     def test_file_part_with_bytes(self) -> None:
-        part = FilePart(file=FileContent(name="img.png", bytes="aGVsbG8=", mime_type="image/png"))
+        part = FilePart(
+            file=FileContent(name="img.png", bytes="aGVsbG8=", mime_type="image/png")
+        )
         data = part.model_dump(by_alias=True)
         assert data["file"]["mimeType"] == "image/png"
 
@@ -166,7 +170,9 @@ class TestAgentCard:
             name="ResearchBot",
             url="http://localhost:8000",
             skills=[
-                AgentSkill(id="search", name="Web Search", description="Search the web"),
+                AgentSkill(
+                    id="search", name="Web Search", description="Search the web"
+                ),
                 AgentSkill(id="summarize", name="Summarize", tags=["nlp"]),
             ],
         )

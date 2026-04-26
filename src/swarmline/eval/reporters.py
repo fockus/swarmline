@@ -14,8 +14,10 @@ class ConsoleReporter:
 
     def format(self, report: EvalReport) -> str:
         lines: list[str] = []
-        lines.append(f"Eval Report: {report.passed}/{report.total} passed "
-                      f"({report.pass_rate:.0%}), mean score: {report.mean_score:.2f}")
+        lines.append(
+            f"Eval Report: {report.passed}/{report.total} passed "
+            f"({report.pass_rate:.0%}), mean score: {report.mean_score:.2f}"
+        )
         lines.append("-" * 60)
 
         for result in report.results:
@@ -70,8 +72,7 @@ class JsonReporter:
                 for r in report.results
             ],
             "scorer_stats": {
-                name: report.scorer_stats(name)
-                for name in report.scores_by_scorer
+                name: report.scorer_stats(name) for name in report.scores_by_scorer
             },
         }
         return json.dumps(data, indent=self.indent, ensure_ascii=False)

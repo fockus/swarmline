@@ -18,7 +18,11 @@ from swarmline.multi_agent.graph_task_board_shared import (
     serialize_graph_task,
     serialize_task_comment,
 )
-from swarmline.multi_agent.graph_task_types import GoalAncestry, GraphTaskItem, TaskComment
+from swarmline.multi_agent.graph_task_types import (
+    GoalAncestry,
+    GraphTaskItem,
+    TaskComment,
+)
 from swarmline.multi_agent.task_types import TaskStatus
 
 POSTGRES_GRAPH_TASK_SCHEMA = """
@@ -106,23 +110,32 @@ class PostgresGraphTaskBoard:
                     "INSERT INTO graph_tasks (id, parent_task_id, namespace, data) "
                     "VALUES (:id, :parent_task_id, :namespace, CAST(:data AS jsonb))"
                 ),
-                {"id": task.id, "parent_task_id": task.parent_task_id,
-                 "namespace": self._namespace,
-                 "data": json.dumps(self._serialize_task(task))},
+                {
+                    "id": task.id,
+                    "parent_task_id": task.parent_task_id,
+                    "namespace": self._namespace,
+                    "data": json.dumps(self._serialize_task(task)),
+                },
             )
 
-    async def _load_task_row(self, session: AsyncSession, task_id: str) -> GraphTaskItem | None:
+    async def _load_task_row(
+        self, session: AsyncSession, task_id: str
+    ) -> GraphTaskItem | None:
         """Load a task row within the current namespace, if present."""
         where = self._ns_where("WHERE id = :id")
-        row = (await session.execute(
-            text(f"SELECT data FROM graph_tasks {where}"),
-            self._ns_params({"id": task_id}),
-        )).fetchone()
+        row = (
+            await session.execute(
+                text(f"SELECT data FROM graph_tasks {where}"),
+                self._ns_params({"id": task_id}),
+            )
+        ).fetchone()
         if not row:
             return None
         return self._deserialize_task(row[0])
 
-    async def _validate_parent_link(self, session: AsyncSession, task: GraphTaskItem) -> None:
+    async def _validate_parent_link(
+        self, session: AsyncSession, task: GraphTaskItem
+    ) -> None:
         """Reject self-parenting and parent cycles before storing a task."""
         parent_id = task.parent_task_id
         if parent_id is None:
@@ -145,10 +158,12 @@ class PostgresGraphTaskBoard:
         async with self._session(commit=True) as session:
             where = "WHERE id = :id AND (data->>'checkout_agent_id') IS NULL"
             where = self._ns_where(where)
-            row = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
-                self._ns_params({"id": task_id}),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchone()
             if not row:
                 return None
             task = self._deserialize_task(row[0])
@@ -160,7 +175,9 @@ class PostgresGraphTaskBoard:
                 updated_at=time.time(),
             )
             await session.execute(
-                text("UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"),
+                text(
+                    "UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"
+                ),
                 {"id": task_id, "data": json.dumps(self._serialize_task(updated))},
             )
             return updated
@@ -168,10 +185,12 @@ class PostgresGraphTaskBoard:
     async def complete_task(self, task_id: str) -> bool:
         async with self._session(commit=True) as session:
             where = self._ns_where("WHERE id = :id")
-            row = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
-                self._ns_params({"id": task_id}),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchone()
             if not row:
                 return False
             task = self._deserialize_task(row[0])
@@ -185,7 +204,9 @@ class PostgresGraphTaskBoard:
                 progress=1.0,
             )
             await session.execute(
-                text("UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"),
+                text(
+                    "UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"
+                ),
                 {"id": task_id, "data": json.dumps(self._serialize_task(updated))},
             )
             # Propagate progress and completion to parent
@@ -196,10 +217,12 @@ class PostgresGraphTaskBoard:
     async def get_subtasks(self, task_id: str) -> list[GraphTaskItem]:
         async with self._session() as session:
             where = self._ns_where("WHERE parent_task_id = :id")
-            rows = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where}"),
-                self._ns_params({"id": task_id}),
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where}"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchall()
             return [self._deserialize_task(r[0]) for r in rows]
 
     async def list_tasks(self, **filters: Any) -> list[GraphTaskItem]:
@@ -211,15 +234,21 @@ class PostgresGraphTaskBoard:
                 params["ns"] = self._namespace
             if "status" in filters:
                 conditions.append("data->>'status' = :status")
-                params["status"] = filters["status"].value if hasattr(filters["status"], "value") else str(filters["status"])
+                params["status"] = (
+                    filters["status"].value
+                    if hasattr(filters["status"], "value")
+                    else str(filters["status"])
+                )
             if "assignee_agent_id" in filters:
                 conditions.append("data->>'assignee_agent_id' = :assignee")
                 params["assignee"] = filters["assignee_agent_id"]
             where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-            rows = (await session.execute(
-                text(f"SELECT data FROM graph_tasks{where}"),  # noqa: S608
-                params,
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks{where}"),  # noqa: S608
+                    params,
+                )
+            ).fetchall()
             return [self._deserialize_task(r[0]) for r in rows]
 
     # --- Cancel (not part of core GraphTaskBoard protocol — ISP) ---
@@ -228,10 +257,12 @@ class PostgresGraphTaskBoard:
         """Cancel a task. Sets status to CANCELLED and releases checkout."""
         async with self._session(commit=True) as session:
             where = self._ns_where("WHERE id = :id")
-            row = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
-                self._ns_params({"id": task_id}),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchone()
             if not row:
                 return False
             task = self._deserialize_task(row[0])
@@ -245,7 +276,9 @@ class PostgresGraphTaskBoard:
                 updated_at=time.time(),
             )
             await session.execute(
-                text("UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"),
+                text(
+                    "UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"
+                ),
                 {"id": task_id, "data": json.dumps(self._serialize_task(updated))},
             )
             return True
@@ -258,10 +291,12 @@ class PostgresGraphTaskBoard:
             return False
         async with self._session(commit=True) as session:
             where = self._ns_where("WHERE id = :id")
-            row = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
-                self._ns_params({"id": task_id}),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchone()
             if not row:
                 return False
             task = self._deserialize_task(row[0])
@@ -275,7 +310,9 @@ class PostgresGraphTaskBoard:
                 updated_at=time.time(),
             )
             await session.execute(
-                text("UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"),
+                text(
+                    "UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"
+                ),
                 {"id": task_id, "data": json.dumps(self._serialize_task(updated))},
             )
             return True
@@ -284,10 +321,12 @@ class PostgresGraphTaskBoard:
         """Unblock a task, returning it to TODO status."""
         async with self._session(commit=True) as session:
             where = self._ns_where("WHERE id = :id")
-            row = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
-                self._ns_params({"id": task_id}),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where} FOR UPDATE"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchone()
             if not row:
                 return False
             task = self._deserialize_task(row[0])
@@ -300,7 +339,9 @@ class PostgresGraphTaskBoard:
                 updated_at=time.time(),
             )
             await session.execute(
-                text("UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"),
+                text(
+                    "UPDATE graph_tasks SET data = CAST(:data AS jsonb) WHERE id = :id"
+                ),
                 {"id": task_id, "data": json.dumps(self._serialize_task(updated))},
             )
             return True
@@ -311,24 +352,30 @@ class PostgresGraphTaskBoard:
         async with self._session() as session:
             base_where = "WHERE data->>'status' = 'todo' AND (data->>'checkout_agent_id') IS NULL"
             where = self._ns_where(base_where)
-            rows = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where}"),
-                self._ns_params(),
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where}"),
+                    self._ns_params(),
+                )
+            ).fetchall()
             candidates = [self._deserialize_task(r[0]) for r in rows]
             if not candidates:
                 return []
             # Load all tasks in namespace for dep resolution
             list_where = self._ns_where("")
             if list_where:
-                all_rows = (await session.execute(
-                    text(f"SELECT data FROM graph_tasks {list_where}"),
-                    self._ns_params(),
-                )).fetchall()
+                all_rows = (
+                    await session.execute(
+                        text(f"SELECT data FROM graph_tasks {list_where}"),
+                        self._ns_params(),
+                    )
+                ).fetchall()
             else:
-                all_rows = (await session.execute(
-                    text("SELECT data FROM graph_tasks"),
-                )).fetchall()
+                all_rows = (
+                    await session.execute(
+                        text("SELECT data FROM graph_tasks"),
+                    )
+                ).fetchall()
             statuses: dict[str, Any] = {}
             for r in all_rows:
                 t = self._deserialize_task(r[0])
@@ -339,8 +386,7 @@ class PostgresGraphTaskBoard:
                 ready.append(task)
                 continue
             all_done = all(
-                statuses.get(dep_id) == TaskStatus.DONE
-                for dep_id in task.dependencies
+                statuses.get(dep_id) == TaskStatus.DONE for dep_id in task.dependencies
             )
             if all_done:
                 ready.append(task)
@@ -349,25 +395,33 @@ class PostgresGraphTaskBoard:
     async def get_blocked_by(self, task_id: str) -> list[GraphTaskItem]:
         async with self._session() as session:
             where = self._ns_where("WHERE id = :id")
-            row = (await session.execute(
-                text(f"SELECT data FROM graph_tasks {where}"),
-                self._ns_params({"id": task_id}),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(f"SELECT data FROM graph_tasks {where}"),
+                    self._ns_params({"id": task_id}),
+                )
+            ).fetchone()
             if not row:
                 return []
             task = self._deserialize_task(row[0])
             if not task.dependencies:
                 return []
             if self._namespace:
-                rows = (await session.execute(
-                    text("SELECT data FROM graph_tasks WHERE id = ANY(:ids) AND namespace = :ns"),
-                    {"ids": list(task.dependencies), "ns": self._namespace},
-                )).fetchall()
+                rows = (
+                    await session.execute(
+                        text(
+                            "SELECT data FROM graph_tasks WHERE id = ANY(:ids) AND namespace = :ns"
+                        ),
+                        {"ids": list(task.dependencies), "ns": self._namespace},
+                    )
+                ).fetchall()
             else:
-                rows = (await session.execute(
-                    text("SELECT data FROM graph_tasks WHERE id = ANY(:ids)"),
-                    {"ids": list(task.dependencies)},
-                )).fetchall()
+                rows = (
+                    await session.execute(
+                        text("SELECT data FROM graph_tasks WHERE id = ANY(:ids)"),
+                        {"ids": list(task.dependencies)},
+                    )
+                ).fetchall()
             blockers: list[GraphTaskItem] = []
             for r in rows:
                 t = self._deserialize_task(r[0])
@@ -386,36 +440,46 @@ class PostgresGraphTaskBoard:
                     "INSERT INTO graph_task_comments (id, task_id, data) "
                     "VALUES (:id, :task_id, CAST(:data AS jsonb))"
                 ),
-                {"id": comment.id, "task_id": comment.task_id,
-                 "data": json.dumps(self._serialize_comment(comment))},
+                {
+                    "id": comment.id,
+                    "task_id": comment.task_id,
+                    "data": json.dumps(self._serialize_comment(comment)),
+                },
             )
 
     async def get_comments(self, task_id: str) -> list[TaskComment]:
         async with self._session() as session:
             if self._namespace:
-                rows = (await session.execute(
-                    text("""
+                rows = (
+                    await session.execute(
+                        text("""
                         SELECT c.data
                         FROM graph_task_comments c
                         JOIN graph_tasks t ON t.id = c.task_id
                         WHERE c.task_id = :id AND t.namespace = :ns
                         ORDER BY c.created_at
                     """),
-                    {"id": task_id, "ns": self._namespace},
-                )).fetchall()
+                        {"id": task_id, "ns": self._namespace},
+                    )
+                ).fetchall()
             else:
-                rows = (await session.execute(
-                    text("SELECT data FROM graph_task_comments WHERE task_id = :id ORDER BY created_at"),
-                    {"id": task_id},
-                )).fetchall()
+                rows = (
+                    await session.execute(
+                        text(
+                            "SELECT data FROM graph_task_comments WHERE task_id = :id ORDER BY created_at"
+                        ),
+                        {"id": task_id},
+                    )
+                ).fetchall()
             return [self._deserialize_comment(r[0]) for r in rows]
 
     async def get_thread(self, task_id: str) -> list[TaskComment]:
         """Get all comments for a task and its subtasks (recursive)."""
         async with self._session() as session:
             if self._namespace:
-                rows = (await session.execute(
-                    text("""
+                rows = (
+                    await session.execute(
+                        text("""
                         WITH RECURSIVE sub(id) AS (
                             SELECT id FROM graph_tasks WHERE id = :id AND namespace = :ns
                             UNION ALL
@@ -428,11 +492,13 @@ class PostgresGraphTaskBoard:
                         WHERE c.task_id IN (SELECT id FROM sub)
                         ORDER BY c.created_at
                     """),
-                    {"id": task_id, "ns": self._namespace},
-                )).fetchall()
+                        {"id": task_id, "ns": self._namespace},
+                    )
+                ).fetchall()
             else:
-                rows = (await session.execute(
-                    text("""
+                rows = (
+                    await session.execute(
+                        text("""
                         WITH RECURSIVE sub(id) AS (
                             SELECT id FROM graph_tasks WHERE id = :id
                             UNION ALL
@@ -442,8 +508,9 @@ class PostgresGraphTaskBoard:
                         WHERE c.task_id IN (SELECT id FROM sub)
                         ORDER BY c.created_at
                     """),
-                    {"id": task_id},
-                )).fetchall()
+                        {"id": task_id},
+                    )
+                ).fetchall()
             return [self._deserialize_comment(r[0]) for r in rows]
 
     # --- GoalAncestry ---
@@ -451,8 +518,9 @@ class PostgresGraphTaskBoard:
     async def get_goal_ancestry(self, task_id: str) -> GoalAncestry | None:
         async with self._session() as session:
             if self._namespace:
-                rows = (await session.execute(
-                    text("""
+                rows = (
+                    await session.execute(
+                        text("""
                         WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
                             SELECT id, parent_task_id, data
                             FROM graph_tasks
@@ -465,11 +533,13 @@ class PostgresGraphTaskBoard:
                         )
                         SELECT data FROM ancestry
                     """),
-                    {"id": task_id, "ns": self._namespace},
-                )).fetchall()
+                        {"id": task_id, "ns": self._namespace},
+                    )
+                ).fetchall()
             else:
-                rows = (await session.execute(
-                    text("""
+                rows = (
+                    await session.execute(
+                        text("""
                         WITH RECURSIVE ancestry(id, parent_task_id, data) AS (
                             SELECT id, parent_task_id, data FROM graph_tasks WHERE id = :id
                             UNION ALL
@@ -478,8 +548,9 @@ class PostgresGraphTaskBoard:
                         )
                         SELECT data FROM ancestry
                     """),
-                    {"id": task_id},
-                )).fetchall()
+                        {"id": task_id},
+                    )
+                ).fetchall()
         if not rows:
             return None
         tasks = [self._deserialize_task(r[0]) for r in rows]
@@ -499,37 +570,47 @@ class PostgresGraphTaskBoard:
         """
         # Lock all children to prevent concurrent propagation race
         if self._namespace:
-            rows = (await session.execute(
-                text("""
+            rows = (
+                await session.execute(
+                    text("""
                     SELECT data FROM graph_tasks
                     WHERE parent_task_id = :id AND namespace = :ns
                     FOR UPDATE
                 """),
-                {"id": parent_id, "ns": self._namespace},
-            )).fetchall()
+                    {"id": parent_id, "ns": self._namespace},
+                )
+            ).fetchall()
         else:
-            rows = (await session.execute(
-                text("SELECT data FROM graph_tasks WHERE parent_task_id = :id FOR UPDATE"),
-                {"id": parent_id},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(
+                        "SELECT data FROM graph_tasks WHERE parent_task_id = :id FOR UPDATE"
+                    ),
+                    {"id": parent_id},
+                )
+            ).fetchall()
         if not rows:
             return
         children = [self._deserialize_task(r[0]) for r in rows]
         progress = sum(c.progress for c in children) / len(children)
         if self._namespace:
-            parent_row = (await session.execute(
-                text("""
+            parent_row = (
+                await session.execute(
+                    text("""
                     SELECT data FROM graph_tasks
                     WHERE id = :id AND namespace = :ns
                     FOR UPDATE
                 """),
-                {"id": parent_id, "ns": self._namespace},
-            )).fetchone()
+                    {"id": parent_id, "ns": self._namespace},
+                )
+            ).fetchone()
         else:
-            parent_row = (await session.execute(
-                text("SELECT data FROM graph_tasks WHERE id = :id FOR UPDATE"),
-                {"id": parent_id},
-            )).fetchone()
+            parent_row = (
+                await session.execute(
+                    text("SELECT data FROM graph_tasks WHERE id = :id FOR UPDATE"),
+                    {"id": parent_id},
+                )
+            ).fetchone()
         if not parent_row:
             return
         parent = self._deserialize_task(parent_row[0])

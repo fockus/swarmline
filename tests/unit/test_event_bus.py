@@ -6,7 +6,12 @@ from typing import Any
 
 
 from swarmline.observability.event_bus import EventBus, InMemoryEventBus
-from swarmline.observability.tracer import ConsoleTracer, NoopTracer, Tracer, TracingSubscriber
+from swarmline.observability.tracer import (
+    ConsoleTracer,
+    NoopTracer,
+    Tracer,
+    TracingSubscriber,
+)
 
 
 # ---------------------------------------------------------------------------

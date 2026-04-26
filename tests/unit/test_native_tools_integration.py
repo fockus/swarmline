@@ -44,11 +44,13 @@ class MockNativeAdapter:
         tools: list[dict[str, Any]],
         **kwargs: Any,
     ) -> NativeToolCallResult:
-        self.call_log.append({
-            "messages": messages,
-            "system_prompt": system_prompt,
-            "tools": tools,
-        })
+        self.call_log.append(
+            {
+                "messages": messages,
+                "system_prompt": system_prompt,
+                "tools": tools,
+            }
+        )
         if self._call_count < len(self._results):
             result = self._results[self._call_count]
             self._call_count += 1
@@ -63,7 +65,9 @@ class MockLLM:
         self._responses = list(responses)
         self._call_count = 0
 
-    async def __call__(self, messages: list[dict], system_prompt: str, **kwargs: Any) -> str:
+    async def __call__(
+        self, messages: list[dict], system_prompt: str, **kwargs: Any
+    ) -> str:
         if self._call_count < len(self._responses):
             resp = self._responses[self._call_count]
             self._call_count += 1
@@ -128,18 +132,24 @@ class TestNativeToolsReactIntegration:
     @pytest.mark.asyncio
     async def test_native_tools_enabled_executes_tool(self) -> None:
         """use_native_tools=True + mock adapter => tool executed via native path."""
-        adapter = MockNativeAdapter([
-            NativeToolCallResult(
-                text="Let me calculate",
-                tool_calls=(NativeToolCall(id="tc1", name="calculator", args={"expr": "2+2"}),),
-                stop_reason="tool_use",
-            ),
-            NativeToolCallResult(
-                text="The answer is 4",
-                tool_calls=(),
-                stop_reason="end_turn",
-            ),
-        ])
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="Let me calculate",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
+                ),
+                NativeToolCallResult(
+                    text="The answer is 4",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
 
         config = _make_config(use_native_tools=True)
         executor = _make_executor()
@@ -149,9 +159,16 @@ class TestNativeToolsReactIntegration:
         llm_call = MockLLM([])
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages(), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -177,14 +194,25 @@ class TestNativeToolsReactIntegration:
         executor = _make_executor()
         tools = _make_tools()
 
-        llm_call = MockLLM([
-            json.dumps({"type": "final", "final_message": "Hello from JSON-in-text"}),
-        ])
+        llm_call = MockLLM(
+            [
+                json.dumps(
+                    {"type": "final", "final_message": "Hello from JSON-in-text"}
+                ),
+            ]
+        )
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages("hello"), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages("hello"),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -198,21 +226,27 @@ class TestNativeToolsReactIntegration:
     @pytest.mark.asyncio
     async def test_native_tools_parallel_execution(self) -> None:
         """Multiple tool calls in single response => all executed (parallel)."""
-        adapter = MockNativeAdapter([
-            NativeToolCallResult(
-                text="",
-                tool_calls=(
-                    NativeToolCall(id="tc1", name="calculator", args={"expr": "2+2"}),
-                    NativeToolCall(id="tc2", name="calculator", args={"expr": "3+3"}),
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                        NativeToolCall(
+                            id="tc2", name="calculator", args={"expr": "3+3"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
                 ),
-                stop_reason="tool_use",
-            ),
-            NativeToolCallResult(
-                text="Results: 4 and 6",
-                tool_calls=(),
-                stop_reason="end_turn",
-            ),
-        ])
+                NativeToolCallResult(
+                    text="Results: 4 and 6",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
 
         config = _make_config(use_native_tools=True)
         executor = _make_executor()
@@ -220,9 +254,16 @@ class TestNativeToolsReactIntegration:
         llm_call = MockLLM([])
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages(), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -240,14 +281,23 @@ class TestNativeToolsReactIntegration:
         executor = _make_executor()
         tools = _make_tools()
 
-        llm_call = MockLLM([
-            json.dumps({"type": "final", "final_message": "Fallback response"}),
-        ])
+        llm_call = MockLLM(
+            [
+                json.dumps({"type": "final", "final_message": "Fallback response"}),
+            ]
+        )
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages(), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -258,18 +308,24 @@ class TestNativeToolsReactIntegration:
     @pytest.mark.asyncio
     async def test_native_tools_single_tool_call(self) -> None:
         """Single tool call => sequential execution (no gather)."""
-        adapter = MockNativeAdapter([
-            NativeToolCallResult(
-                text="",
-                tool_calls=(NativeToolCall(id="tc1", name="calculator", args={"expr": "5+5"}),),
-                stop_reason="tool_use",
-            ),
-            NativeToolCallResult(
-                text="10",
-                tool_calls=(),
-                stop_reason="end_turn",
-            ),
-        ])
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "5+5"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
+                ),
+                NativeToolCallResult(
+                    text="10",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
 
         config = _make_config(use_native_tools=True)
         executor = _make_executor()
@@ -277,9 +333,16 @@ class TestNativeToolsReactIntegration:
         llm_call = MockLLM([])
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages(), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -290,13 +353,15 @@ class TestNativeToolsReactIntegration:
     @pytest.mark.asyncio
     async def test_native_tools_text_only_response(self) -> None:
         """No tool_calls in result => finalize as text response."""
-        adapter = MockNativeAdapter([
-            NativeToolCallResult(
-                text="Just a text answer",
-                tool_calls=(),
-                stop_reason="end_turn",
-            ),
-        ])
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="Just a text answer",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
 
         config = _make_config(use_native_tools=True)
         executor = _make_executor()
@@ -304,9 +369,16 @@ class TestNativeToolsReactIntegration:
         llm_call = MockLLM([])
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages(), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -317,16 +389,22 @@ class TestNativeToolsReactIntegration:
     @pytest.mark.asyncio
     async def test_native_tools_budget_exceeded_returns_error(self) -> None:
         """Tool calls exceeding max_tool_calls returns budget_exceeded error."""
-        adapter = MockNativeAdapter([
-            NativeToolCallResult(
-                text="",
-                tool_calls=(
-                    NativeToolCall(id="tc1", name="calculator", args={"expr": "2+2"}),
-                    NativeToolCall(id="tc2", name="calculator", args={"expr": "3+3"}),
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                        NativeToolCall(
+                            id="tc2", name="calculator", args={"expr": "3+3"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
                 ),
-                stop_reason="tool_use",
-            ),
-        ])
+            ]
+        )
 
         # max_tool_calls=1 but adapter returns 2 tool calls
         config = RuntimeConfig(
@@ -340,9 +418,16 @@ class TestNativeToolsReactIntegration:
         llm_call = MockLLM([])
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages(), "system prompt", tools, config,
-            time.monotonic(), native_adapter=adapter,
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
         )
         events = await _collect_events(strategy)
 
@@ -357,14 +442,23 @@ class TestNativeToolsReactIntegration:
         executor = _make_executor()
         tools = _make_tools()
 
-        llm_call = MockLLM([
-            json.dumps({"type": "final", "final_message": "JSON path"}),
-        ])
+        llm_call = MockLLM(
+            [
+                json.dumps({"type": "final", "final_message": "JSON path"}),
+            ]
+        )
 
         import time
+
         strategy = run_react(
-            llm_call, executor, _make_messages("hello"), "system prompt", tools, config,
-            time.monotonic(), native_adapter=None,
+            llm_call,
+            executor,
+            _make_messages("hello"),
+            "system prompt",
+            tools,
+            config,
+            time.monotonic(),
+            native_adapter=None,
         )
         events = await _collect_events(strategy)
 

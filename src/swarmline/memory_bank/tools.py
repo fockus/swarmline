@@ -37,7 +37,10 @@ _APPEND_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "path": {"type": "string", "description": "Путь к файлу"},
-        "content": {"type": "string", "description": "Содержимое для добавления в конец"},
+        "content": {
+            "type": "string",
+            "description": "Содержимое для добавления в конец",
+        },
     },
     "required": ["path", "content"],
 }
@@ -55,7 +58,9 @@ _LIST_SCHEMA: dict[str, Any] = {
 
 _DELETE_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "properties": {"path": {"type": "string", "description": "Путь к файлу для удаления"}},
+    "properties": {
+        "path": {"type": "string", "description": "Путь к файлу для удаления"}
+    },
     "required": ["path"],
 }
 
@@ -128,7 +133,9 @@ def create_memory_bank_tools(
             parameters=_READ_SCHEMA,
         ),
         "memory_write": ToolSpec(
-            name="memory_write", description="Записать файл в банк памяти", parameters=_WRITE_SCHEMA
+            name="memory_write",
+            description="Записать файл в банк памяти",
+            parameters=_WRITE_SCHEMA,
         ),
         "memory_append": ToolSpec(
             name="memory_append",
@@ -136,7 +143,9 @@ def create_memory_bank_tools(
             parameters=_APPEND_SCHEMA,
         ),
         "memory_list": ToolSpec(
-            name="memory_list", description="Список файлов в банке памяти", parameters=_LIST_SCHEMA
+            name="memory_list",
+            description="Список файлов в банке памяти",
+            parameters=_LIST_SCHEMA,
         ),
         "memory_delete": ToolSpec(
             name="memory_delete",
@@ -179,7 +188,11 @@ def create_knowledge_tools(
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search query text"},
-                "top_k": {"type": "integer", "description": "Max results", "default": 5},
+                "top_k": {
+                    "type": "integer",
+                    "description": "Max results",
+                    "default": 5,
+                },
             },
             "required": ["query"],
         },
@@ -192,7 +205,12 @@ def create_knowledge_tools(
         results = await searcher.search(query, top_k=top_k)
         return json.dumps(
             [
-                {"path": r.path, "kind": r.kind, "tags": list(r.tags), "summary": r.summary}
+                {
+                    "path": r.path,
+                    "kind": r.kind,
+                    "tags": list(r.tags),
+                    "summary": r.summary,
+                }
                 for r in results
             ],
             ensure_ascii=False,
@@ -208,7 +226,10 @@ def create_knowledge_tools(
         parameters={
             "type": "object",
             "properties": {
-                "topic": {"type": "string", "description": "Note topic (used in filename)"},
+                "topic": {
+                    "type": "string",
+                    "description": "Note topic (used in filename)",
+                },
                 "content": {"type": "string", "description": "Note content (markdown)"},
                 "tags": {"type": "string", "description": "Comma-separated tags"},
                 "importance": {
@@ -232,7 +253,11 @@ def create_knowledge_tools(
         tags_str = args.get("tags", "")
         importance = args.get("importance", "medium")
 
-        tags = tuple(t.strip() for t in tags_str.split(",") if t.strip()) if tags_str else ()
+        tags = (
+            tuple(t.strip() for t in tags_str.split(",") if t.strip())
+            if tags_str
+            else ()
+        )
         now = time.strftime("%Y-%m-%d")
         safe_topic = topic.lower().replace(" ", "-")
         safe_topic = "".join(c for c in safe_topic if c.isalnum() or c == "-")
@@ -240,7 +265,9 @@ def create_knowledge_tools(
 
         entry = KnowledgeEntry(
             path=path,
-            meta=DocumentMeta(kind="note", tags=tags, importance=importance, created=now, updated=now),
+            meta=DocumentMeta(
+                kind="note", tags=tags, importance=importance, created=now, updated=now
+            ),
             content=content,
             size_bytes=len(content.encode("utf-8")),
         )
@@ -271,7 +298,10 @@ def create_knowledge_tools(
             {
                 "total_entries": len(entries),
                 "by_kind": by_kind,
-                "recent": [{"path": e.path, "kind": e.kind, "summary": e.summary} for e in recent],
+                "recent": [
+                    {"path": e.path, "kind": e.kind, "summary": e.summary}
+                    for e in recent
+                ],
             },
             ensure_ascii=False,
         )

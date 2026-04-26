@@ -42,7 +42,6 @@ def _proc(
 
 
 class TestProcedureTypes:
-
     def test_procedure_step_creation(self) -> None:
         step = ProcedureStep(tool_name="web_search", args_template={"q": "{query}"})
         assert step.tool_name == "web_search"
@@ -75,7 +74,6 @@ class TestProcedureTypes:
 
 
 class TestInMemoryProceduralMemory:
-
     async def _store(self):
         from swarmline.memory.procedural import InMemoryProceduralMemory
 
@@ -116,7 +114,9 @@ class TestInMemoryProceduralMemory:
     async def test_suggest_ranks_by_success(self) -> None:
         store = await self._store()
         await store.store(_proc("low", trigger="data analysis", success=1, failure=9))
-        await store.store(_proc("high", trigger="data analysis task", success=9, failure=1))
+        await store.store(
+            _proc("high", trigger="data analysis task", success=9, failure=1)
+        )
         results = await store.suggest("data analysis")
         assert results[0].id == "high"
 

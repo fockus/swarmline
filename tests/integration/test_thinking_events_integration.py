@@ -126,8 +126,7 @@ class TestNonAnthropicWarningIntegration:
             events.append(event)
 
         warnings = [
-            e for e in events
-            if e.type == "status" and "thinking" in e.text.lower()
+            e for e in events if e.type == "status" and "thinking" in e.text.lower()
         ]
         assert len(warnings) >= 1
         assert "anthropic" in warnings[0].text.lower()
@@ -174,8 +173,7 @@ class TestBackwardCompatIntegration:
             events.append(event)
 
         warnings = [
-            e for e in events
-            if e.type == "status" and "thinking" in e.text.lower()
+            e for e in events if e.type == "status" and "thinking" in e.text.lower()
         ]
         assert len(warnings) == 0
 
@@ -229,11 +227,13 @@ class TestCompactionNonCompactableIntegration:
             msgs.append(_msg("assistant", f"answer {i} " * 100))
 
         # A thinking message that must survive
-        msgs.append(_msg(
-            "assistant",
-            "Important reasoning that must be preserved",
-            metadata={"non_compactable": True},
-        ))
+        msgs.append(
+            _msg(
+                "assistant",
+                "Important reasoning that must be preserved",
+                metadata={"non_compactable": True},
+            )
+        )
 
         # More old messages
         for i in range(3):
@@ -259,7 +259,9 @@ class TestCompactionNonCompactableIntegration:
         # Last message preserved
         assert result_msgs[-1].content == "final question"
         # Non-compactable message must survive
-        nc = [m for m in result_msgs if m.metadata and m.metadata.get("non_compactable")]
+        nc = [
+            m for m in result_msgs if m.metadata and m.metadata.get("non_compactable")
+        ]
         assert len(nc) == 1
         assert nc[0].content == "Important reasoning that must be preserved"
 
@@ -284,7 +286,9 @@ class TestCompactionNonCompactableIntegration:
         result_msgs, _ = await compaction.filter(msgs, "sys")
 
         # non_compactable survives
-        nc = [m for m in result_msgs if m.metadata and m.metadata.get("non_compactable")]
+        nc = [
+            m for m in result_msgs if m.metadata and m.metadata.get("non_compactable")
+        ]
         assert len(nc) == 1
         assert nc[0].content == "thinking chain"
         # last message survives

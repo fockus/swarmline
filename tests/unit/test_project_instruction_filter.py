@@ -101,12 +101,9 @@ class TestMergeBehavior:
         assert prompt.endswith("BASE")
 
     @pytest.mark.asyncio
-    async def test_no_instruction_files_passthrough(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_no_instruction_files_passthrough(self, tmp_path: Path) -> None:
         f = ProjectInstructionFilter(cwd=tmp_path, home=tmp_path / "fakehome")
         msgs = [_msg("user", "hello")]
         out_msgs, out_prompt = await f.filter(msgs, "base")
         assert out_msgs == msgs
         assert out_prompt == "base"
-

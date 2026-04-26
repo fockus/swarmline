@@ -19,7 +19,10 @@ from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
 
 
 async def _run_fn_echo(
-    *, messages: list[Any], system_prompt: str, active_tools: list[Any],
+    *,
+    messages: list[Any],
+    system_prompt: str,
+    active_tools: list[Any],
 ) -> AsyncIterator[RuntimeEvent]:
     """Echo back the user query as final text."""
     user_query = messages[0].content if messages else ""
@@ -27,7 +30,10 @@ async def _run_fn_echo(
 
 
 async def _run_fn_raises(
-    *, messages: list[Any], system_prompt: str, active_tools: list[Any],
+    *,
+    messages: list[Any],
+    system_prompt: str,
+    active_tools: list[Any],
 ) -> AsyncIterator[RuntimeEvent]:
     """Simulate a runtime crash."""
     raise ConnectionError("upstream provider unavailable")
@@ -35,7 +41,10 @@ async def _run_fn_raises(
 
 
 async def _run_fn_error_event(
-    *, messages: list[Any], system_prompt: str, active_tools: list[Any],
+    *,
+    messages: list[Any],
+    system_prompt: str,
+    active_tools: list[Any],
 ) -> AsyncIterator[RuntimeEvent]:
     """Simulate a runtime that reports failure via RuntimeEvent.error."""
     yield RuntimeEvent.error(
@@ -44,7 +53,10 @@ async def _run_fn_error_event(
 
 
 async def _run_fn_no_final(
-    *, messages: list[Any], system_prompt: str, active_tools: list[Any],
+    *,
+    messages: list[Any],
+    system_prompt: str,
+    active_tools: list[Any],
 ) -> AsyncIterator[RuntimeEvent]:
     """Simulate a stream that ends without finalization."""
     yield RuntimeEvent.status("starting")
@@ -181,7 +193,10 @@ class TestAgentToolExecuteErrorPropagation:
     async def test_agent_tool_execute_error_propagation_runtime_error(self) -> None:
         # Arrange — inline run_fn with RuntimeError
         async def _run_fn_runtime_error(
-            *, messages: list[Any], system_prompt: str, active_tools: list[Any],
+            *,
+            messages: list[Any],
+            system_prompt: str,
+            active_tools: list[Any],
         ) -> AsyncIterator[RuntimeEvent]:
             raise RuntimeError("internal agent failure")
             yield  # noqa: B027
@@ -196,10 +211,15 @@ class TestAgentToolExecuteErrorPropagation:
         assert result.success is False
         assert "internal agent failure" in (result.error or "")
 
-    async def test_agent_tool_execute_error_propagation_preserves_type_info(self) -> None:
+    async def test_agent_tool_execute_error_propagation_preserves_type_info(
+        self,
+    ) -> None:
         # Arrange — TypeError from run_fn
         async def _run_fn_type_error(
-            *, messages: list[Any], system_prompt: str, active_tools: list[Any],
+            *,
+            messages: list[Any],
+            system_prompt: str,
+            active_tools: list[Any],
         ) -> AsyncIterator[RuntimeEvent]:
             raise TypeError("unexpected argument type")
             yield  # noqa: B027

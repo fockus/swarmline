@@ -25,9 +25,7 @@ def searcher(store: InMemoryKnowledgeStore) -> InMemoryKnowledgeSearcher:
 
 
 @pytest.fixture()
-def tools(
-    store: InMemoryKnowledgeStore, searcher: InMemoryKnowledgeSearcher
-) -> tuple:
+def tools(store: InMemoryKnowledgeStore, searcher: InMemoryKnowledgeSearcher) -> tuple:
     return create_knowledge_tools(store, searcher)
 
 
@@ -37,7 +35,11 @@ class TestKnowledgeToolSpecs:
         assert len(specs) == 3
         assert len(executors) == 3
 
-        for name in ("knowledge_search", "knowledge_save_note", "knowledge_get_context"):
+        for name in (
+            "knowledge_search",
+            "knowledge_save_note",
+            "knowledge_get_context",
+        ):
             assert name in specs
             spec = specs[name]
             assert spec.name == name
@@ -77,12 +79,14 @@ class TestKnowledgeSaveNoteTool:
         self, store: InMemoryKnowledgeStore, tools: tuple
     ) -> None:
         _, executors = tools
-        result = await executors["knowledge_save_note"]({
-            "topic": "My Test Note",
-            "content": "Some knowledge content",
-            "tags": "python, testing",
-            "importance": "high",
-        })
+        result = await executors["knowledge_save_note"](
+            {
+                "topic": "My Test Note",
+                "content": "Some knowledge content",
+                "tags": "python, testing",
+                "importance": "high",
+            }
+        )
 
         assert "Saved note:" in result
 
@@ -97,10 +101,12 @@ class TestKnowledgeSaveNoteTool:
         self, store: InMemoryKnowledgeStore, tools: tuple
     ) -> None:
         _, executors = tools
-        result = await executors["knowledge_save_note"]({
-            "topic": "Some Topic!@#",
-            "content": "content",
-        })
+        result = await executors["knowledge_save_note"](
+            {
+                "topic": "Some Topic!@#",
+                "content": "content",
+            }
+        )
 
         assert "Saved note:" in result
         entries = await store.list_entries()
@@ -115,12 +121,16 @@ class TestKnowledgeGetContextTool:
         self, store: InMemoryKnowledgeStore, tools: tuple
     ) -> None:
         for i in range(3):
-            await store.save(KnowledgeEntry(
-                path=f"notes/entry-{i}.md",
-                meta=DocumentMeta(kind="note", tags=(f"tag-{i}",), updated=f"2026-01-0{i+1}"),
-                content=f"Content {i}",
-                size_bytes=10,
-            ))
+            await store.save(
+                KnowledgeEntry(
+                    path=f"notes/entry-{i}.md",
+                    meta=DocumentMeta(
+                        kind="note", tags=(f"tag-{i}",), updated=f"2026-01-0{i + 1}"
+                    ),
+                    content=f"Content {i}",
+                    size_bytes=10,
+                )
+            )
 
         _, executors = tools
         result_json = await executors["knowledge_get_context"]({})

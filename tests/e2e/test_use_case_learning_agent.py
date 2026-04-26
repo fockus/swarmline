@@ -59,10 +59,16 @@ async def test_update_pattern_overwrites(session: StatefulSession):
     updated = "Use try/except with specific exceptions + log with structlog"
 
     await memory_upsert_fact(
-        session, user_id=AGENT_NS, key="error-handling", value=original,
+        session,
+        user_id=AGENT_NS,
+        key="error-handling",
+        value=original,
     )
     await memory_upsert_fact(
-        session, user_id=AGENT_NS, key="error-handling", value=updated,
+        session,
+        user_id=AGENT_NS,
+        key="error-handling",
+        value=updated,
     )
 
     facts = await memory_get_facts(session, user_id=AGENT_NS)
@@ -94,7 +100,9 @@ async def test_learning_history_via_messages(session: StatefulSession):
         content="Pattern 'error-handling' updated: added structlog requirement",
     )
 
-    msgs = await memory_get_messages(session, user_id=AGENT_NS, topic_id=TOPIC, limit=10)
+    msgs = await memory_get_messages(
+        session, user_id=AGENT_NS, topic_id=TOPIC, limit=10
+    )
     assert msgs["ok"] is True
     assert len(msgs["data"]) == 3
 
@@ -117,17 +125,25 @@ async def test_full_learning_cycle(session: StatefulSession):
 
     # 2. Document application of patterns
     await memory_save_message(
-        session, user_id=AGENT_NS, topic_id=TOPIC,
-        role="assistant", content="Applied 'error-handling' to payment_service.py",
+        session,
+        user_id=AGENT_NS,
+        topic_id=TOPIC,
+        role="assistant",
+        content="Applied 'error-handling' to payment_service.py",
     )
     await memory_save_message(
-        session, user_id=AGENT_NS, topic_id=TOPIC,
-        role="assistant", content="Applied 'naming' to models/user.py",
+        session,
+        user_id=AGENT_NS,
+        topic_id=TOPIC,
+        role="assistant",
+        content="Applied 'naming' to models/user.py",
     )
 
     # 3. Update a pattern based on learning
     await memory_upsert_fact(
-        session, user_id=AGENT_NS, key="error-handling",
+        session,
+        user_id=AGENT_NS,
+        key="error-handling",
         value="Use try/except with specific exceptions + log with structlog + add correlation_id",
     )
 
@@ -138,6 +154,8 @@ async def test_full_learning_cycle(session: StatefulSession):
 
     assert "correlation_id" in facts["data"]["error-handling"]
 
-    msgs = await memory_get_messages(session, user_id=AGENT_NS, topic_id=TOPIC, limit=10)
+    msgs = await memory_get_messages(
+        session, user_id=AGENT_NS, topic_id=TOPIC, limit=10
+    )
     assert msgs["ok"] is True
     assert len(msgs["data"]) == 2

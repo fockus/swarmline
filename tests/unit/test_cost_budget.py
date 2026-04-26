@@ -40,7 +40,9 @@ class TestCostBudget:
     def test_custom_values(self) -> None:
         from swarmline.runtime.cost import CostBudget
 
-        b = CostBudget(max_cost_usd=1.5, max_total_tokens=100_000, action_on_exceed="warn")
+        b = CostBudget(
+            max_cost_usd=1.5, max_total_tokens=100_000, action_on_exceed="warn"
+        )
         assert b.max_cost_usd == 1.5
         assert b.max_total_tokens == 100_000
         assert b.action_on_exceed == "warn"

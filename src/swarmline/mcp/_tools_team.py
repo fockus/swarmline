@@ -9,7 +9,12 @@ import structlog
 
 from swarmline.mcp._session import StatefulSession
 from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
-from swarmline.multi_agent.task_types import TaskFilter, TaskItem, TaskPriority, TaskStatus
+from swarmline.multi_agent.task_types import (
+    TaskFilter,
+    TaskItem,
+    TaskPriority,
+    TaskStatus,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -135,7 +140,9 @@ async def team_list_tasks(
         if status is not None or priority is not None or assignee_agent_id is not None:
             filters = TaskFilter(
                 status=TaskStatus(status) if status is not None else None,
-                priority=TaskPriority(priority.lower()) if priority is not None else None,
+                priority=TaskPriority(priority.lower())
+                if priority is not None
+                else None,
                 assignee_agent_id=assignee_agent_id,
             )
         tasks = await session.task_queue.list_tasks(filters)

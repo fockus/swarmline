@@ -113,7 +113,9 @@ class ApprovePlanInput(BaseModel):
     """Input for plan_approve tool."""
 
     plan_id: str = Field(description="Plan identifier")
-    approved_by: str = Field(default="user", description="Approval source: user/system/agent")
+    approved_by: str = Field(
+        default="user", description="Approval source: user/system/agent"
+    )
 
 
 class UpdateStepInput(BaseModel):
@@ -121,8 +123,12 @@ class UpdateStepInput(BaseModel):
 
     plan_id: str = Field(description="Plan identifier")
     step_id: str = Field(description="Step identifier")
-    status: str = Field(description="New status: pending/in_progress/completed/failed/skipped")
-    result: str | None = Field(default=None, description="Step result or failure reason")
+    status: str = Field(
+        description="New status: pending/in_progress/completed/failed/skipped"
+    )
+    result: str | None = Field(
+        default=None, description="Step result or failure reason"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +142,9 @@ class RegisterAgentInput(BaseModel):
     id: str = Field(description="Unique agent identifier")
     name: str = Field(description="Human-readable agent name")
     role: str = Field(description="Agent role (e.g., researcher, reviewer)")
-    parent_id: str | None = Field(default=None, description="Parent agent ID for hierarchy")
+    parent_id: str | None = Field(
+        default=None, description="Parent agent ID for hierarchy"
+    )
     runtime_name: str = Field(default="thin", description="Runtime to use")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Extra metadata")
 
@@ -154,8 +162,12 @@ class CreateTaskInput(BaseModel):
     id: str = Field(description="Unique task identifier")
     title: str = Field(description="Task title")
     description: str = Field(default="", description="Task description")
-    priority: str = Field(default="MEDIUM", description="Priority: LOW/MEDIUM/HIGH/CRITICAL")
-    assignee_agent_id: str | None = Field(default=None, description="Assign to specific agent")
+    priority: str = Field(
+        default="MEDIUM", description="Priority: LOW/MEDIUM/HIGH/CRITICAL"
+    )
+    assignee_agent_id: str | None = Field(
+        default=None, description="Assign to specific agent"
+    )
 
 
 class ClaimTaskInput(BaseModel):
@@ -171,7 +183,9 @@ class ListTasksInput(BaseModel):
 
     status: str | None = Field(default=None, description="Filter by status")
     priority: str | None = Field(default=None, description="Filter by priority")
-    assignee_agent_id: str | None = Field(default=None, description="Filter by assignee")
+    assignee_agent_id: str | None = Field(
+        default=None, description="Filter by assignee"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -210,4 +224,6 @@ class ExecCodeInput(BaseModel):
     """Input for exec_code tool."""
 
     code: str = Field(description="Python code to execute")
-    timeout_seconds: int = Field(default=30, description="Execution timeout", ge=1, le=300)
+    timeout_seconds: int = Field(
+        default=30, description="Execution timeout", ge=1, le=300
+    )

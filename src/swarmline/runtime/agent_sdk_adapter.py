@@ -8,7 +8,11 @@ from typing import Any
 import structlog
 
 from swarmline.multi_agent.graph_types import LifecycleMode
-from swarmline.protocols.host_adapter import AgentAuthority, AgentHandle, AgentHandleStatus
+from swarmline.protocols.host_adapter import (
+    AgentAuthority,
+    AgentHandle,
+    AgentHandleStatus,
+)
 from swarmline.runtime.model_registry import get_registry
 
 _log = structlog.get_logger(component="agent_sdk_adapter")

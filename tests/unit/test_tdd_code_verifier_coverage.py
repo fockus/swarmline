@@ -11,7 +11,9 @@ from swarmline.orchestration.verification_types import VerificationStatus
 class FakeRunner:
     """InMemory CommandRunner - returns zadannyy result."""
 
-    def __init__(self, exit_code: int = 0, stdout: str = "ok", stderr: str = "") -> None:
+    def __init__(
+        self, exit_code: int = 0, stdout: str = "ok", stderr: str = ""
+    ) -> None:
         self._result = CommandResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
         self.commands: list[str] = []
 

@@ -48,7 +48,9 @@ class GraphTaskWaiter(Protocol):
     Implementations should implement both protocols.
     """
 
-    async def wait_for_task(self, task_id: str, timeout: float | None = None) -> str | None:
+    async def wait_for_task(
+        self, task_id: str, timeout: float | None = None
+    ) -> str | None:
         """Wait for a task to complete. Returns result or None on timeout."""
         ...
 
@@ -57,7 +59,9 @@ class GraphTaskWaiter(Protocol):
 class PersistentOrchestrator(Protocol):
     """Persistent agent graph with goal queue. ISP: 5 methods."""
 
-    async def submit_goal(self, goal: str, *, metadata: dict[str, Any] | None = None) -> str:
+    async def submit_goal(
+        self, goal: str, *, metadata: dict[str, Any] | None = None
+    ) -> str:
         """Submit a goal. Returns goal_id."""
         ...
 

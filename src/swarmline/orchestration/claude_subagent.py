@@ -61,7 +61,9 @@ class _ClaudeWorkerRuntime:
                     message = str(getattr(event, "text", "Claude subagent error"))
                     raise RuntimeError(message)
         finally:
-            if hasattr(adapter, "disconnect") and getattr(adapter, "is_connected", False):
+            if hasattr(adapter, "disconnect") and getattr(
+                adapter, "is_connected", False
+            ):
                 await adapter.disconnect()
 
         return full_text

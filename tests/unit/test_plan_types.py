@@ -1,5 +1,4 @@
-"""Tests Plan types and state machine - TDD: RED -> GREEN. Contractnye tests for PlanStep, Plan, PlanStore Protocol.
-"""
+"""Tests Plan types and state machine - TDD: RED -> GREEN. Contractnye tests for PlanStep, Plan, PlanStore Protocol."""
 
 from __future__ import annotations
 
@@ -79,7 +78,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         approved = plan.approve(by="user")
         assert approved.status == "approved"
@@ -90,7 +92,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         approved = plan.approve(by="system")
         assert approved.status == "approved"
@@ -101,7 +106,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         approved = plan.approve(by="agent")
         assert approved.approved_by == "agent"
@@ -111,7 +119,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         plan = plan.approve(by="system")
         executing = plan.start_execution()
@@ -122,7 +133,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         plan = plan.approve(by="system").start_execution()
         completed = plan.mark_completed()
@@ -133,7 +147,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         cancelled = plan.cancel()
         assert cancelled.status == "cancelled"
@@ -145,7 +162,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         plan = plan.approve(by="user")
         with pytest.raises(ValueError, match="draft"):
@@ -156,7 +176,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         with pytest.raises(ValueError, match="approved"):
             plan.start_execution()
@@ -166,7 +189,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="s")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="s")],
+            created_at=_now(),
         )
         plan = plan.approve(by="system")
         with pytest.raises(ValueError, match="executing"):
@@ -179,7 +205,10 @@ class TestPlan:
         plan = Plan(
             id="p1",
             goal="g",
-            steps=[PlanStep(id="s1", description="a"), PlanStep(id="s2", description="b")],
+            steps=[
+                PlanStep(id="s1", description="a"),
+                PlanStep(id="s2", description="b"),
+            ],
             created_at=_now(),
         )
         updated_step = plan.steps[0].complete("done")
@@ -192,7 +221,10 @@ class TestPlan:
         from swarmline.orchestration.types import Plan, PlanStep
 
         plan = Plan(
-            id="p1", goal="g", steps=[PlanStep(id="s1", description="a")], created_at=_now()
+            id="p1",
+            goal="g",
+            steps=[PlanStep(id="s1", description="a")],
+            created_at=_now(),
         )
         fake_step = PlanStep(id="s999", description="x").complete("y")
         with pytest.raises(ValueError, match="s999"):

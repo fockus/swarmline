@@ -67,10 +67,13 @@ class InMemoryGraphCommunication:
 
     async def _emit(self, topic: str, msg: GraphMessage) -> None:
         if self._bus is not None:
-            await self._bus.emit(topic, {
-                "id": msg.id,
-                "from": msg.from_agent_id,
-                "to": msg.to_agent_id,
-                "channel": msg.channel.value,
-                "task_id": msg.task_id,
-            })
+            await self._bus.emit(
+                topic,
+                {
+                    "id": msg.id,
+                    "from": msg.from_agent_id,
+                    "to": msg.to_agent_id,
+                    "channel": msg.channel.value,
+                    "task_id": msg.task_id,
+                },
+            )

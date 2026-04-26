@@ -36,8 +36,14 @@ TASKS = [
 
 FINDINGS = {
     "researcher-api": ("api-patterns", "Use versioned REST with HATEOAS links"),
-    "researcher-db": ("db-indexing", "Composite indexes on hot columns reduce p99 by 40%"),
-    "researcher-security": ("auth-method", "OAuth2 + PKCE for public clients, JWT for service-to-service"),
+    "researcher-db": (
+        "db-indexing",
+        "Composite indexes on hot columns reduce p99 by 40%",
+    ),
+    "researcher-security": (
+        "auth-method",
+        "OAuth2 + PKCE for public clients, JWT for service-to-service",
+    ),
 }
 
 
@@ -64,7 +70,11 @@ async def test_research_swarm_tasks_created_and_claimed(session: StatefulSession
 
     for task_id, title, desc, priority in TASKS:
         res = await team_create_task(
-            session, id=task_id, title=title, description=desc, priority=priority,
+            session,
+            id=task_id,
+            title=title,
+            description=desc,
+            priority=priority,
         )
         assert res["ok"] is True
 
@@ -97,7 +107,11 @@ async def test_research_swarm_full_workflow(session: StatefulSession):
     # Create tasks
     for task_id, title, desc, priority in TASKS:
         await team_create_task(
-            session, id=task_id, title=title, description=desc, priority=priority,
+            session,
+            id=task_id,
+            title=title,
+            description=desc,
+            priority=priority,
         )
 
     # Each agent claims a task and stores findings
@@ -106,7 +120,10 @@ async def test_research_swarm_full_workflow(session: StatefulSession):
         assert claim["ok"] is True
 
         res = await memory_upsert_fact(
-            session, user_id=namespace, key=fact_key, value=fact_value,
+            session,
+            user_id=namespace,
+            key=fact_key,
+            value=fact_value,
         )
         assert res["ok"] is True
 

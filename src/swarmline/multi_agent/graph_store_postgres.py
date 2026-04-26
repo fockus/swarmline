@@ -13,7 +13,12 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swarmline.multi_agent.graph_types import AgentNode, EdgeType, GraphEdge, GraphSnapshot
+from swarmline.multi_agent.graph_types import (
+    AgentNode,
+    EdgeType,
+    GraphEdge,
+    GraphSnapshot,
+)
 from swarmline.multi_agent.registry_types import AgentStatus
 
 POSTGRES_GRAPH_SCHEMA = """
@@ -82,16 +87,22 @@ class PostgresAgentGraph:
     async def add_node(self, node: AgentNode) -> None:
         async with self._session(commit=True) as session:
             # Check duplicates
-            row = (await session.execute(
-                text("SELECT 1 FROM agent_nodes WHERE id = :id"), {"id": node.id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT 1 FROM agent_nodes WHERE id = :id"),
+                    {"id": node.id},
+                )
+            ).fetchone()
             if row:
                 raise ValueError(f"Node '{node.id}' already exists")
             # Check parent exists
             if node.parent_id is not None:
-                parent_row = (await session.execute(
-                    text("SELECT 1 FROM agent_nodes WHERE id = :id"), {"id": node.parent_id},
-                )).fetchone()
+                parent_row = (
+                    await session.execute(
+                        text("SELECT 1 FROM agent_nodes WHERE id = :id"),
+                        {"id": node.parent_id},
+                    )
+                ).fetchone()
                 if not parent_row:
                     raise ValueError(
                         f"Parent '{node.parent_id}' does not exist — add parent before child"
@@ -101,15 +112,21 @@ class PostgresAgentGraph:
                     "INSERT INTO agent_nodes (id, parent_id, data) "
                     "VALUES (:id, :parent_id, CAST(:data AS jsonb))"
                 ),
-                {"id": node.id, "parent_id": node.parent_id,
-                 "data": json.dumps(self._serialize(node))},
+                {
+                    "id": node.id,
+                    "parent_id": node.parent_id,
+                    "data": json.dumps(self._serialize(node)),
+                },
             )
 
     async def remove_node(self, node_id: str) -> bool:
         async with self._session(commit=True) as session:
-            row = (await session.execute(
-                text("SELECT 1 FROM agent_nodes WHERE id = :id"), {"id": node_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT 1 FROM agent_nodes WHERE id = :id"),
+                    {"id": node_id},
+                )
+            ).fetchone()
             if not row:
                 return False
             # CASCADE handles children, but we do explicit subtree delete for consistency
@@ -122,26 +139,36 @@ class PostgresAgentGraph:
 
     async def get_node(self, node_id: str) -> AgentNode | None:
         async with self._session() as session:
-            row = (await session.execute(
-                text("SELECT data FROM agent_nodes WHERE id = :id"), {"id": node_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM agent_nodes WHERE id = :id"),
+                    {"id": node_id},
+                )
+            ).fetchone()
             return self._deserialize(row[0]) if row else None
 
     async def get_children(self, node_id: str) -> list[AgentNode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("SELECT data FROM agent_nodes WHERE parent_id = :id"),
-                {"id": node_id},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text("SELECT data FROM agent_nodes WHERE parent_id = :id"),
+                    {"id": node_id},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def snapshot(self) -> GraphSnapshot:
         async with self._session() as session:
-            rows = (await session.execute(text("SELECT data FROM agent_nodes"))).fetchall()
+            rows = (
+                await session.execute(text("SELECT data FROM agent_nodes"))
+            ).fetchall()
             nodes = tuple(self._deserialize(r[0]) for r in rows)
         edges = tuple(
-            GraphEdge(source_id=n.id, target_id=n.parent_id, edge_type=EdgeType.REPORTS_TO)
-            for n in nodes if n.parent_id is not None
+            GraphEdge(
+                source_id=n.id, target_id=n.parent_id, edge_type=EdgeType.REPORTS_TO
+            )
+            for n in nodes
+            if n.parent_id is not None
         )
         roots = [n for n in nodes if n.parent_id is None]
         root_id = roots[0].id if len(roots) == 1 else (roots[0].id if roots else None)
@@ -151,20 +178,24 @@ class PostgresAgentGraph:
 
     async def update_node(self, node_id: str, **updates: Any) -> AgentNode | None:
         async with self._session(commit=True) as session:
-            row = (await session.execute(
-                text("SELECT data FROM agent_nodes WHERE id = :id FOR UPDATE"),
-                {"id": node_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM agent_nodes WHERE id = :id FOR UPDATE"),
+                    {"id": node_id},
+                )
+            ).fetchone()
             if not row:
                 return None
             node = self._deserialize(row[0])
             new_parent = updates.get("parent_id", node.parent_id)
             if new_parent != node.parent_id:
                 if new_parent is not None:
-                    parent_row = (await session.execute(
-                        text("SELECT 1 FROM agent_nodes WHERE id = :id"),
-                        {"id": new_parent},
-                    )).fetchone()
+                    parent_row = (
+                        await session.execute(
+                            text("SELECT 1 FROM agent_nodes WHERE id = :id"),
+                            {"id": new_parent},
+                        )
+                    ).fetchone()
                     if not parent_row:
                         raise ValueError(f"Parent '{new_parent}' does not exist")
                     subtree_ids = set(await self._subtree_ids(session, node_id))
@@ -173,14 +204,18 @@ class PostgresAgentGraph:
                             f"Cannot set parent to '{new_parent}' — would create a cycle"
                         )
             from dataclasses import replace
+
             updated = replace(node, **updates)
             await session.execute(
                 text(
                     "UPDATE agent_nodes SET parent_id = :parent_id, "
                     "data = CAST(:data AS jsonb) WHERE id = :id"
                 ),
-                {"id": node_id, "parent_id": updated.parent_id,
-                 "data": json.dumps(self._serialize(updated))},
+                {
+                    "id": node_id,
+                    "parent_id": updated.parent_id,
+                    "data": json.dumps(self._serialize(updated)),
+                },
             )
             return updated
 
@@ -188,8 +223,9 @@ class PostgresAgentGraph:
 
     async def get_chain_of_command(self, node_id: str) -> list[AgentNode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("""
+            rows = (
+                await session.execute(
+                    text("""
                     WITH RECURSIVE chain(id, parent_id, data) AS (
                         SELECT id, parent_id, data FROM agent_nodes WHERE id = :id
                         UNION ALL
@@ -198,14 +234,16 @@ class PostgresAgentGraph:
                     )
                     SELECT data FROM chain
                 """),
-                {"id": node_id},
-            )).fetchall()
+                    {"id": node_id},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def get_subtree(self, node_id: str) -> list[AgentNode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("""
+            rows = (
+                await session.execute(
+                    text("""
                     WITH RECURSIVE sub(id, data) AS (
                         SELECT id, data FROM agent_nodes WHERE id = :id
                         UNION ALL
@@ -214,31 +252,39 @@ class PostgresAgentGraph:
                     )
                     SELECT data FROM sub
                 """),
-                {"id": node_id},
-            )).fetchall()
+                    {"id": node_id},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def get_root(self) -> AgentNode | None:
         async with self._session() as session:
-            row = (await session.execute(
-                text("SELECT data FROM agent_nodes WHERE parent_id IS NULL LIMIT 1"),
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(
+                        "SELECT data FROM agent_nodes WHERE parent_id IS NULL LIMIT 1"
+                    ),
+                )
+            ).fetchone()
             return self._deserialize(row[0]) if row else None
 
     async def find_by_role(self, role: str) -> list[AgentNode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("SELECT data FROM agent_nodes WHERE data->>'role' = :role"),
-                {"role": role},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text("SELECT data FROM agent_nodes WHERE data->>'role' = :role"),
+                    {"role": role},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     # --- Internal helpers ---
 
     @staticmethod
     async def _subtree_ids(session: AsyncSession, node_id: str) -> list[str]:
-        rows = (await session.execute(
-            text("""
+        rows = (
+            await session.execute(
+                text("""
                 WITH RECURSIVE sub(id) AS (
                     SELECT id FROM agent_nodes WHERE id = :id
                     UNION ALL
@@ -246,6 +292,7 @@ class PostgresAgentGraph:
                 )
                 SELECT id FROM sub
             """),
-            {"id": node_id},
-        )).fetchall()
+                {"id": node_id},
+            )
+        ).fetchall()
         return [r[0] for r in rows]

@@ -60,7 +60,9 @@ class WorkflowBridge:
             metadata: dict[str, Any] | None = None,
         ) -> None:
             if channel != ChannelType.DIRECT:
-                raise ValueError("graph_message_sender currently supports direct messages")
+                raise ValueError(
+                    "graph_message_sender currently supports direct messages"
+                )
             await communication.send_direct(
                 GraphMessage(
                     id=uuid.uuid4().hex,

@@ -81,9 +81,7 @@ class TestResolveProviderCustomBaseUrl:
     """Custom base_url overwrites auto-detected."""
 
     def test_custom_overrides_default(self) -> None:
-        r = resolve_provider(
-            "openrouter:llama3", base_url="https://my-proxy.com/v1"
-        )
+        r = resolve_provider("openrouter:llama3", base_url="https://my-proxy.com/v1")
         assert r.base_url == "https://my-proxy.com/v1"
 
     def test_custom_base_url_for_openai(self) -> None:
@@ -91,7 +89,9 @@ class TestResolveProviderCustomBaseUrl:
         assert r.base_url == "https://proxy.example.com/v1"
 
     def test_custom_base_url_for_anthropic(self) -> None:
-        r = resolve_provider("anthropic:claude-sonnet-4-20250514", base_url="https://proxy.com")
+        r = resolve_provider(
+            "anthropic:claude-sonnet-4-20250514", base_url="https://proxy.com"
+        )
         assert r.base_url == "https://proxy.com"
 
 

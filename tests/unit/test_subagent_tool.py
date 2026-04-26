@@ -44,8 +44,12 @@ def config() -> SubagentToolConfig:
 @pytest.fixture
 def parent_tools() -> list[ToolSpec]:
     return [
-        ToolSpec(name="read_file", description="Read a file", parameters={"type": "object"}),
-        ToolSpec(name="write_file", description="Write a file", parameters={"type": "object"}),
+        ToolSpec(
+            name="read_file", description="Read a file", parameters={"type": "object"}
+        ),
+        ToolSpec(
+            name="write_file", description="Write a file", parameters={"type": "object"}
+        ),
         ToolSpec(name="search", description="Search", parameters={"type": "object"}),
     ]
 
@@ -124,7 +128,10 @@ class TestSubagentExecutorHappyPath:
     """spawn + wait completes successfully."""
 
     async def test_spawn_wait_returns_completed_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         raw = await executor({"task": "Summarize this document"})
@@ -135,7 +142,10 @@ class TestSubagentExecutorHappyPath:
         assert result["result"] == "Task completed successfully"
 
     async def test_spawn_called_with_correct_spec(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         await executor({"task": "Do something", "system_prompt": "Be concise"})
@@ -145,7 +155,10 @@ class TestSubagentExecutorHappyPath:
         assert orchestrator.spawn.call_args[0][1] == "Do something"
 
     async def test_default_system_prompt(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         await executor({"task": "Hello"})
@@ -163,7 +176,10 @@ class TestToolInheritance:
     """LLM requests specific tools — executor filters parent_tools."""
 
     async def test_all_tools_when_not_specified(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         await executor({"task": "work"})
@@ -173,7 +189,10 @@ class TestToolInheritance:
         assert tool_names == ["read_file", "write_file", "search"]
 
     async def test_filtered_tools_when_specified(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         await executor({"task": "work", "tools": ["read_file", "search"]})
@@ -183,7 +202,10 @@ class TestToolInheritance:
         assert tool_names == ["read_file", "search"]
 
     async def test_unknown_tool_names_ignored(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         await executor({"task": "work", "tools": ["read_file", "nonexistent"]})
@@ -205,7 +227,9 @@ class TestMaxDepthGuard:
         self, orchestrator: AsyncMock, parent_tools: list[ToolSpec]
     ) -> None:
         cfg = SubagentToolConfig(max_depth=3)
-        executor = create_subagent_executor(orchestrator, cfg, parent_tools, current_depth=3)
+        executor = create_subagent_executor(
+            orchestrator, cfg, parent_tools, current_depth=3
+        )
         raw = await executor({"task": "recurse"})
 
         result = json.loads(raw)
@@ -214,9 +238,14 @@ class TestMaxDepthGuard:
         orchestrator.spawn.assert_not_awaited()
 
     async def test_depth_within_limit_succeeds(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
-        executor = create_subagent_executor(orchestrator, config, parent_tools, current_depth=2)
+        executor = create_subagent_executor(
+            orchestrator, config, parent_tools, current_depth=2
+        )
         raw = await executor({"task": "work"})
 
         result = json.loads(raw)
@@ -259,7 +288,10 @@ class TestMaxConcurrent:
     """Orchestrator raises ValueError when at capacity."""
 
     async def test_max_concurrent_returns_error_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         orchestrator.spawn.side_effect = ValueError("max_concurrent reached")
         executor = create_subagent_executor(orchestrator, config, parent_tools)
@@ -279,7 +311,10 @@ class TestMissingTask:
     """task is required — missing returns error JSON."""
 
     async def test_missing_task_returns_error_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         raw = await executor({"system_prompt": "hello"})
@@ -290,7 +325,10 @@ class TestMissingTask:
         orchestrator.spawn.assert_not_awaited()
 
     async def test_empty_task_returns_error_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         raw = await executor({"task": ""})
@@ -309,7 +347,10 @@ class TestErrorHandling:
     """All exceptions → JSON, never crash parent."""
 
     async def test_unexpected_exception_returns_error_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         orchestrator.spawn.side_effect = RuntimeError("internal boom")
         executor = create_subagent_executor(orchestrator, config, parent_tools)
@@ -320,7 +361,10 @@ class TestErrorHandling:
         assert "internal boom" in result["error"]
 
     async def test_wait_exception_returns_error_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         orchestrator.wait.side_effect = RuntimeError("wait failed")
         executor = create_subagent_executor(orchestrator, config, parent_tools)
@@ -340,7 +384,10 @@ class TestFailedSubagent:
     """Subagent completes with failed status."""
 
     async def test_failed_subagent_returns_failed_json(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         orchestrator.wait.return_value = SubagentResult(
             agent_id="agent-001",

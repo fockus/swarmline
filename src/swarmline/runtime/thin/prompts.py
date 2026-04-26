@@ -118,7 +118,9 @@ def build_final_assembly_prompt(
     final_format: str,
 ) -> str:
     """Build final assembly prompt."""
-    results_text = "\n\n".join(f"### Шаг {i + 1}\n{r}" for i, r in enumerate(step_results))
+    results_text = "\n\n".join(
+        f"### Шаг {i + 1}\n{r}" for i, r in enumerate(step_results)
+    )
 
     return f"""{system_prompt}
 

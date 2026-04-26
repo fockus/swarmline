@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from swarmline.orchestration.subagent_types import SubagentResult, SubagentSpec, SubagentStatus
+from swarmline.orchestration.subagent_types import (
+    SubagentResult,
+    SubagentSpec,
+    SubagentStatus,
+)
 
 
 @runtime_checkable

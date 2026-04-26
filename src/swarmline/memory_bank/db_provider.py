@@ -97,7 +97,9 @@ class DatabaseMemoryBankProvider:
             return
         async with await self._get_session() as session:
             await session.execute(
-                text("DELETE FROM memory_bank WHERE user_id = :u AND topic_id = :t AND path = :p"),
+                text(
+                    "DELETE FROM memory_bank WHERE user_id = :u AND topic_id = :t AND path = :p"
+                ),
                 {"u": self._user_id, "t": self._topic_id, "p": path},
             )
             await session.commit()

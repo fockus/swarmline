@@ -127,9 +127,7 @@ class TestWorktreePolicy:
             base_path="/repo",
             branch_template="factory/{context}/{agent}",
         )
-        spec = policy.to_workspace_spec(
-            agent_id="dev1", task_id="t1", context="goal-a"
-        )
+        spec = policy.to_workspace_spec(agent_id="dev1", task_id="t1", context="goal-a")
         assert spec.branch_template == "factory/goal-a/dev1"
 
     def test_to_workspace_spec_base_path_preserved(self) -> None:

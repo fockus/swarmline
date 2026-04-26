@@ -46,7 +46,6 @@ def _scope(
 
 
 class TestProtocolShape:
-
     def test_protocol_shape_isinstance(self, store) -> None:
         assert isinstance(store, PersistentBudgetStore)
 
@@ -57,7 +56,6 @@ class TestProtocolShape:
 
 
 class TestRecordAndUsage:
-
     async def test_record_and_get_usage_lifetime(self, store) -> None:
         scope = _scope()
         await store.record_cost(scope, 1.50, "call-1")
@@ -80,20 +78,29 @@ class TestRecordAndUsage:
             from swarmline.pipeline.budget_types import CostEvent
             import uuid
 
-            store._costs.append(CostEvent(
-                id=uuid.uuid4().hex[:12],
-                scope=scope,
-                amount_usd=10.00,
-                description="old-cost",
-                timestamp=old_ts,
-            ))
+            store._costs.append(
+                CostEvent(
+                    id=uuid.uuid4().hex[:12],
+                    scope=scope,
+                    amount_usd=10.00,
+                    description="old-cost",
+                    timestamp=old_ts,
+                )
+            )
         elif isinstance(store, SqlitePersistentBudgetStore):
             import uuid
 
             store._execute_sync(
                 "INSERT INTO budget_costs (id, scope_type, scope_id, amount_usd, description, timestamp) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
-                (uuid.uuid4().hex[:12], scope.scope_type.value, scope.scope_id, 10.00, "old-cost", old_ts),
+                (
+                    uuid.uuid4().hex[:12],
+                    scope.scope_type.value,
+                    scope.scope_id,
+                    10.00,
+                    "old-cost",
+                    old_ts,
+                ),
             )
 
         monthly = await store.get_usage(scope, BudgetWindow.MONTHLY)
@@ -109,16 +116,17 @@ class TestRecordAndUsage:
 
 
 class TestThresholdChecks:
-
     async def test_check_threshold_ok(self, store) -> None:
         scope = _scope()
-        store.register_threshold(BudgetThreshold(
-            scope=scope,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=100.0,
-            warn_at_percent=80.0,
-            hard_stop=True,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=100.0,
+                warn_at_percent=80.0,
+                hard_stop=True,
+            )
+        )
         await store.record_cost(scope, 10.0, "small")
         result = await store.check_threshold(scope, BudgetWindow.LIFETIME)
         assert result.action == ThresholdAction.OK
@@ -128,13 +136,15 @@ class TestThresholdChecks:
 
     async def test_check_threshold_warn(self, store) -> None:
         scope = _scope()
-        store.register_threshold(BudgetThreshold(
-            scope=scope,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=100.0,
-            warn_at_percent=80.0,
-            hard_stop=True,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=100.0,
+                warn_at_percent=80.0,
+                hard_stop=True,
+            )
+        )
         await store.record_cost(scope, 85.0, "big")
         result = await store.check_threshold(scope, BudgetWindow.LIFETIME)
         assert result.action == ThresholdAction.WARN
@@ -142,13 +152,15 @@ class TestThresholdChecks:
 
     async def test_check_threshold_stop(self, store) -> None:
         scope = _scope()
-        store.register_threshold(BudgetThreshold(
-            scope=scope,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=50.0,
-            warn_at_percent=80.0,
-            hard_stop=True,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=50.0,
+                warn_at_percent=80.0,
+                hard_stop=True,
+            )
+        )
         await store.record_cost(scope, 55.0, "over-limit")
         result = await store.check_threshold(scope, BudgetWindow.LIFETIME)
         assert result.action == ThresholdAction.STOP
@@ -162,15 +174,19 @@ class TestThresholdChecks:
         assert result.limit_usd == 0.0
         assert result.percent == 0.0
 
-    async def test_check_threshold_exceed_without_hard_stop_is_warn(self, store) -> None:
+    async def test_check_threshold_exceed_without_hard_stop_is_warn(
+        self, store
+    ) -> None:
         scope = _scope()
-        store.register_threshold(BudgetThreshold(
-            scope=scope,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=10.0,
-            warn_at_percent=80.0,
-            hard_stop=False,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=10.0,
+                warn_at_percent=80.0,
+                hard_stop=False,
+            )
+        )
         await store.record_cost(scope, 15.0, "over but soft")
         result = await store.check_threshold(scope, BudgetWindow.LIFETIME)
         assert result.action == ThresholdAction.WARN
@@ -182,16 +198,17 @@ class TestThresholdChecks:
 
 
 class TestIncidents:
-
     async def test_list_incidents_after_breach(self, store) -> None:
         scope = _scope()
-        store.register_threshold(BudgetThreshold(
-            scope=scope,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=10.0,
-            warn_at_percent=80.0,
-            hard_stop=True,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=10.0,
+                warn_at_percent=80.0,
+                hard_stop=True,
+            )
+        )
         await store.record_cost(scope, 9.0, "approaching")
         await store.check_threshold(scope, BudgetWindow.LIFETIME)
         incidents = await store.list_incidents(scope)
@@ -200,13 +217,15 @@ class TestIncidents:
 
     async def test_record_cost_creates_incident_on_breach(self, store) -> None:
         scope = _scope()
-        store.register_threshold(BudgetThreshold(
-            scope=scope,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=10.0,
-            warn_at_percent=80.0,
-            hard_stop=True,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=10.0,
+                warn_at_percent=80.0,
+                hard_stop=True,
+            )
+        )
         await store.record_cost(scope, 11.0, "over-limit")
         # check_threshold triggers incident logging
         await store.check_threshold(scope, BudgetWindow.LIFETIME)
@@ -226,7 +245,6 @@ class TestIncidents:
 
 
 class TestScopeIsolation:
-
     async def test_multiple_scopes_independent(self, store) -> None:
         scope_a = _scope(scope_id="agent-a")
         scope_b = _scope(scope_id="agent-b")
@@ -244,11 +262,13 @@ class TestScopeIsolation:
         scope_a = _scope(scope_id="agent-a")
         scope_b = _scope(scope_id="agent-b")
 
-        store.register_threshold(BudgetThreshold(
-            scope=scope_a,
-            window=BudgetWindow.LIFETIME,
-            limit_usd=5.0,
-        ))
+        store.register_threshold(
+            BudgetThreshold(
+                scope=scope_a,
+                window=BudgetWindow.LIFETIME,
+                limit_usd=5.0,
+            )
+        )
         await store.record_cost(scope_a, 10.0, "over")
         await store.check_threshold(scope_a, BudgetWindow.LIFETIME)
 

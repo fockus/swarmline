@@ -21,7 +21,9 @@ class TestJsonHelpers:
         assert json_dumps_or_none(None) is None
 
     def test_json_dumps_or_none_serializes_payload(self) -> None:
-        assert json_load_or_none(json_dumps_or_none({"key": "value"})) == {"key": "value"}
+        assert json_load_or_none(json_dumps_or_none({"key": "value"})) == {
+            "key": "value"
+        }
 
     def test_json_load_or_none_preserves_python_values(self) -> None:
         payload = {"items": [1, 2, 3]}

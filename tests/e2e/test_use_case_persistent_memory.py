@@ -61,9 +61,15 @@ async def test_messages_round_trip(session: StatefulSession):
     """Messages are saved and retrieved in order."""
     uid, tid = "user-msg", "topic-1"
 
-    await memory_save_message(session, user_id=uid, topic_id=tid, role="user", content="Hello")
-    await memory_save_message(session, user_id=uid, topic_id=tid, role="assistant", content="Hi!")
-    await memory_save_message(session, user_id=uid, topic_id=tid, role="user", content="How?")
+    await memory_save_message(
+        session, user_id=uid, topic_id=tid, role="user", content="Hello"
+    )
+    await memory_save_message(
+        session, user_id=uid, topic_id=tid, role="assistant", content="Hi!"
+    )
+    await memory_save_message(
+        session, user_id=uid, topic_id=tid, role="user", content="How?"
+    )
 
     msgs = await memory_get_messages(session, user_id=uid, topic_id=tid, limit=10)
     assert msgs["ok"] is True
@@ -79,7 +85,11 @@ async def test_summary_round_trip(session: StatefulSession):
     text = "Discussion covered Python async patterns and error handling."
 
     res = await memory_save_summary(
-        session, user_id=uid, topic_id=tid, summary=text, messages_covered=5,
+        session,
+        user_id=uid,
+        topic_id=tid,
+        summary=text,
+        messages_covered=5,
     )
     assert res["ok"] is True
 

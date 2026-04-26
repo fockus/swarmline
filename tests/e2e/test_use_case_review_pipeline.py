@@ -43,7 +43,9 @@ REVIEW_TASKS = [
 async def test_priority_ordering_critical_first(session: StatefulSession):
     """Tasks are claimed in priority order: CRITICAL > HIGH > MEDIUM > LOW."""
     for tid, title, desc, prio in REVIEW_TASKS:
-        await team_create_task(session, id=tid, title=title, description=desc, priority=prio)
+        await team_create_task(
+            session, id=tid, title=title, description=desc, priority=prio
+        )
 
     first = await team_claim_task(session)
     assert first["ok"] is True
@@ -58,7 +60,10 @@ async def test_priority_ordering_critical_first(session: StatefulSession):
 async def test_no_double_claim(session: StatefulSession):
     """Once claimed, a task cannot be claimed again."""
     await team_create_task(
-        session, id="single-task", title="Solo review", priority="HIGH",
+        session,
+        id="single-task",
+        title="Solo review",
+        priority="HIGH",
     )
 
     first = await team_claim_task(session)
@@ -82,7 +87,11 @@ async def test_review_pipeline_full_workflow(session: StatefulSession):
     # Create all review tasks
     for tid, title, desc, prio in REVIEW_TASKS:
         res = await team_create_task(
-            session, id=tid, title=title, description=desc, priority=prio,
+            session,
+            id=tid,
+            title=title,
+            description=desc,
+            priority=prio,
         )
         assert res["ok"] is True
 
@@ -120,7 +129,10 @@ async def test_review_pipeline_full_workflow(session: StatefulSession):
 async def test_claimed_tasks_show_in_progress(session: StatefulSession):
     """Claimed tasks transition to in_progress status."""
     await team_create_task(
-        session, id="status-check", title="Check status", priority="MEDIUM",
+        session,
+        id="status-check",
+        title="Check status",
+        priority="MEDIUM",
     )
 
     await team_claim_task(session)

@@ -56,7 +56,9 @@ class TestWebFetchDomainFilterIntegration:
         specs, executors = create_web_tools(provider)
 
         executor = _make_executor(local_tools=executors)
-        result = await executor.execute("web_fetch", {"url": "https://blocked.org/page"})
+        result = await executor.execute(
+            "web_fetch", {"url": "https://blocked.org/page"}
+        )
         data = json.loads(result)
 
         assert data.get("status") == "ok"
@@ -69,7 +71,9 @@ class TestWebFetchDomainFilterIntegration:
         specs, executors = create_web_tools(provider)
 
         executor = _make_executor(local_tools=executors)
-        result = await executor.execute("web_fetch", {"url": "https://evil.com/malware"})
+        result = await executor.execute(
+            "web_fetch", {"url": "https://evil.com/malware"}
+        )
         data = json.loads(result)
 
         assert data.get("status") == "ok"
@@ -88,7 +92,10 @@ class TestWebFetchDomainFilterIntegration:
         )
         data = json.loads(result)
         # Should not contain "blocked" — it should attempt the fetch
-        assert "blocked" not in data.get("content", "").lower() or data.get("status") == "ok"
+        assert (
+            "blocked" not in data.get("content", "").lower()
+            or data.get("status") == "ok"
+        )
 
 
 class TestWebSearchUnchanged:
@@ -160,7 +167,9 @@ class TestMcpResourceToolIntegration:
         """read_mcp_resource tool successfully reads a resource from MCP server."""
         mock_client = AsyncMock(spec=McpClient)
         mock_client.read_resource = AsyncMock(
-            return_value={"contents": [{"uri": "file:///data.txt", "text": "hello world"}]}
+            return_value={
+                "contents": [{"uri": "file:///data.txt", "text": "hello world"}]
+            }
         )
 
         executor = _make_executor(

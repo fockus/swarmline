@@ -25,7 +25,6 @@ def _mock_agent(responses: dict[str, str] | None = None) -> MagicMock:
 
 
 class TestServeIntegration:
-
     async def test_health_via_httpx(self) -> None:
         agent = _mock_agent()
         app = create_app(agent)

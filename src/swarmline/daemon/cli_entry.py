@@ -40,14 +40,33 @@ def main(argv: list[str] | None = None) -> None:
     # --- start ---
     start_p = subparsers.add_parser("start", help="Start daemon (foreground)")
     start_p.add_argument("--config", type=str, help="YAML config file path")
-    start_p.add_argument("--pid-path", type=str, default=None, help=f"PID file path (default: {_DEFAULT_PID})")
-    start_p.add_argument("--port", type=int, default=None, help=f"Health endpoint port (default: {_DEFAULT_PORT})")
-    start_p.add_argument("--host", type=str, default=None, help=f"Health endpoint host (default: {_DEFAULT_HOST})")
-    start_p.add_argument("--name", type=str, default=None, help="Daemon name (default: swarmline-daemon)")
+    start_p.add_argument(
+        "--pid-path",
+        type=str,
+        default=None,
+        help=f"PID file path (default: {_DEFAULT_PID})",
+    )
+    start_p.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help=f"Health endpoint port (default: {_DEFAULT_PORT})",
+    )
+    start_p.add_argument(
+        "--host",
+        type=str,
+        default=None,
+        help=f"Health endpoint host (default: {_DEFAULT_HOST})",
+    )
+    start_p.add_argument(
+        "--name", type=str, default=None, help="Daemon name (default: swarmline-daemon)"
+    )
 
     # --- stop ---
     stop_p = subparsers.add_parser("stop", help="Stop running daemon")
-    stop_p.add_argument("--pid-path", type=str, default=_DEFAULT_PID, help="PID file path")
+    stop_p.add_argument(
+        "--pid-path", type=str, default=_DEFAULT_PID, help="PID file path"
+    )
 
     # --- status ---
     status_p = subparsers.add_parser("status", help="Query daemon status")
@@ -59,13 +78,17 @@ def main(argv: list[str] | None = None) -> None:
     pause_p = subparsers.add_parser("pause", help="Pause daemon scheduler")
     pause_p.add_argument("--host", type=str, default=_DEFAULT_HOST)
     pause_p.add_argument("--port", type=int, default=_DEFAULT_PORT)
-    pause_p.add_argument("--token", type=str, default=None, help="Auth token for daemon")
+    pause_p.add_argument(
+        "--token", type=str, default=None, help="Auth token for daemon"
+    )
 
     # --- resume ---
     resume_p = subparsers.add_parser("resume", help="Resume daemon scheduler")
     resume_p.add_argument("--host", type=str, default=_DEFAULT_HOST)
     resume_p.add_argument("--port", type=int, default=_DEFAULT_PORT)
-    resume_p.add_argument("--token", type=str, default=None, help="Auth token for daemon")
+    resume_p.add_argument(
+        "--token", type=str, default=None, help="Auth token for daemon"
+    )
 
     args = parser.parse_args(argv)
 
@@ -144,7 +167,16 @@ def _cmd_status(args: argparse.Namespace) -> None:
     pf = PidFile(pid_path)
     if pf.is_running():
         pid = pf.read_pid()
-        print(json.dumps({"status": "running", "pid": pid, "note": "health endpoint unreachable"}, indent=2))  # noqa: T201
+        print(
+            json.dumps(
+                {
+                    "status": "running",
+                    "pid": pid,
+                    "note": "health endpoint unreachable",
+                },
+                indent=2,
+            )
+        )  # noqa: T201
     else:
         print(json.dumps({"status": "stopped"}, indent=2))  # noqa: T201
 
@@ -207,7 +239,11 @@ def _http_get(host: str, port: int, path: str) -> dict[str, Any]:
 
 
 def _http_post(
-    host: str, port: int, path: str, *, token: str | None = None,
+    host: str,
+    port: int,
+    path: str,
+    *,
+    token: str | None = None,
 ) -> dict[str, Any]:
     """HTTP POST to daemon health endpoint."""
     url = f"http://{host}:{port}{path}"

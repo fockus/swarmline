@@ -144,7 +144,9 @@ class TestDomainFilterCaseInsensitive:
             "uppercase_subdomain",
         ],
     )
-    async def test_fetch_case_insensitive_matching(self, url: str, allowed: list[str]) -> None:
+    async def test_fetch_case_insensitive_matching(
+        self, url: str, allowed: list[str]
+    ) -> None:
         """Domain matching is case-insensitive for both URL and list entries."""
         provider = _make_provider(allowed_domains=allowed)
         result = await provider.fetch(url)

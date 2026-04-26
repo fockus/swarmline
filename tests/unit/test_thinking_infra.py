@@ -219,17 +219,23 @@ class TestDefaultLlmCallThinking:
     @pytest.mark.asyncio
     async def test_anthropic_with_thinking_adds_thinking_config(self) -> None:
         tc = ThinkingConfig(budget_tokens=8000)
-        config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514", thinking=tc)
+        config = RuntimeConfig(
+            runtime_name="thin", model="claude-sonnet-4-20250514", thinking=tc
+        )
 
-        with patch(
-            "swarmline.runtime.thin.llm_client.get_cached_adapter"
-        ) as mock_factory, patch(
-            "swarmline.runtime.thin.llm_client.resolve_provider"
-        ) as mock_resolve:
+        with (
+            patch(
+                "swarmline.runtime.thin.llm_client.get_cached_adapter"
+            ) as mock_factory,
+            patch("swarmline.runtime.thin.llm_client.resolve_provider") as mock_resolve,
+        ):
             from swarmline.runtime.provider_resolver import ResolvedProvider
 
             mock_resolve.return_value = ResolvedProvider(
-                "claude-sonnet-4-20250514", "anthropic", "anthropic", None,
+                "claude-sonnet-4-20250514",
+                "anthropic",
+                "anthropic",
+                None,
             )
             mock_adapter = AsyncMock()
             mock_adapter.call = AsyncMock(return_value="response")
@@ -248,17 +254,23 @@ class TestDefaultLlmCallThinking:
     async def test_anthropic_with_thinking_disables_stream(self) -> None:
         """When thinking is set, stream kwarg must be popped (thinking API is non-streaming)."""
         tc = ThinkingConfig(budget_tokens=8000)
-        config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514", thinking=tc)
+        config = RuntimeConfig(
+            runtime_name="thin", model="claude-sonnet-4-20250514", thinking=tc
+        )
 
-        with patch(
-            "swarmline.runtime.thin.llm_client.get_cached_adapter"
-        ) as mock_factory, patch(
-            "swarmline.runtime.thin.llm_client.resolve_provider"
-        ) as mock_resolve:
+        with (
+            patch(
+                "swarmline.runtime.thin.llm_client.get_cached_adapter"
+            ) as mock_factory,
+            patch("swarmline.runtime.thin.llm_client.resolve_provider") as mock_resolve,
+        ):
             from swarmline.runtime.provider_resolver import ResolvedProvider
 
             mock_resolve.return_value = ResolvedProvider(
-                "claude-sonnet-4-20250514", "anthropic", "anthropic", None,
+                "claude-sonnet-4-20250514",
+                "anthropic",
+                "anthropic",
+                None,
             )
             mock_adapter = AsyncMock()
             llm_result = LlmCallResult(text="answer", thinking="thought")
@@ -281,15 +293,19 @@ class TestDefaultLlmCallThinking:
         tc = ThinkingConfig(budget_tokens=8000)
         config = RuntimeConfig(runtime_name="thin", model="openai:gpt-4o", thinking=tc)
 
-        with patch(
-            "swarmline.runtime.thin.llm_client.get_cached_adapter"
-        ) as mock_factory, patch(
-            "swarmline.runtime.thin.llm_client.resolve_provider"
-        ) as mock_resolve:
+        with (
+            patch(
+                "swarmline.runtime.thin.llm_client.get_cached_adapter"
+            ) as mock_factory,
+            patch("swarmline.runtime.thin.llm_client.resolve_provider") as mock_resolve,
+        ):
             from swarmline.runtime.provider_resolver import ResolvedProvider
 
             mock_resolve.return_value = ResolvedProvider(
-                "gpt-4o", "openai", "openai_compat", None,
+                "gpt-4o",
+                "openai",
+                "openai_compat",
+                None,
             )
             mock_adapter = AsyncMock()
             mock_adapter.call = AsyncMock(return_value="response")
@@ -328,17 +344,23 @@ class TestDefaultLlmCallThinking:
     async def test_llm_call_result_returned_as_is(self) -> None:
         """When adapter returns LlmCallResult, default_llm_call returns it as-is."""
         tc = ThinkingConfig(budget_tokens=8000)
-        config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514", thinking=tc)
+        config = RuntimeConfig(
+            runtime_name="thin", model="claude-sonnet-4-20250514", thinking=tc
+        )
 
-        with patch(
-            "swarmline.runtime.thin.llm_client.get_cached_adapter"
-        ) as mock_factory, patch(
-            "swarmline.runtime.thin.llm_client.resolve_provider"
-        ) as mock_resolve:
+        with (
+            patch(
+                "swarmline.runtime.thin.llm_client.get_cached_adapter"
+            ) as mock_factory,
+            patch("swarmline.runtime.thin.llm_client.resolve_provider") as mock_resolve,
+        ):
             from swarmline.runtime.provider_resolver import ResolvedProvider
 
             mock_resolve.return_value = ResolvedProvider(
-                "claude-sonnet-4-20250514", "anthropic", "anthropic", None,
+                "claude-sonnet-4-20250514",
+                "anthropic",
+                "anthropic",
+                None,
             )
             mock_adapter = AsyncMock()
             llm_result = LlmCallResult(text="answer", thinking="thought")
@@ -458,10 +480,12 @@ class TestConversationalThinkingDelta:
 
         from swarmline.runtime.thin.conversational import run_conversational
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "The answer is 42.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "The answer is 42.",
+            }
+        )
         llm_result = LlmCallResult(text=envelope, thinking="Let me think...")
         mock_llm_call = AsyncMock(return_value=llm_result)
 
@@ -498,10 +522,12 @@ class TestConversationalThinkingDelta:
 
         from swarmline.runtime.thin.conversational import run_conversational
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "Simple answer.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "Simple answer.",
+            }
+        )
         mock_llm_call = AsyncMock(return_value=envelope)
 
         config = RuntimeConfig(runtime_name="thin", model="claude-sonnet-4-20250514")
@@ -535,10 +561,12 @@ class TestReactThinkingDelta:
         from swarmline.runtime.thin.executor import ToolExecutor
         from swarmline.runtime.thin.react_strategy import run_react
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "Done.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "Done.",
+            }
+        )
         llm_result = LlmCallResult(text=envelope, thinking="Planning steps...")
         mock_llm_call = AsyncMock(return_value=llm_result)
         mock_executor = MagicMock(spec=ToolExecutor)
@@ -572,10 +600,12 @@ class TestReactThinkingDelta:
         from swarmline.runtime.thin.executor import ToolExecutor
         from swarmline.runtime.thin.react_strategy import run_react
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "Done.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "Done.",
+            }
+        )
         mock_llm_call = AsyncMock(return_value=envelope)
         mock_executor = MagicMock(spec=ToolExecutor)
 
@@ -612,10 +642,12 @@ class TestThinRuntimeThinkingWarning:
         from swarmline.runtime.thin.runtime import ThinRuntime
         from swarmline.runtime.types import Message
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "Hello.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "Hello.",
+            }
+        )
 
         async def mock_llm_call(*args, **kwargs):
             return envelope
@@ -637,8 +669,7 @@ class TestThinRuntimeThinkingWarning:
             events.append(event)
 
         warning_events = [
-            e for e in events
-            if e.type == "status" and "thinking" in e.text.lower()
+            e for e in events if e.type == "status" and "thinking" in e.text.lower()
         ]
         assert len(warning_events) >= 1
 
@@ -649,10 +680,12 @@ class TestThinRuntimeThinkingWarning:
         from swarmline.runtime.thin.runtime import ThinRuntime
         from swarmline.runtime.types import Message
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "Hello.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "Hello.",
+            }
+        )
 
         async def mock_llm_call(*args, **kwargs):
             return envelope
@@ -674,8 +707,7 @@ class TestThinRuntimeThinkingWarning:
             events.append(event)
 
         warning_events = [
-            e for e in events
-            if e.type == "status" and "thinking" in e.text.lower()
+            e for e in events if e.type == "status" and "thinking" in e.text.lower()
         ]
         assert len(warning_events) == 0
 
@@ -686,10 +718,12 @@ class TestThinRuntimeThinkingWarning:
         from swarmline.runtime.thin.runtime import ThinRuntime
         from swarmline.runtime.types import Message
 
-        envelope = json.dumps({
-            "type": "final",
-            "final_message": "Hello.",
-        })
+        envelope = json.dumps(
+            {
+                "type": "final",
+                "final_message": "Hello.",
+            }
+        )
 
         async def mock_llm_call(*args, **kwargs):
             return envelope
@@ -707,7 +741,6 @@ class TestThinRuntimeThinkingWarning:
             events.append(event)
 
         warning_events = [
-            e for e in events
-            if e.type == "status" and "thinking" in e.text.lower()
+            e for e in events if e.type == "status" and "thinking" in e.text.lower()
         ]
         assert len(warning_events) == 0

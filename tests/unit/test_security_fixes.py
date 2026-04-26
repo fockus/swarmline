@@ -28,7 +28,9 @@ class TestSSRFDnsResolution:
         fake_addrs = [
             (2, 1, 6, "", ("127.0.0.1", 0)),  # AF_INET, SOCK_STREAM
         ]
-        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch(
+            "swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs
+        ):
             result = HttpxWebProvider._validate_url("http://evil.example.com/data")
         assert result is not None
         assert "private" in result.lower() or "127.0.0.1" in result
@@ -40,7 +42,9 @@ class TestSSRFDnsResolution:
         fake_addrs = [
             (2, 1, 6, "", ("10.0.0.5", 0)),
         ]
-        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch(
+            "swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs
+        ):
             result = HttpxWebProvider._validate_url("http://internal.corp/api")
         assert result is not None
         assert "private" in result.lower() or "10.0.0.5" in result
@@ -52,7 +56,9 @@ class TestSSRFDnsResolution:
         fake_addrs = [
             (2, 1, 6, "", ("169.254.1.1", 0)),
         ]
-        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch(
+            "swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs
+        ):
             result = HttpxWebProvider._validate_url("http://link-local-host.test/")
         assert result is not None
 
@@ -63,7 +69,9 @@ class TestSSRFDnsResolution:
         fake_addrs = [
             (2, 1, 6, "", ("93.184.216.34", 0)),
         ]
-        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch(
+            "swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs
+        ):
             result = HttpxWebProvider._validate_url("http://example.com/page")
         assert result is None
 
@@ -104,7 +112,9 @@ class TestSSRFDnsResolution:
 
         # Mock socket.getaddrinfo to allow the URL
         fake_addrs = [(2, 1, 6, "", ("93.184.216.34", 0))]
-        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch(
+            "swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs
+        ):
             mock_response = MagicMock()
             mock_response.is_redirect = False
             mock_response.status_code = 200
@@ -115,9 +125,15 @@ class TestSSRFDnsResolution:
                 mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
-                mock_client.build_request = MagicMock(side_effect=(
-                    lambda method, url, **kwargs: {"method": method, "url": url, **kwargs}
-                ))
+                mock_client.build_request = MagicMock(
+                    side_effect=(
+                        lambda method, url, **kwargs: {
+                            "method": method,
+                            "url": url,
+                            **kwargs,
+                        }
+                    )
+                )
                 mock_client.send = AsyncMock(return_value=mock_response)
                 mock_client_cls.return_value = mock_client
 
@@ -126,8 +142,10 @@ class TestSSRFDnsResolution:
                 # Verify follow_redirects=False was passed
                 mock_client_cls.assert_called_once()
                 call_kwargs = mock_client_cls.call_args
-                assert call_kwargs.kwargs.get("follow_redirects") is False or \
-                    (len(call_kwargs.args) == 0 and call_kwargs[1].get("follow_redirects") is False)
+                assert call_kwargs.kwargs.get("follow_redirects") is False or (
+                    len(call_kwargs.args) == 0
+                    and call_kwargs[1].get("follow_redirects") is False
+                )
 
     async def test_fetch_binds_request_to_resolved_public_ip(self) -> None:
         """Resolved public IP must be used for the connect path to avoid DNS rebinding."""
@@ -143,14 +161,22 @@ class TestSSRFDnsResolution:
 
         sent_requests: list[Any] = []
 
-        with patch("swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs):
+        with patch(
+            "swarmline.tools.web_httpx.socket.getaddrinfo", return_value=fake_addrs
+        ):
             with patch("httpx.AsyncClient") as mock_client_cls:
                 mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
-                mock_client.build_request = MagicMock(side_effect=(
-                    lambda method, url, **kwargs: {"method": method, "url": url, **kwargs}
-                ))
+                mock_client.build_request = MagicMock(
+                    side_effect=(
+                        lambda method, url, **kwargs: {
+                            "method": method,
+                            "url": url,
+                            **kwargs,
+                        }
+                    )
+                )
 
                 async def _send(request):
                     sent_requests.append(request)
@@ -191,9 +217,15 @@ class TestSSRFDnsResolution:
                 mock_client = MagicMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
-                mock_client.build_request = MagicMock(side_effect=(
-                    lambda method, url, **kwargs: {"method": method, "url": url, **kwargs}
-                ))
+                mock_client.build_request = MagicMock(
+                    side_effect=(
+                        lambda method, url, **kwargs: {
+                            "method": method,
+                            "url": url,
+                            **kwargs,
+                        }
+                    )
+                )
                 mock_client.send = AsyncMock(return_value=redirect_response)
                 mock_client_cls.return_value = mock_client
 
@@ -234,7 +266,10 @@ class TestWorkspacePathInjection:
     async def test_workspace_rejects_path_traversal_agent_id(self) -> None:
         """agent_id with '../' must raise ValueError."""
         from swarmline.multi_agent.workspace import LocalWorkspace
-        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace_types import (
+            WorkspaceSpec,
+            WorkspaceStrategy,
+        )
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -244,7 +279,10 @@ class TestWorkspacePathInjection:
     async def test_workspace_rejects_path_traversal_task_id(self) -> None:
         """task_id with '../' must raise ValueError."""
         from swarmline.multi_agent.workspace import LocalWorkspace
-        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace_types import (
+            WorkspaceSpec,
+            WorkspaceStrategy,
+        )
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -254,7 +292,10 @@ class TestWorkspacePathInjection:
     async def test_workspace_rejects_slash_in_agent_id(self) -> None:
         """agent_id with '/' must raise ValueError."""
         from swarmline.multi_agent.workspace import LocalWorkspace
-        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace_types import (
+            WorkspaceSpec,
+            WorkspaceStrategy,
+        )
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -264,7 +305,10 @@ class TestWorkspacePathInjection:
     async def test_workspace_rejects_empty_agent_id(self) -> None:
         """Empty agent_id must raise ValueError."""
         from swarmline.multi_agent.workspace import LocalWorkspace
-        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace_types import (
+            WorkspaceSpec,
+            WorkspaceStrategy,
+        )
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -274,7 +318,10 @@ class TestWorkspacePathInjection:
     async def test_workspace_accepts_valid_slugs(self) -> None:
         """Valid alphanumeric slugs with dashes and underscores must work."""
         from swarmline.multi_agent.workspace import LocalWorkspace
-        from swarmline.multi_agent.workspace_types import WorkspaceSpec, WorkspaceStrategy
+        from swarmline.multi_agent.workspace_types import (
+            WorkspaceSpec,
+            WorkspaceStrategy,
+        )
 
         ws = LocalWorkspace()
         spec = WorkspaceSpec(strategy=WorkspaceStrategy.TEMP_DIR, base_path="/tmp")
@@ -476,8 +523,9 @@ class TestDockerSandboxHardening:
 
             mock_client.containers.run.assert_called_once()
             call_kwargs = mock_client.containers.run.call_args
-            assert call_kwargs.kwargs.get("cap_drop") == ["ALL"] or \
-                (len(call_kwargs) > 1 and call_kwargs[1].get("cap_drop") == ["ALL"])
+            assert call_kwargs.kwargs.get("cap_drop") == ["ALL"] or (
+                len(call_kwargs) > 1 and call_kwargs[1].get("cap_drop") == ["ALL"]
+            )
 
     async def test_docker_no_new_privileges(self) -> None:
         """containers.run must be called with security_opt=['no-new-privileges=true']."""
@@ -502,8 +550,9 @@ class TestDockerSandboxHardening:
             await provider._ensure_container()
 
             call_kwargs = mock_client.containers.run.call_args
-            security_opt = call_kwargs.kwargs.get("security_opt") or \
-                (call_kwargs[1].get("security_opt") if len(call_kwargs) > 1 else None)
+            security_opt = call_kwargs.kwargs.get("security_opt") or (
+                call_kwargs[1].get("security_opt") if len(call_kwargs) > 1 else None
+            )
             assert security_opt is not None
             assert "no-new-privileges=true" in security_opt
 
@@ -583,7 +632,9 @@ class TestDaemonHealthAuth:
         # The health server should have the auth_token set
         assert runner._health._auth_token == "runner-secret"
 
-    def test_daemon_runner_requires_explicit_local_opt_in_without_auth(self, tmp_path: Any) -> None:
+    def test_daemon_runner_requires_explicit_local_opt_in_without_auth(
+        self, tmp_path: Any
+    ) -> None:
         """DaemonRunner without auth_token must not build insecure health endpoint implicitly."""
         from swarmline.daemon.runner import DaemonRunner
         from swarmline.daemon.types import DaemonConfig
@@ -595,7 +646,9 @@ class TestDaemonHealthAuth:
         with pytest.raises(ValueError, match="requires auth_token by default"):
             DaemonRunner(config=config)
 
-    def test_daemon_runner_no_auth_with_explicit_local_opt_in(self, tmp_path: Any) -> None:
+    def test_daemon_runner_no_auth_with_explicit_local_opt_in(
+        self, tmp_path: Any
+    ) -> None:
         """DaemonRunner can start local-only health endpoint when explicitly opted in."""
         from swarmline.daemon.runner import DaemonRunner
         from swarmline.daemon.types import DaemonConfig

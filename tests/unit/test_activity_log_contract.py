@@ -6,7 +6,11 @@ import time
 
 import pytest
 
-from swarmline.observability.activity_types import ActivityEntry, ActivityFilter, ActorType
+from swarmline.observability.activity_types import (
+    ActivityEntry,
+    ActivityFilter,
+    ActorType,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +63,6 @@ def _entry(
 
 
 class TestProtocolShape:
-
     def test_protocol_shape(self, log) -> None:
         from swarmline.observability.activity_log import ActivityLog
 
@@ -72,7 +75,6 @@ class TestProtocolShape:
 
 
 class TestBasicCRUD:
-
     async def test_log_and_query_all(self, log) -> None:
         """Log 3 entries, query with empty filter returns all."""
         await log.log(_entry(id="e1", timestamp=3.0))
@@ -97,7 +99,6 @@ class TestBasicCRUD:
 
 
 class TestFiltering:
-
     async def test_query_by_actor_type(self, log) -> None:
         await log.log(_entry(id="e1", actor_type=ActorType.AGENT))
         await log.log(_entry(id="e2", actor_type=ActorType.USER))
@@ -163,22 +164,40 @@ class TestFiltering:
         assert ids == {"e1", "e2"}
 
     async def test_query_combined_filters(self, log) -> None:
-        await log.log(_entry(
-            id="e1", actor_type=ActorType.AGENT, action="task.created",
-            entity_type="task", timestamp=100.0,
-        ))
-        await log.log(_entry(
-            id="e2", actor_type=ActorType.USER, action="task.created",
-            entity_type="task", timestamp=200.0,
-        ))
-        await log.log(_entry(
-            id="e3", actor_type=ActorType.AGENT, action="budget.exceeded",
-            entity_type="pipeline", timestamp=300.0,
-        ))
+        await log.log(
+            _entry(
+                id="e1",
+                actor_type=ActorType.AGENT,
+                action="task.created",
+                entity_type="task",
+                timestamp=100.0,
+            )
+        )
+        await log.log(
+            _entry(
+                id="e2",
+                actor_type=ActorType.USER,
+                action="task.created",
+                entity_type="task",
+                timestamp=200.0,
+            )
+        )
+        await log.log(
+            _entry(
+                id="e3",
+                actor_type=ActorType.AGENT,
+                action="budget.exceeded",
+                entity_type="pipeline",
+                timestamp=300.0,
+            )
+        )
 
-        results = await log.query(ActivityFilter(
-            actor_type=ActorType.AGENT, action="task.created",
-        ))
+        results = await log.query(
+            ActivityFilter(
+                actor_type=ActorType.AGENT,
+                action="task.created",
+            )
+        )
         assert len(results) == 1
         assert results[0].id == "e1"
 
@@ -197,7 +216,6 @@ class TestFiltering:
 
 
 class TestCount:
-
     async def test_count_matches_query_length(self, log) -> None:
         await log.log(_entry(id="e1", actor_type=ActorType.AGENT))
         await log.log(_entry(id="e2", actor_type=ActorType.USER))
@@ -225,7 +243,6 @@ class TestCount:
 
 
 class TestDetails:
-
     async def test_details_round_trip(self, log) -> None:
         details = {"reason": "budget exceeded", "amount": 42.5, "tags": ["a", "b"]}
         await log.log(_entry(id="e1", details=details))
@@ -240,7 +257,6 @@ class TestDetails:
 
 
 class TestEviction:
-
     async def test_activity_log_evicts_when_over_max_inmemory(self) -> None:
         """InMemoryActivityLog with max_entries=5: append 7, verify only 5 remain."""
         from swarmline.observability.activity_log import InMemoryActivityLog
@@ -289,11 +305,13 @@ class TestEviction:
 
         log = SqliteActivityLog(str(tmp_path / "count.db"))
         for i in range(20):
-            await log.log(_entry(
-                id=f"e{i}",
-                actor_type=ActorType.AGENT if i % 2 == 0 else ActorType.USER,
-                timestamp=float(i),
-            ))
+            await log.log(
+                _entry(
+                    id=f"e{i}",
+                    actor_type=ActorType.AGENT if i % 2 == 0 else ActorType.USER,
+                    timestamp=float(i),
+                )
+            )
 
         total = await log.count(ActivityFilter())
         assert total == 20

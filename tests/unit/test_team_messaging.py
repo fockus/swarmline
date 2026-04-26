@@ -22,7 +22,9 @@ class TestMessageBus:
         from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
-        msg = TeamMessage(from_agent="lead", to_agent="w1", content="начинай", timestamp=_now())
+        msg = TeamMessage(
+            from_agent="lead", to_agent="w1", content="начинай", timestamp=_now()
+        )
         await bus.send(msg)
 
         inbox = await bus.get_inbox("w1")
@@ -41,13 +43,19 @@ class TestMessageBus:
 
         bus = MessageBus()
         await bus.send(
-            TeamMessage(from_agent="lead", to_agent="w1", content="msg1", timestamp=_now())
+            TeamMessage(
+                from_agent="lead", to_agent="w1", content="msg1", timestamp=_now()
+            )
         )
         await bus.send(
-            TeamMessage(from_agent="lead", to_agent="w1", content="msg2", timestamp=_now())
+            TeamMessage(
+                from_agent="lead", to_agent="w1", content="msg2", timestamp=_now()
+            )
         )
         await bus.send(
-            TeamMessage(from_agent="lead", to_agent="w2", content="msg3", timestamp=_now())
+            TeamMessage(
+                from_agent="lead", to_agent="w2", content="msg3", timestamp=_now()
+            )
         )
 
         inbox_w1 = await bus.get_inbox("w1")
@@ -73,7 +81,9 @@ class TestMessageBus:
 
         bus = MessageBus()
         await bus.send(
-            TeamMessage(from_agent="w1", to_agent="lead", content="результат", timestamp=_now())
+            TeamMessage(
+                from_agent="w1", to_agent="lead", content="результат", timestamp=_now()
+            )
         )
 
         outbox = await bus.get_outbox("w1")
@@ -85,8 +95,12 @@ class TestMessageBus:
         from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
-        await bus.send(TeamMessage(from_agent="a", to_agent="b", content="1", timestamp=_now()))
-        await bus.send(TeamMessage(from_agent="b", to_agent="a", content="2", timestamp=_now()))
+        await bus.send(
+            TeamMessage(from_agent="a", to_agent="b", content="1", timestamp=_now())
+        )
+        await bus.send(
+            TeamMessage(from_agent="b", to_agent="a", content="2", timestamp=_now())
+        )
 
         history = await bus.get_history()
         assert len(history) == 2
@@ -95,7 +109,9 @@ class TestMessageBus:
         from swarmline.orchestration.message_bus import MessageBus
 
         bus = MessageBus()
-        await bus.send(TeamMessage(from_agent="a", to_agent="b", content="x", timestamp=_now()))
+        await bus.send(
+            TeamMessage(from_agent="a", to_agent="b", content="x", timestamp=_now())
+        )
         await bus.clear()
         assert await bus.get_history() == []
 
@@ -143,13 +159,17 @@ class TestTeamWithMessaging:
 
         orch = DeepAgentsTeamOrchestrator(mock_sub)
         config = TeamConfig(
-            lead_prompt="lead", worker_specs=[SubagentSpec(name="w1", system_prompt="p")]
+            lead_prompt="lead",
+            worker_specs=[SubagentSpec(name="w1", system_prompt="p")],
         )
         team_id = await orch.start(config, "задача")
 
         # Worker otvechaet lidu
         reply = TeamMessage(
-            from_agent="w1", to_agent="lead", content="готово: 5 вкладов", timestamp=_now()
+            from_agent="w1",
+            to_agent="lead",
+            content="готово: 5 вкладов",
+            timestamp=_now(),
         )
         await orch.send_message(team_id, reply)
 
@@ -168,15 +188,22 @@ class TestTeamWithMessaging:
 
         orch = DeepAgentsTeamOrchestrator(mock_sub)
         config = TeamConfig(
-            lead_prompt="lead", worker_specs=[SubagentSpec(name="w1", system_prompt="p")]
+            lead_prompt="lead",
+            worker_specs=[SubagentSpec(name="w1", system_prompt="p")],
         )
         team_id = await orch.start(config, "t")
 
         await orch.send_message(
-            team_id, TeamMessage(from_agent="lead", to_agent="w1", content="a", timestamp=_now())
+            team_id,
+            TeamMessage(
+                from_agent="lead", to_agent="w1", content="a", timestamp=_now()
+            ),
         )
         await orch.send_message(
-            team_id, TeamMessage(from_agent="w1", to_agent="lead", content="b", timestamp=_now())
+            team_id,
+            TeamMessage(
+                from_agent="w1", to_agent="lead", content="b", timestamp=_now()
+            ),
         )
 
         status = await orch.get_team_status(team_id)
@@ -192,7 +219,8 @@ class TestTeamWithMessaging:
 
         orch = DeepAgentsTeamOrchestrator(mock_sub)
         config = TeamConfig(
-            lead_prompt="lead", worker_specs=[SubagentSpec(name="w1", system_prompt="p")]
+            lead_prompt="lead",
+            worker_specs=[SubagentSpec(name="w1", system_prompt="p")],
         )
 
         await orch.start(config, "t")

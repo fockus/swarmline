@@ -1,5 +1,4 @@
-"""Coverage tests: CommandRegistry (validate, execute_validated, help, errors) + loader edge cases. Dopolnyaet test_commands_v2.py - pokryvaet notprotestirovannye puti.
-"""
+"""Coverage tests: CommandRegistry (validate, execute_validated, help, errors) + loader edge cases. Dopolnyaet test_commands_v2.py - pokryvaet notprotestirovannye puti."""
 
 from __future__ import annotations
 
@@ -57,8 +56,17 @@ class TestValidateParamsTypeChecks:
             ("object", "not-dict", False),
         ],
         ids=[
-            "str-ok", "str-fail", "int-ok", "int-fail", "int-bool-rejected",
-            "bool-ok", "bool-fail", "array-ok", "array-fail", "obj-ok", "obj-fail",
+            "str-ok",
+            "str-fail",
+            "int-ok",
+            "int-fail",
+            "int-bool-rejected",
+            "bool-ok",
+            "bool-fail",
+            "array-ok",
+            "array-fail",
+            "obj-ok",
+            "obj-fail",
         ],
     )
     def test_validate_params_type_checks(
@@ -100,11 +108,15 @@ class TestExecuteValidated:
         async def greet(name: str = "world", **kwargs: Any) -> str:
             return f"Hi, {name}!"
 
-        reg.add("greet", greet, parameters={
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-            "required": ["name"],
-        })
+        reg.add(
+            "greet",
+            greet,
+            parameters={
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            },
+        )
         result = await reg.execute_validated("greet", {"name": "Alice"})
         assert result == "Hi, Alice!"
 
@@ -114,11 +126,15 @@ class TestExecuteValidated:
         async def handler(**kwargs: Any) -> str:
             return "ok"
 
-        reg.add("cmd", handler, parameters={
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-            "required": ["name"],
-        })
+        reg.add(
+            "cmd",
+            handler,
+            parameters={
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            },
+        )
         result = await reg.execute_validated("cmd", {})
         assert "required parameter 'name' is missing" in result
 
@@ -128,10 +144,14 @@ class TestExecuteValidated:
         async def handler(**kwargs: Any) -> str:
             return "ok"
 
-        reg.add("cmd", handler, parameters={
-            "type": "object",
-            "properties": {"count": {"type": "integer"}},
-        })
+        reg.add(
+            "cmd",
+            handler,
+            parameters={
+                "type": "object",
+                "properties": {"count": {"type": "integer"}},
+            },
+        )
         result = await reg.execute_validated("cmd", {"count": "not_int"})
         assert "must be of type 'integer'" in result
 
@@ -156,9 +176,14 @@ class TestExecuteValidated:
         async def broken(**kwargs: Any) -> str:
             raise ValueError("boom")
 
-        reg.add("broken", broken, parameters={
-            "type": "object", "properties": {},
-        })
+        reg.add(
+            "broken",
+            broken,
+            parameters={
+                "type": "object",
+                "properties": {},
+            },
+        )
         result = await reg.execute_validated("broken")
         assert "Ошибка выполнения" in result
         assert "boom" in result
@@ -301,7 +326,9 @@ class TestLoaderEdgeCases:
         from swarmline.commands.loader import load_commands_from_yaml
 
         f = tmp_path / "noname.yaml"
-        f.write_text("commands:\n  - description: no name here\n  - name: valid\n    description: ok\n")
+        f.write_text(
+            "commands:\n  - description: no name here\n  - name: valid\n    description: ok\n"
+        )
         commands = load_commands_from_yaml(str(f))
         assert len(commands) == 1
         assert commands[0].name == "valid"
@@ -350,12 +377,16 @@ class TestAutoDiscoverCommands:
             return "hi!"
 
         reg = CommandRegistry()
-        count = auto_discover_commands(reg, tmp_path, handler_registry={"greet": greet_handler})
+        count = auto_discover_commands(
+            reg, tmp_path, handler_registry={"greet": greet_handler}
+        )
         assert count == 1
         result = await reg.execute("greet")
         assert result == "hi!"
 
-    async def test_auto_discover_noop_handler_when_no_registry(self, tmp_path: Any) -> None:
+    async def test_auto_discover_noop_handler_when_no_registry(
+        self, tmp_path: Any
+    ) -> None:
         from swarmline.commands.loader import auto_discover_commands
 
         (tmp_path / "noop.yaml").write_text("name: noop_cmd\ndescription: No handler\n")

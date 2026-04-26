@@ -139,8 +139,10 @@ class ThinRuntime:
             # Initial executor with builtin specs only; run() updates with actual active_tools
             initial_tool_specs = list(_builtin_specs.values())
             subagent_executor = create_subagent_executor(
-                self._subagent_orchestrator, subagent_config,
-                initial_tool_specs, current_depth=0,
+                self._subagent_orchestrator,
+                subagent_config,
+                initial_tool_specs,
+                current_depth=0,
             )
             merged_local_tools["spawn_agent"] = subagent_executor
             self._subagent_tool_spec = SUBAGENT_TOOL_SPEC
@@ -173,13 +175,15 @@ class ThinRuntime:
                 from swarmline.runtime.thin.native_tools import NativeToolCallAdapter
 
                 provider = resolve_provider(
-                    self._config.model, base_url=self._config.base_url,
+                    self._config.model,
+                    base_url=self._config.base_url,
                 )
                 adapter = get_cached_adapter(provider)
                 if isinstance(adapter, NativeToolCallAdapter):
                     self._native_adapter = adapter
             except Exception:
                 import logging
+
                 logging.getLogger(__name__).warning(
                     "Failed to create native tool adapter, will fall back to JSON-in-text",
                     exc_info=True,
@@ -194,7 +198,9 @@ class ThinRuntime:
             )
 
     @staticmethod
-    def _build_hook_dispatcher(hook_registry: HookRegistry | None) -> HookDispatcher | None:
+    def _build_hook_dispatcher(
+        hook_registry: HookRegistry | None,
+    ) -> HookDispatcher | None:
         """Build HookDispatcher from HookRegistry if provided."""
         if hook_registry is None:
             return None
@@ -267,7 +273,9 @@ class ThinRuntime:
 
         # Pre-call budget check
         if tracker is not None and tracker.check_budget() == "exceeded":
-            yield self._budget_exceeded_event(tracker, prefix="Cost budget exceeded before call")
+            yield self._budget_exceeded_event(
+                tracker, prefix="Cost budget exceeded before call"
+            )
             return
 
         try:
@@ -283,7 +291,6 @@ class ThinRuntime:
             )
             return
 
-
         user_text = self._extract_last_user_text(messages)
 
         # --- MCP resource tool: append spec to active_tools ---
@@ -296,14 +303,19 @@ class ThinRuntime:
         if self._monitor_agent_tool_spec is not None:
             active_tools = [*active_tools, self._monitor_agent_tool_spec]
             # Update executor with actual active_tools for correct tool inheritance
-            if self._subagent_orchestrator is not None and self._subagent_config_obj is not None:
+            if (
+                self._subagent_orchestrator is not None
+                and self._subagent_config_obj is not None
+            ):
                 from swarmline.runtime.thin.subagent_tool import (
                     create_subagent_executor,
                 )
 
                 updated_executor = create_subagent_executor(
-                    self._subagent_orchestrator, self._subagent_config_obj,
-                    active_tools, current_depth=0,
+                    self._subagent_orchestrator,
+                    self._subagent_config_obj,
+                    active_tools,
+                    current_depth=0,
                 )
                 self._executor._local_tools["spawn_agent"] = updated_executor
 
@@ -326,7 +338,9 @@ class ThinRuntime:
         ):
             cmd_name, cmd_args = self._command_registry.parse_command(user_text)
             if self._command_registry.resolve(cmd_name) is not None:
-                cmd_result = await self._command_registry.execute(cmd_name, args=cmd_args)
+                cmd_result = await self._command_registry.execute(
+                    cmd_name, args=cmd_args
+                )
                 yield RuntimeEvent.final(text=cmd_result)
                 if self._hook_dispatcher is not None:
                     await self._hook_dispatcher.dispatch_stop(result_text=cmd_result)
@@ -351,7 +365,8 @@ class ThinRuntime:
                 config=effective_config.compaction,
             )
             messages, system_prompt = await compaction_filter.filter(
-                messages, system_prompt,
+                messages,
+                system_prompt,
             )
 
         # --- Input filters ---
@@ -372,7 +387,9 @@ class ThinRuntime:
         if effective_config.thinking is not None:
             from swarmline.runtime.provider_resolver import resolve_provider as _resolve
 
-            _resolved = _resolve(effective_config.model, base_url=effective_config.base_url)
+            _resolved = _resolve(
+                effective_config.model, base_url=effective_config.base_url
+            )
             if _resolved.sdk_type != "anthropic":
                 yield RuntimeEvent.status(
                     "Warning: extended thinking is only supported for Anthropic models; "
@@ -464,7 +481,9 @@ class ThinRuntime:
                     "tool_call_finished",
                     "final",
                 }:
-                    cancelled_event = self._cancelled_event(effective_config.cancellation_token)
+                    cancelled_event = self._cancelled_event(
+                        effective_config.cancellation_token
+                    )
                     if cancelled_event is not None:
                         yield cancelled_event
                         return
@@ -474,18 +493,19 @@ class ThinRuntime:
                 if event.is_final and tracker is not None:
                     usage = event.data.get("usage", {})
                     metrics = event.data.get("metrics", {})
-                    tokens_in = int(usage.get("input_tokens", metrics.get("tokens_in", 0)) or 0)
-                    tokens_out = int(usage.get("output_tokens", metrics.get("tokens_out", 0)) or 0)
+                    tokens_in = int(
+                        usage.get("input_tokens", metrics.get("tokens_in", 0)) or 0
+                    )
+                    tokens_out = int(
+                        usage.get("output_tokens", metrics.get("tokens_out", 0)) or 0
+                    )
                     model = metrics.get("model", effective_config.model)
                     tracker.record(model, tokens_in, tokens_out)
                     event.data["total_cost_usd"] = tracker.total_cost_usd
                     budget_status = tracker.check_budget()
 
                 # --- Output guardrails on final event ---
-                if (
-                    event.is_final
-                    and effective_config.output_guardrails
-                ):
+                if event.is_final and effective_config.output_guardrails:
                     response_text = event.data.get("text", "")
                     guard_error = await self._run_guardrails(
                         effective_config.output_guardrails,
@@ -539,7 +559,9 @@ class ThinRuntime:
                 self._retry_events.clear()
             yield RuntimeEvent.error(exc.error)
             if self._hook_dispatcher is not None:
-                await self._hook_dispatcher.dispatch_stop(result_text=str(exc.error.message))
+                await self._hook_dispatcher.dispatch_stop(
+                    result_text=str(exc.error.message)
+                )
         except Exception as e:
             yield RuntimeEvent.error(
                 RuntimeErrorData(
@@ -607,9 +629,7 @@ class ThinRuntime:
 
     def _buffer_retry_status(self, attempt: int, delay: float) -> None:
         self._retry_events.append(
-            RuntimeEvent.status(
-                f"Retry attempt {attempt}, delay {delay:.1f}s"
-            )
+            RuntimeEvent.status(f"Retry attempt {attempt}, delay {delay:.1f}s")
         )
 
     async def cleanup(self) -> None:

@@ -16,8 +16,9 @@ from swarmline.input_filters import InputFilter, MaxTokensFilter
 from swarmline.runtime.types import Message, RuntimeConfig
 
 
-def _msg(role: str, content: str, name: str | None = None,
-         metadata: dict | None = None) -> Message:
+def _msg(
+    role: str, content: str, name: str | None = None, metadata: dict | None = None
+) -> Message:
     return Message(role=role, content=content, name=name, metadata=metadata)
 
 
@@ -155,7 +156,9 @@ class TestCompactionRealisticScenario:
         msgs.append(_msg("user", "Read the config file and tell me the database URL"))
 
         # Agent reads file (tool call + result)
-        msgs.extend(_tool_pair("read_file", '{"database_url": "postgres://localhost/mydb"}'))
+        msgs.extend(
+            _tool_pair("read_file", '{"database_url": "postgres://localhost/mydb"}')
+        )
 
         # Agent responds
         msgs.append(_msg("assistant", "The database URL is postgres://localhost/mydb"))

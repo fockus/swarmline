@@ -112,8 +112,8 @@ class DeepAgentsRuntime:
                     parsed = parse_mcp_tool_name(spec.name)
                     if parsed is not None:
                         server_id, tool_name = parsed
-                        self._tool_executors[spec.name] = self._mcp_bridge.create_tool_executor(
-                            server_id, tool_name
+                        self._tool_executors[spec.name] = (
+                            self._mcp_bridge.create_tool_executor(server_id, tool_name)
                         )
             except Exception as exc:
                 _log.warning("MCP discovery failed, tools unavailable: %s", exc)
@@ -127,7 +127,9 @@ class DeepAgentsRuntime:
             final_session_id = None
             final_native_metadata = None
             if self._should_use_native_path(effective_config):
-                state_error = validate_native_state_config(effective_config.native_config)
+                state_error = validate_native_state_config(
+                    effective_config.native_config
+                )
                 if state_error:
                     yield RuntimeEvent.error(state_error)
                     return
@@ -158,9 +160,11 @@ class DeepAgentsRuntime:
                     effective_system_prompt,
                     include_system_prompt=False,
                 )
-                input_payload, run_config, final_native_metadata = build_native_invocation(
-                    messages=lc_messages,
-                    native_config=effective_config.native_config,
+                input_payload, run_config, final_native_metadata = (
+                    build_native_invocation(
+                        messages=lc_messages,
+                        native_config=effective_config.native_config,
+                    )
                 )
                 final_session_id = final_native_metadata.get("thread_id")
                 state_notice = build_native_state_notice(final_native_metadata)
@@ -200,7 +204,9 @@ class DeepAgentsRuntime:
                                 {
                                     "id": correlation_id,
                                     "name": tool_name,
-                                    "args": tool_args if isinstance(tool_args, dict) else {},
+                                    "args": tool_args
+                                    if isinstance(tool_args, dict)
+                                    else {},
                                     "type": "tool_call",
                                 }
                             ],
@@ -218,7 +224,9 @@ class DeepAgentsRuntime:
                             content=str(event.data.get("result_summary", "")),
                             name=str(event.data.get("name", "")) or None,
                             metadata={
-                                "correlation_id": str(event.data.get("correlation_id", "")),
+                                "correlation_id": str(
+                                    event.data.get("correlation_id", "")
+                                ),
                             },
                         )
                     )
@@ -235,7 +243,6 @@ class DeepAgentsRuntime:
                 )
             )
             return
-
 
         new_messages.append(Message(role="assistant", content=full_text))
 
@@ -326,7 +333,8 @@ class DeepAgentsRuntime:
         """Stream langchain."""
         lc_messages = self._build_lc_messages(messages, system_prompt)
         lc_tools = [
-            create_langchain_tool(spec, self._tool_executors.get(spec.name)) for spec in tools
+            create_langchain_tool(spec, self._tool_executors.get(spec.name))
+            for spec in tools
         ]
         llm = self._build_llm(model, base_url)
         runnable = llm.bind_tools(lc_tools) if lc_tools else llm

@@ -60,25 +60,37 @@ class TestPathValidation:
         validate_memory_path("plans/2026-02-12_feature.md", max_depth=2)
 
     def test_depth_exceeded(self) -> None:
-        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import (
+            MemoryBankViolation,
+            validate_memory_path,
+        )
 
         with pytest.raises(MemoryBankViolation, match="depth"):
             validate_memory_path("a/b/c/file.md", max_depth=2)
 
     def test_traversal_blocked(self) -> None:
-        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import (
+            MemoryBankViolation,
+            validate_memory_path,
+        )
 
         with pytest.raises(MemoryBankViolation, match="traversal"):
             validate_memory_path("../etc/passwd", max_depth=2)
 
     def test_absolute_path_blocked(self) -> None:
-        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import (
+            MemoryBankViolation,
+            validate_memory_path,
+        )
 
         with pytest.raises(MemoryBankViolation, match="абсолютный"):
             validate_memory_path("/etc/passwd", max_depth=2)
 
     def test_empty_path_blocked(self) -> None:
-        from swarmline.memory_bank.types import MemoryBankViolation, validate_memory_path
+        from swarmline.memory_bank.types import (
+            MemoryBankViolation,
+            validate_memory_path,
+        )
 
         with pytest.raises(MemoryBankViolation):
             validate_memory_path("", max_depth=2)

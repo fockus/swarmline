@@ -18,6 +18,7 @@ from swarmline.memory_bank.knowledge_types import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_entry(
     path: str = "notes/test.md",
     kind: DocumentKind = "note",

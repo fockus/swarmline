@@ -14,7 +14,6 @@ from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode
 
 
 class TestAgentCapabilities:
-
     def test_defaults(self) -> None:
         caps = AgentCapabilities()
         assert caps.can_hire is False
@@ -62,7 +61,6 @@ class TestAgentCapabilities:
 
 
 class TestGovernanceConfig:
-
     def test_defaults(self) -> None:
         from swarmline.multi_agent.graph_governance import GraphGovernanceConfig
 
@@ -92,24 +90,42 @@ class TestGovernanceConfig:
 
 
 class TestCheckHireAllowed:
-
     @pytest.fixture
     async def org(self):
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="ceo", name="CEO", role="executive",
-            capabilities=AgentCapabilities(can_hire=True),
-        ))
-        await store.add_node(AgentNode(
-            id="cto", name="CTO", role="tech_lead", parent_id="ceo",
-            capabilities=AgentCapabilities(can_hire=True, max_children=2),
-        ))
-        await store.add_node(AgentNode(
-            id="eng1", name="Eng1", role="engineer", parent_id="cto",
-        ))
-        await store.add_node(AgentNode(
-            id="eng2", name="Eng2", role="engineer", parent_id="cto",
-        ))
+        await store.add_node(
+            AgentNode(
+                id="ceo",
+                name="CEO",
+                role="executive",
+                capabilities=AgentCapabilities(can_hire=True),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="cto",
+                name="CTO",
+                role="tech_lead",
+                parent_id="ceo",
+                capabilities=AgentCapabilities(can_hire=True, max_children=2),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="eng1",
+                name="Eng1",
+                role="engineer",
+                parent_id="cto",
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="eng2",
+                name="Eng2",
+                role="engineer",
+                parent_id="cto",
+            )
+        )
         return store
 
     async def test_hire_denied_no_permission(self, org) -> None:
@@ -155,18 +171,32 @@ class TestCheckHireAllowed:
         )
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Root", role="exec",
-            capabilities=AgentCapabilities(can_hire=True),
-        ))
-        await store.add_node(AgentNode(
-            id="a2", name="Mid", role="mgr", parent_id="a1",
-            capabilities=AgentCapabilities(can_hire=True),
-        ))
-        await store.add_node(AgentNode(
-            id="a3", name="Leaf", role="dev", parent_id="a2",
-            capabilities=AgentCapabilities(can_hire=True),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Root",
+                role="exec",
+                capabilities=AgentCapabilities(can_hire=True),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="a2",
+                name="Mid",
+                role="mgr",
+                parent_id="a1",
+                capabilities=AgentCapabilities(can_hire=True),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="a3",
+                name="Leaf",
+                role="dev",
+                parent_id="a2",
+                capabilities=AgentCapabilities(can_hire=True),
+            )
+        )
         config = GraphGovernanceConfig(max_depth=3)
         parent = await store.get_node("a3")  # depth 3 (a1 > a2 > a3), child would be 4
         error = await check_hire_allowed(config, parent, store)
@@ -180,13 +210,22 @@ class TestCheckHireAllowed:
         )
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Root", role="exec",
-            capabilities=AgentCapabilities(can_hire=True),
-        ))
-        await store.add_node(AgentNode(
-            id="a2", name="Worker", role="dev", parent_id="a1",
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Root",
+                role="exec",
+                capabilities=AgentCapabilities(can_hire=True),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="a2",
+                name="Worker",
+                role="dev",
+                parent_id="a1",
+            )
+        )
         config = GraphGovernanceConfig(max_agents=2)
         parent = await store.get_node("a1")
         error = await check_hire_allowed(config, parent, store)
@@ -211,7 +250,6 @@ class TestCheckHireAllowed:
 
 
 class TestCheckDelegateAllowed:
-
     def test_delegate_denied_no_permission(self) -> None:
         from swarmline.multi_agent.graph_governance import (
             GraphGovernanceConfig,
@@ -220,7 +258,9 @@ class TestCheckDelegateAllowed:
 
         config = GraphGovernanceConfig()
         node = AgentNode(
-            id="a1", name="Agent", role="worker",
+            id="a1",
+            name="Agent",
+            role="worker",
             capabilities=AgentCapabilities(can_delegate=False),
         )
         error = check_delegate_allowed(config, node)
@@ -235,7 +275,9 @@ class TestCheckDelegateAllowed:
 
         config = GraphGovernanceConfig(allow_dynamic_delegation=False)
         node = AgentNode(
-            id="a1", name="Agent", role="worker",
+            id="a1",
+            name="Agent",
+            role="worker",
             capabilities=AgentCapabilities(can_delegate=True),
         )
         error = check_delegate_allowed(config, node)
@@ -250,7 +292,9 @@ class TestCheckDelegateAllowed:
 
         config = GraphGovernanceConfig()
         node = AgentNode(
-            id="a1", name="Agent", role="worker",
+            id="a1",
+            name="Agent",
+            role="worker",
             capabilities=AgentCapabilities(can_delegate=True),
         )
         error = check_delegate_allowed(config, node)
@@ -263,7 +307,6 @@ class TestCheckDelegateAllowed:
 
 
 class TestGovernanceError:
-
     def test_governance_error_attrs(self) -> None:
         from swarmline.multi_agent.graph_governance import GovernanceError
 
@@ -279,17 +322,22 @@ class TestGovernanceError:
 
 
 class TestCapabilitiesInSystemPrompt:
-
     async def test_capabilities_in_system_prompt(self) -> None:
         from swarmline.multi_agent.graph_context import GraphContextBuilder
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-            capabilities=AgentCapabilities(
-                can_hire=True, can_delegate=True, can_use_subagents=True,
-            ),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+                capabilities=AgentCapabilities(
+                    can_hire=True,
+                    can_delegate=True,
+                    can_use_subagents=True,
+                ),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         prompt = builder.render_system_prompt(ctx)
@@ -302,9 +350,13 @@ class TestCapabilitiesInSystemPrompt:
         from swarmline.multi_agent.graph_context import GraphContextBuilder
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         prompt = builder.render_system_prompt(ctx)
@@ -316,10 +368,14 @@ class TestCapabilitiesInSystemPrompt:
         from swarmline.multi_agent.graph_context import GraphContextBuilder
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-            capabilities=AgentCapabilities(can_use_team_mode=True),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+                capabilities=AgentCapabilities(can_use_team_mode=True),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         prompt = builder.render_system_prompt(ctx)
@@ -332,7 +388,6 @@ class TestCapabilitiesInSystemPrompt:
 
 
 class TestBuilderWithCapabilities:
-
     async def test_builder_add_root_with_capabilities(self) -> None:
         from swarmline.multi_agent.graph_builder import GraphBuilder
 
@@ -418,18 +473,26 @@ class TestBuilderWithCapabilities:
 
 
 class TestGovernanceInGraphTools:
-
     @pytest.fixture
     async def org_with_caps(self):
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="ceo", name="CEO", role="executive",
-            capabilities=AgentCapabilities(can_hire=True),
-        ))
-        await store.add_node(AgentNode(
-            id="cto", name="CTO", role="tech_lead", parent_id="ceo",
-            capabilities=AgentCapabilities(can_hire=False),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="ceo",
+                name="CEO",
+                role="executive",
+                capabilities=AgentCapabilities(can_hire=True),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="cto",
+                name="CTO",
+                role="tech_lead",
+                parent_id="ceo",
+                capabilities=AgentCapabilities(can_hire=False),
+            )
+        )
         return store
 
     async def test_hire_blocked_by_governance(self, org_with_caps) -> None:
@@ -447,7 +510,9 @@ class TestGovernanceInGraphTools:
         )
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         result = await hire.handler(
-            name="New Dev", role="engineer", parent_id="cto",
+            name="New Dev",
+            role="engineer",
+            parent_id="cto",
         )
         assert "governance denied" in result.lower()
 
@@ -466,7 +531,9 @@ class TestGovernanceInGraphTools:
         )
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         result = await hire.handler(
-            name="New Dev", role="engineer", parent_id="ceo",
+            name="New Dev",
+            role="engineer",
+            parent_id="ceo",
         )
         assert "hired" in result.lower()
 
@@ -479,9 +546,13 @@ class TestGovernanceInGraphTools:
         from swarmline.multi_agent.graph_tools import create_graph_tools
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="ceo", name="CEO", role="executive",
-        ))
+        await store.add_node(
+            AgentNode(
+                id="ceo",
+                name="CEO",
+                role="executive",
+            )
+        )
         tools = create_graph_tools(
             graph=store,
             task_board=InMemoryGraphTaskBoard(),
@@ -489,7 +560,9 @@ class TestGovernanceInGraphTools:
         )
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         result = await hire.handler(
-            name="Dev", role="engineer", parent_id="ceo",
+            name="Dev",
+            role="engineer",
+            parent_id="ceo",
         )
         assert "hired" in result.lower()
 
@@ -502,10 +575,15 @@ class TestGovernanceInGraphTools:
         from swarmline.multi_agent.graph_tools import create_graph_tools
 
         # Add agent with can_delegate=False
-        await org_with_caps.add_node(AgentNode(
-            id="restricted", name="Restricted", role="worker", parent_id="ceo",
-            capabilities=AgentCapabilities(can_delegate=False),
-        ))
+        await org_with_caps.add_node(
+            AgentNode(
+                id="restricted",
+                name="Restricted",
+                role="worker",
+                parent_id="ceo",
+                capabilities=AgentCapabilities(can_delegate=False),
+            )
+        )
         tools = create_graph_tools(
             graph=org_with_caps,
             task_board=InMemoryGraphTaskBoard(),
@@ -514,7 +592,9 @@ class TestGovernanceInGraphTools:
         )
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="cto", goal="Do work", caller_agent_id="restricted",
+            agent_id="cto",
+            goal="Do work",
+            caller_agent_id="restricted",
         )
         assert "governance denied" in result.lower()
 
@@ -534,7 +614,9 @@ class TestGovernanceInGraphTools:
         )
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="cto", goal="Do work", caller_agent_id="ceo",
+            agent_id="cto",
+            goal="Do work",
+            caller_agent_id="ceo",
         )
         assert "delegated" in result.lower()
 
@@ -554,11 +636,15 @@ class TestGovernanceInGraphTools:
         )
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="cto", goal="Do work", caller_agent_id="ceo",
+            agent_id="cto",
+            goal="Do work",
+            caller_agent_id="ceo",
         )
         assert "governance denied" in result.lower()
 
-    async def test_delegate_without_caller_skips_governance(self, org_with_caps) -> None:
+    async def test_delegate_without_caller_skips_governance(
+        self, org_with_caps
+    ) -> None:
         """Backward compat: no caller_agent_id skips governance check."""
         from unittest.mock import AsyncMock
 
@@ -574,7 +660,8 @@ class TestGovernanceInGraphTools:
         )
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="cto", goal="Do work",
+            agent_id="cto",
+            goal="Do work",
         )
         assert "delegated" in result.lower()
 
@@ -595,7 +682,9 @@ class TestGovernanceInGraphTools:
         )
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="cto", goal="Do work", stage="review",
+            agent_id="cto",
+            goal="Do work",
+            stage="review",
         )
         assert "delegated" in result.lower()
         # Verify stage was passed in the DelegationRequest

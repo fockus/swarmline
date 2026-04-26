@@ -47,7 +47,9 @@ class KnowledgeSearcher(Protocol):
         """Full-text search across entries."""
         ...
 
-    async def search_by_tags(self, tags: list[str], *, top_k: int = 10) -> list[IndexEntry]:
+    async def search_by_tags(
+        self, tags: list[str], *, top_k: int = 10
+    ) -> list[IndexEntry]:
         """Find entries matching any of the given tags."""
         ...
 

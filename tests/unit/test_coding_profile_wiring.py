@@ -16,7 +16,10 @@ from swarmline.policy.tool_policy import (
     ToolPolicyInput,
 )
 from swarmline.runtime.thin.coding_profile import CodingProfileConfig
-from swarmline.runtime.thin.coding_toolpack import CODING_SANDBOX_TOOL_NAMES, CODING_TOOL_NAMES
+from swarmline.runtime.thin.coding_toolpack import (
+    CODING_SANDBOX_TOOL_NAMES,
+    CODING_TOOL_NAMES,
+)
 
 
 def _make_state(
@@ -102,7 +105,8 @@ class TestCodingProfileWiring:
 
     @pytest.mark.parametrize("tool_name", sorted(CODING_TOOL_NAMES))
     def test_wiring_coding_tool_allowed_when_profile_enabled(
-        self, tool_name: str,
+        self,
+        tool_name: str,
     ) -> None:
         """build_portable_runtime_plan with coding_profile=enabled allows each coding tool."""
         from swarmline.agent.runtime_wiring import build_portable_runtime_plan
@@ -155,7 +159,8 @@ class TestCodingProfileWiring:
 
     @pytest.mark.parametrize("tool_name", sorted(CODING_TOOL_NAMES))
     def test_wiring_preserves_explicit_policy_with_coding_tool(
-        self, tool_name: str,
+        self,
+        tool_name: str,
     ) -> None:
         """Explicit tool_policy merged with coding_profile allows coding tool."""
         from swarmline.agent.runtime_wiring import build_portable_runtime_plan

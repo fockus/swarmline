@@ -95,11 +95,15 @@ class FakePortableAdapter:
 
 
 @contextmanager
-def _patch_runtime_boundary(runtime_name: str, include_new_messages: bool = False) -> Iterator[None]:
+def _patch_runtime_boundary(
+    runtime_name: str, include_new_messages: bool = False
+) -> Iterator[None]:
     if runtime_name == "deepagents":
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakePortableRuntime(include_new_messages)
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             yield
         return
 

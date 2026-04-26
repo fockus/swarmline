@@ -153,9 +153,7 @@ class SwarmlineA2AAdapter:
                     parts=[TextPart(text="No user message found in task")],
                 ),
             )
-            yield TaskStatusUpdateEvent(
-                id=task.id, status=task.status, final=True
-            )
+            yield TaskStatusUpdateEvent(id=task.id, status=task.status, final=True)
             return
 
         self._tasks[task.id] = task
@@ -169,7 +167,9 @@ class SwarmlineA2AAdapter:
                 if event_type == "text_delta":
                     collected_text += getattr(event, "text", "")
                 elif event_type == "done" or getattr(event, "is_final", False):
-                    final_text = getattr(event, "text", collected_text) or collected_text
+                    final_text = (
+                        getattr(event, "text", collected_text) or collected_text
+                    )
                     agent_message = Message(
                         role="agent",
                         parts=[TextPart(text=final_text)],
@@ -204,9 +204,7 @@ class SwarmlineA2AAdapter:
                     ),
                 )
 
-            yield TaskStatusUpdateEvent(
-                id=task.id, status=task.status, final=True
-            )
+            yield TaskStatusUpdateEvent(id=task.id, status=task.status, final=True)
 
         except Exception as exc:
             logger.exception("A2A streaming task failed")
@@ -217,9 +215,7 @@ class SwarmlineA2AAdapter:
                     parts=[TextPart(text=f"Agent error: {exc}")],
                 ),
             )
-            yield TaskStatusUpdateEvent(
-                id=task.id, status=task.status, final=True
-            )
+            yield TaskStatusUpdateEvent(id=task.id, status=task.status, final=True)
 
     def get_task(self, task_id: str) -> Task | None:
         """Retrieve a task by ID."""
@@ -230,7 +226,11 @@ class SwarmlineA2AAdapter:
         task = self._tasks.get(task_id)
         if task is None:
             return None
-        if task.status.state in (TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELED):
+        if task.status.state in (
+            TaskState.COMPLETED,
+            TaskState.FAILED,
+            TaskState.CANCELED,
+        ):
             return task
         task.status = TaskStatus(state=TaskState.CANCELED)
         return task

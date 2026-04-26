@@ -5,7 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode, GraphSnapshot, LifecycleMode
+from swarmline.multi_agent.graph_types import (
+    AgentCapabilities,
+    AgentNode,
+    GraphSnapshot,
+    LifecycleMode,
+)
 
 
 class GraphBuilder:
@@ -44,22 +49,24 @@ class GraphBuilder:
         hooks: tuple[str, ...] = (),
         metadata: dict[str, Any] | None = None,
     ) -> GraphBuilder:
-        self._queue.append(AgentNode(
-            id=id,
-            name=name,
-            role=role,
-            parent_id=None,
-            system_prompt=system_prompt,
-            allowed_tools=allowed_tools,
-            skills=skills,
-            mcp_servers=mcp_servers,
-            capabilities=capabilities or AgentCapabilities(),
-            runtime_config=runtime_config,
-            budget_limit_usd=budget_limit_usd,
-            lifecycle=lifecycle or LifecycleMode.SUPERVISED,
-            hooks=hooks,
-            metadata=metadata or {},
-        ))
+        self._queue.append(
+            AgentNode(
+                id=id,
+                name=name,
+                role=role,
+                parent_id=None,
+                system_prompt=system_prompt,
+                allowed_tools=allowed_tools,
+                skills=skills,
+                mcp_servers=mcp_servers,
+                capabilities=capabilities or AgentCapabilities(),
+                runtime_config=runtime_config,
+                budget_limit_usd=budget_limit_usd,
+                lifecycle=lifecycle or LifecycleMode.SUPERVISED,
+                hooks=hooks,
+                metadata=metadata or {},
+            )
+        )
         return self
 
     def add_child(
@@ -80,22 +87,24 @@ class GraphBuilder:
         hooks: tuple[str, ...] = (),
         metadata: dict[str, Any] | None = None,
     ) -> GraphBuilder:
-        self._queue.append(AgentNode(
-            id=id,
-            name=name,
-            role=role,
-            parent_id=parent_id,
-            system_prompt=system_prompt,
-            allowed_tools=allowed_tools,
-            skills=skills,
-            mcp_servers=mcp_servers,
-            capabilities=capabilities or AgentCapabilities(),
-            runtime_config=runtime_config,
-            budget_limit_usd=budget_limit_usd,
-            lifecycle=lifecycle or LifecycleMode.SUPERVISED,
-            hooks=hooks,
-            metadata=metadata or {},
-        ))
+        self._queue.append(
+            AgentNode(
+                id=id,
+                name=name,
+                role=role,
+                parent_id=parent_id,
+                system_prompt=system_prompt,
+                allowed_tools=allowed_tools,
+                skills=skills,
+                mcp_servers=mcp_servers,
+                capabilities=capabilities or AgentCapabilities(),
+                runtime_config=runtime_config,
+                budget_limit_usd=budget_limit_usd,
+                lifecycle=lifecycle or LifecycleMode.SUPERVISED,
+                hooks=hooks,
+                metadata=metadata or {},
+            )
+        )
         return self
 
     async def build(self) -> GraphSnapshot:
@@ -123,7 +132,9 @@ class GraphBuilder:
         return await builder.build()
 
     @classmethod
-    def _add_from_dict(cls, builder: GraphBuilder, node: dict, parent_id: str | None) -> None:
+    def _add_from_dict(
+        cls, builder: GraphBuilder, node: dict, parent_id: str | None
+    ) -> None:
         caps_data = node.get("capabilities", {})
         capabilities: AgentCapabilities | None = None
         if caps_data:
@@ -154,7 +165,9 @@ class GraphBuilder:
         if parent_id is None:
             builder.add_root(node["id"], node["name"], node["role"], **kwargs)
         else:
-            builder.add_child(node["id"], parent_id, node["name"], node["role"], **kwargs)
+            builder.add_child(
+                node["id"], parent_id, node["name"], node["role"], **kwargs
+            )
         for child in node.get("children", []):
             cls._add_from_dict(builder, child, parent_id=node["id"])
 

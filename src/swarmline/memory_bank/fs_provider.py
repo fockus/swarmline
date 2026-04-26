@@ -9,7 +9,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from swarmline.memory_bank.types import MemoryBankConfig, MemoryBankViolation, validate_memory_path
+from swarmline.memory_bank.types import (
+    MemoryBankConfig,
+    MemoryBankViolation,
+    validate_memory_path,
+)
 from swarmline.path_safety import build_isolated_path, validate_namespace_segment
 
 

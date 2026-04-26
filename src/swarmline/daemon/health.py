@@ -128,6 +128,7 @@ class HealthServer:
             # Auth check for mutating endpoints
             if self._auth_token and path in {"/pause", "/resume"}:
                 import hmac
+
                 auth = headers.get("authorization", "")
                 if not hmac.compare_digest(auth, f"Bearer {self._auth_token}"):
                     writer.write(_build_response(401, {"error": "Unauthorized"}))

@@ -13,7 +13,6 @@ from swarmline.daemon.types import (
 
 
 class TestDaemonConfig:
-
     def test_defaults(self) -> None:
         cfg = DaemonConfig()
         assert cfg.pid_path == "~/.swarmline/daemon.pid"
@@ -63,7 +62,6 @@ class TestDaemonConfig:
 
 
 class TestDaemonState:
-
     def test_all_states(self) -> None:
         assert DaemonState.STARTING == "starting"
         assert DaemonState.RUNNING == "running"
@@ -73,7 +71,6 @@ class TestDaemonState:
 
 
 class TestDaemonStatus:
-
     def test_creation(self) -> None:
         status = DaemonStatus(
             pid=12345,
@@ -98,13 +95,14 @@ class TestDaemonStatus:
 
     def test_started_at_default(self) -> None:
         before = time.time()
-        status = DaemonStatus(pid=1, name="d", state=DaemonState.RUNNING, uptime_seconds=0)
+        status = DaemonStatus(
+            pid=1, name="d", state=DaemonState.RUNNING, uptime_seconds=0
+        )
         after = time.time()
         assert before <= status.started_at <= after
 
 
 class TestScheduledTaskInfo:
-
     def test_periodic_task(self) -> None:
         task = ScheduledTaskInfo(
             name="health_check",

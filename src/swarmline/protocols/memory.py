@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from swarmline.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
+from swarmline.memory.types import (
+    GoalState,
+    MemoryMessage,
+    PhaseState,
+    ToolEvent,
+    UserProfile,
+)
 
 
 @runtime_checkable

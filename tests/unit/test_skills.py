@@ -57,7 +57,9 @@ tools:
 """,
         encoding="utf-8",
     )
-    (funds_dir / "INSTRUCTION.md").write_text("# Skill Funds\nПоиск ПИФов.", encoding="utf-8")
+    (funds_dir / "INSTRUCTION.md").write_text(
+        "# Skill Funds\nПоиск ПИФов.", encoding="utf-8"
+    )
 
     return tmp_path
 
@@ -159,7 +161,7 @@ tools:
     def test_symlinked_skill_yaml_is_rejected(self, tmp_path: Path) -> None:
         """skill.yaml symlink must not be read even inside project_root."""
         target = tmp_path / "outside.yaml"
-        target.write_text('id: outside\ntitle: Outside', encoding="utf-8")
+        target.write_text("id: outside\ntitle: Outside", encoding="utf-8")
 
         skill_dir = tmp_path / "evil"
         skill_dir.mkdir()
@@ -238,7 +240,9 @@ class TestSkillRegistry:
     def test_settings_mcp_merged(self) -> None:
         """settings.json MCP merzhatsya with skill.yaml MCP (R-401, R-402)."""
         settings_mcp = {
-            "extra_server": McpServerSpec(name="extra_server", url="https://extra.example"),
+            "extra_server": McpServerSpec(
+                name="extra_server", url="https://extra.example"
+            ),
         }
         skill = LoadedSkill(
             spec=SkillSpec(

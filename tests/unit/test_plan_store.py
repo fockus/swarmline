@@ -33,7 +33,10 @@ def _make_plan(plan_id: str = "p1", goal: str = "test") -> Plan:
     return Plan(
         id=plan_id,
         goal=goal,
-        steps=[PlanStep(id="s1", description="step 1"), PlanStep(id="s2", description="step 2")],
+        steps=[
+            PlanStep(id="s1", description="step 1"),
+            PlanStep(id="s2", description="step 2"),
+        ],
         created_at=_now(),
     )
 
@@ -50,7 +53,11 @@ def _make_plan_with_substeps() -> Plan:
                 dod_criteria=("criterion A", "criterion B"),
                 substeps=[
                     PlanStep(id="s1.1", description="child step 1"),
-                    PlanStep(id="s1.2", description="child step 2", dod_criteria=("nested DoD",)),
+                    PlanStep(
+                        id="s1.2",
+                        description="child step 2",
+                        dod_criteria=("nested DoD",),
+                    ),
                 ],
             ),
             PlanStep(id="s2", description="simple step"),
@@ -69,7 +76,9 @@ class TestSerialization:
 
     def test_step_roundtrip_simple(self) -> None:
         """Simple PlanStep survives serialization roundtrip."""
-        step = PlanStep(id="s1", description="do thing", status="completed", result="done")
+        step = PlanStep(
+            id="s1", description="do thing", status="completed", result="done"
+        )
         data = _step_to_dict(step)
         restored = _dict_to_step(data)
         assert restored.id == step.id
@@ -169,7 +178,10 @@ async def plan_store(request: pytest.FixtureRequest, tmp_path):
         from sqlalchemy import text
         from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-        from swarmline.orchestration.plan_store import SQLITE_PLAN_SCHEMA, SQLitePlanStore
+        from swarmline.orchestration.plan_store import (
+            SQLITE_PLAN_SCHEMA,
+            SQLitePlanStore,
+        )
 
         db_path = tmp_path / "test_plans.db"
         engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
@@ -275,7 +287,9 @@ class TestPlanStoreContract:
         await store.save(plan)
 
         store.set_namespace("other", "topic")
-        await store.update_step(plan.id, PlanStep(id="s1", description="step 1").complete("done"))
+        await store.update_step(
+            plan.id, PlanStep(id="s1", description="step 1").complete("done")
+        )
         assert await store.load(plan.id) is None
 
     async def test_substeps_persist(self, plan_store) -> None:

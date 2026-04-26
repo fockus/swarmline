@@ -14,7 +14,11 @@ from unittest.mock import AsyncMock
 import pytest
 
 from swarmline.domain_types import ToolSpec
-from swarmline.orchestration.subagent_types import SubagentResult, SubagentSpec, SubagentStatus
+from swarmline.orchestration.subagent_types import (
+    SubagentResult,
+    SubagentSpec,
+    SubagentStatus,
+)
 from swarmline.runtime.thin.subagent_tool import (
     MONITOR_AGENT_TOOL_SPEC,
     SUBAGENT_TOOL_SPEC,
@@ -55,8 +59,12 @@ def config() -> SubagentToolConfig:
 @pytest.fixture
 def parent_tools() -> list[ToolSpec]:
     return [
-        ToolSpec(name="read_file", description="Read a file", parameters={"type": "object"}),
-        ToolSpec(name="write_file", description="Write a file", parameters={"type": "object"}),
+        ToolSpec(
+            name="read_file", description="Read a file", parameters={"type": "object"}
+        ),
+        ToolSpec(
+            name="write_file", description="Write a file", parameters={"type": "object"}
+        ),
     ]
 
 
@@ -109,7 +117,10 @@ class TestMonitorAgentToolSpec:
 
 class TestBackgroundSpawnFlow:
     async def test_background_spawn_returns_immediately(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         raw = await executor({"task": "long work", "run_in_background": True})
@@ -120,7 +131,10 @@ class TestBackgroundSpawnFlow:
         orchestrator.wait.assert_not_awaited()
 
     async def test_background_spawn_sets_run_in_background_on_spec(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         await executor({"task": "bg task", "run_in_background": True})
@@ -136,7 +150,10 @@ class TestBackgroundSpawnFlow:
 
 class TestForegroundSpawnFlowUnchanged:
     async def test_foreground_spawn_waits_for_result(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         raw = await executor({"task": "quick work"})
@@ -146,7 +163,10 @@ class TestForegroundSpawnFlowUnchanged:
         orchestrator.wait.assert_awaited_once()
 
     async def test_foreground_with_explicit_false(
-        self, orchestrator: AsyncMock, config: SubagentToolConfig, parent_tools: list[ToolSpec]
+        self,
+        orchestrator: AsyncMock,
+        config: SubagentToolConfig,
+        parent_tools: list[ToolSpec],
     ) -> None:
         executor = create_subagent_executor(orchestrator, config, parent_tools)
         raw = await executor({"task": "quick work", "run_in_background": False})
@@ -162,9 +182,7 @@ class TestForegroundSpawnFlowUnchanged:
 
 
 class TestMonitorExecutor:
-    async def test_monitor_returns_status_json(
-        self, orchestrator: AsyncMock
-    ) -> None:
+    async def test_monitor_returns_status_json(self, orchestrator: AsyncMock) -> None:
         executor = create_monitor_executor(orchestrator)
         raw = await executor({"agent_id": "agent-bg-001"})
 
@@ -172,9 +190,7 @@ class TestMonitorExecutor:
         assert result["agent_id"] == "agent-bg-001"
         assert result["state"] == "completed"
 
-    async def test_monitor_includes_output(
-        self, orchestrator: AsyncMock
-    ) -> None:
+    async def test_monitor_includes_output(self, orchestrator: AsyncMock) -> None:
         executor = create_monitor_executor(orchestrator)
         raw = await executor({"agent_id": "agent-bg-001"})
 

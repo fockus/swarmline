@@ -108,9 +108,13 @@ class TestAgentNodeFrozenHashable:
             node.model = "sonnet"  # type: ignore[misc]
 
     def test_hashable_without_dict_fields(self) -> None:
-        node = AgentNode(id="a1", name="dev", role="developer", model="opus", metadata={})
+        node = AgentNode(
+            id="a1", name="dev", role="developer", model="opus", metadata={}
+        )
         # AgentNode with default dict fields is not hashable (dict is unhashable),
         # but we verify frozen enforcement via the mutation test above.
         # Equality still works:
-        node2 = AgentNode(id="a1", name="dev", role="developer", model="opus", metadata={})
+        node2 = AgentNode(
+            id="a1", name="dev", role="developer", model="opus", metadata={}
+        )
         assert node == node2

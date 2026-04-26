@@ -27,7 +27,9 @@ async def test_exec_stdlib_import():
 
 async def test_exec_timeout_kills_long_running():
     """Long-running code is killed after timeout."""
-    res = await exec_code(trusted=True, code="import time; time.sleep(100)", timeout_seconds=2)
+    res = await exec_code(
+        trusted=True, code="import time; time.sleep(100)", timeout_seconds=2
+    )
     assert res["ok"] is False
     assert "timed out" in res["error"].lower() or res["data"].get("timeout") is True
 
@@ -37,16 +39,20 @@ async def test_exec_syntax_error_returns_error():
     res = await exec_code(trusted=True, code="def (")
     assert res["ok"] is False
     assert res["data"]["returncode"] != 0
-    assert "SyntaxError" in res["data"]["stderr"] or "SyntaxError" in res.get("error", "")
+    assert "SyntaxError" in res["data"]["stderr"] or "SyntaxError" in res.get(
+        "error", ""
+    )
 
 
 async def test_exec_multiline_computation():
     """Multi-line code with computation returns correct output."""
-    code = "\n".join([
-        "data = [i ** 2 for i in range(10)]",
-        "total = sum(data)",
-        "print(f'squares_sum={total}')",
-    ])
+    code = "\n".join(
+        [
+            "data = [i ** 2 for i in range(10)]",
+            "total = sum(data)",
+            "print(f'squares_sum={total}')",
+        ]
+    )
     res = await exec_code(trusted=True, code=code)
     assert res["ok"] is True
     assert "squares_sum=285" in res["data"]["stdout"]

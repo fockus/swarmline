@@ -76,6 +76,7 @@ class TestAutoBackendForMemory:
         mock_fs_module.FilesystemBackend.return_value = mock_backend
 
         import sys
+
         sys.modules["deepagents.backends.filesystem"] = mock_fs_module
         try:
             port = DeepAgentsRuntimePort(

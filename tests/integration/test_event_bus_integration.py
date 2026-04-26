@@ -37,6 +37,7 @@ class TestThinRuntimeWithEventBus:
         def collector(event_type: str):
             def cb(data: dict) -> None:
                 collected.append((event_type, data))
+
             return cb
 
         bus.subscribe("llm_call_start", collector("llm_call_start"))

@@ -9,16 +9,17 @@ from swarmline.pipeline.protocols import QualityGate
 
 
 class TestCallbackGate:
-
     def test_protocol_compliance(self) -> None:
         async def always_pass(phase_id: str, results: dict) -> bool:
             return True
+
         gate = CallbackGate("test", always_pass)
         assert isinstance(gate, QualityGate)
 
     async def test_callback_pass(self) -> None:
         async def checker(phase_id: str, results: dict) -> bool:
             return True
+
         gate = CallbackGate("test", checker)
         result = await gate.check("p1", {})
         assert result.passed is True
@@ -27,6 +28,7 @@ class TestCallbackGate:
     async def test_callback_fail(self) -> None:
         async def checker(phase_id: str, results: dict) -> bool:
             return False
+
         gate = CallbackGate("test", checker)
         result = await gate.check("p1", {})
         assert result.passed is False
@@ -47,6 +49,7 @@ class TestCallbackGate:
     async def test_callback_exception_returns_fail(self) -> None:
         async def checker(phase_id: str, results: dict) -> bool:
             raise RuntimeError("boom")
+
         gate = CallbackGate("test", checker)
         result = await gate.check("p1", {})
         assert result.passed is False
@@ -54,10 +57,10 @@ class TestCallbackGate:
 
 
 class TestCompositeGate:
-
     async def test_all_pass(self) -> None:
         async def pass_fn(phase_id: str, results: dict) -> bool:
             return True
+
         gates = [CallbackGate("g1", pass_fn), CallbackGate("g2", pass_fn)]
         composite = CompositeGate(gates)
         result = await composite.check("p1", {})
@@ -66,9 +69,13 @@ class TestCompositeGate:
     async def test_first_fails(self) -> None:
         async def fail_fn(phase_id: str, results: dict) -> bool:
             return False
+
         async def pass_fn(phase_id: str, results: dict) -> bool:
             return True
-        composite = CompositeGate([CallbackGate("g1", fail_fn), CallbackGate("g2", pass_fn)])
+
+        composite = CompositeGate(
+            [CallbackGate("g1", fail_fn), CallbackGate("g2", pass_fn)]
+        )
         result = await composite.check("p1", {})
         assert result.passed is False
         assert "g1" in result.details
@@ -76,9 +83,13 @@ class TestCompositeGate:
     async def test_second_fails(self) -> None:
         async def pass_fn(phase_id: str, results: dict) -> bool:
             return True
+
         async def fail_fn(phase_id: str, results: dict) -> bool:
             return False
-        composite = CompositeGate([CallbackGate("g1", pass_fn), CallbackGate("g2", fail_fn)])
+
+        composite = CompositeGate(
+            [CallbackGate("g1", pass_fn), CallbackGate("g2", fail_fn)]
+        )
         result = await composite.check("p1", {})
         assert result.passed is False
         assert "g2" in result.details

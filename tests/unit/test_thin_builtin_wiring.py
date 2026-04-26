@@ -120,9 +120,7 @@ class TestThinRuntimeBuiltinWiring:
                         },
                     }
                 )
-            return json.dumps(
-                {"type": "final", "final_message": "Done reading file"}
-            )
+            return json.dumps({"type": "final", "final_message": "Done reading file"})
 
         rt = ThinRuntime(llm_call=mock_llm, sandbox=sandbox)
 
@@ -155,4 +153,4 @@ class TestThinRuntimeBuiltinWiring:
         )
 
         assert rt._executor.has_tool("read_file")  # built-in
-        assert rt._executor.has_tool("my_custom")   # user tool
+        assert rt._executor.has_tool("my_custom")  # user tool

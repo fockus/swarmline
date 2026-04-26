@@ -69,7 +69,9 @@ class TestWorkflowLinearE2E:
         assert result["step_a"] == "processed"
         assert result["step_b"] == "enriched"
         assert result["step_c"] == "finalized"
-        assert result["order"] == ["a", "b", "c"], "Nodes выполнены в правильном порядке"
+        assert result["order"] == ["a", "b", "c"], (
+            "Nodes выполнены в правильном порядке"
+        )
         assert result["input"] == "data", "Исходные данные сохранены"
 
 
@@ -270,7 +272,9 @@ class TestWorkflowWithThinRuntimeE2E:
         ) -> str:
             nonlocal llm_call_count
             llm_call_count += 1
-            user_text = next((m["content"] for m in messages if m["role"] == "user"), "")
+            user_text = next(
+                (m["content"] for m in messages if m["role"] == "user"), ""
+            )
             return _final_envelope(f"LLM processed: {user_text[:30]}")
 
         executor = ThinWorkflowExecutor(

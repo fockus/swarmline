@@ -99,10 +99,13 @@ class DaemonRunner:
             await self._health.start()
             self._state = DaemonState.RUNNING
 
-            await self._emit("daemon.started", {
-                "name": self._config.name,
-                "pid": os.getpid(),
-            })
+            await self._emit(
+                "daemon.started",
+                {
+                    "name": self._config.name,
+                    "pid": os.getpid(),
+                },
+            )
 
             logger.info(
                 "daemon.started",

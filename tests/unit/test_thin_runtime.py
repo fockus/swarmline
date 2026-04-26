@@ -60,7 +60,9 @@ async def collect(
     return events
 
 
-def make_tool_call_response(name: str, args: dict | None = None, cid: str = "c1") -> str:
+def make_tool_call_response(
+    name: str, args: dict | None = None, cid: str = "c1"
+) -> str:
     return json.dumps(
         {
             "type": "tool_call",
@@ -259,7 +261,9 @@ class TestThinRuntimeConversational:
         assert llm._call_count == 1  # noqa: SLF001
 
     @pytest.mark.asyncio
-    async def test_conversational_streaming_without_postprocessing_keeps_eager_deltas(self) -> None:
+    async def test_conversational_streaming_without_postprocessing_keeps_eager_deltas(
+        self,
+    ) -> None:
         """Without guardrails/output_type/retry chanki strimyatsya eagerly kak ranshe."""
 
         async def streaming_llm(
@@ -268,6 +272,7 @@ class TestThinRuntimeConversational:
             **kwargs: Any,
         ) -> Any:
             if kwargs.get("stream"):
+
                 async def _stream():
                     yield '{"type":"final","final_message":"Hel'
                     yield 'lo"}'
@@ -278,7 +283,9 @@ class TestThinRuntimeConversational:
         runtime = ThinRuntime(llm_call=streaming_llm)
 
         events = await collect(runtime, "Привет", mode_hint="conversational")
-        deltas = [event.data["text"] for event in events if event.type == "assistant_delta"]
+        deltas = [
+            event.data["text"] for event in events if event.type == "assistant_delta"
+        ]
         final = next(event for event in events if event.type == "final")
 
         assert deltas == ['{"type":"final","final_message":"Hel', 'lo"}']

@@ -66,7 +66,10 @@ class TestResultStructuredOutput:
     def test_native_metadata(self) -> None:
         r = Result(
             text="ok",
-            native_metadata={"thread_id": "thread-1", "history_source": "native_thread"},
+            native_metadata={
+                "thread_id": "thread-1",
+                "history_source": "native_thread",
+            },
         )
         assert r.native_metadata == {
             "thread_id": "thread-1",

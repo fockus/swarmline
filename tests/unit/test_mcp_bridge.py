@@ -14,12 +14,21 @@ class TestMcpBridgeDiscovery:
         bridge = McpBridge(mcp_servers={"my_server": "https://example.com/mcp"})
 
         mock_tools = [
-            ToolSpec(name="calculator", description="Calculate", parameters={"type": "object"}),
-            ToolSpec(name="weather", description="Weather", parameters={"type": "object"}),
+            ToolSpec(
+                name="calculator",
+                description="Calculate",
+                parameters={"type": "object"},
+            ),
+            ToolSpec(
+                name="weather", description="Weather", parameters={"type": "object"}
+            ),
         ]
 
         with patch.object(
-            bridge._client, "list_tools", new_callable=AsyncMock, return_value=mock_tools
+            bridge._client,
+            "list_tools",
+            new_callable=AsyncMock,
+            return_value=mock_tools,
         ):
             tools = await bridge.discover_tools("my_server")
 
@@ -35,7 +44,10 @@ class TestMcpBridgeDiscovery:
         mock_tools = [ToolSpec(name="tool1", description="T1", parameters={})]
 
         with patch.object(
-            bridge._client, "list_tools", new_callable=AsyncMock, return_value=mock_tools
+            bridge._client,
+            "list_tools",
+            new_callable=AsyncMock,
+            return_value=mock_tools,
         ):
             result1 = await bridge.discover_tools("srv")
             result2 = await bridge.discover_tools("srv")
@@ -59,7 +71,9 @@ class TestMcpBridgeCallTool:
         ) as mock_call:
             result = await bridge.call_tool("srv", "calculator", {"x": 1})
 
-        mock_call.assert_called_once_with("https://example.com/mcp", "calculator", {"x": 1})
+        mock_call.assert_called_once_with(
+            "https://example.com/mcp", "calculator", {"x": 1}
+        )
         assert result == {"result": 42}
 
     async def test_mcp_bridge_server_unavailable_graceful(self) -> None:

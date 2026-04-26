@@ -84,8 +84,12 @@ class LlmSummaryGenerator:
             if result and len(result) > 50:
                 return str(result)
             # Too short a response - fallback
-            logger.warning("LLM summary слишком короткий (%d chars), fallback", len(result or ""))
+            logger.warning(
+                "LLM summary слишком короткий (%d chars), fallback", len(result or "")
+            )
             return str(self._fallback.summarize(messages))
         except Exception:
-            logger.warning("Ошибка LLM-суммаризации, fallback на template", exc_info=True)
+            logger.warning(
+                "Ошибка LLM-суммаризации, fallback на template", exc_info=True
+            )
             return str(self._fallback.summarize(messages))

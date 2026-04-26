@@ -18,7 +18,9 @@ class _NamespacedBusWrapper:
 
     async def emit(self, event_type: str, data: dict[str, Any]) -> None:
         if self._bus is not None:
-            await self._bus.emit(f"{self._ns}:{event_type}", {**data, "namespace": self._ns})
+            await self._bus.emit(
+                f"{self._ns}:{event_type}", {**data, "namespace": self._ns}
+            )
 
 
 class PartitionedBudgetTracker:
@@ -86,7 +88,9 @@ class PartitionedBudgetTracker:
         partition = self._partitions.get(namespace)
         return partition.is_exceeded() if partition else False
 
-    def _check_partition_exceeded(self, namespace: str, partition: BudgetTracker) -> None:
+    def _check_partition_exceeded(
+        self, namespace: str, partition: BudgetTracker
+    ) -> None:
         """Emit namespaced exceeded event when partition budget is blown."""
         if self._bus is None:
             return
@@ -97,11 +101,16 @@ class PartitionedBudgetTracker:
         limit = policy.max_total_usd if policy else None
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(self._bus.emit(f"{namespace}:budget_exceeded", {
-                "namespace": namespace,
-                "current_usd": partition.total_cost(),
-                "limit_usd": limit,
-            }))
+            loop.create_task(
+                self._bus.emit(
+                    f"{namespace}:budget_exceeded",
+                    {
+                        "namespace": namespace,
+                        "current_usd": partition.total_cost(),
+                        "limit_usd": limit,
+                    },
+                )
+            )
         except RuntimeError:
             pass  # no running loop
 
@@ -117,10 +126,15 @@ class PartitionedBudgetTracker:
             self._global_warned = True
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._bus.emit("global:budget_warning", {
-                    "current_usd": self.total_cost(),
-                    "limit_usd": p.max_total_usd,
-                    "percent": pct,
-                }))
+                loop.create_task(
+                    self._bus.emit(
+                        "global:budget_warning",
+                        {
+                            "current_usd": self.total_cost(),
+                            "limit_usd": p.max_total_usd,
+                            "percent": pct,
+                        },
+                    )
+                )
             except RuntimeError:
                 pass  # no running loop

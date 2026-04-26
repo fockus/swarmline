@@ -68,7 +68,9 @@ class FakeAdapter:
 # ---------------------------------------------------------------------------
 
 
-async def collect_events(runtime: ClaudeCodeRuntime, messages: list[Message]) -> list[RuntimeEvent]:
+async def collect_events(
+    runtime: ClaudeCodeRuntime, messages: list[Message]
+) -> list[RuntimeEvent]:
     events = []
     async for ev in runtime.run(
         messages=messages,

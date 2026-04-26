@@ -33,7 +33,9 @@ def append_to_history(
         del history[:-history_max]
 
 
-def should_compact(history: Sequence[Message], compaction_trigger: CompactionTrigger) -> bool:
+def should_compact(
+    history: Sequence[Message], compaction_trigger: CompactionTrigger
+) -> bool:
     """Check whether history should be compacted."""
     trigger_type, threshold = compaction_trigger
     if trigger_type == "tokens":
@@ -58,7 +60,9 @@ async def maybe_summarize(
 
     raw = [{"role": msg.role, "content": msg.content} for msg in history]
     truncated = truncate_long_args(raw)
-    mem_messages = [MemoryMessage(role=item["role"], content=item["content"]) for item in truncated]
+    mem_messages = [
+        MemoryMessage(role=item["role"], content=item["content"]) for item in truncated
+    ]
 
     try:
         if hasattr(summarizer, "asummarize"):
@@ -75,7 +79,10 @@ def build_system_prompt(
     memory_sources: Sequence[str],
 ) -> str:
     """Assemble final system prompt with memory and rolling summary."""
-    from swarmline.runtime.portable_memory import inject_memory_into_prompt, load_agents_md
+    from swarmline.runtime.portable_memory import (
+        inject_memory_into_prompt,
+        load_agents_md,
+    )
 
     prompt = system_prompt
 
@@ -84,7 +91,9 @@ def build_system_prompt(
         prompt = inject_memory_into_prompt(prompt, memory_content)
 
     if rolling_summary:
-        prompt = f"{prompt}\n\n## Краткое содержание предыдущего диалога\n{rolling_summary}"
+        prompt = (
+            f"{prompt}\n\n## Краткое содержание предыдущего диалога\n{rolling_summary}"
+        )
 
     return prompt
 

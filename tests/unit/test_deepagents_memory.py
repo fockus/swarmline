@@ -65,7 +65,9 @@ def test_build_native_invocation_uses_command_for_resume() -> None:
     assert native_metadata["resume_requested"] is True
 
 
-def test_build_native_invocation_replays_full_history_when_only_store_is_configured() -> None:
+def test_build_native_invocation_replays_full_history_when_only_store_is_configured() -> (
+    None
+):
     """Store without checkpointer not should vklyuchat latest-message-only semantics."""
     messages = [
         HumanMessage(content="old question"),

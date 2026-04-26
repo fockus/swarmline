@@ -59,7 +59,9 @@ class TestMemoryScope:
             (MemoryScope.SHARED, "data", "shared:data"),
         ],
     )
-    def test_scoped_key_prefixing(self, scope: MemoryScope, original: str, expected: str) -> None:
+    def test_scoped_key_prefixing(
+        self, scope: MemoryScope, original: str, expected: str
+    ) -> None:
         assert scoped_key(scope, original) == expected
 
     def test_different_scopes_produce_different_keys(self) -> None:

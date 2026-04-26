@@ -17,12 +17,12 @@ from swarmline.context.budget import ContextBudget, estimate_tokens, truncate_to
 # Slice priority order (highest first). Under budget pressure,
 # slices are omitted from the END of this list first.
 _SLICE_PRIORITY: tuple[str, ...] = (
-    "task",           # P0 — always kept if possible
-    "workspace",      # P1 — essential for tool execution context
-    "board",          # P2 — sprint/task board state
-    "session",        # P3 — session continuity
+    "task",  # P0 — always kept if possible
+    "workspace",  # P1 — essential for tool execution context
+    "board",  # P2 — sprint/task board state
+    "session",  # P3 — session continuity
     "skill_profile",  # P4 — coding style preferences
-    "search",         # P5 — recent search results (most ephemeral)
+    "search",  # P5 — recent search results (most ephemeral)
 )
 
 # Minimum tokens of actual content to justify including a truncated slice.
@@ -134,7 +134,8 @@ class CodingContextAssembler:
             if tokens > remaining:
                 if remaining > estimate_tokens(header) + _MIN_CONTENT_TOKENS:
                     pack = truncate_to_budget(
-                        pack, remaining - _TRUNCATION_SUFFIX_TOKENS,
+                        pack,
+                        remaining - _TRUNCATION_SUFFIX_TOKENS,
                     )
                     truncated.append(name)
                     included.append(name)

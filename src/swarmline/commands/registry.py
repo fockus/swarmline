@@ -18,7 +18,9 @@ _TYPE_MAP: dict[str, type] = {
 }
 
 
-def _validate_params(params_schema: dict[str, Any], kwargs: dict[str, Any]) -> str | None:
+def _validate_params(
+    params_schema: dict[str, Any], kwargs: dict[str, Any]
+) -> str | None:
     """Validate kwargs against JSON Schema (required + properties.type).
 
     Uses no external dependencies.

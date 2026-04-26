@@ -27,7 +27,10 @@ class TestValidateTools:
                 _make_skill("finuslugi", ["mcp__finuslugi__get_bank_deposits"]),
             ]
         )
-        available = {"mcp__iss__get_market_snapshot", "mcp__finuslugi__get_bank_deposits"}
+        available = {
+            "mcp__iss__get_market_snapshot",
+            "mcp__finuslugi__get_bank_deposits",
+        }
         warnings = registry.validate_tools(available)
         assert warnings == []
 
@@ -35,7 +38,9 @@ class TestValidateTools:
         """Notavailable tool -> preduprezhdenie."""
         registry = SkillRegistry(
             [
-                _make_skill("iss", ["mcp__iss__get_market_snapshot", "mcp__iss__missing_tool"]),
+                _make_skill(
+                    "iss", ["mcp__iss__get_market_snapshot", "mcp__iss__missing_tool"]
+                ),
             ]
         )
         available = {"mcp__iss__get_market_snapshot"}

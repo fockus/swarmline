@@ -153,9 +153,7 @@ class TestMcpBridgeHttpRoundtrip:
         assert "city" in weather_tool.parameters.get("required", [])
 
         # --- Call tool ---
-        result = await bridge.call_tool(
-            "weather", "get_weather", {"city": "Moscow"}
-        )
+        result = await bridge.call_tool("weather", "get_weather", {"city": "Moscow"})
         assert result["temperature"] == 22
         assert result["city"] == "Moscow"
         assert result["condition"] == "sunny"

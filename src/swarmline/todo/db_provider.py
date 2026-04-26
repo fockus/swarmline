@@ -47,8 +47,12 @@ class DatabaseTodoProvider:
                     id=row[0],
                     content=row[1],
                     status=row[2],
-                    created_at=row[3] if isinstance(row[3], datetime) else datetime.now(tz=UTC),
-                    updated_at=row[4] if isinstance(row[4], datetime) else datetime.now(tz=UTC),
+                    created_at=row[3]
+                    if isinstance(row[3], datetime)
+                    else datetime.now(tz=UTC),
+                    updated_at=row[4]
+                    if isinstance(row[4], datetime)
+                    else datetime.now(tz=UTC),
                 )
                 for row in rows
             ]

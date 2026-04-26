@@ -20,7 +20,9 @@ class TestMatches:
 
     def test_hyphen_server(self, codec: DefaultToolIdCodec) -> None:
         """mcp__iss-price__get_price_time_series prinadlezhit serveru 'iss-price'."""
-        assert codec.matches("mcp__iss-price__get_price_time_series", "iss-price") is True
+        assert (
+            codec.matches("mcp__iss-price__get_price_time_series", "iss-price") is True
+        )
 
     def test_no_match(self, codec: DefaultToolIdCodec) -> None:
         """mcp__iss__get_emitent_id NE prinadlezhit serveru 'funds'."""
@@ -36,7 +38,10 @@ class TestMatches:
 
     def test_local_tool_matches_own_server(self, codec: DefaultToolIdCodec) -> None:
         """Local tool matches freedom_tools server."""
-        assert codec.matches("mcp__freedom_tools__calculate_goal_plan", "freedom_tools") is True
+        assert (
+            codec.matches("mcp__freedom_tools__calculate_goal_plan", "freedom_tools")
+            is True
+        )
 
 
 class TestEncode:
@@ -62,7 +67,9 @@ class TestExtractServer:
 
     def test_extract_hyphen(self, codec: DefaultToolIdCodec) -> None:
         """Izvlech 'iss-price' from 'mcp__iss-price__get_price_time_series'."""
-        assert codec.extract_server("mcp__iss-price__get_price_time_series") == "iss-price"
+        assert (
+            codec.extract_server("mcp__iss-price__get_price_time_series") == "iss-price"
+        )
 
     def test_extract_not_mcp(self, codec: DefaultToolIdCodec) -> None:
         """Not MCP tool -> None."""
@@ -84,7 +91,9 @@ class TestEdgeCases:
         """Tolko 'mcp__' without servera -> None."""
         assert codec.extract_server("mcp__") is None
 
-    def test_mcp_double_underscore_empty_server(self, codec: DefaultToolIdCodec) -> None:
+    def test_mcp_double_underscore_empty_server(
+        self, codec: DefaultToolIdCodec
+    ) -> None:
         """'mcp____tool' - empty server_id -> None (idx=0, return None)."""
         assert codec.extract_server("mcp____tool") is None
 
@@ -93,7 +102,9 @@ class TestEdgeCases:
         result = codec.extract_server("mcp__iss__get_emitent_id_full")
         assert result == "iss"
 
-    def test_tool_with_multiple_double_underscores(self, codec: DefaultToolIdCodec) -> None:
+    def test_tool_with_multiple_double_underscores(
+        self, codec: DefaultToolIdCodec
+    ) -> None:
         """'mcp__server__tool__extra' - tolko pervyy __ razdelyaet server/tool."""
         result = codec.extract_server("mcp__server__tool__extra")
         assert result == "server"
@@ -114,7 +125,9 @@ class TestEdgeCases:
         assert codec.matches(encoded, "funds") is True
         assert codec.matches(encoded, "iss") is False
 
-    def test_no_mcp_prefix_with_double_underscore(self, codec: DefaultToolIdCodec) -> None:
+    def test_no_mcp_prefix_with_double_underscore(
+        self, codec: DefaultToolIdCodec
+    ) -> None:
         """'notmcp__server__tool' -> None (nott mcp__ prefiksa)."""
         assert codec.extract_server("notmcp__server__tool") is None
 

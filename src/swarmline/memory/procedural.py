@@ -20,7 +20,9 @@ class InMemoryProceduralMemory:
         query_words = set(query.lower().split())
         scored: list[tuple[float, Procedure]] = []
         for proc in self._procedures.values():
-            text = f"{proc.trigger} {proc.name} {proc.description} {' '.join(proc.tags)}"
+            text = (
+                f"{proc.trigger} {proc.name} {proc.description} {' '.join(proc.tags)}"
+            )
             proc_words = set(text.lower().split())
             overlap = len(query_words & proc_words)
             if overlap > 0:
@@ -35,9 +37,13 @@ class InMemoryProceduralMemory:
         if proc is None:
             return
         if success:
-            self._procedures[proc_id] = replace(proc, success_count=proc.success_count + 1)
+            self._procedures[proc_id] = replace(
+                proc, success_count=proc.success_count + 1
+            )
         else:
-            self._procedures[proc_id] = replace(proc, failure_count=proc.failure_count + 1)
+            self._procedures[proc_id] = replace(
+                proc, failure_count=proc.failure_count + 1
+            )
 
     async def get(self, proc_id: str) -> Procedure | None:
         return self._procedures.get(proc_id)

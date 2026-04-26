@@ -45,7 +45,6 @@ class ModelPolicy:
         if role_id in self.escalate_roles:
             return self.escalation_model
 
-
         if tool_failure_count >= self.escalate_on_tool_failures:
             return self.escalation_model
 

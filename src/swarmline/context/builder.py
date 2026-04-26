@@ -169,7 +169,9 @@ class DefaultContextBuilder:
         if memory_bank_prompt and remaining > 0:
             mem_pack = f"\n{memory_bank_prompt}"
             if memory_bank_content:
-                mem_pack += f"\n\n## Текущий банк памяти (MEMORY.md)\n{memory_bank_content}"
+                mem_pack += (
+                    f"\n\n## Текущий банк памяти (MEMORY.md)\n{memory_bank_content}"
+                )
             mem_tokens = estimate_tokens(mem_pack)
             if mem_tokens > remaining:
                 mem_pack = truncate_to_budget(mem_pack, remaining)
@@ -204,7 +206,9 @@ class DefaultContextBuilder:
             instructions = []
             for skill in skills:
                 if skill.spec.skill_id in inp.active_skill_ids and skill.instruction_md:
-                    instructions.append(f"### Скилл: {skill.spec.title}\n{skill.instruction_md}")
+                    instructions.append(
+                        f"### Скилл: {skill.spec.title}\n{skill.instruction_md}"
+                    )
             if instructions:
                 tool_pack = "\n## Доступные инструменты\n" + "\n\n".join(instructions)
                 tool_tokens = estimate_tokens(tool_pack)
@@ -245,7 +249,9 @@ class DefaultContextBuilder:
         # P3: Memory recall - cross-topic facts (GAP-1, §10.1)
         if recall_facts and remaining > 0:
             facts_lines = [f"- {k}: {v}" for k, v in recall_facts.items()]
-            recall_pack = "\n## Воспоминания из прошлых диалогов\n" + "\n".join(facts_lines)
+            recall_pack = "\n## Воспоминания из прошлых диалогов\n" + "\n".join(
+                facts_lines
+            )
             recall_tokens = estimate_tokens(recall_pack)
             if recall_tokens > budget.memory_max:
                 recall_pack = truncate_to_budget(recall_pack, budget.memory_max)

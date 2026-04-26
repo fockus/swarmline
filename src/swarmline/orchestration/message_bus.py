@@ -21,13 +21,18 @@ class MessageBus:
         """Send message."""
         self._messages.append(message)
 
-    async def broadcast(self, from_agent: str, content: str, recipients: list[str]) -> None:
+    async def broadcast(
+        self, from_agent: str, content: str, recipients: list[str]
+    ) -> None:
         """Send message to all specified agents."""
         now = datetime.now(tz=UTC)
         for to_agent in recipients:
             self._messages.append(
                 TeamMessage(
-                    from_agent=from_agent, to_agent=to_agent, content=content, timestamp=now
+                    from_agent=from_agent,
+                    to_agent=to_agent,
+                    content=content,
+                    timestamp=now,
                 )
             )
 

@@ -109,7 +109,9 @@ class TestThinPlannerExecuteStep:
         assert step.status == "completed"
         assert step.result == "Найдено 5 вкладов"
 
-    async def test_execute_step_updates_store(self, planner, mock_llm, plan_store) -> None:
+    async def test_execute_step_updates_store(
+        self, planner, mock_llm, plan_store
+    ) -> None:
         mock_llm.generate.side_effect = [
             _make_plan_json(),
             _make_step_result_json("s1", "done"),
@@ -143,7 +145,9 @@ class TestThinPlannerExecuteAll:
         assert len(results) == 3
         assert all(s.status == "completed" for s in results)
 
-    async def test_execute_all_marks_plan_completed(self, planner, mock_llm, plan_store) -> None:
+    async def test_execute_all_marks_plan_completed(
+        self, planner, mock_llm, plan_store
+    ) -> None:
         mock_llm.generate.side_effect = [
             _make_plan_json(),
             _make_step_result_json("s1", "r1"),
@@ -177,7 +181,9 @@ class TestThinPlannerExecuteAll:
         assert results[0].status == "completed"
         assert results[1].status == "failed"
 
-    async def test_execute_all_rejects_unapproved_plan(self, planner, mock_llm, plan_store) -> None:
+    async def test_execute_all_rejects_unapproved_plan(
+        self, planner, mock_llm, plan_store
+    ) -> None:
         """Draft plan must fail before any execution side effects."""
         plan = await planner.generate_plan("g", "c")
         mock_llm.generate.reset_mock()

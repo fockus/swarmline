@@ -36,7 +36,8 @@ class InMemoryAgentRegistry:
             return self._agents.get(agent_id)
 
     async def list_agents(
-        self, filters: AgentFilter | None = None,
+        self,
+        filters: AgentFilter | None = None,
     ) -> list[AgentRecord]:
         """List agents matching optional filters. Returns all if filters is None."""
         async with self._lock:

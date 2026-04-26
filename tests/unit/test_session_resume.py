@@ -334,7 +334,11 @@ class TestConversationResumeThenSay:
                     metadata={"non_compactable": True},
                     content_blocks=[
                         {"type": "text", "text": "Analyze image"},
-                        {"type": "image", "data": "aW1hZw==", "media_type": "image/png"},
+                        {
+                            "type": "image",
+                            "data": "aW1hZw==",
+                            "media_type": "image/png",
+                        },
                     ],
                 ),
             ]

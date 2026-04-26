@@ -61,7 +61,9 @@ class TestJsonlRoundTrip:
     async def test_roundtrip_system_message(self, tmp_path: Path) -> None:
         """System message round-trips."""
         store = JsonlMessageStore(tmp_path)
-        await store.save_message("u1", "t1", "system", "[Compaction summary]: condensed")
+        await store.save_message(
+            "u1", "t1", "system", "[Compaction summary]: condensed"
+        )
 
         msgs = await store.get_messages("u1", "t1", limit=10)
 
@@ -75,7 +77,10 @@ class TestJsonlRoundTrip:
 
         await store.save_message("u1", "s1", "user", "Read my config")
         await store.save_message(
-            "u1", "s1", "assistant", "",
+            "u1",
+            "s1",
+            "assistant",
+            "",
             tool_calls=[{"name": "read_file", "arguments": {"path": "config.yml"}}],
         )
         await store.save_message("u1", "s1", "tool", '{"key": "value"}')

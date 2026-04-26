@@ -322,7 +322,9 @@ class TestStreamOneShotQuery:
         assert events[0].text == "final"
 
     @pytest.mark.asyncio
-    async def test_stream_emits_partial_text_when_enabled_without_duplication(self) -> None:
+    async def test_stream_emits_partial_text_when_enabled_without_duplication(
+        self,
+    ) -> None:
         captured_options = {}
 
         async def fake_query(**kwargs):
@@ -369,7 +371,12 @@ class TestStreamOneShotQuery:
             async for event in stream_one_shot_query("status test"):
                 events.append(event)
 
-        assert [event.type for event in events] == ["status", "status", "status", "done"]
+        assert [event.type for event in events] == [
+            "status",
+            "status",
+            "status",
+            "done",
+        ]
         assert "Research started" in events[0].text
         assert "Searching" in events[1].text
         assert "Research complete" in events[2].text

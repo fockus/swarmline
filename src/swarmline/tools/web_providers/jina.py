@@ -46,7 +46,9 @@ class JinaReaderFetchProvider:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self._timeout, follow_redirects=True
+            ) as client:
                 response = await client.get(
                     f"{_JINA_READER_BASE}{url.strip()}",
                     headers=headers,

@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import Any
 
 from swarmline.context.budget import ContextBudget
-from swarmline.context.coding_context_builder import CodingContextAssembler, CodingSliceInput
+from swarmline.context.coding_context_builder import (
+    CodingContextAssembler,
+    CodingSliceInput,
+)
 from swarmline.runtime.types import Message
 
 
@@ -112,4 +115,3 @@ class CodingContextInputFilter:
         if isinstance(payload, dict):
             return json.dumps(payload, ensure_ascii=False, sort_keys=True)
         return str(payload)
-

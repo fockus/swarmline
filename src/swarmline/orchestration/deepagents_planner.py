@@ -72,7 +72,9 @@ class DeepAgentsPlannerMode:
             raise ValueError(msg)
 
         prev_results = [
-            f"[{s.id}] {s.result}" for s in plan.steps if s.status == "completed" and s.result
+            f"[{s.id}] {s.result}"
+            for s in plan.steps
+            if s.status == "completed" and s.result
         ]
         prompt = (
             f"План: {plan.goal}\nПредыдущие: {'; '.join(prev_results) or 'нет'}\n"
@@ -107,7 +109,9 @@ class DeepAgentsPlannerMode:
                 execution_failed = True
                 break
 
-        if not execution_failed and all(step.status == "completed" for step in plan.steps):
+        if not execution_failed and all(
+            step.status == "completed" for step in plan.steps
+        ):
             plan = plan.mark_completed()
             await self._store.save(plan)
 

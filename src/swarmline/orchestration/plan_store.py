@@ -105,7 +105,9 @@ class InMemoryPlanStore:
 
     def __init__(self) -> None:
         self._plans: dict[str, Plan] = {}
-        self._ownership: dict[str, tuple[str, str]] = {}  # plan_id → (user_id, topic_id)
+        self._ownership: dict[
+            str, tuple[str, str]
+        ] = {}  # plan_id → (user_id, topic_id)
         self._ns_user: str = ""
         self._ns_topic: str = ""
 
@@ -136,7 +138,9 @@ class InMemoryPlanStore:
         result: list[Plan] = []
         for plan_id, plan in self._plans.items():
             owner = self._ownership.get(plan_id, ("", ""))
-            if (not user_id or owner[0] == user_id) and (not topic_id or owner[1] == topic_id):
+            if (not user_id or owner[0] == user_id) and (
+                not topic_id or owner[1] == topic_id
+            ):
                 result.append(plan)
         return result
 
@@ -149,7 +153,9 @@ class InMemoryPlanStore:
             updated = plan.update_step(step)
             self._plans[plan_id] = updated
         except ValueError:
-            logger.warning("update_step: step %r not found in plan %r", step.id, plan_id)
+            logger.warning(
+                "update_step: step %r not found in plan %r", step.id, plan_id
+            )
 
     def _namespace_matches(self, plan_id: str) -> bool:
         if not self._ns_user and not self._ns_topic:
@@ -253,7 +259,9 @@ class SQLitePlanStore:
             updated = plan.update_step(step)
             await self.save(updated)
         except ValueError:
-            logger.warning("update_step: step %r not found in plan %r", step.id, plan_id)
+            logger.warning(
+                "update_step: step %r not found in plan %r", step.id, plan_id
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -354,7 +362,9 @@ class PostgresPlanStore:
             updated = plan.update_step(step)
             await self.save(updated)
         except ValueError:
-            logger.warning("update_step: step %r not found in plan %r", step.id, plan_id)
+            logger.warning(
+                "update_step: step %r not found in plan %r", step.id, plan_id
+            )
 
 
 # ---------------------------------------------------------------------------

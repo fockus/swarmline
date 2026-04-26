@@ -30,9 +30,9 @@ async def _default_llm_call(
 ) -> str:
     """No-op LLM call -- inozin increases manandmal final from inno with not much delay.
 
-  The delay is necessary so that workers do not finish immediately to the point of collapse
-  pause/resume in test and production code.
-  """
+    The delay is necessary so that workers do not finish immediately to the point of collapse
+    pause/resume in test and production code.
+    """
     await asyncio.sleep(0.1)
     return json.dumps({"type": "final", "final_message": "done"})
 
@@ -116,9 +116,9 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
     ) -> tuple[str, str] | None:
         """Resolve agent_id to (worker_name, actual_agent_uuid).
 
-    Accepts both worker name (from status.workers keys) and UUID (internal).
-    Returns None if not found.
-    """
+        Accepts both worker name (from status.workers keys) and UUID (internal).
+        Returns None if not found.
+        """
         # Try as UUID first
         by_uuid = next(
             (name for name, cur_id in state.worker_ids.items() if cur_id == agent_id),
@@ -157,7 +157,9 @@ class ThinTeamOrchestrator(BaseTeamOrchestrator):
         if worker_name not in state.paused_workers:
             return
 
-        spec = next((s for s in state.config.worker_specs if s.name == worker_name), None)
+        spec = next(
+            (s for s in state.config.worker_specs if s.name == worker_name), None
+        )
         if spec is None:
             return
 

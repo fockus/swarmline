@@ -7,7 +7,11 @@ import time
 from dataclasses import replace
 from typing import Any
 
-from swarmline.multi_agent.graph_task_types import GoalAncestry, GraphTaskItem, TaskComment
+from swarmline.multi_agent.graph_task_types import (
+    GoalAncestry,
+    GraphTaskItem,
+    TaskComment,
+)
 from swarmline.multi_agent.task_types import TaskStatus
 
 
@@ -63,7 +67,10 @@ class InMemoryGraphTaskBoard:
             if task.status != TaskStatus.IN_PROGRESS:
                 return False
             self._tasks[task_id] = replace(
-                task, status=TaskStatus.DONE, completed_at=time.time(), progress=1.0,
+                task,
+                status=TaskStatus.DONE,
+                completed_at=time.time(),
+                progress=1.0,
             )
             # Auto-propagate progress and completion upward
             self._propagate_parent(task.parent_task_id)
@@ -79,7 +86,11 @@ class InMemoryGraphTaskBoard:
             if "status" in filters:
                 result = [t for t in result if t.status == filters["status"]]
             if "assignee_agent_id" in filters:
-                result = [t for t in result if t.assignee_agent_id == filters["assignee_agent_id"]]
+                result = [
+                    t
+                    for t in result
+                    if t.assignee_agent_id == filters["assignee_agent_id"]
+                ]
             if "priority" in filters:
                 result = [t for t in result if t.priority == filters["priority"]]
             return result
@@ -238,7 +249,9 @@ class InMemoryGraphTaskBoard:
                 return
             current_id = current.parent_task_id
 
-    def _propagate_parent(self, parent_id: str | None, visited: set[str] | None = None) -> None:
+    def _propagate_parent(
+        self, parent_id: str | None, visited: set[str] | None = None
+    ) -> None:
         """Recalculate parent progress from children and auto-complete if all DONE (recursive)."""
         if parent_id is None:
             return
@@ -256,7 +269,10 @@ class InMemoryGraphTaskBoard:
         progress = sum(c.progress for c in children) / len(children)
         if all(c.status == TaskStatus.DONE for c in children):
             self._tasks[parent_id] = replace(
-                parent, status=TaskStatus.DONE, completed_at=time.time(), progress=progress,
+                parent,
+                status=TaskStatus.DONE,
+                completed_at=time.time(),
+                progress=progress,
             )
         else:
             self._tasks[parent_id] = replace(parent, progress=progress)

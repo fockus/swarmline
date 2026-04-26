@@ -25,8 +25,12 @@ def session() -> StatefulSession:
 
 
 class TestPlanCreate:
-    async def test_create_plan_returns_ok_with_structure(self, session: StatefulSession) -> None:
-        result = await plan_create(session, "Build API", ["Design schema", "Implement endpoints"])
+    async def test_create_plan_returns_ok_with_structure(
+        self, session: StatefulSession
+    ) -> None:
+        result = await plan_create(
+            session, "Build API", ["Design schema", "Implement endpoints"]
+        )
         assert result["ok"] is True
         data = result["data"]
         assert data["goal"] == "Build API"
@@ -36,12 +40,16 @@ class TestPlanCreate:
         assert data["steps"][1]["description"] == "Implement endpoints"
         assert data["steps"][0]["status"] == "pending"
 
-    async def test_create_plan_assigns_unique_ids(self, session: StatefulSession) -> None:
+    async def test_create_plan_assigns_unique_ids(
+        self, session: StatefulSession
+    ) -> None:
         r1 = await plan_create(session, "Plan A", ["step1"])
         r2 = await plan_create(session, "Plan B", ["step1"])
         assert r1["data"]["id"] != r2["data"]["id"]
 
-    async def test_create_plan_with_custom_namespace(self, session: StatefulSession) -> None:
+    async def test_create_plan_with_custom_namespace(
+        self, session: StatefulSession
+    ) -> None:
         result = await plan_create(
             session, "Scoped plan", ["s1"], user_id="alice", topic_id="project-x"
         )
@@ -59,7 +67,9 @@ class TestPlanGet:
         assert result["ok"] is True
         assert result["data"]["goal"] == "Goal"
 
-    async def test_get_nonexistent_plan_returns_error(self, session: StatefulSession) -> None:
+    async def test_get_nonexistent_plan_returns_error(
+        self, session: StatefulSession
+    ) -> None:
         result = await plan_get(session, "nonexistent-id")
         assert result["ok"] is False
         assert "not found" in result["error"].lower()
@@ -76,7 +86,9 @@ class TestPlanList:
         assert result["ok"] is True
         assert result["data"] == []
 
-    async def test_list_plans_filters_by_namespace(self, session: StatefulSession) -> None:
+    async def test_list_plans_filters_by_namespace(
+        self, session: StatefulSession
+    ) -> None:
         await plan_create(session, "A", ["s1"], user_id="u1", topic_id="t1")
         await plan_create(session, "B", ["s1"], user_id="u2", topic_id="t2")
         r1 = await plan_list(session, user_id="u1", topic_id="t1")
@@ -188,7 +200,9 @@ class TestPlanUpdateStep:
     async def test_update_step_nonexistent_plan_returns_error(
         self, session: StatefulSession
     ) -> None:
-        result = await plan_update_step(session, "ghost-plan", "ghost-step", "completed")
+        result = await plan_update_step(
+            session, "ghost-plan", "ghost-step", "completed"
+        )
         assert result["ok"] is False
         assert "not found" in result["error"].lower()
 

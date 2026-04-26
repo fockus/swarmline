@@ -60,7 +60,9 @@ class DefaultSessionRehydrator:
         4. Active goal + phase_state
         """
         # 1. Session state from the database
-        session_state = await self._sessions.get_session_state(ctx.user_id, ctx.topic_id)
+        session_state = await self._sessions.get_session_state(
+            ctx.user_id, ctx.topic_id
+        )
 
         if session_state:
             role_id = session_state["role_id"]
@@ -69,7 +71,9 @@ class DefaultSessionRehydrator:
         else:
             # No database data available - fall back to ctx
             role_id = ctx.role_id
-            active_skill_ids = list(ctx.active_skill_ids) if ctx.active_skill_ids else []
+            active_skill_ids = (
+                list(ctx.active_skill_ids) if ctx.active_skill_ids else []
+            )
             prompt_hash = ""
 
         # 2. Summary

@@ -9,7 +9,6 @@ from swarmline.pipeline.types import BudgetPolicy, CostRecord
 
 
 class TestBudgetTracker:
-
     def test_empty_tracker(self) -> None:
         t = BudgetTracker(BudgetPolicy())
         assert t.total_cost() == 0.0
@@ -67,12 +66,14 @@ class TestBudgetTracker:
 
 
 class TestWrapRunner:
-
     async def test_wrap_runner_records_cost(self) -> None:
         t = BudgetTracker(BudgetPolicy())
 
         async def mock_runner(
-            agent_id: str, task_id: str, goal: str, prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            prompt: str,
         ) -> str:
             return "done"
 
@@ -88,7 +89,10 @@ class TestWrapRunner:
         t.record(CostRecord(agent_id="a1", task_id="t0", cost_usd=0.2))
 
         async def mock_runner(
-            agent_id: str, task_id: str, goal: str, prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            prompt: str,
         ) -> str:
             return "done"
 
@@ -101,7 +105,10 @@ class TestWrapRunner:
         t.record(CostRecord(agent_id="a1", task_id="t0", cost_usd=0.2))
 
         async def mock_runner(
-            agent_id: str, task_id: str, goal: str, prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            prompt: str,
         ) -> str:
             return "done"
 
@@ -113,7 +120,10 @@ class TestWrapRunner:
         t = BudgetTracker(BudgetPolicy())
 
         async def mock_runner(
-            agent_id: str, task_id: str, goal: str, prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            prompt: str,
         ) -> str:
             return "done"
 

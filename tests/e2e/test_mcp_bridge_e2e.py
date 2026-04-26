@@ -61,7 +61,7 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_bridge_discover_and_call(self) -> None:
-        """Full roundtrip: discover tools -> call tool -> result. Mock HTTP transport returns tools/list and tools/call responses. """
+        """Full roundtrip: discover tools -> call tool -> result. Mock HTTP transport returns tools/list and tools/call responses."""
         # Nastraivaem fake MCP server responses
         tools_response = _mcp_tools_list_response(
             [
@@ -124,7 +124,9 @@ class TestMcpBridgeDiscoverAndCallE2E:
         assert "city" in weather_tool.parameters.get("properties", {})
 
         # Step 2: Call tool
-        result = await bridge.call_tool("weather_api", "get_weather", {"city": "Moscow"})
+        result = await bridge.call_tool(
+            "weather_api", "get_weather", {"city": "Moscow"}
+        )
         assert result["temperature"] == 22
         assert result["condition"] == "sunny"
         assert result["city"] == "Moscow"
@@ -145,7 +147,13 @@ class TestMcpBridgeDiscoverAndCallE2E:
 
         async def fake_list(server_url: str, **kwargs: Any) -> list:
             data = _mcp_tools_list_response(
-                [{"name": "calc", "description": "Calculator", "input_schema": {"type": "object"}}]
+                [
+                    {
+                        "name": "calc",
+                        "description": "Calculator",
+                        "input_schema": {"type": "object"},
+                    }
+                ]
             )
             return client._parse_tools_from_response(data)
 
@@ -163,7 +171,9 @@ class TestMcpBridgeDiscoverAndCallE2E:
         """create_tool_executor returns callable for konkretnogo tool."""
         client = McpClient()
 
-        async def fake_call(server_url: str, tool_name: str, arguments: dict | None = None) -> Any:
+        async def fake_call(
+            server_url: str, tool_name: str, arguments: dict | None = None
+        ) -> Any:
             return {"result": f"called {tool_name} with {arguments}"}
 
         client.call_tool = fake_call  # type: ignore[assignment]
@@ -189,13 +199,15 @@ class TestMcpBridgeInThinRuntimeE2E:
 
     @pytest.mark.asyncio
     async def test_mcp_tool_execution_via_executor(self) -> None:
-        """ThinRuntime ToolExecutor vyzyvaet MCP tool cherez mcp__server__tool format. Verify full roundtrip cherez ToolExecutor.execute(). """
+        """ThinRuntime ToolExecutor vyzyvaet MCP tool cherez mcp__server__tool format. Verify full roundtrip cherez ToolExecutor.execute()."""
         from swarmline.runtime.thin.executor import ToolExecutor
 
         # Create McpClient with fake responses
         client = McpClient()
 
-        async def fake_call(server_url: str, tool_name: str, arguments: dict | None = None) -> Any:
+        async def fake_call(
+            server_url: str, tool_name: str, arguments: dict | None = None
+        ) -> Any:
             if tool_name == "translate":
                 text = (arguments or {}).get("text", "")
                 return {"translated": f"translated: {text}"}

@@ -59,6 +59,7 @@ class ModelRequestOptions:
     plugins: list[dict[str, Any]] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
 
+
 # ---------------------------------------------------------------------------
 # Models - delegated to ModelRegistry (models.yaml)
 # ---------------------------------------------------------------------------
@@ -106,17 +107,17 @@ def _ensure_model_constants() -> None:
 def resolve_model_name(raw: str | None) -> str:
     """Resolve a model name: alias/prefix/full -> full name.
 
-  Multi-provider support - models and aliases are loaded from models.yaml.
-  Supports Anthropic, OpenAI, Google, DeepSeek, and others.
+    Multi-provider support - models and aliases are loaded from models.yaml.
+    Supports Anthropic, OpenAI, Google, DeepSeek, and others.
 
-  Examples:
-  - "sonnet" -> "claude-sonnet-4-20250514"
-  - "gpt-4o" -> "gpt-4o"
-  - "gemini" -> "gemini-2.5-pro"
-  - "r1" -> "deepseek-reasoner"
-  - "openrouter:anthropic/claude-3.5-haiku" -> "openrouter:anthropic/claude-3.5-haiku"
-  - None -> DEFAULT_MODEL
-  """
+    Examples:
+    - "sonnet" -> "claude-sonnet-4-20250514"
+    - "gpt-4o" -> "gpt-4o"
+    - "gemini" -> "gemini-2.5-pro"
+    - "r1" -> "deepseek-reasoner"
+    - "openrouter:anthropic/claude-3.5-haiku" -> "openrouter:anthropic/claude-3.5-haiku"
+    - None -> DEFAULT_MODEL
+    """
     _ensure_model_constants()
     if raw:
         normalized = raw.strip()
@@ -146,8 +147,8 @@ def resolve_model_name(raw: str | None) -> str:
 class RuntimeConfig:
     """Configuration for runtime selection and parameters.
 
-  Priority: runtime_override > runtime_name > env SWARMLINE_RUNTIME > default.
-  """
+    Priority: runtime_override > runtime_name > env SWARMLINE_RUNTIME > default.
+    """
 
     runtime_name: str = "claude_sdk"
 

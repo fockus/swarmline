@@ -9,7 +9,10 @@ from typing import Any, TypeVar
 
 from swarmline.agent.config import AgentConfig
 from swarmline.agent.result import Result
-from swarmline.agent.runtime_factory_port import RuntimeFactoryPort, build_runtime_factory
+from swarmline.agent.runtime_factory_port import (
+    RuntimeFactoryPort,
+    build_runtime_factory,
+)
 from swarmline.agent.runtime_dispatch import (
     dispatch_runtime,
     merge_hooks,
@@ -55,7 +58,9 @@ class Agent:
     def runtime_capabilities(self) -> Any:
         """Capability descriptor for the selected runtime for app-level introspection."""
         factory = self.runtime_factory
-        config = self._build_runtime_config(self._config.runtime, runtime_factory=factory)
+        config = self._build_runtime_config(
+            self._config.runtime, runtime_factory=factory
+        )
         return factory.get_capabilities(config)
 
     async def query(
@@ -182,7 +187,9 @@ class Agent:
         async for event in self._stream_with_config(prompt, self._config):
             yield event
 
-    async def _stream_with_config(self, prompt: str, config: AgentConfig) -> AsyncIterator[Any]:
+    async def _stream_with_config(
+        self, prompt: str, config: AgentConfig
+    ) -> AsyncIterator[Any]:
         """Streaming request -> AsyncIterator[StreamEvent].
 
         Middleware before_query applies, after_result does not (streaming).
@@ -240,7 +247,9 @@ class Agent:
         effective_config = config or self._config
         async for event in dispatch_runtime(
             effective_config.runtime,
-            lambda: self._execute_claude_sdk(prompt, effective_config, messages=messages),
+            lambda: self._execute_claude_sdk(
+                prompt, effective_config, messages=messages
+            ),
             lambda runtime_name: self._execute_agent_runtime(
                 prompt,
                 runtime_name,
@@ -261,10 +270,10 @@ class Agent:
         effective_config = config or self._config
         effective_prompt = prompt
         if messages:
-            history_text = "\n".join(
-                f"[{m.role}]: {m.content}" for m in messages
+            history_text = "\n".join(f"[{m.role}]: {m.content}" for m in messages)
+            effective_prompt = (
+                f"[Conversation history]\n{history_text}\n\n[Current message]\n{prompt}"
             )
-            effective_prompt = f"[Conversation history]\n{history_text}\n\n[Current message]\n{prompt}"
         async for event in stream_claude_one_shot(
             effective_prompt,
             effective_config,
@@ -359,8 +368,6 @@ def build_tools_mcp_server(tools: tuple[Any, ...]) -> Any:
         sdk_tools.append(sdk_t)
 
     return create_mcp_server("agent_tools", tools=sdk_tools)
-
-
 
 
 def _adapt_handler(handler: Any) -> Any:

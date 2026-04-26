@@ -44,7 +44,7 @@ class TestTeamFullLifecycleE2E:
 
     @pytest.mark.asyncio
     async def test_team_full_lifecycle_start_to_complete(self) -> None:
-        """ThinTeamOrchestrator -> start(config with 2 workers) -> oba complete. Workers run cherez fake LLM, kazhdyy gets svoy task. """
+        """ThinTeamOrchestrator -> start(config with 2 workers) -> oba complete. Workers run cherez fake LLM, kazhdyy gets svoy task."""
         worker_tasks_received: list[str] = []
 
         async def fake_llm(
@@ -80,11 +80,13 @@ class TestTeamFullLifecycleE2E:
             await asyncio.sleep(0.1)
 
         status = await orchestrator.get_team_status(team_id)
-        assert status.state == "completed", f"Team должна завершиться, но state={status.state}"
+        assert status.state == "completed", (
+            f"Team должна завершиться, но state={status.state}"
+        )
         assert len(status.workers) == 2, "Должно быть 2 worker'а"
-        assert all(
-            w.state == "completed" for w in status.workers.values()
-        ), "Все workers должны завершиться"
+        assert all(w.state == "completed" for w in status.workers.values()), (
+            "Все workers должны завершиться"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +99,7 @@ class TestTeamMessageBusE2E:
 
     @pytest.mark.asyncio
     async def test_team_message_bus_worker_communication(self) -> None:
-        """Team with 2 workers, messages cherez MessageBus vidny in history. Verify bus.send() + bus.get_history() cherez pryamoy dostup k bus. """
+        """Team with 2 workers, messages cherez MessageBus vidny in history. Verify bus.send() + bus.get_history() cherez pryamoy dostup k bus."""
         bus = MessageBus()
 
         from swarmline.orchestration.team_types import TeamMessage
@@ -168,7 +170,7 @@ class TestTeamPauseResumeE2E:
 
     @pytest.mark.asyncio
     async def test_team_pause_resume_worker(self) -> None:
-        """Start team -> pause worker -> status = paused -> resume -> completed. Resume sozdaet new spawn for worker'a. """
+        """Start team -> pause worker -> status = paused -> resume -> completed. Resume sozdaet new spawn for worker'a."""
         call_count = 0
 
         async def fake_llm(
@@ -221,7 +223,9 @@ class TestTeamPauseResumeE2E:
             await asyncio.sleep(0.1)
 
         status = await orchestrator.get_team_status(team_id)
-        assert status.state == "completed", f"Team должна завершиться после resume, state={status.state}"
+        assert status.state == "completed", (
+            f"Team должна завершиться после resume, state={status.state}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +239,7 @@ class TestSubagentSpawnE2E:
     @pytest.mark.asyncio
     async def test_subagent_spawn_execute_collect(self) -> None:
         """Spawn 3 subagents parallel -> all complete -> collect results."""
+
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
@@ -278,6 +283,7 @@ class TestSubagentSpawnE2E:
     @pytest.mark.asyncio
     async def test_subagent_max_concurrent_limit(self) -> None:
         """Spawn bolshe max_concurrent -> ValueError."""
+
         async def fake_llm(messages: list, system_prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(10)  # Dolgiy worker
             return _final_envelope("done")
@@ -303,6 +309,7 @@ class TestSubagentSpawnE2E:
     @pytest.mark.asyncio
     async def test_subagent_cancel(self) -> None:
         """Cancel subagent -> status = cancelled."""
+
         async def fake_llm(messages: list, system_prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(10)
             return _final_envelope("should not reach")

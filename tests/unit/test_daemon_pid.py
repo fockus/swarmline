@@ -16,7 +16,6 @@ def pid_path(tmp_path):
 
 
 class TestPidFile:
-
     def test_acquire_creates_file(self, pid_path: str) -> None:
         pf = PidFile(pid_path)
         pf.acquire()
@@ -102,12 +101,12 @@ class TestPidFile:
 
     def test_protocol_compliance(self, pid_path: str) -> None:
         from swarmline.daemon.protocols import ProcessLock
+
         pf = PidFile(pid_path)
         assert isinstance(pf, ProcessLock)
 
 
 class TestDaemonAlreadyRunningError:
-
     def test_contains_pid(self) -> None:
         err = DaemonAlreadyRunningError(42)
         assert err.pid == 42

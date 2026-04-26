@@ -1,5 +1,4 @@
-"""Integration: SessionManager + Rehydrator + RoleRouter + ModelPolicy - zhiznotnnyy tsikl sessions. Scenario: createdie sessions -> opredelenie roli -> selection models -> rehydration.
-"""
+"""Integration: SessionManager + Rehydrator + RoleRouter + ModelPolicy - zhiznotnnyy tsikl sessions. Scenario: createdie sessions -> opredelenie roli -> selection models -> rehydration."""
 
 import warnings
 from unittest.mock import AsyncMock, MagicMock, PropertyMock

@@ -66,7 +66,9 @@ def _make_tool_result_block(
     return block
 
 
-def _make_thinking_block(thinking: str = "Let me think...", signature: str = "sig") -> MagicMock:
+def _make_thinking_block(
+    thinking: str = "Let me think...", signature: str = "sig"
+) -> MagicMock:
     """Mock ThinkingBlock."""
     from swarmline.runtime.adapter import ThinkingBlock
 
@@ -420,7 +422,9 @@ class TestStreamReply:
         async def fake_receive_response():
             yield _make_assistant_msg(
                 [
-                    _make_tool_use_block("mcp__iss__search", {"query": "SBER"}, tool_use_id="tool-9"),
+                    _make_tool_use_block(
+                        "mcp__iss__search", {"query": "SBER"}, tool_use_id="tool-9"
+                    ),
                     _make_tool_result_block(
                         "failed: upstream timeout",
                         tool_use_id="tool-9",
@@ -991,7 +995,12 @@ class TestPartialAndStatusEvents:
         async for event in adapter.stream_reply("test"):
             events.append(event)
 
-        assert [event.type for event in events] == ["status", "status", "status", "done"]
+        assert [event.type for event in events] == [
+            "status",
+            "status",
+            "status",
+            "done",
+        ]
         assert "Research started" in events[0].text
         assert "Searching" in events[1].text
         assert "Research complete" in events[2].text

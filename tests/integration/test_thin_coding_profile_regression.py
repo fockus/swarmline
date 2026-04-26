@@ -21,7 +21,9 @@ def _make_llm_call_returning(text: str) -> Any:
     """Create a fake llm_call that returns a canned response."""
 
     async def _fake_llm_call(
-        messages: Any, system_prompt: str = "", **kwargs: Any,
+        messages: Any,
+        system_prompt: str = "",
+        **kwargs: Any,
     ) -> str:
         return text
 
@@ -140,10 +142,10 @@ class TestPhase7Phase8Phase9TestsGreen:
         test_root = Path(__file__).parent.parent
 
         expected_files = [
-            "unit/test_coding_profile.py",           # Phase 7
-            "unit/test_coding_toolpack.py",           # Phase 8
+            "unit/test_coding_profile.py",  # Phase 7
+            "unit/test_coding_toolpack.py",  # Phase 8
             "unit/test_coding_task_runtime_contract.py",  # Phase 8
-            "unit/test_coding_context_builder.py",    # Phase 9
+            "unit/test_coding_context_builder.py",  # Phase 9
             "unit/test_coding_alias_compatibility.py",  # Phase 9
         ]
         for rel_path in expected_files:

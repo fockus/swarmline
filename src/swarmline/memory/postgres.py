@@ -18,7 +18,13 @@ from swarmline.memory._shared import (
     json_load_value,
     merge_scoped_facts,
 )
-from swarmline.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
+from swarmline.memory.types import (
+    GoalState,
+    MemoryMessage,
+    PhaseState,
+    ToolEvent,
+    UserProfile,
+)
 
 # Subquery for resolving the internal user id by external_id (DRY)
 _USER_ID_SUB = "(SELECT id FROM users WHERE external_id = :user_id)"
@@ -117,7 +123,9 @@ class PostgresMemoryProvider:
             )
             try:
                 await session.execute(rich_insert, rich_params)
-            except Exception as exc:  # pragma: no cover - defensive DB compatibility path
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - defensive DB compatibility path
                 if not _is_missing_message_column_error(exc):
                     raise
                 await session.rollback()
@@ -141,7 +149,9 @@ class PostgresMemoryProvider:
             )
             try:
                 result = await session.execute(rich_select, params)
-            except Exception as exc:  # pragma: no cover - defensive DB compatibility path
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - defensive DB compatibility path
                 if not _is_missing_message_column_error(exc):
                     raise
                 result = await session.execute(
@@ -166,7 +176,9 @@ class PostgresMemoryProvider:
                 name=_optional_text(getattr(r, "name", None)),
                 tool_calls=_load_json_or_none(r.tool_calls),
                 metadata=_load_json_dict_or_none(getattr(r, "metadata", None)),
-                content_blocks=_load_json_list_of_dicts_or_none(getattr(r, "content_blocks", None)),
+                content_blocks=_load_json_list_of_dicts_or_none(
+                    getattr(r, "content_blocks", None)
+                ),
             )
             for r in reversed(rows)
         ]
@@ -186,7 +198,9 @@ class PostgresMemoryProvider:
             row = result.fetchone()
             return int(row.cnt) if row else 0
 
-    async def delete_messages_before(self, user_id: str, topic_id: str, keep_last: int = 10) -> int:
+    async def delete_messages_before(
+        self, user_id: str, topic_id: str, keep_last: int = 10
+    ) -> int:
         """Delete old messages, keeping the last keep_last."""
         async with self._session(commit=True) as session:
             result = await session.execute(
@@ -277,7 +291,9 @@ class PostgresMemoryProvider:
                     },
                 )
 
-    async def get_facts(self, user_id: str, topic_id: str | None = None) -> dict[str, Any]:
+    async def get_facts(
+        self, user_id: str, topic_id: str | None = None
+    ) -> dict[str, Any]:
         """Get facts: global + topic-scoped (if provided)."""
         async with self._session() as session:
             if topic_id:
@@ -488,7 +504,9 @@ class PostgresMemoryProvider:
                 },
             )
 
-    async def get_session_state(self, user_id: str, topic_id: str) -> dict[str, Any] | None:
+    async def get_session_state(
+        self, user_id: str, topic_id: str
+    ) -> dict[str, Any] | None:
         """Get session state (from the topics table)."""
         async with self._session() as session:
             result = await session.execute(

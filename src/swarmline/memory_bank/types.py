@@ -33,7 +33,9 @@ class MemoryBankConfig:
     retention_days: int | None = None
     auto_load_on_turn: bool = True
     auto_load_max_lines: int = 200
-    default_folders: list[str] = field(default_factory=lambda: ["plans", "reports", "notes"])
+    default_folders: list[str] = field(
+        default_factory=lambda: ["plans", "reports", "notes"]
+    )
     tiered_enabled: bool = False
 
 

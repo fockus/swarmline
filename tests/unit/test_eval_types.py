@@ -11,7 +11,6 @@ from swarmline.eval.types import EvalCase, EvalReport, EvalResult, Scorer, Score
 
 
 class TestEvalCase:
-
     def test_minimal_creation(self) -> None:
         case = EvalCase(id="c1", input="hello")
         assert case.id == "c1"
@@ -46,7 +45,6 @@ class TestEvalCase:
 
 
 class TestScorerResult:
-
     def test_creation(self) -> None:
         sr = ScorerResult(score=0.9, reason="matches", details={"key": "val"})
         assert sr.score == 0.9
@@ -63,7 +61,6 @@ class TestScorerResult:
 
 
 class TestEvalResult:
-
     def test_passed_when_all_scores_above_threshold(self) -> None:
         case = EvalCase(id="c1", input="hi")
         result = EvalResult(
@@ -114,7 +111,6 @@ class TestEvalResult:
 
 
 class TestEvalReport:
-
     def _make_result(self, score: float) -> EvalResult:
         case = EvalCase(id=f"c-{score}", input="hi")
         return EvalResult(
@@ -125,28 +121,26 @@ class TestEvalReport:
 
     def test_counts(self) -> None:
         report = EvalReport(
-            results=(self._make_result(0.8), self._make_result(0.3), self._make_result(0.9))
+            results=(
+                self._make_result(0.8),
+                self._make_result(0.3),
+                self._make_result(0.9),
+            )
         )
         assert report.total == 3
         assert report.passed == 2
         assert report.failed == 1
 
     def test_pass_rate(self) -> None:
-        report = EvalReport(
-            results=(self._make_result(0.8), self._make_result(0.3))
-        )
+        report = EvalReport(results=(self._make_result(0.8), self._make_result(0.3)))
         assert abs(report.pass_rate - 0.5) < 0.01
 
     def test_mean_score(self) -> None:
-        report = EvalReport(
-            results=(self._make_result(0.8), self._make_result(0.6))
-        )
+        report = EvalReport(results=(self._make_result(0.8), self._make_result(0.6)))
         assert abs(report.mean_score - 0.7) < 0.01
 
     def test_scores_by_scorer(self) -> None:
-        report = EvalReport(
-            results=(self._make_result(0.8), self._make_result(0.6))
-        )
+        report = EvalReport(results=(self._make_result(0.8), self._make_result(0.6)))
         by_scorer = report.scores_by_scorer
         assert "s" in by_scorer
         assert len(by_scorer["s"]) == 2
@@ -182,7 +176,6 @@ class TestEvalReport:
 
 
 class TestScorerProtocol:
-
     def test_protocol_is_runtime_checkable(self) -> None:
         class FakeScorer:
             @property

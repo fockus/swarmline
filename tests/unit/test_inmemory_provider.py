@@ -16,7 +16,9 @@ class TestMessages:
     """Tests of operations with messages."""
 
     @pytest.mark.asyncio
-    async def test_save_and_get_messages(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_save_and_get_messages(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         await provider.save_message("u1", "t1", "user", "Привет")
         await provider.save_message("u1", "t1", "assistant", "Здравствуйте!")
         msgs = await provider.get_messages("u1", "t1")
@@ -40,7 +42,9 @@ class TestMessages:
         assert await provider.count_messages("u1", "t2") == 0
 
     @pytest.mark.asyncio
-    async def test_delete_messages_before(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_delete_messages_before(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         for i in range(10):
             await provider.save_message("u1", "t1", "user", f"msg-{i}")
         deleted = await provider.delete_messages_before("u1", "t1", keep_last=3)
@@ -50,7 +54,9 @@ class TestMessages:
         assert msgs[0].content == "msg-7"
 
     @pytest.mark.asyncio
-    async def test_messages_isolated_by_topic(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_messages_isolated_by_topic(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         await provider.save_message("u1", "t1", "user", "topic1")
         await provider.save_message("u1", "t2", "user", "topic2")
         msgs1 = await provider.get_messages("u1", "t1")
@@ -71,7 +77,9 @@ class TestFacts:
         assert facts["income"] == 100000
 
     @pytest.mark.asyncio
-    async def test_facts_global_and_topic(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_facts_global_and_topic(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         await provider.upsert_fact("u1", "name", "Иван")  # global
         await provider.upsert_fact("u1", "goal", "вклад", topic_id="t1")
         # With topic_id - we see both
@@ -92,7 +100,6 @@ class TestFacts:
 
 
 class TestSummaries:
-
     @pytest.mark.asyncio
     async def test_save_and_get_summary(self, provider: InMemoryMemoryProvider) -> None:
         await provider.save_summary("u1", "t1", "Пользователь хочет вклад", 5)
@@ -105,7 +112,6 @@ class TestSummaries:
 
 
 class TestUsers:
-
     @pytest.mark.asyncio
     async def test_ensure_user(self, provider: InMemoryMemoryProvider) -> None:
         uid = await provider.ensure_user("tg_12345")
@@ -113,7 +119,6 @@ class TestUsers:
 
 
 class TestGoals:
-
     @pytest.mark.asyncio
     async def test_save_and_get_goal(self, provider: InMemoryMemoryProvider) -> None:
         goal = GoalState(goal_id="t1", title="Накопить 1М", target_amount=1000000)
@@ -128,9 +133,10 @@ class TestGoals:
 
 
 class TestSessionState:
-
     @pytest.mark.asyncio
-    async def test_save_and_get_session_state(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_save_and_get_session_state(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         await provider.save_session_state("u1", "t1", "coach", ["finuslugi"])
         state = await provider.get_session_state("u1", "t1")
         assert state is not None
@@ -143,11 +149,15 @@ class TestSessionState:
         assert state["delegation_summary"] is None
 
     @pytest.mark.asyncio
-    async def test_get_session_state_none(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_get_session_state_none(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         assert await provider.get_session_state("u1", "absent") is None
 
     @pytest.mark.asyncio
-    async def test_session_state_delegation_persist(self, provider: InMemoryMemoryProvider) -> None:
+    async def test_session_state_delegation_persist(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
         """Delegation fields are saved and restored."""
         await provider.save_session_state(
             "u1",
@@ -185,7 +195,6 @@ class TestSessionState:
 
 
 class TestProfile:
-
     @pytest.mark.asyncio
     async def test_get_user_profile(self, provider: InMemoryMemoryProvider) -> None:
         await provider.upsert_fact("u1", "age", 30)
@@ -232,5 +241,7 @@ class TestToolEvents:
         )
         await provider.save_tool_event("u1", event)
         assert len(provider._tool_events) == 1
-        assert provider._tool_events[0]["tool_name"] == "mcp__finuslugi__get_bank_deposits"
+        assert (
+            provider._tool_events[0]["tool_name"] == "mcp__finuslugi__get_bank_deposits"
+        )
         assert provider._tool_events[0]["latency_ms"] == 150

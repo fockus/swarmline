@@ -69,7 +69,9 @@ class LocalSandboxProvider:
         try:
             argv = shlex.split(command, posix=True)
         except ValueError as exc:
-            raise SandboxViolation(f"Невалидная команда: {command}", path=command) from exc
+            raise SandboxViolation(
+                f"Невалидная команда: {command}", path=command
+            ) from exc
 
         if not argv:
             raise SandboxViolation("Пустая команда запрещена", path=command)
@@ -84,13 +86,17 @@ class LocalSandboxProvider:
         """
         cmd_name = os.path.basename(argv[0])
         if cmd_name in _DENYLIST_WRAPPERS:
-            raise SandboxViolation(f"Shell wrapper '{cmd_name}' is denied", path=raw_command)
+            raise SandboxViolation(
+                f"Shell wrapper '{cmd_name}' is denied", path=raw_command
+            )
 
         denied = self._config.denied_commands or frozenset()
         for word in argv:
             cmd_name = os.path.basename(word)
             if cmd_name in denied:
-                raise SandboxViolation(f"Command '{cmd_name}' is denied", path=raw_command)
+                raise SandboxViolation(
+                    f"Command '{cmd_name}' is denied", path=raw_command
+                )
 
     @staticmethod
     def _validate_glob_pattern(pattern: str) -> None:

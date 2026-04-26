@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 class RuntimeRegistry:
     """Thread-safe extensible registry for runtime factories.
 
-  Each entry maps a runtime name to:
-  - factory_fn: Callable[[RuntimeConfig, ...], AgentRuntime]
-  - capabilities: RuntimeCapabilities | None
-  """
+    Each entry maps a runtime name to:
+    - factory_fn: Callable[[RuntimeConfig, ...], AgentRuntime]
+    - capabilities: RuntimeCapabilities | None
+    """
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -210,9 +210,9 @@ def _register_builtins(registry: RuntimeRegistry) -> None:
 def _discover_entry_points(registry: RuntimeRegistry) -> None:
     """Discover and register runtimes from entry points (group='swarmline.runtimes').
 
-  Each entry point should return a tuple of (factory_fn, capabilities).
-  Bad plugins are silently skipped with a warning.
-  """
+    Each entry point should return a tuple of (factory_fn, capabilities).
+    Bad plugins are silently skipped with a warning.
+    """
     try:
         eps = entry_points(group="swarmline.runtimes")
     except Exception:
@@ -279,8 +279,8 @@ _BUILTIN_NAMES = frozenset(
 def get_valid_runtime_names() -> frozenset[str]:
     """Get valid runtime names from registry + hardcoded builtins.
 
-  Returns frozenset combining builtins and any registered custom runtimes.
-  """
+    Returns frozenset combining builtins and any registered custom runtimes.
+    """
     try:
         registry = get_default_registry()
         return frozenset(registry.list_available()) | _BUILTIN_NAMES
@@ -294,9 +294,9 @@ def resolve_runtime_capabilities(
 ) -> RuntimeCapabilities:
     """Resolve capabilities for built-in or registry-registered runtime.
 
-  Built-ins fall back to the static capability table. Custom runtimes must
-  register capabilities explicitly to participate in capability negotiation.
-  """
+    Built-ins fall back to the static capability table. Custom runtimes must
+    register capabilities explicitly to participate in capability negotiation.
+    """
     effective_registry = registry
     if effective_registry is None:
         try:
@@ -308,7 +308,12 @@ def resolve_runtime_capabilities(
         caps = effective_registry.get_capabilities(runtime_name)
         if caps is not None:
             return caps
-        if effective_registry.is_registered(runtime_name) and runtime_name not in _BUILTIN_NAMES:
-            raise ValueError(f"Capabilities not registered for runtime: '{runtime_name}'")
+        if (
+            effective_registry.is_registered(runtime_name)
+            and runtime_name not in _BUILTIN_NAMES
+        ):
+            raise ValueError(
+                f"Capabilities not registered for runtime: '{runtime_name}'"
+            )
 
     return get_runtime_capabilities(runtime_name)

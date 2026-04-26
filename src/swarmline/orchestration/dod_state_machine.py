@@ -32,9 +32,9 @@ class DoDResult:
 class DoDStateMachine:
     """Criteria-driven verification state machine.
 
-  Runs verification checks in a loop up to max_loops times.
-  If all checks pass -> PASSED. If max_loops exceeded -> MAX_LOOPS_EXCEEDED.
-  """
+    Runs verification checks in a loop up to max_loops times.
+    If all checks pass -> PASSED. If max_loops exceeded -> MAX_LOOPS_EXCEEDED.
+    """
 
     def __init__(self, max_loops: int = 3) -> None:
         if max_loops < 1:

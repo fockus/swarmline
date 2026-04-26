@@ -34,8 +34,8 @@ class WorkflowResult:
 class CodePlannerPort(Protocol):
     """Protocol for pluggable planner in CodeWorkflowEngine (DIP).
 
-  Implementations: ThinPlannerMode, DeepAgentsPlannerMode, custom planners.
-  """
+    Implementations: ThinPlannerMode, DeepAgentsPlannerMode, custom planners.
+    """
 
     async def create_plan(self, goal: str) -> str: ...
 
@@ -45,8 +45,8 @@ class CodePlannerPort(Protocol):
 class DoDVerifierPort(Protocol):
     """Protocol for DoD verification state machine (DIP).
 
-  Implementations: DoDStateMachine (default), custom DoD engines.
-  """
+    Implementations: DoDStateMachine (default), custom DoD engines.
+    """
 
     async def verify_dod(
         self, criteria: tuple[str, ...], verifier: CodeVerifier
@@ -67,11 +67,11 @@ class _PlannerExecutor:
 class _DoDVerifierAdapter:
     """Adapts DoDVerifierPort + CodeVerifier to VerifierPort (verify(output) -> (bool, str)).
 
-  DoD criteria are passed via context["dod_criteria"] at run time.
-  When criteria are empty, verification is skipped (always passes).
-  The DoDStateMachine manages its own retry loop internally,
-  so GenericWorkflowEngine uses max_retries=1.
-  """
+    DoD criteria are passed via context["dod_criteria"] at run time.
+    When criteria are empty, verification is skipped (always passes).
+    The DoDStateMachine manages its own retry loop internally,
+    so GenericWorkflowEngine uses max_retries=1.
+    """
 
     def __init__(self, dod: DoDVerifierPort, verifier: CodeVerifier) -> None:
         self._dod = dod
@@ -84,8 +84,8 @@ class _DoDVerifierAdapter:
     async def verify(self, output: str) -> tuple[bool, str]:
         """Run DoD verification using stored criteria.
 
-    Criteria must be set via set_criteria() before each run.
-    """
+        Criteria must be set via set_criteria() before each run.
+        """
         if not self._criteria:
             self._last_dod_status = DoDStatus.PASSED
             self._last_dod_log = ""
@@ -120,10 +120,10 @@ class _DoDVerifierAdapter:
 class CodeWorkflowEngine:
     """Structured code pipeline: plan -> execute -> verify DoD.
 
-  Delegates to GenericWorkflowEngine with code-specific adapters:
-  - CodePlannerPort as executor (via _PlannerExecutor)
-  - DoDStateMachine + CodeVerifier as verifier (via _DoDVerifierAdapter)
-  """
+    Delegates to GenericWorkflowEngine with code-specific adapters:
+    - CodePlannerPort as executor (via _PlannerExecutor)
+    - DoDStateMachine + CodeVerifier as verifier (via _DoDVerifierAdapter)
+    """
 
     def __init__(
         self,
@@ -141,12 +141,14 @@ class CodeWorkflowEngine:
             max_retries=1,
         )
 
-    async def run(self, goal: str, dod_criteria: tuple[str, ...] = ()) -> WorkflowResult:
+    async def run(
+        self, goal: str, dod_criteria: tuple[str, ...] = ()
+    ) -> WorkflowResult:
         """Execute full workflow: plan -> execute -> verify DoD.
 
-    Delegates to GenericWorkflowEngine, then maps the result
-    back to code-specific WorkflowResult with DoD details.
-    """
+        Delegates to GenericWorkflowEngine, then maps the result
+        back to code-specific WorkflowResult with DoD details.
+        """
         self._dod_adapter.set_criteria(dod_criteria)
 
         generic_result = await self._generic.run(goal)

@@ -157,7 +157,9 @@ class TestCommandInterceptor:
 
         events = await _collect(runtime, "hello")
 
-        assert not llm.called, "LLM should not be called when hook transforms to command"
+        assert not llm.called, (
+            "LLM should not be called when hook transforms to command"
+        )
         finals = [e for e in events if e.is_final]
         assert len(finals) == 1
         assert "Available commands: /help" in finals[0].data["text"]
@@ -239,4 +241,6 @@ class TestCommandInterceptor:
 
         await _collect(runtime, "/help\nplus more text on next line")
 
-        assert llm.called, "LLM should be called for multiline input even if starts with /"
+        assert llm.called, (
+            "LLM should be called for multiline input even if starts with /"
+        )

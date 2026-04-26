@@ -12,7 +12,9 @@ from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
 
 class TestDeepAgentsSubagentOrchestrator:
     async def test_spawn_and_wait(self) -> None:
-        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import (
+            DeepAgentsSubagentOrchestrator,
+        )
 
         class FakeRuntime:
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
@@ -32,13 +34,17 @@ class TestDeepAgentsSubagentOrchestrator:
         assert result.status.state == "completed"
 
     async def test_error_event_maps_to_failed_status(self) -> None:
-        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import (
+            DeepAgentsSubagentOrchestrator,
+        )
 
         class FakeRuntime:
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
                 _ = kwargs
                 yield RuntimeEvent.error(
-                    RuntimeErrorData(kind="runtime_crash", message="boom", recoverable=False),
+                    RuntimeErrorData(
+                        kind="runtime_crash", message="boom", recoverable=False
+                    ),
                 )
 
         orch = DeepAgentsSubagentOrchestrator(
@@ -50,7 +56,9 @@ class TestDeepAgentsSubagentOrchestrator:
         assert "boom" in (result.status.error or "")
 
     async def test_cancel_maps_to_cancelled_status(self) -> None:
-        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import (
+            DeepAgentsSubagentOrchestrator,
+        )
 
         class SlowRuntime:
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
@@ -68,19 +76,25 @@ class TestDeepAgentsSubagentOrchestrator:
         assert result.status.state in ("cancelled", "failed")
 
     async def test_isinstance_protocol(self) -> None:
-        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import (
+            DeepAgentsSubagentOrchestrator,
+        )
         from swarmline.orchestration.subagent_protocol import SubagentOrchestrator
 
         orch = DeepAgentsSubagentOrchestrator()
         assert isinstance(orch, SubagentOrchestrator)
 
     async def test_default_runtime_passes_registered_local_tool_executors(self) -> None:
-        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import (
+            DeepAgentsSubagentOrchestrator,
+        )
 
         captured_tool_executors = {}
 
         class FakeRuntime:
-            def __init__(self, *, config=None, tool_executors=None, mcp_servers=None) -> None:
+            def __init__(
+                self, *, config=None, tool_executors=None, mcp_servers=None
+            ) -> None:
                 _ = (config, mcp_servers)
                 captured_tool_executors.update(tool_executors or {})
 
@@ -105,7 +119,9 @@ class TestDeepAgentsSubagentOrchestrator:
             ],
         )
 
-        with patch("swarmline.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime):
+        with patch(
+            "swarmline.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime
+        ):
             aid = await orch.spawn(spec, "task")
             result = await orch.wait(aid)
 
@@ -113,12 +129,16 @@ class TestDeepAgentsSubagentOrchestrator:
         assert "send_message" in captured_tool_executors
 
     async def test_unregistered_local_tool_fails_before_runtime_execution(self) -> None:
-        from swarmline.orchestration.deepagents_subagent import DeepAgentsSubagentOrchestrator
+        from swarmline.orchestration.deepagents_subagent import (
+            DeepAgentsSubagentOrchestrator,
+        )
 
         runtime_run_called = False
 
         class FakeRuntime:
-            def __init__(self, *, config=None, tool_executors=None, mcp_servers=None) -> None:
+            def __init__(
+                self, *, config=None, tool_executors=None, mcp_servers=None
+            ) -> None:
                 _ = (config, tool_executors, mcp_servers)
 
             async def run(self, **kwargs) -> AsyncIterator[RuntimeEvent]:
@@ -141,7 +161,9 @@ class TestDeepAgentsSubagentOrchestrator:
             ],
         )
 
-        with patch("swarmline.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime):
+        with patch(
+            "swarmline.orchestration.deepagents_subagent.DeepAgentsRuntime", FakeRuntime
+        ):
             aid = await orch.spawn(spec, "task")
             result = await orch.wait(aid)
 

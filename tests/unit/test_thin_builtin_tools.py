@@ -50,7 +50,9 @@ def sandbox() -> _FakeSandboxProvider:
 class TestThinBuiltinToolsRegistration:
     """Built-in tools are registered pri nalichii SandboxProvider."""
 
-    def test_thin_builtin_tools_registered_by_default(self, sandbox: _FakeSandboxProvider) -> None:
+    def test_thin_builtin_tools_registered_by_default(
+        self, sandbox: _FakeSandboxProvider
+    ) -> None:
         """Pri nalichii sandbox provider 9 built-in tools available."""
         from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
 
@@ -110,8 +112,14 @@ class TestThinBuiltinToolsFeatureMode:
         builtin_tools = list(specs.values())
 
         user_tools = [
-            ToolSpec(name="my_tool", description="Custom tool", parameters={"type": "object"}),
-            ToolSpec(name="read_file", description="User override", parameters={"type": "object"}),
+            ToolSpec(
+                name="my_tool", description="Custom tool", parameters={"type": "object"}
+            ),
+            ToolSpec(
+                name="read_file",
+                description="User override",
+                parameters={"type": "object"},
+            ),
         ]
 
         merged = merge_tools_with_builtins(

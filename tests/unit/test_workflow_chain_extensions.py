@@ -30,8 +30,12 @@ class TestParallelPipelineStage:
                 ParallelPipelineStage(
                     "compare",
                     branches={
-                        "fast": TypedPipelineStage("fast", lambda value: f"fast:{value}"),
-                        "deep": TypedPipelineStage("deep", lambda value: f"deep:{value}"),
+                        "fast": TypedPipelineStage(
+                            "fast", lambda value: f"fast:{value}"
+                        ),
+                        "deep": TypedPipelineStage(
+                            "deep", lambda value: f"deep:{value}"
+                        ),
                     },
                     joiner=lambda outputs: outputs["fast"] + "|" + outputs["deep"],
                 )
@@ -51,7 +55,10 @@ class TestParallelPipelineStage:
                     "compare",
                     branches={
                         "ok": TypedPipelineStage("ok", lambda value: f"ok:{value}"),
-                        "bad": TypedPipelineStage("bad", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))),
+                        "bad": TypedPipelineStage(
+                            "bad",
+                            lambda value: (_ for _ in ()).throw(RuntimeError("boom")),
+                        ),
                     },
                     joiner=lambda outputs: outputs,
                     failure_policy="allow_partial",
@@ -65,7 +72,9 @@ class TestParallelPipelineStage:
         assert result.output == {"ok": "ok:question"}
         assert result.errors == ("compare.bad: boom",)
 
-    async def test_parallel_branches_can_share_structured_pipeline_context(self) -> None:
+    async def test_parallel_branches_can_share_structured_pipeline_context(
+        self,
+    ) -> None:
         def fast_branch(value: str, context: PipelineContext) -> str:
             context.write_artifact("fast_notes", {"source": "fast", "input": value})
             context.add_message("fast", "candidate ready")
@@ -104,7 +113,9 @@ class TestParallelPipelineStage:
             "deep": "deep-candidate",
         }
         assert result.output["artifacts"]["fast_notes"]["input"] == "question"
-        assert result.output["messages"] == ({"from": "fast", "content": "candidate ready"},)
+        assert result.output["messages"] == (
+            {"from": "fast", "content": "candidate ready"},
+        )
 
 
 class TestLoopPipelineStage:
@@ -133,7 +144,9 @@ class TestLoopPipelineStage:
         assert result.output == "report: approved draft"
         assert result.attempts == {"review_loop": 3}
 
-    async def test_loop_stage_fails_when_reviewer_never_passes_before_limit(self) -> None:
+    async def test_loop_stage_fails_when_reviewer_never_passes_before_limit(
+        self,
+    ) -> None:
         chain = WorkflowChain(
             stages=[
                 LoopPipelineStage(
@@ -150,7 +163,9 @@ class TestLoopPipelineStage:
         assert result.status == "failed"
         assert result.failed_stage == "review_loop"
         assert result.attempts == {"review_loop": 2}
-        assert result.errors == ("stage 'review_loop' reviewer did not pass after 2 iterations",)
+        assert result.errors == (
+            "stage 'review_loop' reviewer did not pass after 2 iterations",
+        )
 
 
 class _FakeCommunication:
@@ -163,7 +178,9 @@ class _FakeCommunication:
 
 class TestWorkflowBridge:
     async def test_chain_node_adapts_pipeline_to_workflow_graph_node(self) -> None:
-        chain = WorkflowChain(stages=[WorkflowStep("answer", lambda value: f"answer:{value}")])
+        chain = WorkflowChain(
+            stages=[WorkflowStep("answer", lambda value: f"answer:{value}")]
+        )
         node = WorkflowBridge.chain_node(
             chain,
             input_key="question",
@@ -178,7 +195,9 @@ class TestWorkflowBridge:
         assert state["answer_result"].output == "answer:q1"
         assert state["other"] is True
 
-    async def test_graph_message_sender_uses_graph_communication_direct_channel(self) -> None:
+    async def test_graph_message_sender_uses_graph_communication_direct_channel(
+        self,
+    ) -> None:
         communication = _FakeCommunication()
         sender = WorkflowBridge.graph_message_sender(
             communication,

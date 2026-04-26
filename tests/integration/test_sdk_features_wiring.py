@@ -120,7 +120,12 @@ class TestHookRegistryToOptions:
 
         assert opts.hooks is not None
         assert len(opts.hooks) == 4
-        assert set(opts.hooks.keys()) == {"PreToolUse", "PostToolUse", "Stop", "UserPromptSubmit"}
+        assert set(opts.hooks.keys()) == {
+            "PreToolUse",
+            "PostToolUse",
+            "Stop",
+            "UserPromptSubmit",
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +200,10 @@ class TestFullOptionsAssembly:
             system_prompt="test",
             output_format={
                 "type": "json_schema",
-                "schema": {"type": "object", "properties": {"score": {"type": "number"}}},
+                "schema": {
+                    "type": "object",
+                    "properties": {"score": {"type": "number"}},
+                },
             },
             continue_conversation=True,
             fork_session=True,

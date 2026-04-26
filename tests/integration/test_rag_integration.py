@@ -20,7 +20,9 @@ class TestRagInputFilterEndToEnd:
 
     async def test_end_to_end_retrieval_and_injection(self) -> None:
         docs = [
-            Document(content="The capital of France is Paris", metadata={"source": "geo"}),
+            Document(
+                content="The capital of France is Paris", metadata={"source": "geo"}
+            ),
             Document(content="Python was created by Guido van Rossum"),
             Document(content="The Eiffel Tower is in Paris, France"),
         ]
@@ -41,7 +43,9 @@ class TestRagInputFilterEndToEnd:
         assert "<context>" in enriched_prompt
         assert "France" in enriched_prompt
         # Both France-related docs should be retrieved (top_k=2)
-        assert "capital of France" in enriched_prompt or "Eiffel Tower" in enriched_prompt
+        assert (
+            "capital of France" in enriched_prompt or "Eiffel Tower" in enriched_prompt
+        )
 
 
 class TestThinRuntimeAutoWrapRetriever:
@@ -129,12 +133,14 @@ class TestFullPipelineRetrieverFilterLlm:
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
             received_system.append(system_prompt)
-            return json.dumps({
-                "type": "final",
-                "final_message": "The answer is 42",
-                "citations": [],
-                "next_suggestions": [],
-            })
+            return json.dumps(
+                {
+                    "type": "final",
+                    "final_message": "The answer is 42",
+                    "citations": [],
+                    "next_suggestions": [],
+                }
+            )
 
         config = RuntimeConfig(runtime_name="thin", retriever=retriever)
         runtime = ThinRuntime(config=config, llm_call=fake_llm)

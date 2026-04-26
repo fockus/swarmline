@@ -63,9 +63,16 @@ class ComparisonReport:
             "-" * 50,
         ]
         for c in self.cases:
-            symbol = {"improved": "+", "regressed": "-", "unchanged": "=",
-                       "new": "N", "removed": "X"}[c.status]
-            lines.append(f"  [{symbol}] {c.case_id}: {c.base_mean:.2f} -> {c.target_mean:.2f}")
+            symbol = {
+                "improved": "+",
+                "regressed": "-",
+                "unchanged": "=",
+                "new": "N",
+                "removed": "X",
+            }[c.status]
+            lines.append(
+                f"  [{symbol}] {c.case_id}: {c.base_mean:.2f} -> {c.target_mean:.2f}"
+            )
         return "\n".join(lines)
 
 
@@ -83,9 +90,11 @@ class EvalComparator:
         base_by_id: dict[str, EvalResult] = {r.case.id: r for r in base.results}
         target_by_id: dict[str, EvalResult] = {r.case.id: r for r in target.results}
 
-        all_ids = list(dict.fromkeys(
-            [r.case.id for r in base.results] + [r.case.id for r in target.results]
-        ))
+        all_ids = list(
+            dict.fromkeys(
+                [r.case.id for r in base.results] + [r.case.id for r in target.results]
+            )
+        )
 
         comparisons: list[CaseComparison] = []
         for cid in all_ids:
@@ -93,15 +102,21 @@ class EvalComparator:
             t = target_by_id.get(cid)
 
             if b is None and t is not None:
-                comparisons.append(CaseComparison(
-                    case_id=cid, status="new",
-                    target_mean=t.mean_score,
-                ))
+                comparisons.append(
+                    CaseComparison(
+                        case_id=cid,
+                        status="new",
+                        target_mean=t.mean_score,
+                    )
+                )
             elif t is None and b is not None:
-                comparisons.append(CaseComparison(
-                    case_id=cid, status="removed",
-                    base_mean=b.mean_score,
-                ))
+                comparisons.append(
+                    CaseComparison(
+                        case_id=cid,
+                        status="removed",
+                        base_mean=b.mean_score,
+                    )
+                )
             elif b is not None and t is not None:
                 delta = t.mean_score - b.mean_score
                 # Per-scorer deltas
@@ -120,13 +135,15 @@ class EvalComparator:
                 else:
                     status = "unchanged"
 
-                comparisons.append(CaseComparison(
-                    case_id=cid,
-                    status=status,
-                    base_mean=b.mean_score,
-                    target_mean=t.mean_score,
-                    score_deltas=score_deltas,
-                ))
+                comparisons.append(
+                    CaseComparison(
+                        case_id=cid,
+                        status=status,
+                        base_mean=b.mean_score,
+                        target_mean=t.mean_score,
+                        score_deltas=score_deltas,
+                    )
+                )
 
         return ComparisonReport(
             cases=tuple(comparisons),

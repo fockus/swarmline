@@ -60,7 +60,10 @@ class TestContentBlocksSerialization:
         serialized = msg.to_dict()
         # Verify round-trip preserves base64 data
         assert serialized["content_blocks"][1]["data"] == original_data
-        assert base64.b64decode(serialized["content_blocks"][1]["data"]) == b"fake png bytes"
+        assert (
+            base64.b64decode(serialized["content_blocks"][1]["data"])
+            == b"fake png bytes"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +162,9 @@ class TestAnthropicPipelineIntegration:
         with patch.dict("sys.modules", {"anthropic": mock_module}):
             adapter = AnthropicAdapter(model="claude-sonnet-4-20250514")
             adapter._client = mock_client
-            result = await adapter.call(messages=lm_messages, system_prompt="Describe images")
+            result = await adapter.call(
+                messages=lm_messages, system_prompt="Describe images"
+            )
 
         assert result == "I see a cat"
         call_kwargs = mock_client.messages.create.call_args.kwargs
@@ -202,7 +207,9 @@ class TestOpenAIPipelineIntegration:
         with patch.dict("sys.modules", {"openai": mock_module}):
             adapter = OpenAICompatAdapter(model="gpt-4o")
             adapter._client = mock_client
-            result = await adapter.call(messages=lm_messages, system_prompt="Describe images")
+            result = await adapter.call(
+                messages=lm_messages, system_prompt="Describe images"
+            )
 
         assert result == "I see a dog"
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
@@ -211,7 +218,10 @@ class TestOpenAIPipelineIntegration:
         assert isinstance(user_msg["content"], list)
         assert user_msg["content"][0] == {"type": "text", "text": "What is this?"}
         assert user_msg["content"][1]["type"] == "image_url"
-        assert user_msg["content"][1]["image_url"]["url"] == "data:image/jpeg;base64,aW1hZ2U="
+        assert (
+            user_msg["content"][1]["image_url"]["url"]
+            == "data:image/jpeg;base64,aW1hZ2U="
+        )
 
 
 class TestGooglePipelineIntegration:
@@ -240,11 +250,16 @@ class TestGooglePipelineIntegration:
 
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             adapter = GoogleAdapter(model="gemini-2.5-pro")
             adapter._client = mock_client
-            result = await adapter.call(messages=lm_messages, system_prompt="Describe images")
+            result = await adapter.call(
+                messages=lm_messages, system_prompt="Describe images"
+            )
 
         assert result == "I see a bird"
         call_kwargs = mock_client.models.generate_content.call_args.kwargs
@@ -252,7 +267,9 @@ class TestGooglePipelineIntegration:
         parts = contents[0]["parts"]
         assert len(parts) == 2
         assert parts[0] == {"text": "What is this?"}
-        assert parts[1] == {"inline_data": {"mime_type": "image/webp", "data": "aW1hZ2U="}}
+        assert parts[1] == {
+            "inline_data": {"mime_type": "image/webp", "data": "aW1hZ2U="}
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +349,10 @@ class TestBackwardCompatIntegration:
 
         with patch.dict(
             "sys.modules",
-            {"google.genai": mock_module, "google": _make_mock_google_package(mock_module)},
+            {
+                "google.genai": mock_module,
+                "google": _make_mock_google_package(mock_module),
+            },
         ):
             adapter = GoogleAdapter(model="gemini-2.5-pro")
             adapter._client = mock_client

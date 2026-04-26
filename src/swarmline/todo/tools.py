@@ -81,7 +81,9 @@ def create_todo_tools(
         """Write todos (bulk replace)."""
         raw_todos = args.get("todos", [])
         if not isinstance(raw_todos, list):
-            return json.dumps({"status": "error", "message": "todos должен быть массивом"})
+            return json.dumps(
+                {"status": "error", "message": "todos должен быть массивом"}
+            )
         try:
             now = datetime.now(tz=UTC)
             items = [

@@ -29,7 +29,9 @@ def _parse_dt(value: str | datetime) -> datetime:
 class FilesystemTodoProvider:
     """TodoProvider via a JSON file."""
 
-    def __init__(self, root_path: Path, user_id: str, topic_id: str, max_todos: int = 100) -> None:
+    def __init__(
+        self, root_path: Path, user_id: str, topic_id: str, max_todos: int = 100
+    ) -> None:
         validate_namespace_segment(user_id, "user_id")
         validate_namespace_segment(topic_id, "topic_id")
         self._max_todos = max_todos
@@ -60,7 +62,9 @@ class FilesystemTodoProvider:
         data = [t.to_dict() for t in todos]
         tmp = self._file.with_suffix(".json.tmp")
         try:
-            tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            tmp.write_text(
+                json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             os.replace(str(tmp), str(self._file))
         except Exception:
             tmp.unlink(missing_ok=True)

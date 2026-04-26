@@ -42,7 +42,9 @@ class TestFullAgentTurnLifecycle:
         await bus.emit("llm_call_start", {"model": "sonnet"})
         await bus.emit("llm_call_end", {"model": "sonnet"})
 
-        await bus.emit("tool_call_start", {"name": "web_search", "correlation_id": "t1"})
+        await bus.emit(
+            "tool_call_start", {"name": "web_search", "correlation_id": "t1"}
+        )
         await bus.emit("tool_call_end", {"name": "web_search", "correlation_id": "t1"})
 
         await bus.emit("llm_call_start", {"model": "sonnet"})
@@ -87,7 +89,9 @@ class TestMultipleToolCallsInSequence:
 
         for i, tool_name in enumerate(["web_search", "calculator", "file_read"]):
             cid = f"tool-{i}"
-            await bus.emit("tool_call_start", {"name": tool_name, "correlation_id": cid})
+            await bus.emit(
+                "tool_call_start", {"name": tool_name, "correlation_id": cid}
+            )
             await bus.emit("tool_call_end", {"name": tool_name, "correlation_id": cid})
 
         await bus.emit("llm_call_end", {"model": "sonnet"})
@@ -145,7 +149,9 @@ class TestCoexistenceWithTracingSubscriber:
 
         await bus.emit("llm_call_start", {"model": "sonnet"})
         await bus.emit("llm_call_end", {"model": "sonnet"})
-        await bus.emit("tool_call_start", {"name": "web_search", "correlation_id": "t1"})
+        await bus.emit(
+            "tool_call_start", {"name": "web_search", "correlation_id": "t1"}
+        )
         await bus.emit("tool_call_end", {"name": "web_search", "correlation_id": "t1"})
 
         # OTel spans

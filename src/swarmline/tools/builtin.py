@@ -219,12 +219,14 @@ def _create_read_executor(sandbox: SandboxProvider) -> Callable:
                         f"Image too large ({len(raw)} bytes, max {_MAX_IMAGE_BYTES})"
                     )
                 data = base64.b64encode(raw).decode()
-                return json.dumps({
-                    "status": "ok",
-                    "type": "image",
-                    "data": data,
-                    "media_type": _IMAGE_EXTENSIONS[ext],
-                })
+                return json.dumps(
+                    {
+                        "status": "ok",
+                        "type": "image",
+                        "data": data,
+                        "media_type": _IMAGE_EXTENSIONS[ext],
+                    }
+                )
 
             # Default: text read
             content = await sandbox.read_file(path)
@@ -286,7 +288,9 @@ def _create_multi_edit_executor(sandbox: SandboxProvider) -> Callable:
                     return _make_json_error(f"old_string не найден: {old[:50]}")
                 content = content.replace(old, new, 1)
             await sandbox.write_file(path, content)
-            return json.dumps({"status": "ok", "path": path, "edits_applied": len(edits)})
+            return json.dumps(
+                {"status": "ok", "path": path, "edits_applied": len(edits)}
+            )
         except Exception as e:
             return _make_json_error(str(e))
 
@@ -342,9 +346,13 @@ def _create_grep_executor(sandbox: SandboxProvider) -> Callable:
                 )
                 return json.dumps({"status": "ok", "matches": matches, "path": path})
             # Without a path, search across all workspace files (basic implementation)
-            return json.dumps({"status": "ok", "matches": [], "note": "path рекомендуется"})
+            return json.dumps(
+                {"status": "ok", "matches": [], "note": "path рекомендуется"}
+            )
         except TimeoutError:
-            return _make_json_error("Regex timeout — возможно catastrophic backtracking")
+            return _make_json_error(
+                "Regex timeout — возможно catastrophic backtracking"
+            )
         except Exception as e:
             return _make_json_error(str(e))
 
@@ -365,9 +373,24 @@ def create_sandbox_tools(
         Tuple: (specs dict, executors dict).
     """
     tools: list[tuple[str, str, dict, Callable]] = [
-        ("bash", "Выполнить shell-команду в sandbox", _BASH_SCHEMA, _create_bash_executor(sandbox)),
-        ("read", "Прочитать файл из workspace", _READ_SCHEMA, _create_read_executor(sandbox)),
-        ("write", "Записать файл в workspace", _WRITE_SCHEMA, _create_write_executor(sandbox)),
+        (
+            "bash",
+            "Выполнить shell-команду в sandbox",
+            _BASH_SCHEMA,
+            _create_bash_executor(sandbox),
+        ),
+        (
+            "read",
+            "Прочитать файл из workspace",
+            _READ_SCHEMA,
+            _create_read_executor(sandbox),
+        ),
+        (
+            "write",
+            "Записать файл в workspace",
+            _WRITE_SCHEMA,
+            _create_write_executor(sandbox),
+        ),
         (
             "edit",
             "Заменить подстроку в файле (str_replace)",
@@ -380,9 +403,24 @@ def create_sandbox_tools(
             _MULTI_EDIT_SCHEMA,
             _create_multi_edit_executor(sandbox),
         ),
-        ("ls", "Список файлов в директории workspace", _LS_SCHEMA, _create_ls_executor(sandbox)),
-        ("glob", "Поиск файлов по glob-паттерну", _GLOB_SCHEMA, _create_glob_executor(sandbox)),
-        ("grep", "Поиск текста по regex в файлах", _GREP_SCHEMA, _create_grep_executor(sandbox)),
+        (
+            "ls",
+            "Список файлов в директории workspace",
+            _LS_SCHEMA,
+            _create_ls_executor(sandbox),
+        ),
+        (
+            "glob",
+            "Поиск файлов по glob-паттерну",
+            _GLOB_SCHEMA,
+            _create_glob_executor(sandbox),
+        ),
+        (
+            "grep",
+            "Поиск текста по regex в файлах",
+            _GREP_SCHEMA,
+            _create_grep_executor(sandbox),
+        ),
     ]
 
     specs: dict[str, ToolSpec] = {}
@@ -440,7 +478,8 @@ def create_web_tools(
                     "status": "ok",
                     "result_count": len(results),
                     "results": [
-                        {"title": r.title, "url": r.url, "snippet": r.snippet} for r in results
+                        {"title": r.title, "url": r.url, "snippet": r.snippet}
+                        for r in results
                     ],
                 }
             )
@@ -449,10 +488,14 @@ def create_web_tools(
             return json.dumps({"status": "error", "message": str(e)})
 
     specs["web_fetch"] = ToolSpec(
-        name="web_fetch", description="Получить содержимое URL", parameters=_WEB_FETCH_SCHEMA
+        name="web_fetch",
+        description="Получить содержимое URL",
+        parameters=_WEB_FETCH_SCHEMA,
     )
     specs["web_search"] = ToolSpec(
-        name="web_search", description="Поиск в интернете", parameters=_WEB_SEARCH_SCHEMA
+        name="web_search",
+        description="Поиск в интернете",
+        parameters=_WEB_SEARCH_SCHEMA,
     )
     executors["web_fetch"] = fetch_executor
     executors["web_search"] = search_executor

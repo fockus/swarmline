@@ -1,5 +1,4 @@
-"""Tests LocalSandboxProvider - TDD: RED -> GREEN -> REFACTOR. Unit-tests for izolyatsii fileovoy sistemy and vypolnotniya komand.
-"""
+"""Tests LocalSandboxProvider - TDD: RED -> GREEN -> REFACTOR. Unit-tests for izolyatsii fileovoy sistemy and vypolnotniya komand."""
 
 from __future__ import annotations
 
@@ -34,7 +33,9 @@ async def sandbox(sandbox_config: SandboxConfig):
 class TestLocalSandboxReadFile:
     """Tests chteniya fileov."""
 
-    async def test_read_existing_file(self, sandbox, sandbox_config: SandboxConfig) -> None:
+    async def test_read_existing_file(
+        self, sandbox, sandbox_config: SandboxConfig
+    ) -> None:
         """Reading sushchestvuyushchego filea."""
         import os
 
@@ -61,7 +62,9 @@ class TestLocalSandboxReadFile:
         with pytest.raises(SandboxViolation):
             await sandbox.read_file("/etc/passwd")
 
-    async def test_read_nested_file(self, sandbox, sandbox_config: SandboxConfig) -> None:
+    async def test_read_nested_file(
+        self, sandbox, sandbox_config: SandboxConfig
+    ) -> None:
         """Reading filea from poddirektorii."""
         import os
 
@@ -78,7 +81,9 @@ class TestLocalSandboxReadFile:
 class TestLocalSandboxWriteFile:
     """Tests zapisi fileov."""
 
-    async def test_write_creates_file(self, sandbox, sandbox_config: SandboxConfig) -> None:
+    async def test_write_creates_file(
+        self, sandbox, sandbox_config: SandboxConfig
+    ) -> None:
         """Writing sozdaet file and promezhutochnye direktorii."""
         await sandbox.write_file("new.txt", "content")
 
@@ -192,7 +197,9 @@ class TestLocalSandboxExecute:
         result = await sb.execute("sleep 10")
         assert result.timed_out is True
 
-    async def test_execute_cwd_is_workspace(self, sandbox, sandbox_config: SandboxConfig) -> None:
+    async def test_execute_cwd_is_workspace(
+        self, sandbox, sandbox_config: SandboxConfig
+    ) -> None:
         """cwd commands = workspace path."""
         result = await sandbox.execute("pwd")
         assert result.stdout.strip() == sandbox_config.workspace_path

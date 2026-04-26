@@ -33,7 +33,9 @@ class MockLLM:
         self._call_count = 0
         self.received_messages: list[list[dict[str, Any]]] = []
 
-    async def __call__(self, messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any) -> str:
+    async def __call__(
+        self, messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any
+    ) -> str:
         self.received_messages.append(messages)
         if self._call_count < len(self._responses):
             resp = self._responses[self._call_count]
@@ -52,11 +54,13 @@ def make_final(text: str) -> str:
 
 
 def make_tool_call(name: str, args: dict[str, Any] | None = None) -> str:
-    return json.dumps({
-        "type": "tool_call",
-        "tool": {"name": name, "args": args or {}, "correlation_id": "c1"},
-        "assistant_message": "",
-    })
+    return json.dumps(
+        {
+            "type": "tool_call",
+            "tool": {"name": name, "args": args or {}, "correlation_id": "c1"},
+            "assistant_message": "",
+        }
+    )
 
 
 async def collect(
@@ -114,17 +118,25 @@ class TestThinRuntimeHooks:
         async def echo_tool(args: dict[str, Any]) -> dict[str, Any]:
             return {"echo": args}
 
-        llm = MockLLM([
-            make_tool_call("echo", {"msg": "hi"}),
-            make_final("done"),
-        ])
-        tool_spec = ToolSpec(name="echo", description="Echo tool", parameters={"type": "object", "properties": {}})
+        llm = MockLLM(
+            [
+                make_tool_call("echo", {"msg": "hi"}),
+                make_final("done"),
+            ]
+        )
+        tool_spec = ToolSpec(
+            name="echo",
+            description="Echo tool",
+            parameters={"type": "object", "properties": {}},
+        )
         runtime = ThinRuntime(
             llm_call=llm,
             local_tools={"echo": echo_tool},
             hook_registry=reg,
         )
-        events = await collect(runtime, "use echo", tools=[tool_spec], mode_hint="react")
+        events = await collect(
+            runtime, "use echo", tools=[tool_spec], mode_hint="react"
+        )
 
         tool_finished_events = [e for e in events if e.type == "tool_call_finished"]
         assert len(tool_finished_events) >= 1
@@ -143,11 +155,17 @@ class TestThinRuntimeHooks:
         async def echo_tool(args: dict[str, Any]) -> dict[str, Any]:
             return {"echo": args}
 
-        llm = MockLLM([
-            make_tool_call("echo", {"msg": "hi"}),
-            make_final("done"),
-        ])
-        tool_spec = ToolSpec(name="echo", description="Echo", parameters={"type": "object", "properties": {}})
+        llm = MockLLM(
+            [
+                make_tool_call("echo", {"msg": "hi"}),
+                make_final("done"),
+            ]
+        )
+        tool_spec = ToolSpec(
+            name="echo",
+            description="Echo",
+            parameters={"type": "object", "properties": {}},
+        )
         runtime = ThinRuntime(
             llm_call=llm,
             local_tools={"echo": echo_tool},
@@ -182,7 +200,9 @@ class TestThinRuntimeHooks:
         reg = HookRegistry()
         reg.on_stop(on_stop)
 
-        async def crashing_llm(messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any) -> str:
+        async def crashing_llm(
+            messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any
+        ) -> str:
             raise RuntimeError("LLM crashed")
 
         runtime = ThinRuntime(llm_call=crashing_llm, hook_registry=reg)

@@ -66,7 +66,9 @@ class JsonlTelemetrySink:
         path: str | Path,
         *,
         redact_keys: Iterable[str] = DEFAULT_REDACT_KEYS,
-        redact_value_patterns: tuple[re.Pattern[str], ...] = DEFAULT_REDACT_VALUE_PATTERNS,
+        redact_value_patterns: tuple[
+            re.Pattern[str], ...
+        ] = DEFAULT_REDACT_VALUE_PATTERNS,
         schema_version: int = 1,
     ) -> None:
         self._path = Path(path)

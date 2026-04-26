@@ -56,7 +56,9 @@ class TestA2AFullLifecycle:
         """Client.discover() returns AgentCard from server."""
         _, transport = _make_stack()
 
-        async with AsyncClient(transport=transport, base_url="http://testserver") as http:
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as http:
             resp = await http.get("/.well-known/agent.json")
             assert resp.status_code == 200
             card = resp.json()
@@ -76,13 +78,18 @@ class TestA2AFullLifecycle:
                 "task": {
                     "id": "integration-1",
                     "messages": [
-                        {"role": "user", "parts": [{"type": "text", "text": "Hello A2A!"}]}
+                        {
+                            "role": "user",
+                            "parts": [{"type": "text", "text": "Hello A2A!"}],
+                        }
                     ],
                 }
             },
         }
 
-        async with AsyncClient(transport=transport, base_url="http://testserver") as http:
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as http:
             # Send task
             resp = await http.post("/", json=rpc_send)
             assert resp.status_code == 200
@@ -113,7 +120,9 @@ class TestA2AFullLifecycle:
             "params": {"task": {"id": "t1", "message": "What is A2A?"}},
         }
 
-        async with AsyncClient(transport=transport, base_url="http://testserver") as http:
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as http:
             await http.post("/", json=rpc)
 
         agent.query.assert_called_once_with("What is A2A?")
@@ -131,7 +140,9 @@ class TestA2AFullLifecycle:
             "params": {"task": {"id": "fail-1", "message": "Test"}},
         }
 
-        async with AsyncClient(transport=transport, base_url="http://testserver") as http:
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as http:
             resp = await http.post("/", json=rpc)
             body = resp.json()
             assert body["result"]["status"]["state"] == "failed"
@@ -147,7 +158,9 @@ class TestA2AFullLifecycle:
             "params": {"id": "no-such-task"},
         }
 
-        async with AsyncClient(transport=transport, base_url="http://testserver") as http:
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as http:
             resp = await http.post("/", json=rpc)
             body = resp.json()
             assert body["error"]["code"] == -32602

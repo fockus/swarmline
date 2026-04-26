@@ -1,5 +1,4 @@
-"""Tests CommandRegistry v2 - typed params, YAML discovery, LLM tools. CRP-5.1: rasshirenie CommandRegistry with backward compatibility.
-"""
+"""Tests CommandRegistry v2 - typed params, YAML discovery, LLM tools. CRP-5.1: rasshirenie CommandRegistry with backward compatibility."""
 
 from __future__ import annotations
 

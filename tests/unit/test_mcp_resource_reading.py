@@ -14,7 +14,9 @@ from swarmline.runtime.thin.mcp_client import McpClient, ResourceDescriptor
 # ---------------------------------------------------------------------------
 
 
-def _make_client_class(response_json: dict, *, fail: bool = False, error: Exception | None = None):
+def _make_client_class(
+    response_json: dict, *, fail: bool = False, error: Exception | None = None
+):
     """Build a fake httpx.AsyncClient that returns *response_json* or raises."""
 
     class _Response:
@@ -57,7 +59,9 @@ class TestListResources:
     """resources/list — discovery + caching."""
 
     @pytest.mark.asyncio
-    async def test_list_resources_returns_descriptors(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_list_resources_returns_descriptors(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Basic list returns ResourceDescriptor objects with all fields."""
         fake = _make_client_class(
             {
@@ -98,7 +102,9 @@ class TestListResources:
         assert r1.mime_type is None
 
     @pytest.mark.asyncio
-    async def test_list_resources_cache_hit(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_list_resources_cache_hit(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Repeated call within TTL uses cache (no second HTTP request)."""
         fake = _make_client_class(
             {"result": {"resources": [{"uri": "a://x", "name": "X"}]}}
@@ -114,7 +120,9 @@ class TestListResources:
         assert len(fake.calls) == 1  # only one HTTP call
 
     @pytest.mark.asyncio
-    async def test_list_resources_cache_expired(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_list_resources_cache_expired(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Call after TTL expiry makes a new request."""
         fake = _make_client_class(
             {"result": {"resources": [{"uri": "a://x", "name": "X"}]}}
@@ -136,7 +144,9 @@ class TestListResources:
         assert len(fake.calls) == 1
 
     @pytest.mark.asyncio
-    async def test_list_resources_force_refresh(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_list_resources_force_refresh(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """force_refresh=True bypasses cache even if fresh."""
         fake = _make_client_class(
             {"result": {"resources": [{"uri": "a://new", "name": "New"}]}}
@@ -151,7 +161,9 @@ class TestListResources:
             [ResourceDescriptor(uri="a://old")],
         )
 
-        result = await client.list_resources("https://example.test/mcp", force_refresh=True)
+        result = await client.list_resources(
+            "https://example.test/mcp", force_refresh=True
+        )
 
         assert len(result) == 1
         assert result[0].uri == "a://new"
@@ -167,7 +179,10 @@ class TestListResources:
 
         cached = [ResourceDescriptor(uri="a://cached", name="Cached")]
         client = McpClient(timeout_seconds=1.0)
-        client._resources_cache["https://example.test/mcp"] = (time.monotonic() - 999, cached)
+        client._resources_cache["https://example.test/mcp"] = (
+            time.monotonic() - 999,
+            cached,
+        )
 
         result = await client.list_resources("https://example.test/mcp")
 
@@ -197,13 +212,19 @@ class TestReadResource:
     """resources/read — content retrieval."""
 
     @pytest.mark.asyncio
-    async def test_read_resource_returns_content(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_read_resource_returns_content(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Successful read returns result dict with contents."""
         fake = _make_client_class(
             {
                 "result": {
                     "contents": [
-                        {"uri": "file:///readme.md", "text": "# Hello", "mimeType": "text/markdown"}
+                        {
+                            "uri": "file:///readme.md",
+                            "text": "# Hello",
+                            "mimeType": "text/markdown",
+                        }
                     ]
                 }
             }
@@ -211,7 +232,9 @@ class TestReadResource:
         monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fake)
 
         client = McpClient(timeout_seconds=1.0)
-        result = await client.read_resource("https://example.test/mcp", "file:///readme.md")
+        result = await client.read_resource(
+            "https://example.test/mcp", "file:///readme.md"
+        )
 
         assert isinstance(result, dict)
         assert "contents" in result
@@ -219,14 +242,14 @@ class TestReadResource:
         assert result["contents"][0]["text"] == "# Hello"
 
     @pytest.mark.asyncio
-    async def test_read_resource_text_content(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_read_resource_text_content(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Text resource content is returned as-is."""
         fake = _make_client_class(
             {
                 "result": {
-                    "contents": [
-                        {"uri": "config://app", "text": '{"debug": true}'}
-                    ]
+                    "contents": [{"uri": "config://app", "text": '{"debug": true}'}]
                 }
             }
         )
@@ -240,13 +263,19 @@ class TestReadResource:
         assert "blob" not in content
 
     @pytest.mark.asyncio
-    async def test_read_resource_blob_content(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_read_resource_blob_content(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Binary resource returns blob field."""
         fake = _make_client_class(
             {
                 "result": {
                     "contents": [
-                        {"uri": "file:///img.png", "blob": "iVBORw0KGgo=", "mimeType": "image/png"}
+                        {
+                            "uri": "file:///img.png",
+                            "blob": "iVBORw0KGgo=",
+                            "mimeType": "image/png",
+                        }
                     ]
                 }
             }
@@ -254,14 +283,18 @@ class TestReadResource:
         monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fake)
 
         client = McpClient(timeout_seconds=1.0)
-        result = await client.read_resource("https://example.test/mcp", "file:///img.png")
+        result = await client.read_resource(
+            "https://example.test/mcp", "file:///img.png"
+        )
 
         content = result["contents"][0]
         assert content["blob"] == "iVBORw0KGgo="
         assert "text" not in content
 
     @pytest.mark.asyncio
-    async def test_read_resource_not_found_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_read_resource_not_found_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent resource returns error dict."""
         fake = _make_client_class(
             {"error": {"code": -32602, "message": "Resource not found: missing://x"}}
@@ -275,7 +308,9 @@ class TestReadResource:
         assert "error" in result
 
     @pytest.mark.asyncio
-    async def test_read_resource_server_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_read_resource_server_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Server-side error returns error dict."""
         fake = _make_client_class({}, fail=True, error=RuntimeError("server exploded"))
         monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fake)

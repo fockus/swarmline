@@ -74,7 +74,9 @@ class TestBuildDeepAgentsChatModel:
         fake_module = _make_provider_module("ChatOpenAI", captured)
 
         with patch.dict(sys.modules, {"langchain_openai": fake_module}):
-            model = build_deepagents_chat_model("openai:gpt-4o", base_url="https://proxy.test")
+            model = build_deepagents_chat_model(
+                "openai:gpt-4o", base_url="https://proxy.test"
+            )
 
         assert type(model).__name__ == "FakeModel"
         assert captured["kwargs"] == {

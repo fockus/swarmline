@@ -21,20 +21,39 @@ from swarmline.multi_agent.graph_types import AgentNode
 async def org():
     """CEO → CTO → [Eng1, Eng2]."""
     store = InMemoryAgentGraph()
-    await store.add_node(AgentNode(
-        id="ceo", name="CEO", role="executive",
-        system_prompt="You are the CEO.",
-    ))
-    await store.add_node(AgentNode(
-        id="cto", name="CTO", role="tech_lead", parent_id="ceo",
-        system_prompt="You lead engineering.",
-    ))
-    await store.add_node(AgentNode(
-        id="eng1", name="Engineer 1", role="engineer", parent_id="cto",
-    ))
-    await store.add_node(AgentNode(
-        id="eng2", name="Engineer 2", role="engineer", parent_id="cto",
-    ))
+    await store.add_node(
+        AgentNode(
+            id="ceo",
+            name="CEO",
+            role="executive",
+            system_prompt="You are the CEO.",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="cto",
+            name="CTO",
+            role="tech_lead",
+            parent_id="ceo",
+            system_prompt="You lead engineering.",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="eng1",
+            name="Engineer 1",
+            role="engineer",
+            parent_id="cto",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="eng2",
+            name="Engineer 2",
+            role="engineer",
+            parent_id="cto",
+        )
+    )
     return store
 
 
@@ -59,6 +78,7 @@ def approval_gate():
 def tools(org, task_board, orchestrator, approval_gate):
     """Create graph tools from factory."""
     from swarmline.multi_agent.graph_tools import create_graph_tools
+
     return create_graph_tools(
         graph=org,
         task_board=task_board,
@@ -73,7 +93,6 @@ def tools(org, task_board, orchestrator, approval_gate):
 
 
 class TestToolDiscovery:
-
     def test_returns_three_tools(self, tools) -> None:
         assert len(tools) == 3
 
@@ -92,7 +111,6 @@ class TestToolDiscovery:
 
 
 class TestHireAgent:
-
     async def test_hire_adds_node(self, org, tools) -> None:
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         result = await hire.handler(
@@ -111,7 +129,9 @@ class TestHireAgent:
     async def test_hire_requires_approval(self, tools, approval_gate) -> None:
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         await hire.handler(
-            name="Temp Dev", role="engineer", parent_id="cto",
+            name="Temp Dev",
+            role="engineer",
+            parent_id="cto",
         )
         approval_gate.check.assert_called()
 
@@ -119,7 +139,9 @@ class TestHireAgent:
         approval_gate.check = AsyncMock(return_value=False)
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         result = await hire.handler(
-            name="Denied Dev", role="engineer", parent_id="cto",
+            name="Denied Dev",
+            role="engineer",
+            parent_id="cto",
         )
         assert "denied" in result.lower()
 
@@ -145,7 +167,9 @@ class TestHireAgent:
     async def test_hire_invalid_parent_raises(self, tools) -> None:
         hire = next(t for t in tools if t.name == "graph_hire_agent")
         result = await hire.handler(
-            name="Orphan", role="engineer", parent_id="nonexistent",
+            name="Orphan",
+            role="engineer",
+            parent_id="nonexistent",
         )
         assert "error" in result.lower() or "not found" in result.lower()
 
@@ -156,7 +180,6 @@ class TestHireAgent:
 
 
 class TestDelegateTask:
-
     async def test_delegate_calls_orchestrator(self, tools, orchestrator) -> None:
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         await delegate.handler(
@@ -173,14 +196,16 @@ class TestDelegateTask:
     async def test_delegate_returns_confirmation(self, tools) -> None:
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="eng1", goal="Build API",
+            agent_id="eng1",
+            goal="Build API",
         )
         assert "delegated" in result.lower()
 
     async def test_delegate_invalid_agent(self, tools) -> None:
         delegate = next(t for t in tools if t.name == "graph_delegate_task")
         result = await delegate.handler(
-            agent_id="nonexistent", goal="Build",
+            agent_id="nonexistent",
+            goal="Build",
         )
         assert "not found" in result.lower() or "error" in result.lower()
 
@@ -191,7 +216,6 @@ class TestDelegateTask:
 
 
 class TestEscalate:
-
     async def test_escalate_sends_message(self, tools) -> None:
         escalate = next(t for t in tools if t.name == "graph_escalate")
         result = await escalate.handler(

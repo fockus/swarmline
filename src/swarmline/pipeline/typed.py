@@ -155,7 +155,12 @@ class TypedPipeline:
 
         for stage in self._stages:
             await self._emit("pipeline_stage_start", {"stage": stage.name})
-            stage_result, stage_attempts, stage_errors, error = await self._run_any_stage(
+            (
+                stage_result,
+                stage_attempts,
+                stage_errors,
+                error,
+            ) = await self._run_any_stage(
                 stage,
                 current,
                 run_context,
@@ -214,7 +219,9 @@ class TypedPipeline:
             )
             return output, branch_attempts, errors, error
         if isinstance(stage, LoopPipelineStage):
-            output, loop_attempts, error = await self._run_loop_stage(stage, current, context)
+            output, loop_attempts, error = await self._run_loop_stage(
+                stage, current, context
+            )
             return output, {stage.name: loop_attempts}, [], error
         output, stage_attempts, error = await self._run_stage(stage, current, context)
         return output, {stage.name: stage_attempts}, [], error
@@ -228,7 +235,9 @@ class TypedPipeline:
         last_error: str | None = None
         for attempt in range(1, stage.max_attempts + 1):
             try:
-                output = await _call_with_optional_context(stage.handler, current, context)
+                output = await _call_with_optional_context(
+                    stage.handler, current, context
+                )
                 await self._validate(stage, output, context)
                 return output, attempt, None
             except Exception as exc:  # noqa: BLE001
@@ -243,8 +252,12 @@ class TypedPipeline:
     ) -> tuple[Any, dict[str, int], list[str], str | None]:
         await self._emit("parallel_stage_start", {"stage": stage.name})
 
-        async def _run_branch(branch_name: str, branch: TypedPipelineStage) -> tuple[str, Any, int, str | None]:
-            await self._emit("branch_start", {"stage": stage.name, "branch": branch_name})
+        async def _run_branch(
+            branch_name: str, branch: TypedPipelineStage
+        ) -> tuple[str, Any, int, str | None]:
+            await self._emit(
+                "branch_start", {"stage": stage.name, "branch": branch_name}
+            )
             output, attempts, error = await self._run_stage(branch, current, context)
             await self._emit(
                 "branch_end",
@@ -277,7 +290,12 @@ class TypedPipeline:
         if errors and stage.failure_policy == "require_all":
             return None, attempts | {stage.name: 1}, errors, "; ".join(errors)
         if not outputs:
-            return None, attempts | {stage.name: 1}, errors, "all parallel branches failed"
+            return (
+                None,
+                attempts | {stage.name: 1},
+                errors,
+                "all parallel branches failed",
+            )
 
         if stage.joiner is None:
             joined = outputs
@@ -300,11 +318,17 @@ class TypedPipeline:
         context: PipelineContext,
     ) -> tuple[Any, int, str | None]:
         for iteration in range(1, stage.max_iterations + 1):
-            await self._emit("loop_iteration_start", {"stage": stage.name, "iteration": iteration})
-            candidate, _attempts, error = await self._run_stage(stage.body, current, context)
+            await self._emit(
+                "loop_iteration_start", {"stage": stage.name, "iteration": iteration}
+            )
+            candidate, _attempts, error = await self._run_stage(
+                stage.body, current, context
+            )
             if error is not None:
                 return None, iteration, error
-            approved = await _call_with_optional_context(stage.reviewer, candidate, context)
+            approved = await _call_with_optional_context(
+                stage.reviewer, candidate, context
+            )
             await self._emit(
                 "loop_iteration_end",
                 {

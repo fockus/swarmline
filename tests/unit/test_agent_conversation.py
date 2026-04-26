@@ -95,7 +95,9 @@ class TestConversationSay:
                 is_final=True,
                 session_id="s1",
             )
-            event.new_messages = [message.to_dict() for message in expected_new_messages]
+            event.new_messages = [
+                message.to_dict() for message in expected_new_messages
+            ]
             yield event
 
         with patch.object(conv, "_execute", side_effect=fake_execute):
@@ -105,7 +107,12 @@ class TestConversationSay:
         assert getattr(result, "new_messages", None) == [
             message.to_dict() for message in expected_new_messages
         ]
-        assert [msg.role for msg in conv.history] == ["user", "assistant", "tool", "assistant"]
+        assert [msg.role for msg in conv.history] == [
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+        ]
         assert [msg.content for msg in conv.history[1:]] == [
             "Thinking",
             "42",
@@ -135,7 +142,9 @@ class TestConversationSay:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             result = await conv.say("hello")
 
         assert result.ok is True
@@ -173,7 +182,9 @@ class TestConversationSay:
         assert conv.history[3].content == "Reply 2"
 
     @pytest.mark.asyncio
-    async def test_say_runtime_error_does_not_persist_partial_assistant_history(self) -> None:
+    async def test_say_runtime_error_does_not_persist_partial_assistant_history(
+        self,
+    ) -> None:
         agent = _make_agent()
         conv = Conversation(agent=agent)
 
@@ -206,7 +217,9 @@ class TestConversationSay:
         fake_factory = MagicMock()
         fake_factory.create.return_value = BrokenRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             result = await conv.say("Hello")
 
         assert result.ok is False
@@ -264,7 +277,9 @@ class TestConversationStream:
                 is_final=True,
                 session_id="s1",
             )
-            event.new_messages = [message.to_dict() for message in expected_new_messages]
+            event.new_messages = [
+                message.to_dict() for message in expected_new_messages
+            ]
             yield event
 
         with patch.object(conv, "_execute", side_effect=fake_execute):
@@ -273,7 +288,12 @@ class TestConversationStream:
                 events.append(event)
 
         assert [event.type for event in events] == ["text_delta", "done"]
-        assert [msg.role for msg in conv.history] == ["user", "assistant", "tool", "assistant"]
+        assert [msg.role for msg in conv.history] == [
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+        ]
 
     @pytest.mark.asyncio
     async def test_stream_passes_mcp_servers_to_portable_runtime(self) -> None:
@@ -298,7 +318,9 @@ class TestConversationStream:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in conv._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -308,7 +330,9 @@ class TestConversationStream:
         assert create_kwargs["mcp_servers"] == agent.config.mcp_servers
 
     @pytest.mark.asyncio
-    async def test_stream_runtime_error_does_not_persist_partial_assistant_history(self) -> None:
+    async def test_stream_runtime_error_does_not_persist_partial_assistant_history(
+        self,
+    ) -> None:
         agent = _make_agent()
         conv = Conversation(agent=agent)
 
@@ -341,7 +365,9 @@ class TestConversationStream:
         fake_factory = MagicMock()
         fake_factory.create.return_value = BrokenRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in conv.stream("Hi"):
                 events.append(event)
@@ -466,7 +492,9 @@ class TestConversationLifecycle:
                 "swarmline.runtime.options_builder.ClaudeOptionsBuilder",
                 return_value=fake_builder,
             ),
-            patch("swarmline.runtime.adapter.RuntimeAdapter", return_value=fake_adapter),
+            patch(
+                "swarmline.runtime.adapter.RuntimeAdapter", return_value=fake_adapter
+            ),
             patch(
                 "swarmline.hooks.sdk_bridge.registry_to_sdk_hooks",
                 return_value={"PreToolUse": []},
@@ -507,14 +535,18 @@ class TestConversationLifecycle:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in conv._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
 
         assert events[-1].type == "done"
         create_kwargs = fake_factory.create.call_args.kwargs
-        assert create_kwargs["tool_executors"]["calc"] is calc.__tool_definition__.handler
+        assert (
+            create_kwargs["tool_executors"]["calc"] is calc.__tool_definition__.handler
+        )
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_passes_mcp_servers(self) -> None:
@@ -538,7 +570,9 @@ class TestConversationLifecycle:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in conv._execute_agent_runtime("hello", "deepagents"):
                 events.append(event)
@@ -569,7 +603,9 @@ class TestConversationLifecycle:
         fake_factory = MagicMock()
         fake_factory.create.return_value = FakeRuntime()
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             events = []
             async for event in conv._execute_agent_runtime("hello", "cli"):
                 events.append(event)
@@ -579,13 +615,17 @@ class TestConversationLifecycle:
         assert "mcp_servers" not in create_kwargs
 
     @pytest.mark.asyncio
-    async def test_execute_agent_runtime_cli_conversation_works_with_mocked_subprocess(self) -> None:
+    async def test_execute_agent_runtime_cli_conversation_works_with_mocked_subprocess(
+        self,
+    ) -> None:
         agent = _make_agent(runtime="cli")
         conv = Conversation(agent=agent)
         result_line = b'{"type":"result","result":"cli conversation reply"}\n'
         mock_process = _make_cli_process([result_line])
 
-        with patch("asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)):
+        with patch(
+            "asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)
+        ):
             result = await conv.say("hello")
 
         assert result.ok is True
@@ -602,7 +642,9 @@ class TestConversationLifecycle:
         conv = Conversation(agent=agent)
         mock_process = _make_cli_process([b'{"step":"processing"}\n'])
 
-        with patch("asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)):
+        with patch(
+            "asyncio.create_subprocess_exec", AsyncMock(return_value=mock_process)
+        ):
             result = await conv.say("hello")
 
         assert result.ok is False

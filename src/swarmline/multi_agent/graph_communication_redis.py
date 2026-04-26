@@ -70,8 +70,11 @@ class RedisGraphCommunication:
             raise RuntimeError("Not connected — call connect() first")
 
         fields = {
-            "id": msg.id, "from": msg.from_agent_id, "to": msg.to_agent_id,
-            "channel": msg.channel.value, "content": msg.content,
+            "id": msg.id,
+            "from": msg.from_agent_id,
+            "to": msg.to_agent_id,
+            "channel": msg.channel.value,
+            "content": msg.content,
             "task_id": msg.task_id or "",
             "created_at": str(msg.created_at),
             "metadata": json.dumps(msg.metadata) if msg.metadata else "{}",
@@ -80,12 +83,16 @@ class RedisGraphCommunication:
         if msg.to_agent_id is None:
             return
         await self._redis.xadd(
-            self._inbox_key(msg.to_agent_id), fields, maxlen=self._max_len,
+            self._inbox_key(msg.to_agent_id),
+            fields,
+            maxlen=self._max_len,
         )
         # Add to task thread if task_id present
         if msg.task_id:
             await self._redis.xadd(
-                self._thread_key(msg.task_id), fields, maxlen=self._max_len,
+                self._thread_key(msg.task_id),
+                fields,
+                maxlen=self._max_len,
             )
 
     @staticmethod
@@ -97,9 +104,12 @@ class RedisGraphCommunication:
             except (json.JSONDecodeError, TypeError):
                 pass
         return GraphMessage(
-            id=entry["id"], from_agent_id=entry["from"],
-            to_agent_id=entry["to"], channel=ChannelType(entry["channel"]),
-            content=entry["content"], task_id=entry["task_id"] or None,
+            id=entry["id"],
+            from_agent_id=entry["from"],
+            to_agent_id=entry["to"],
+            channel=ChannelType(entry["channel"]),
+            content=entry["content"],
+            task_id=entry["task_id"] or None,
             created_at=float(entry.get("created_at", 0)) or time.time(),
             metadata=metadata,
         )
@@ -109,7 +119,11 @@ class RedisGraphCommunication:
         await self._emit("graph.message.direct", msg)
 
     async def broadcast_subtree(
-        self, from_id: str, content: str, *, task_id: str | None = None,
+        self,
+        from_id: str,
+        content: str,
+        *,
+        task_id: str | None = None,
     ) -> None:
         descendants = await self._graph.get_subtree(from_id)
         for node in descendants:
@@ -117,23 +131,31 @@ class RedisGraphCommunication:
                 continue
             msg = GraphMessage(
                 id=uuid.uuid4().hex,
-                from_agent_id=from_id, to_agent_id=node.id,
+                from_agent_id=from_id,
+                to_agent_id=node.id,
                 channel=ChannelType.BROADCAST,
-                content=content, task_id=task_id,
+                content=content,
+                task_id=task_id,
             )
             await self._store_msg(msg)
             await self._emit("graph.message.broadcast", msg)
 
     async def escalate(
-        self, from_id: str, content: str, *, task_id: str | None = None,
+        self,
+        from_id: str,
+        content: str,
+        *,
+        task_id: str | None = None,
     ) -> None:
         chain = await self._graph.get_chain_of_command(from_id)
         for node in chain[1:]:
             msg = GraphMessage(
                 id=uuid.uuid4().hex,
-                from_agent_id=from_id, to_agent_id=node.id,
+                from_agent_id=from_id,
+                to_agent_id=node.id,
                 channel=ChannelType.ESCALATION,
-                content=content, task_id=task_id,
+                content=content,
+                task_id=task_id,
             )
             await self._store_msg(msg)
             await self._emit("graph.message.escalation", msg)
@@ -152,8 +174,13 @@ class RedisGraphCommunication:
 
     async def _emit(self, topic: str, msg: GraphMessage) -> None:
         if self._bus is not None:
-            await self._bus.emit(topic, {
-                "id": msg.id, "from": msg.from_agent_id,
-                "to": msg.to_agent_id, "channel": msg.channel.value,
-                "task_id": msg.task_id,
-            })
+            await self._bus.emit(
+                topic,
+                {
+                    "id": msg.id,
+                    "from": msg.from_agent_id,
+                    "to": msg.to_agent_id,
+                    "channel": msg.channel.value,
+                    "task_id": msg.task_id,
+                },
+            )

@@ -1,5 +1,4 @@
-"""Tests PlanManager - programmnoe upravlenie planami. TDD: RED -> GREEN. DIP: zavisit ot Protocol'ov.
-"""
+"""Tests PlanManager - programmnoe upravlenie planami. TDD: RED -> GREEN. DIP: zavisit ot Protocol'ov."""
 
 from __future__ import annotations
 
@@ -77,7 +76,9 @@ class TestPlanManagerCreate:
         assert plan.goal == "Подобрать вклад"
 
     async def test_create_auto_approve(self, manager) -> None:
-        plan = await manager.create_plan("g", user_id="u", topic_id="t", auto_approve=True)
+        plan = await manager.create_plan(
+            "g", user_id="u", topic_id="t", auto_approve=True
+        )
         assert plan.status == "approved"
 
     async def test_create_saves_to_store(self, manager, store) -> None:

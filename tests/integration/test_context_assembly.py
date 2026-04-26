@@ -15,7 +15,9 @@ from swarmline.skills.types import LoadedSkill, McpServerSpec, SkillSpec
 def prompts_dir(tmp_path: Path) -> Path:
     """Create directory with promptami for testov."""
     # identity.md
-    (tmp_path / "identity.md").write_text("Ты — Freedom, финансовый AI-помощник.", encoding="utf-8")
+    (tmp_path / "identity.md").write_text(
+        "Ты — Freedom, финансовый AI-помощник.", encoding="utf-8"
+    )
     # guardrails.md
     (tmp_path / "guardrails.md").write_text(
         "Никогда не давай конкретных инвестиционных рекомендаций.\n"
@@ -62,7 +64,9 @@ def finuslugi_skill() -> LoadedSkill:
         skill_id="finuslugi",
         title="Финуслуги",
         instruction_file="skills/finuslugi/INSTRUCTION.md",
-        mcp_servers=[McpServerSpec(name="finuslugi", url="https://calculado.ru/finuslugi/mcp")],
+        mcp_servers=[
+            McpServerSpec(name="finuslugi", url="https://calculado.ru/finuslugi/mcp")
+        ],
         tool_include=["mcp__finuslugi__search_deposits"],
     )
     return LoadedSkill(
@@ -215,7 +219,9 @@ class TestWithGoalAndProfile:
         assert "150000" in result.system_prompt
 
     @pytest.mark.asyncio
-    async def test_empty_profile_not_added(self, builder: DefaultContextBuilder) -> None:
+    async def test_empty_profile_not_added(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Empty profil not dobavlyaet sektsiyu."""
         inp = ContextInput(
             user_id="u1",
@@ -246,7 +252,9 @@ class TestSummaryAndBudget:
         assert "Обсуждали вклады" in result.system_prompt
 
     @pytest.mark.asyncio
-    async def test_summary_truncated_on_overflow(self, builder: DefaultContextBuilder) -> None:
+    async def test_summary_truncated_on_overflow(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Summary obrezaetsya pri prevyshenii byudzheta."""
         tiny_budget = ContextBudget(total_tokens=500, summary_max=50)
         inp = ContextInput(
@@ -262,7 +270,9 @@ class TestSummaryAndBudget:
         assert "обрезано" in result.system_prompt or "summary" in result.truncated_packs
 
     @pytest.mark.asyncio
-    async def test_truncated_packs_tracked(self, builder: DefaultContextBuilder) -> None:
+    async def test_truncated_packs_tracked(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Otslezhivanie obrezannyh paketov."""
         tiny_budget = ContextBudget(total_tokens=200, goal_max=10)
         inp = ContextInput(
@@ -296,7 +306,9 @@ class TestPhasePack:
     """Tests Phase pack in contexte."""
 
     @pytest.mark.asyncio
-    async def test_phase_included_in_context(self, builder: DefaultContextBuilder) -> None:
+    async def test_phase_included_in_context(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Phase text includessya in system_prompt."""
         inp = ContextInput(
             user_id="u1",
@@ -311,7 +323,9 @@ class TestPhasePack:
         assert "cushion" in result.system_prompt
 
     @pytest.mark.asyncio
-    async def test_phase_includes_next_phase(self, builder: DefaultContextBuilder) -> None:
+    async def test_phase_includes_next_phase(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Phase pack includes sleduyushchuyu fazu, if tekst ee contains."""
         inp = ContextInput(
             user_id="u1",
@@ -360,7 +374,7 @@ class TestBudgetEdgeCases:
         self,
         builder: DefaultContextBuilder,
     ) -> None:
-        """P0 Guardrails VSEGDA ostayutsya dazhe pri minimalnom byudzhete. Eto KRITICHNYY test withoutopasnosti: identity + guardrails not should byt obrezany ni pri kakih usloviyah. """
+        """P0 Guardrails VSEGDA ostayutsya dazhe pri minimalnom byudzhete. Eto KRITICHNYY test withoutopasnosti: identity + guardrails not should byt obrezany ni pri kakih usloviyah."""
         # Byudzhet = 50 tokenov - menshe chem guardrails, no oni vse ravno est
         tiny = ContextBudget(total_tokens=50, summary_max=10)
         inp = ContextInput(

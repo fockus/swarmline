@@ -127,7 +127,9 @@ def auto_discover_commands(
     Returns:
         Number of successfully loaded and registered commands.
     """
-    effective_handlers: dict[str, Callable[..., Awaitable[str]]] = handler_registry or {}
+    effective_handlers: dict[str, Callable[..., Awaitable[str]]] = (
+        handler_registry or {}
+    )
     commands = load_commands_from_yaml(directory, effective_handlers)
 
     for cmd in commands:

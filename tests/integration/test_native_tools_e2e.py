@@ -116,7 +116,11 @@ class TestThinRuntimeNativeToolsE2E:
             native_results=[
                 NativeToolCallResult(
                     text="Calculating",
-                    tool_calls=(NativeToolCall(id="tc1", name="calculator", args={"expr": "2+2"}),),
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                    ),
                     stop_reason="tool_use",
                 ),
                 NativeToolCallResult(

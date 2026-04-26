@@ -39,7 +39,6 @@ def _make_runtime(board, session_store):
 
 
 class TestSnapshotSurvivesRestart:
-
     async def test_create_survives_restart(self, board, session_store) -> None:
         rt1 = _make_runtime(board, session_store)
         await rt1.create_task("t1", "Persistent Task", session_id="s1")
@@ -61,7 +60,9 @@ class TestSnapshotSurvivesRestart:
         assert snap is not None
         assert snap.status == CodingTaskStatus.ACTIVE
 
-    async def test_completed_status_survives_restart(self, board, session_store) -> None:
+    async def test_completed_status_survives_restart(
+        self, board, session_store
+    ) -> None:
         rt1 = _make_runtime(board, session_store)
         await rt1.create_task("t1", "Task", session_id="s1")
         await rt1.start_task("t1", "agent-1")
@@ -89,7 +90,6 @@ class TestSnapshotSurvivesRestart:
 
 
 class TestSessionListingSurvivesRestart:
-
     async def test_list_snapshots_after_restart(self, board, session_store) -> None:
         rt1 = _make_runtime(board, session_store)
         for i in range(3):
@@ -108,9 +108,10 @@ class TestSessionListingSurvivesRestart:
 
 
 class TestRoundtripIntegrity:
-
     async def test_snapshot_dict_roundtrip_through_store(
-        self, board, session_store,
+        self,
+        board,
+        session_store,
     ) -> None:
         """Full path: create -> auto-persist -> load -> verify fields match."""
         rt = _make_runtime(board, session_store)
@@ -126,7 +127,9 @@ class TestRoundtripIntegrity:
         assert loaded.metadata == snap.metadata
 
     async def test_multiple_transitions_snapshot_tracks(
-        self, board, session_store,
+        self,
+        board,
+        session_store,
     ) -> None:
         """Each transition updates the persisted snapshot."""
         rt = _make_runtime(board, session_store)

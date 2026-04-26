@@ -117,14 +117,19 @@ class TestExecuteStreamMessagesParam:
         received: dict[str, Any] = {}
 
         async def fake_agent_runtime(
-            prompt: str, runtime_name: str, config: Any = None, **kwargs: Any,
+            prompt: str,
+            runtime_name: str,
+            config: Any = None,
+            **kwargs: Any,
         ):
             received["prompt"] = prompt
             received["runtime_name"] = runtime_name
             received["messages"] = kwargs.get("messages")
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
-        with patch.object(agent, "_execute_agent_runtime", side_effect=fake_agent_runtime):
+        with patch.object(
+            agent, "_execute_agent_runtime", side_effect=fake_agent_runtime
+        ):
             events = []
             history = [Message(role="user", content="prev")]
             async for event in agent._execute_stream("next", messages=history):
@@ -139,7 +144,9 @@ class TestExecuteStreamMessagesParam:
         received: dict[str, Any] = {}
 
         async def fake_claude_sdk(
-            prompt: str, config: Any = None, **kwargs: Any,
+            prompt: str,
+            config: Any = None,
+            **kwargs: Any,
         ):
             received["prompt"] = prompt
             received["messages"] = kwargs.get("messages")
@@ -160,12 +167,17 @@ class TestExecuteStreamMessagesParam:
         received: dict[str, Any] = {}
 
         async def fake_agent_runtime(
-            prompt: str, runtime_name: str, config: Any = None, **kwargs: Any,
+            prompt: str,
+            runtime_name: str,
+            config: Any = None,
+            **kwargs: Any,
         ):
             received["messages"] = kwargs.get("messages")
             yield FakeStreamEvent("done", text="ok", is_final=True)
 
-        with patch.object(agent, "_execute_agent_runtime", side_effect=fake_agent_runtime):
+        with patch.object(
+            agent, "_execute_agent_runtime", side_effect=fake_agent_runtime
+        ):
             async for _ in agent._execute_stream("hello"):
                 pass
 
@@ -206,7 +218,9 @@ class TestAgentRuntimeMessagesParam:
                 Message(role="assistant", content="hi there"),
             ]
             async for _ in agent._execute_agent_runtime(
-                "follow up", "thin", messages=history,
+                "follow up",
+                "thin",
+                messages=history,
             ):
                 pass
 
@@ -268,7 +282,9 @@ class TestAgentRuntimeMessagesParam:
             side_effect=fake_run_portable,
         ):
             async for _ in agent._execute_agent_runtime(
-                "hello", "thin", messages=[],
+                "hello",
+                "thin",
+                messages=[],
             ):
                 pass
 
@@ -297,7 +313,9 @@ class TestAgentRuntimeMessagesParam:
             side_effect=fake_run_portable,
         ):
             async for _ in agent._execute_agent_runtime(
-                "hello", "thin", messages=None,
+                "hello",
+                "thin",
+                messages=None,
             ):
                 pass
 
@@ -332,13 +350,19 @@ class TestAgentRuntimeMessagesParam:
                 Message(role="assistant", content="msg4"),
             ]
             async for _ in agent._execute_agent_runtime(
-                "msg5", "thin", messages=history,
+                "msg5",
+                "thin",
+                messages=history,
             ):
                 pass
 
         assert len(captured_messages) == 5
         assert [m.content for m in captured_messages] == [
-            "msg1", "msg2", "msg3", "msg4", "msg5",
+            "msg1",
+            "msg2",
+            "msg3",
+            "msg4",
+            "msg5",
         ]
         assert captured_messages[-1].role == "user"
 
@@ -364,7 +388,9 @@ class TestAgentRuntimeMessagesParam:
             history = [Message(role="user", content="hello")]
             original_len = len(history)
             async for _ in agent._execute_agent_runtime(
-                "world", "thin", messages=history,
+                "world",
+                "thin",
+                messages=history,
             ):
                 pass
 
@@ -398,7 +424,8 @@ class TestClaudeSdkMessagesParam:
                 Message(role="assistant", content="hi there"),
             ]
             async for _ in agent._execute_claude_sdk(
-                "follow up", messages=history,
+                "follow up",
+                messages=history,
             ):
                 pass
 

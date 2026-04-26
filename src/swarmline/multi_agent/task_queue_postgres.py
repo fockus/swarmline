@@ -11,7 +11,12 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swarmline.multi_agent.task_types import TaskFilter, TaskItem, TaskPriority, TaskStatus
+from swarmline.multi_agent.task_types import (
+    TaskFilter,
+    TaskItem,
+    TaskPriority,
+    TaskStatus,
+)
 
 POSTGRES_TASK_QUEUE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS task_queue (
@@ -69,7 +74,8 @@ class PostgresTaskQueue:
                     "assignee_agent_id = EXCLUDED.assignee_agent_id, data = EXCLUDED.data"
                 ),
                 {
-                    "id": item.id, "status": item.status.value,
+                    "id": item.id,
+                    "status": item.status.value,
                     "priority": item.priority.value,
                     "assignee": item.assignee_agent_id,
                     "data": json.dumps(self._serialize(item)),
@@ -91,16 +97,18 @@ class PostgresTaskQueue:
                 conditions.append("assignee_agent_id IS NULL")
 
             where = " AND ".join(conditions)
-            row = (await session.execute(
-                text(
-                    f"SELECT data FROM task_queue WHERE {where} "
-                    "ORDER BY CASE priority "
-                    "WHEN 'critical' THEN 0 WHEN 'high' THEN 1 "
-                    "WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END "
-                    "LIMIT 1 FOR UPDATE SKIP LOCKED"
-                ),
-                params,
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text(
+                        f"SELECT data FROM task_queue WHERE {where} "
+                        "ORDER BY CASE priority "
+                        "WHEN 'critical' THEN 0 WHEN 'high' THEN 1 "
+                        "WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END "
+                        "LIMIT 1 FOR UPDATE SKIP LOCKED"
+                    ),
+                    params,
+                )
+            ).fetchone()
             if not row:
                 return None
 
@@ -123,7 +131,9 @@ class PostgresTaskQueue:
 
     async def list_tasks(self, filters: TaskFilter | None = None) -> list[TaskItem]:
         async with self._session() as session:
-            rows = (await session.execute(text("SELECT data FROM task_queue"))).fetchall()
+            rows = (
+                await session.execute(text("SELECT data FROM task_queue"))
+            ).fetchall()
         items = [self._deserialize(r[0]) for r in rows]
         if filters:
             if filters.status:
@@ -131,16 +141,20 @@ class PostgresTaskQueue:
             if filters.priority:
                 items = [i for i in items if i.priority == filters.priority]
             if filters.assignee_agent_id:
-                items = [i for i in items if i.assignee_agent_id == filters.assignee_agent_id]
+                items = [
+                    i for i in items if i.assignee_agent_id == filters.assignee_agent_id
+                ]
         return items
 
     async def _transition(self, task_id: str, target: TaskStatus) -> bool:
         terminal = {TaskStatus.DONE, TaskStatus.CANCELLED}
         async with self._session(commit=True) as session:
-            row = (await session.execute(
-                text("SELECT data FROM task_queue WHERE id = :id FOR UPDATE"),
-                {"id": task_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM task_queue WHERE id = :id FOR UPDATE"),
+                    {"id": task_id},
+                )
+            ).fetchone()
             if not row:
                 return False
             item = self._deserialize(row[0])
@@ -148,7 +162,13 @@ class PostgresTaskQueue:
                 return False
             updated = replace(item, status=target)
             await session.execute(
-                text("UPDATE task_queue SET status = :status, data = CAST(:data AS jsonb) WHERE id = :id"),
-                {"id": task_id, "status": target.value, "data": json.dumps(self._serialize(updated))},
+                text(
+                    "UPDATE task_queue SET status = :status, data = CAST(:data AS jsonb) WHERE id = :id"
+                ),
+                {
+                    "id": task_id,
+                    "status": target.value,
+                    "data": json.dumps(self._serialize(updated)),
+                },
             )
             return True

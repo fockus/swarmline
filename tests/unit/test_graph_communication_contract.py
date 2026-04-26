@@ -24,9 +24,15 @@ async def org():
     store = InMemoryAgentGraph()
     await store.add_node(AgentNode(id="ceo", name="CEO", role="executive"))
     await store.add_node(AgentNode(id="cto", name="CTO", role="tech", parent_id="ceo"))
-    await store.add_node(AgentNode(id="cpo", name="CPO", role="product", parent_id="ceo"))
-    await store.add_node(AgentNode(id="eng1", name="Eng1", role="engineer", parent_id="cto"))
-    await store.add_node(AgentNode(id="eng2", name="Eng2", role="engineer", parent_id="cto"))
+    await store.add_node(
+        AgentNode(id="cpo", name="CPO", role="product", parent_id="ceo")
+    )
+    await store.add_node(
+        AgentNode(id="eng1", name="Eng1", role="engineer", parent_id="cto")
+    )
+    await store.add_node(
+        AgentNode(id="eng2", name="Eng2", role="engineer", parent_id="cto")
+    )
     return store
 
 
@@ -48,7 +54,6 @@ def comm_with_bus(org):
 
 
 class TestProtocol:
-
     def test_implements_protocol(self, comm) -> None:
         assert isinstance(comm, GraphCommunication)
 
@@ -59,16 +64,19 @@ class TestProtocol:
 
 
 class TestDirect:
-
     async def test_send_direct(self, comm) -> None:
-        msg = GraphMessage(id="m1", from_agent_id="ceo", to_agent_id="cto", content="hi")
+        msg = GraphMessage(
+            id="m1", from_agent_id="ceo", to_agent_id="cto", content="hi"
+        )
         await comm.send_direct(msg)
         inbox = await comm.get_inbox("cto")
         assert len(inbox) == 1
         assert inbox[0].content == "hi"
 
     async def test_direct_not_in_other_inbox(self, comm) -> None:
-        msg = GraphMessage(id="m1", from_agent_id="ceo", to_agent_id="cto", content="hi")
+        msg = GraphMessage(
+            id="m1", from_agent_id="ceo", to_agent_id="cto", content="hi"
+        )
         await comm.send_direct(msg)
         assert await comm.get_inbox("cpo") == []
 
@@ -82,7 +90,6 @@ class TestDirect:
 
 
 class TestBroadcast:
-
     async def test_broadcast_reaches_descendants(self, comm) -> None:
         await comm.broadcast_subtree("cto", "Update for all engineers")
         eng1_inbox = await comm.get_inbox("eng1")
@@ -115,7 +122,6 @@ class TestBroadcast:
 
 
 class TestEscalation:
-
     async def test_escalate_reaches_ancestors(self, comm) -> None:
         await comm.escalate("eng1", "Blocked on API key")
         cto_inbox = await comm.get_inbox("cto")
@@ -141,15 +147,20 @@ class TestEscalation:
 
 
 class TestThread:
-
     async def test_thread_filters_by_task(self, comm) -> None:
         msg1 = GraphMessage(
-            id="m1", from_agent_id="ceo", to_agent_id="cto",
-            content="About task T1", task_id="T1",
+            id="m1",
+            from_agent_id="ceo",
+            to_agent_id="cto",
+            content="About task T1",
+            task_id="T1",
         )
         msg2 = GraphMessage(
-            id="m2", from_agent_id="cto", to_agent_id="eng1",
-            content="About task T2", task_id="T2",
+            id="m2",
+            from_agent_id="cto",
+            to_agent_id="eng1",
+            content="About task T2",
+            task_id="T2",
         )
         await comm.send_direct(msg1)
         await comm.send_direct(msg2)
@@ -167,10 +178,11 @@ class TestThread:
 
 
 class TestEventBus:
-
     async def test_direct_emits_event(self, comm_with_bus) -> None:
         comm, bus = comm_with_bus
-        msg = GraphMessage(id="m1", from_agent_id="ceo", to_agent_id="cto", content="hi")
+        msg = GraphMessage(
+            id="m1", from_agent_id="ceo", to_agent_id="cto", content="hi"
+        )
         await comm.send_direct(msg)
         bus.emit.assert_called_once()
         call_args = bus.emit.call_args

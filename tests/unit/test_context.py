@@ -132,7 +132,9 @@ class TestDefaultContextBuilder:
         assert "income" in result.system_prompt
 
     @pytest.mark.asyncio
-    async def test_skill_instruction_included(self, builder: DefaultContextBuilder) -> None:
+    async def test_skill_instruction_included(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Prompt contains instruktsiyu aktivnogo skilla."""
         inp = ContextInput(
             user_id="u1",
@@ -153,7 +155,9 @@ class TestDefaultContextBuilder:
         assert "MOEX ISS" in result.system_prompt
 
     @pytest.mark.asyncio
-    async def test_truncated_packs_reported(self, builder: DefaultContextBuilder) -> None:
+    async def test_truncated_packs_reported(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Pri prevyshenii byudzheta pakety are truncated."""
         inp = ContextInput(
             user_id="u1",
@@ -197,7 +201,9 @@ class TestDefaultContextBuilder:
         assert "квартира" in result.system_prompt
 
     @pytest.mark.asyncio
-    async def test_memory_recall_truncated(self, builder: DefaultContextBuilder) -> None:
+    async def test_memory_recall_truncated(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """P3: Memory recall obrezaetsya pri prevyshenii memory_max."""
         inp = ContextInput(
             user_id="u1",
@@ -236,7 +242,9 @@ class TestDefaultContextBuilder:
         assert result_with_role.tool_budget <= result_no_role.tool_budget
 
     @pytest.mark.asyncio
-    async def test_budget_overflow_drops_low_priority(self, builder: DefaultContextBuilder) -> None:
+    async def test_budget_overflow_drops_low_priority(
+        self, builder: DefaultContextBuilder
+    ) -> None:
         """Pri budget overflow nizkoprioritetnye pakety dropayutsya (GAP-5, §10.3)."""
         inp = ContextInput(
             user_id="u1",
@@ -285,7 +293,9 @@ class TestContextBuilderLastMessages:
     """Tests for pack P2.5 - poslednie messages dialoga."""
 
     @staticmethod
-    def _make_inp(role_id: str = "coach", budget: ContextBudget | None = None) -> ContextInput:
+    def _make_inp(
+        role_id: str = "coach", budget: ContextBudget | None = None
+    ) -> ContextInput:
         return ContextInput(
             user_id="u1",
             topic_id="t1",
@@ -303,7 +313,9 @@ class TestContextBuilderLastMessages:
         """If last_messages peredany, oni poyavlyayutsya in system_prompt."""
         messages = [
             MemoryMessage(role="user", content="Мой доход 120 000 рублей"),
-            MemoryMessage(role="assistant", content="Отлично! Давайте разберём бюджет."),
+            MemoryMessage(
+                role="assistant", content="Отлично! Давайте разберём бюджет."
+            ),
         ]
         result = await builder.build(self._make_inp(), last_messages=messages)
         assert "Последние сообщения" in result.system_prompt

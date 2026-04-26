@@ -66,9 +66,7 @@ class SimpleRetriever:
             doc_words = Counter(doc.content.lower().split())
             # Sum of minimum counts for overlapping words
             overlap = sum(
-                min(query_words[w], doc_words[w])
-                for w in query_words
-                if w in doc_words
+                min(query_words[w], doc_words[w]) for w in query_words if w in doc_words
             )
             if overlap > 0:
                 scored.append(
@@ -150,7 +148,9 @@ class RagInputFilter:
             return messages, system_prompt
 
         context_block = self._format_context(docs)
-        enriched = f"{context_block}\n{system_prompt}" if system_prompt else context_block
+        enriched = (
+            f"{context_block}\n{system_prompt}" if system_prompt else context_block
+        )
         return messages, enriched
 
     @staticmethod

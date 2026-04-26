@@ -1,5 +1,4 @@
-"""Tests for SummaryGenerator - genotratsiya rolling summary from soobshcheniy. TDD Red phase: tests opisyvayut contract DO realizatsii.
-"""
+"""Tests for SummaryGenerator - genotratsiya rolling summary from soobshcheniy. TDD Red phase: tests opisyvayut contract DO realizatsii."""
 
 from __future__ import annotations
 
@@ -33,10 +32,18 @@ class TestTemplateSummaryGenerator:
 
         gen = TemplateSummaryGenerator()
         messages = [
-            MemoryMessage(role="user", content="Подбери вклад на 7 млн рублей на 3 месяца"),
-            MemoryMessage(role="assistant", content="Вот топ-5 вкладов с максимальной ставкой..."),
-            MemoryMessage(role="user", content="Без пополнения, максимальная доходность"),
-            MemoryMessage(role="assistant", content="Рекомендую разделить на 3 банка..."),
+            MemoryMessage(
+                role="user", content="Подбери вклад на 7 млн рублей на 3 месяца"
+            ),
+            MemoryMessage(
+                role="assistant", content="Вот топ-5 вкладов с максимальной ставкой..."
+            ),
+            MemoryMessage(
+                role="user", content="Без пополнения, максимальная доходность"
+            ),
+            MemoryMessage(
+                role="assistant", content="Рекомендую разделить на 3 банка..."
+            ),
         ]
         result = gen.summarize(messages)
         assert "7 млн" in result or "вклад" in result.lower()

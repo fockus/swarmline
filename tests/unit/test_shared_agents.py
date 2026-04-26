@@ -11,7 +11,6 @@ def _agent(id: str, role: str = "developer", name: str = "") -> AgentNode:
 
 
 class TestSharedAgentRegistryBasics:
-
     def test_empty_registry(self) -> None:
         reg = SharedAgentRegistry()
         assert reg.get_shared_agents() == []

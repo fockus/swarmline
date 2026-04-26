@@ -31,7 +31,9 @@ class MockLLM:
         self._responses = list(responses)
         self._i = 0
 
-    async def __call__(self, messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any) -> str:
+    async def __call__(
+        self, messages: list[dict[str, Any]], system_prompt: str, **kwargs: Any
+    ) -> str:
         if self._i < len(self._responses):
             resp = self._responses[self._i]
             self._i += 1
@@ -40,11 +42,13 @@ class MockLLM:
 
 
 def _make_tool_call(name: str, args: dict[str, Any]) -> str:
-    return json.dumps({
-        "type": "tool_call",
-        "tool": {"name": name, "args": args, "correlation_id": "c1"},
-        "assistant_message": "",
-    })
+    return json.dumps(
+        {
+            "type": "tool_call",
+            "tool": {"name": name, "args": args, "correlation_id": "c1"},
+            "assistant_message": "",
+        }
+    )
 
 
 def _make_final(text: str) -> str:
@@ -84,14 +88,19 @@ class TestSecurityGuardIntegration:
             tool_called = True
             return f"executed: {command}"
 
-        llm = MockLLM([
-            _make_tool_call("shell", {"command": "rm -rf /"}),
-            _make_final("done"),
-        ])
+        llm = MockLLM(
+            [
+                _make_tool_call("shell", {"command": "rm -rf /"}),
+                _make_final("done"),
+            ]
+        )
         tool_spec = ToolSpec(
             name="shell",
             description="Shell",
-            parameters={"type": "object", "properties": {"command": {"type": "string"}}},
+            parameters={
+                "type": "object",
+                "properties": {"command": {"type": "string"}},
+            },
         )
         runtime = ThinRuntime(
             llm_call=llm,
@@ -105,7 +114,10 @@ class TestSecurityGuardIntegration:
         tool_finished = [e for e in events if e.type == "tool_call_finished"]
         assert len(tool_finished) >= 1
         result_data = tool_finished[0].data
-        assert not result_data.get("ok", True) or "block" in json.dumps(result_data).lower()
+        assert (
+            not result_data.get("ok", True)
+            or "block" in json.dumps(result_data).lower()
+        )
 
     @pytest.mark.integration
     async def test_hooks_from_agent_config_reach_thin_runtime(self) -> None:

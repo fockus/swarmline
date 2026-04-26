@@ -31,9 +31,7 @@ class MaxTokensFilter:
     The last message is always preserved (even if it exceeds budget alone).
     """
 
-    def __init__(
-        self, max_tokens: int = 100_000, chars_per_token: float = 4.0
-    ) -> None:
+    def __init__(self, max_tokens: int = 100_000, chars_per_token: float = 4.0) -> None:
         self._max_tokens = max_tokens
         self._chars_per_token = chars_per_token
 

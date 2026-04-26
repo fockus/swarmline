@@ -10,7 +10,12 @@ from typing import Any
 from swarmline.guardrails import GuardrailContext, GuardrailResult
 from swarmline.runtime.cost import CostTracker
 from swarmline.runtime.thin.llm_client import default_llm_call
-from swarmline.runtime.types import Message, RuntimeConfig, RuntimeErrorData, RuntimeEvent
+from swarmline.runtime.types import (
+    Message,
+    RuntimeConfig,
+    RuntimeErrorData,
+    RuntimeEvent,
+)
 
 
 def auto_wrap_retriever(config: RuntimeConfig) -> None:

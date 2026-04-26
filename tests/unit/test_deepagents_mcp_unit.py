@@ -14,7 +14,9 @@ class TestDeepAgentsMcpDiscovery:
 
         mcp_tools = [
             ToolSpec(
-                name="mcp__srv__calc", description="Calculator", parameters={"type": "object"}
+                name="mcp__srv__calc",
+                description="Calculator",
+                parameters={"type": "object"},
             ),
         ]
 
@@ -32,7 +34,8 @@ class TestDeepAgentsMcpDiscovery:
         ):
             # Mock LangChain to avoid import issues
             with patch(
-                "swarmline.runtime.deepagents._check_langchain_available", return_value=None
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
             ):
                 with patch.object(runtime, "_stream_langchain") as mock_stream:
                     # Capture what tools are passed
@@ -53,7 +56,9 @@ class TestDeepAgentsMcpDiscovery:
                         events.append(ev)
 
                     # MCP tools should have been discovered and passed
-                    mcp_names = [t.name for t in captured_tools if t.name.startswith("mcp__")]
+                    mcp_names = [
+                        t.name for t in captured_tools if t.name.startswith("mcp__")
+                    ]
                     assert "mcp__srv__calc" in mcp_names
 
     async def test_deepagents_mcp_merged_with_custom_tools(self) -> None:
@@ -77,7 +82,8 @@ class TestDeepAgentsMcpDiscovery:
             return_value=mcp_tools,
         ):
             with patch(
-                "swarmline.runtime.deepagents._check_langchain_available", return_value=None
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
             ):
                 with patch.object(runtime, "_stream_langchain") as mock_stream:
                     captured_tools: list[ToolSpec] = []

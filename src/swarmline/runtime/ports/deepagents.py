@@ -32,7 +32,6 @@ class DeepAgentsRuntimePort(BaseRuntimePort):
         effective_config = config or RuntimeConfig(runtime_name="deepagents")
         prompt_memory_sources = memory_sources
 
-
         if memory_sources and effective_config.is_native_mode:
             native = {**effective_config.native_config, "memory": list(memory_sources)}
             prompt_memory_sources = None
@@ -43,9 +42,13 @@ class DeepAgentsRuntimePort(BaseRuntimePort):
                         FilesystemBackend,
                     )
 
-                    native["backend"] = FilesystemBackend(root_dir=".", virtual_mode=False)
+                    native["backend"] = FilesystemBackend(
+                        root_dir=".", virtual_mode=False
+                    )
                 except ImportError:
-                    logger.warning("deepagents FilesystemBackend unavailable, auto-backend skipped")
+                    logger.warning(
+                        "deepagents FilesystemBackend unavailable, auto-backend skipped"
+                    )
             effective_config = replace(effective_config, native_config=native)
 
         super().__init__(

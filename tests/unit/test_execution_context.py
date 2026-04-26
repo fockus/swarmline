@@ -18,7 +18,6 @@ class _FakeBoard:
 
 
 class TestExecutionMode:
-
     def test_isolated_value(self) -> None:
         assert ExecutionMode.ISOLATED.value == "isolated"
 
@@ -30,7 +29,6 @@ class TestExecutionMode:
 
 
 class TestIsolatedMode:
-
     def test_create_isolated_mode(self) -> None:
         board = _FakeBoard("goal-a")
         ctx = ExecutionContext.create_isolated(
@@ -93,7 +91,6 @@ class TestIsolatedMode:
 
 
 class TestUnifiedMode:
-
     def test_create_unified_mode(self) -> None:
         ctx = ExecutionContext.create_unified(
             namespaces=("goal-a", "goal-b"),
@@ -153,7 +150,6 @@ class TestUnifiedMode:
 
 
 class TestFrozenDataclass:
-
     def test_execution_context_is_frozen(self) -> None:
         ctx = ExecutionContext.create_isolated(
             namespace="goal-a",
@@ -167,7 +163,6 @@ class TestFrozenDataclass:
 
 
 class TestScopedEventType:
-
     def test_isolated_mode_prefixes_event(self) -> None:
         ctx = ExecutionContext.create_isolated(
             namespace="goal-a",
@@ -184,7 +179,6 @@ class TestScopedEventType:
 
 
 class TestGetBoardErrors:
-
     def test_get_board_unknown_namespace_raises_key_error(self) -> None:
         ctx = ExecutionContext.create_isolated(
             namespace="goal-a",

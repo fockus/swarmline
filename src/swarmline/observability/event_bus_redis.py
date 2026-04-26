@@ -80,7 +80,9 @@ class RedisEventBus:
         """Register a local callback. Also subscribes to Redis channel."""
         sub_id = f"rsub_{self._counter}"
         self._counter += 1
-        is_first = event_type not in self._subscribers or not self._subscribers[event_type]
+        is_first = (
+            event_type not in self._subscribers or not self._subscribers[event_type]
+        )
         self._subscribers.setdefault(event_type, {})[sub_id] = callback
 
         # Subscribe to Redis channel if first local subscriber for this type
@@ -108,9 +110,13 @@ class RedisEventBus:
         # Publish to Redis for cross-process subscribers
         if self._redis is not None:
             channel = f"{self._prefix}:{event_type}"
-            payload = json.dumps({
-                "type": event_type, "data": data, "_origin": self._origin_id,
-            })
+            payload = json.dumps(
+                {
+                    "type": event_type,
+                    "data": data,
+                    "_origin": self._origin_id,
+                }
+            )
             await self._redis.publish(channel, payload)
 
     async def _dispatch_local(self, event_type: str, data: dict[str, Any]) -> None:

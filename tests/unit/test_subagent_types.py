@@ -44,7 +44,9 @@ class TestSubagentStatus:
     def test_completed(self) -> None:
         from swarmline.orchestration.subagent_types import SubagentStatus
 
-        s = SubagentStatus(state="completed", result="done", started_at=_now(), finished_at=_now())
+        s = SubagentStatus(
+            state="completed", result="done", started_at=_now(), finished_at=_now()
+        )
         assert s.result == "done"
 
     def test_failed(self) -> None:
@@ -56,10 +58,15 @@ class TestSubagentStatus:
 
 class TestSubagentResult:
     def test_create(self) -> None:
-        from swarmline.orchestration.subagent_types import SubagentResult, SubagentStatus
+        from swarmline.orchestration.subagent_types import (
+            SubagentResult,
+            SubagentStatus,
+        )
 
         r = SubagentResult(
-            agent_id="a1", status=SubagentStatus(state="completed"), output="result text"
+            agent_id="a1",
+            status=SubagentStatus(state="completed"),
+            output="result text",
         )
         assert r.agent_id == "a1"
         assert r.output == "result text"
@@ -103,6 +110,7 @@ class TestSubagentOrchestratorProtocol:
         methods = [
             n
             for n in dir(SubagentOrchestrator)
-            if not n.startswith("_") and callable(getattr(SubagentOrchestrator, n, None))
+            if not n.startswith("_")
+            and callable(getattr(SubagentOrchestrator, n, None))
         ]
         assert len(methods) <= 5

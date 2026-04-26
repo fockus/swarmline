@@ -44,12 +44,22 @@ class PostgresProceduralMemory:
     @staticmethod
     def _serialize(proc: Procedure) -> dict[str, Any]:
         return {
-            "id": proc.id, "name": proc.name, "description": proc.description,
+            "id": proc.id,
+            "name": proc.name,
+            "description": proc.description,
             "trigger": proc.trigger,
-            "steps": [{"tool_name": s.tool_name, "args_template": s.args_template,
-                        "expected_outcome": s.expected_outcome} for s in proc.steps],
-            "success_count": proc.success_count, "failure_count": proc.failure_count,
-            "tags": list(proc.tags), "metadata": proc.metadata,
+            "steps": [
+                {
+                    "tool_name": s.tool_name,
+                    "args_template": s.args_template,
+                    "expected_outcome": s.expected_outcome,
+                }
+                for s in proc.steps
+            ],
+            "success_count": proc.success_count,
+            "failure_count": proc.failure_count,
+            "tags": list(proc.tags),
+            "metadata": proc.metadata,
         }
 
     @staticmethod
@@ -63,7 +73,8 @@ class PostgresProceduralMemory:
             for s in data.get("steps", ())
         )
         return Procedure(
-            id=data["id"], name=data["name"],
+            id=data["id"],
+            name=data["name"],
             description=data.get("description", ""),
             trigger=data.get("trigger", ""),
             steps=steps,
@@ -85,47 +96,58 @@ class PostgresProceduralMemory:
                     "data = EXCLUDED.data"
                 ),
                 {
-                    "id": procedure.id, "name": procedure.name,
+                    "id": procedure.id,
+                    "name": procedure.name,
                     "trigger": procedure.trigger,
-                    "sc": procedure.success_count, "fc": procedure.failure_count,
+                    "sc": procedure.success_count,
+                    "fc": procedure.failure_count,
                     "data": json.dumps(self._serialize(procedure)),
                 },
             )
 
     async def suggest(self, query: str, *, top_k: int = 3) -> list[Procedure]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text(
-                    "SELECT data, "
-                    "ts_rank(search_vector, plainto_tsquery('english', :query)) "
-                    "+ CASE WHEN (success_count + failure_count) > 0 "
-                    "  THEN success_count::float / (success_count + failure_count) "
-                    "  ELSE 0 END AS score "
-                    "FROM procedures "
-                    "WHERE search_vector @@ plainto_tsquery('english', :query) "
-                    "ORDER BY score DESC LIMIT :limit"
-                ),
-                {"query": query, "limit": top_k},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(
+                        "SELECT data, "
+                        "ts_rank(search_vector, plainto_tsquery('english', :query)) "
+                        "+ CASE WHEN (success_count + failure_count) > 0 "
+                        "  THEN success_count::float / (success_count + failure_count) "
+                        "  ELSE 0 END AS score "
+                        "FROM procedures "
+                        "WHERE search_vector @@ plainto_tsquery('english', :query) "
+                        "ORDER BY score DESC LIMIT :limit"
+                    ),
+                    {"query": query, "limit": top_k},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def record_outcome(self, proc_id: str, *, success: bool) -> None:
         col = "success_count" if success else "failure_count"
         async with self._session(commit=True) as session:
-            row = (await session.execute(
-                text("SELECT data FROM procedures WHERE id = :id FOR UPDATE"),
-                {"id": proc_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM procedures WHERE id = :id FOR UPDATE"),
+                    {"id": proc_id},
+                )
+            ).fetchone()
             if not row:
                 return
             proc = self._deserialize(row[0])
             new_sc = proc.success_count + (1 if success else 0)
             new_fc = proc.failure_count + (0 if success else 1)
             updated = Procedure(
-                id=proc.id, name=proc.name, description=proc.description,
-                trigger=proc.trigger, steps=proc.steps,
-                success_count=new_sc, failure_count=new_fc,
-                tags=proc.tags, metadata=proc.metadata,
+                id=proc.id,
+                name=proc.name,
+                description=proc.description,
+                trigger=proc.trigger,
+                steps=proc.steps,
+                success_count=new_sc,
+                failure_count=new_fc,
+                tags=proc.tags,
+                metadata=proc.metadata,
             )
             await session.execute(
                 text(
@@ -137,13 +159,17 @@ class PostgresProceduralMemory:
 
     async def get(self, proc_id: str) -> Procedure | None:
         async with self._session() as session:
-            row = (await session.execute(
-                text("SELECT data FROM procedures WHERE id = :id"),
-                {"id": proc_id},
-            )).fetchone()
+            row = (
+                await session.execute(
+                    text("SELECT data FROM procedures WHERE id = :id"),
+                    {"id": proc_id},
+                )
+            ).fetchone()
             return self._deserialize(row[0]) if row else None
 
     async def count(self) -> int:
         async with self._session() as session:
-            row = (await session.execute(text("SELECT count(*) FROM procedures"))).fetchone()
+            row = (
+                await session.execute(text("SELECT count(*) FROM procedures"))
+            ).fetchone()
             return row[0] if row else 0

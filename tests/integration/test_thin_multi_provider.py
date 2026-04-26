@@ -185,7 +185,10 @@ class TestDefaultLlmCallEndToEnd:
             kwargs = mock_client.chat.completions.create.call_args.kwargs
             assert kwargs["model"] == "gpt-4o"
             # system prompt injected as first message
-            assert kwargs["messages"][0] == {"role": "system", "content": "You are helpful"}
+            assert kwargs["messages"][0] == {
+                "role": "system",
+                "content": "You are helpful",
+            }
 
 
 class TestAdapterCachingIntegration:
@@ -207,8 +210,12 @@ class TestAdapterCachingIntegration:
             assert a1 is not a2
 
     def test_cache_miss_on_different_google_base_url(self) -> None:
-        r1 = resolve_provider("google:gemini-2.5-pro", base_url="https://proxy-1.example.com")
-        r2 = resolve_provider("google:gemini-2.5-pro", base_url="https://proxy-2.example.com")
+        r1 = resolve_provider(
+            "google:gemini-2.5-pro", base_url="https://proxy-1.example.com"
+        )
+        r2 = resolve_provider(
+            "google:gemini-2.5-pro", base_url="https://proxy-2.example.com"
+        )
         mock_google = _make_mock_google_module()
         with patch.dict(
             "sys.modules",

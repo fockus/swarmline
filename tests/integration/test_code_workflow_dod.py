@@ -27,7 +27,9 @@ class PassingCodeVerifier:
         return VerificationResult(
             status=VerificationStatus.PASS,
             checks=(
-                CheckDetail(name="contracts", status=VerificationStatus.PASS, message="OK"),
+                CheckDetail(
+                    name="contracts", status=VerificationStatus.PASS, message="OK"
+                ),
             ),
             summary="All contracts verified",
         )
@@ -54,7 +56,9 @@ class PassingCodeVerifier:
         return VerificationResult(
             status=VerificationStatus.PASS,
             checks=(
-                CheckDetail(name="linters", status=VerificationStatus.PASS, message="OK"),
+                CheckDetail(
+                    name="linters", status=VerificationStatus.PASS, message="OK"
+                ),
             ),
             summary="All linters pass",
         )
@@ -95,7 +99,9 @@ class FailThenPassVerifier:
         return VerificationResult(
             status=VerificationStatus.PASS,
             checks=(
-                CheckDetail(name="contracts", status=VerificationStatus.PASS, message="OK"),
+                CheckDetail(
+                    name="contracts", status=VerificationStatus.PASS, message="OK"
+                ),
             ),
         )
 

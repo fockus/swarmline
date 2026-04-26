@@ -27,7 +27,6 @@ from swarmline.hitl.types import (
 
 
 class TestTypes:
-
     def test_approval_request_creation(self) -> None:
         req = ApprovalRequest(action="tool_call", description="Execute code")
         assert req.action == "tool_call"
@@ -38,7 +37,9 @@ class TestTypes:
 
     def test_protocol_checkable(self) -> None:
         class FakeCallback:
-            async def request_approval(self, request: ApprovalRequest) -> ApprovalResponse:
+            async def request_approval(
+                self, request: ApprovalRequest
+            ) -> ApprovalResponse:
                 return ApprovalResponse(approved=True)
 
         assert isinstance(FakeCallback(), ApprovalCallback)
@@ -57,7 +58,6 @@ class TestTypes:
 
 
 class TestAlwaysApprovePolicy:
-
     def test_never_requires(self) -> None:
         p = AlwaysApprovePolicy()
         assert p.requires_approval("tool_call", {}) is False
@@ -65,7 +65,6 @@ class TestAlwaysApprovePolicy:
 
 
 class TestAlwaysDenyPolicy:
-
     def test_always_requires(self) -> None:
         p = AlwaysDenyPolicy()
         assert p.requires_approval("tool_call", {}) is True
@@ -73,7 +72,6 @@ class TestAlwaysDenyPolicy:
 
 
 class TestToolApprovalPolicy:
-
     def test_requires_for_listed_tool(self) -> None:
         p = ToolApprovalPolicy(tools=frozenset({"execute_code", "write_file"}))
         assert p.requires_approval("tool_call", {"tool_name": "execute_code"}) is True
@@ -88,7 +86,6 @@ class TestToolApprovalPolicy:
 
 
 class TestCostApprovalPolicy:
-
     def test_requires_when_over_threshold(self) -> None:
         p = CostApprovalPolicy(threshold_usd=0.50)
         assert p.requires_approval("query", {"estimated_cost_usd": 1.00}) is True
@@ -108,7 +105,6 @@ class TestCostApprovalPolicy:
 
 
 class TestApprovalGate:
-
     def _make_callback(self, approved: bool = True, reason: str = "") -> AsyncMock:
         cb = AsyncMock()
         cb.request_approval = AsyncMock(

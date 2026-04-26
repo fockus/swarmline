@@ -33,7 +33,12 @@ def build_langchain_messages(
     include_system_prompt: bool = True,
 ) -> list[Any]:
     """Build langchain messages."""
-    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+    from langchain_core.messages import (
+        AIMessage,
+        HumanMessage,
+        SystemMessage,
+        ToolMessage,
+    )
 
     lc_messages: list[Any] = []
     if include_system_prompt:
@@ -51,7 +56,9 @@ def build_langchain_messages(
         elif msg.role == "tool":
             tool_call_id = ""
             if isinstance(msg.metadata, dict):
-                raw_id = msg.metadata.get("tool_call_id") or msg.metadata.get("correlation_id")
+                raw_id = msg.metadata.get("tool_call_id") or msg.metadata.get(
+                    "correlation_id"
+                )
                 if raw_id is not None:
                     tool_call_id = str(raw_id)
             if not tool_call_id:

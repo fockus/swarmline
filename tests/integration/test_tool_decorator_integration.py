@@ -27,7 +27,9 @@ class TestToolDecoratorProducesValidToolspec:
         """@tool fn -> ToolSpec compatible with ThinRuntime."""
 
         @tool(name="create_task")
-        def create_task(title: str, priority: Priority, tags: list[str], metadata: dict) -> str:
+        def create_task(
+            title: str, priority: Priority, tags: list[str], metadata: dict
+        ) -> str:
             """Create a new task.
 
             Args:
@@ -58,7 +60,11 @@ class TestToolDecoratorProducesValidToolspec:
         # Types are correct
         assert params["properties"]["title"]["type"] == "string"
         assert params["properties"]["priority"]["type"] == "string"
-        assert set(params["properties"]["priority"]["enum"]) == {"low", "medium", "high"}
+        assert set(params["properties"]["priority"]["enum"]) == {
+            "low",
+            "medium",
+            "high",
+        }
         assert params["properties"]["tags"]["type"] == "array"
         assert params["properties"]["tags"]["items"] == {"type": "string"}
         assert params["properties"]["metadata"]["type"] == "object"

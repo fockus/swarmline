@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from swarmline.multi_agent.graph_context import GraphContextBuilder, GraphContextSnapshot
+from swarmline.multi_agent.graph_context import (
+    GraphContextBuilder,
+    GraphContextSnapshot,
+)
 from swarmline.multi_agent.graph_runtime_config import GraphRuntimeResolver
 from swarmline.multi_agent.graph_store import InMemoryAgentGraph
 from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
@@ -20,25 +23,41 @@ from swarmline.multi_agent.graph_types import AgentNode
 @pytest.fixture
 async def org():
     store = InMemoryAgentGraph()
-    await store.add_node(AgentNode(
-        id="ceo", name="CEO", role="executive",
-        system_prompt="You are the CEO.",
-        allowed_tools=("web_search",),
-    ))
-    await store.add_node(AgentNode(
-        id="cto", name="CTO", role="tech_lead",
-        parent_id="ceo",
-        system_prompt="You lead engineering.",
-        allowed_tools=("code_sandbox",),
-    ))
-    await store.add_node(AgentNode(
-        id="eng1", name="Engineer 1", role="engineer",
-        parent_id="cto",
-    ))
-    await store.add_node(AgentNode(
-        id="eng2", name="Engineer 2", role="engineer",
-        parent_id="cto",
-    ))
+    await store.add_node(
+        AgentNode(
+            id="ceo",
+            name="CEO",
+            role="executive",
+            system_prompt="You are the CEO.",
+            allowed_tools=("web_search",),
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="cto",
+            name="CTO",
+            role="tech_lead",
+            parent_id="ceo",
+            system_prompt="You lead engineering.",
+            allowed_tools=("code_sandbox",),
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="eng1",
+            name="Engineer 1",
+            role="engineer",
+            parent_id="cto",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="eng2",
+            name="Engineer 2",
+            role="engineer",
+            parent_id="cto",
+        )
+    )
     return store
 
 
@@ -48,7 +67,6 @@ async def org():
 
 
 class TestContextBuilder:
-
     async def test_build_context_for_leaf(self, org) -> None:
         builder = GraphContextBuilder(graph_query=org)
         ctx = await builder.build_context("eng1")
@@ -89,10 +107,14 @@ class TestContextBuilder:
 
     async def test_with_goal_ancestry(self, org) -> None:
         board = InMemoryGraphTaskBoard()
-        await board.create_task(GraphTaskItem(id="root-task", title="Root", goal_id="g1"))
-        await board.create_task(GraphTaskItem(
-            id="sub-task", title="Sub", parent_task_id="root-task", goal_id="g1"
-        ))
+        await board.create_task(
+            GraphTaskItem(id="root-task", title="Root", goal_id="g1")
+        )
+        await board.create_task(
+            GraphTaskItem(
+                id="sub-task", title="Sub", parent_task_id="root-task", goal_id="g1"
+            )
+        )
         builder = GraphContextBuilder(graph_query=org, task_board=board)
         ctx = await builder.build_context("eng1", task_id="sub-task")
         assert ctx.goal_ancestry is not None
@@ -105,7 +127,6 @@ class TestContextBuilder:
 
 
 class TestRenderPrompt:
-
     async def test_render_includes_identity(self, org) -> None:
         builder = GraphContextBuilder(graph_query=org)
         ctx = await builder.build_context("eng1")
@@ -151,28 +172,39 @@ class TestRenderPrompt:
 
 
 class TestSkillsAndMcpContext:
-
     async def test_skills_in_snapshot(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-            skills=("summarize", "translate"),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+                skills=("summarize", "translate"),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         assert ctx.skills == ("summarize", "translate")
 
     async def test_skills_inherited_from_ancestors(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="boss", name="Boss", role="manager",
-            skills=("plan", "delegate"),
-        ))
-        await store.add_node(AgentNode(
-            id="worker", name="Worker", role="worker",
-            parent_id="boss",
-            skills=("code",),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="boss",
+                name="Boss",
+                role="manager",
+                skills=("plan", "delegate"),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="worker",
+                name="Worker",
+                role="worker",
+                parent_id="boss",
+                skills=("code",),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("worker")
         # Own first, then inherited, deduped
@@ -180,17 +212,32 @@ class TestSkillsAndMcpContext:
 
     async def test_skills_dedup_across_ancestors(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="root", name="Root", role="exec", skills=("shared",),
-        ))
-        await store.add_node(AgentNode(
-            id="mid", name="Mid", role="mgr", parent_id="root",
-            skills=("shared", "mid_only"),
-        ))
-        await store.add_node(AgentNode(
-            id="leaf", name="Leaf", role="dev", parent_id="mid",
-            skills=("shared",),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="root",
+                name="Root",
+                role="exec",
+                skills=("shared",),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="mid",
+                name="Mid",
+                role="mgr",
+                parent_id="root",
+                skills=("shared", "mid_only"),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="leaf",
+                name="Leaf",
+                role="dev",
+                parent_id="mid",
+                skills=("shared",),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("leaf")
         assert ctx.skills.count("shared") == 1
@@ -198,35 +245,51 @@ class TestSkillsAndMcpContext:
 
     async def test_mcp_servers_in_snapshot(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-            mcp_servers=("github", "slack"),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+                mcp_servers=("github", "slack"),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         assert ctx.mcp_servers == ("github", "slack")
 
     async def test_mcp_servers_inherited_from_ancestors(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="boss", name="Boss", role="manager",
-            mcp_servers=("github",),
-        ))
-        await store.add_node(AgentNode(
-            id="worker", name="Worker", role="worker",
-            parent_id="boss",
-            mcp_servers=("slack",),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="boss",
+                name="Boss",
+                role="manager",
+                mcp_servers=("github",),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="worker",
+                name="Worker",
+                role="worker",
+                parent_id="boss",
+                mcp_servers=("slack",),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("worker")
         assert ctx.mcp_servers == ("slack", "github")
 
     async def test_skills_in_system_prompt(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-            skills=("summarize", "translate"),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+                skills=("summarize", "translate"),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         prompt = builder.render_system_prompt(ctx)
@@ -236,10 +299,14 @@ class TestSkillsAndMcpContext:
 
     async def test_mcp_in_system_prompt(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="a1", name="Agent", role="worker",
-            mcp_servers=("github", "slack"),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="a1",
+                name="Agent",
+                role="worker",
+                mcp_servers=("github", "slack"),
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         ctx = await builder.build_context("a1")
         prompt = builder.render_system_prompt(ctx)
@@ -263,30 +330,39 @@ class TestSkillsAndMcpContext:
 
 
 class TestBuildExecutionContext:
-
     async def test_build_execution_context_returns_all_fields(self) -> None:
         from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="boss", name="Boss", role="manager",
-            allowed_tools=("web_search",),
-            skills=("plan",),
-            mcp_servers=("github",),
-        ))
-        await store.add_node(AgentNode(
-            id="dev", name="Dev", role="developer",
-            parent_id="boss",
-            allowed_tools=("sandbox",),
-            skills=("code",),
-            mcp_servers=("slack",),
-            runtime_config={"model": "sonnet"},
-            budget_limit_usd=5.0,
-            metadata={"team": "core"},
-        ))
+        await store.add_node(
+            AgentNode(
+                id="boss",
+                name="Boss",
+                role="manager",
+                allowed_tools=("web_search",),
+                skills=("plan",),
+                mcp_servers=("github",),
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="dev",
+                name="Dev",
+                role="developer",
+                parent_id="boss",
+                allowed_tools=("sandbox",),
+                skills=("code",),
+                mcp_servers=("slack",),
+                runtime_config={"model": "sonnet"},
+                budget_limit_usd=5.0,
+                metadata={"team": "core"},
+            )
+        )
         builder = GraphContextBuilder(graph_query=store)
         exc = await builder.build_execution_context(
-            agent_id="dev", task_id="t1", goal="Fix the bug",
+            agent_id="dev",
+            task_id="t1",
+            goal="Fix the bug",
         )
         assert isinstance(exc, AgentExecutionContext)
         assert exc.agent_id == "dev"
@@ -310,14 +386,17 @@ class TestBuildExecutionContext:
 
 
 class TestRuntimeResolver:
-
     async def test_own_config(self, org) -> None:
         # Add node with explicit config
-        await org.add_node(AgentNode(
-            id="special", name="Special", role="worker",
-            parent_id="cto",
-            runtime_config={"model": "claude-opus"},
-        ))
+        await org.add_node(
+            AgentNode(
+                id="special",
+                name="Special",
+                role="worker",
+                parent_id="cto",
+                runtime_config={"model": "claude-opus"},
+            )
+        )
         resolver = GraphRuntimeResolver(graph_query=org)
         config = await resolver.resolve("special")
         assert config["model"] == "claude-opus"
@@ -327,16 +406,30 @@ class TestRuntimeResolver:
         # But if we add config to CEO...
         # We need a fresh org with config
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="ceo", name="CEO", role="exec",
-            runtime_config={"model": "sonnet"},
-        ))
-        await store.add_node(AgentNode(
-            id="cto", name="CTO", role="tech", parent_id="ceo",
-        ))
-        await store.add_node(AgentNode(
-            id="eng", name="Eng", role="worker", parent_id="cto",
-        ))
+        await store.add_node(
+            AgentNode(
+                id="ceo",
+                name="CEO",
+                role="exec",
+                runtime_config={"model": "sonnet"},
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="cto",
+                name="CTO",
+                role="tech",
+                parent_id="ceo",
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="eng",
+                name="Eng",
+                role="worker",
+                parent_id="cto",
+            )
+        )
         resolver = GraphRuntimeResolver(graph_query=store)
         config = await resolver.resolve("eng")
         assert config["model"] == "sonnet"
@@ -351,17 +444,31 @@ class TestRuntimeResolver:
 
     async def test_nearest_ancestor_wins(self) -> None:
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="ceo", name="CEO", role="exec",
-            runtime_config={"model": "expensive"},
-        ))
-        await store.add_node(AgentNode(
-            id="cto", name="CTO", role="tech", parent_id="ceo",
-            runtime_config={"model": "cheap"},
-        ))
-        await store.add_node(AgentNode(
-            id="eng", name="Eng", role="worker", parent_id="cto",
-        ))
+        await store.add_node(
+            AgentNode(
+                id="ceo",
+                name="CEO",
+                role="exec",
+                runtime_config={"model": "expensive"},
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="cto",
+                name="CTO",
+                role="tech",
+                parent_id="ceo",
+                runtime_config={"model": "cheap"},
+            )
+        )
+        await store.add_node(
+            AgentNode(
+                id="eng",
+                name="Eng",
+                role="worker",
+                parent_id="cto",
+            )
+        )
         resolver = GraphRuntimeResolver(graph_query=store)
         config = await resolver.resolve("eng")
         assert config["model"] == "cheap"  # CTO's config, not CEO's

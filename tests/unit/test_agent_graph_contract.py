@@ -6,7 +6,11 @@ import pytest
 
 from swarmline.multi_agent.graph_types import AgentNode, EdgeType
 from swarmline.multi_agent.registry_types import AgentStatus
-from swarmline.protocols.agent_graph import AgentGraphQuery, AgentGraphStore, AgentNodeUpdater
+from swarmline.protocols.agent_graph import (
+    AgentGraphQuery,
+    AgentGraphStore,
+    AgentNodeUpdater,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +62,6 @@ def _node(
 
 
 class TestProtocolShape:
-
     def test_store_is_runtime_checkable(self, store) -> None:
         assert isinstance(store, AgentGraphStore)
 
@@ -72,7 +75,6 @@ class TestProtocolShape:
 
 
 class TestCRUD:
-
     async def test_add_and_get_root(self, store) -> None:
         root = _node("ceo", "CEO", "executive")
         await store.add_node(root)
@@ -137,10 +139,11 @@ class TestCRUD:
 
 
 class TestInvariants:
-
     async def test_parent_must_exist(self, store) -> None:
         with pytest.raises(ValueError, match="parent"):
-            await store.add_node(_node("child", "Child", "worker", parent_id="nonexistent"))
+            await store.add_node(
+                _node("child", "Child", "worker", parent_id="nonexistent")
+            )
 
     async def test_single_root_allowed(self, store) -> None:
         await store.add_node(_node("ceo1", "CEO 1", "executive"))
@@ -177,7 +180,6 @@ class TestInvariants:
 
 
 class TestTraversal:
-
     async def _build_org(self, store) -> None:
         """Build: CEO → CTO → [Eng1, Eng2], CEO → CPO → Designer."""
         await store.add_node(_node("ceo", "CEO", "executive"))
@@ -245,7 +247,6 @@ class TestTraversal:
 
 
 class TestSnapshot:
-
     async def test_snapshot_captures_all(self, store) -> None:
         await store.add_node(_node("ceo", "CEO", "executive"))
         await store.add_node(_node("cto", "CTO", "tech", parent_id="ceo"))
@@ -276,7 +277,6 @@ class TestSnapshot:
 
 
 class TestUpdateNode:
-
     def test_updater_protocol(self, store) -> None:
         assert isinstance(store, AgentNodeUpdater)
 
@@ -294,7 +294,9 @@ class TestUpdateNode:
     async def test_update_role_and_prompt(self, store) -> None:
         await store.add_node(_node("a1", "Agent", "worker"))
         result = await store.update_node(
-            "a1", role="manager", system_prompt="You manage things",
+            "a1",
+            role="manager",
+            system_prompt="You manage things",
         )
         assert result is not None
         assert result.role == "manager"
@@ -335,10 +337,15 @@ class TestUpdateNode:
 
     async def test_update_preserves_unchanged_fields(self, store) -> None:
         node = AgentNode(
-            id="rich", name="Rich", role="manager",
-            system_prompt="Manage", allowed_tools=("web",),
-            skills=("planning",), budget_limit_usd=5.0,
-            status=AgentStatus.RUNNING, metadata={"team": "alpha"},
+            id="rich",
+            name="Rich",
+            role="manager",
+            system_prompt="Manage",
+            allowed_tools=("web",),
+            skills=("planning",),
+            budget_limit_usd=5.0,
+            status=AgentStatus.RUNNING,
+            metadata={"team": "alpha"},
         )
         await store.add_node(node)
         result = await store.update_node("rich", name="Rich Updated")

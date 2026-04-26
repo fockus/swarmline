@@ -63,7 +63,9 @@ class GraphRunStore:
         run.finished_at = time.time()
         return run
 
-    def append_execution(self, run: _RunState | None, agent_id: str, task_id: str) -> None:
+    def append_execution(
+        self, run: _RunState | None, agent_id: str, task_id: str
+    ) -> None:
         if run is None:
             return
         run.executions.append(AgentExecution(agent_id=agent_id, task_id=task_id))

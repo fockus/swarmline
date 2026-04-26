@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import dataclasses
 import json
 from typing import Any
@@ -135,7 +134,9 @@ class TestPiSdkRuntime:
         from swarmline.runtime.pi_sdk.types import PiSdkOptions
 
         runtime = PiSdkRuntime(
-            config=RuntimeConfig(runtime_name="pi_sdk", model="anthropic:claude-sonnet-4-20250514"),
+            config=RuntimeConfig(
+                runtime_name="pi_sdk", model="anthropic:claude-sonnet-4-20250514"
+            ),
             pi_options=PiSdkOptions(toolset="readonly", cwd="/repo"),
             tool_executors={"calc": lambda x: str(x)},
         )
@@ -167,12 +168,15 @@ class TestPiSdkRuntime:
             pi_options=PiSdkOptions(bridge_command=("fake-pi-bridge",)),
         )
 
-        lines = b"\n".join(
-            [
-                json.dumps({"type": "assistant_delta", "text": "hello"}).encode(),
-                json.dumps({"type": "final", "text": "hello"}).encode(),
-            ]
-        ) + b"\n"
+        lines = (
+            b"\n".join(
+                [
+                    json.dumps({"type": "assistant_delta", "text": "hello"}).encode(),
+                    json.dumps({"type": "final", "text": "hello"}).encode(),
+                ]
+            )
+            + b"\n"
+        )
         process = _make_process(stdout_data=lines, returncode=0)
 
         with patch("asyncio.create_subprocess_exec", return_value=process):
@@ -186,7 +190,9 @@ class TestPiSdkRuntime:
             ]
 
         assert [event.type for event in events] == ["assistant_delta", "final"]
-        assert json.loads(process.stdin.write.call_args.args[0].decode())["type"] == "run"
+        assert (
+            json.loads(process.stdin.write.call_args.args[0].decode())["type"] == "run"
+        )
 
     async def test_run_executes_swarmline_tool_request(self) -> None:
         from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
@@ -200,19 +206,22 @@ class TestPiSdkRuntime:
             pi_options=PiSdkOptions(bridge_command=("fake-pi-bridge",)),
             tool_executors={"calc": calc},
         )
-        lines = b"\n".join(
-            [
-                json.dumps(
-                    {
-                        "type": "tool_request",
-                        "id": "req-1",
-                        "name": "calc",
-                        "args": {"x": 41},
-                    }
-                ).encode(),
-                json.dumps({"type": "final", "text": "done"}).encode(),
-            ]
-        ) + b"\n"
+        lines = (
+            b"\n".join(
+                [
+                    json.dumps(
+                        {
+                            "type": "tool_request",
+                            "id": "req-1",
+                            "name": "calc",
+                            "args": {"x": 41},
+                        }
+                    ).encode(),
+                    json.dumps({"type": "final", "text": "done"}).encode(),
+                ]
+            )
+            + b"\n"
+        )
         process = _make_process(stdout_data=lines, returncode=0)
 
         with patch("asyncio.create_subprocess_exec", return_value=process):
@@ -232,7 +241,10 @@ class TestPiSdkRuntime:
                 )
             ]
 
-        writes = [json.loads(call.args[0].decode()) for call in process.stdin.write.call_args_list]
+        writes = [
+            json.loads(call.args[0].decode())
+            for call in process.stdin.write.call_args_list
+        ]
         assert writes[-1]["type"] == "tool_response"
         assert writes[-1]["ok"] is True
         assert writes[-1]["result"] == "42"

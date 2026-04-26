@@ -42,35 +42,69 @@ from swarmline.observability.event_bus import InMemoryEventBus
 async def seven_agent_org():
     """Build a 7-agent organization graph."""
     store = InMemoryAgentGraph()
-    await store.add_node(AgentNode(
-        id="ceo", name="CEO", role="executive",
-        system_prompt="You decompose company goals into tech and product streams.",
-        allowed_tools=("web_search",),
-    ))
-    await store.add_node(AgentNode(
-        id="cto", name="CTO", role="tech_lead", parent_id="ceo",
-        system_prompt="You lead engineering. Delegate to backend and frontend leads.",
-        allowed_tools=("code_sandbox",),
-    ))
-    await store.add_node(AgentNode(
-        id="cpo", name="CPO", role="product_owner", parent_id="ceo",
-        system_prompt="You handle product requirements and user stories.",
-    ))
-    await store.add_node(AgentNode(
-        id="be-lead", name="Backend Lead", role="backend_lead", parent_id="cto",
-        system_prompt="You lead the backend team.",
-        allowed_tools=("database",),
-    ))
-    await store.add_node(AgentNode(
-        id="fe-lead", name="Frontend Lead", role="frontend_lead", parent_id="cto",
-        system_prompt="You lead the frontend team.",
-    ))
-    await store.add_node(AgentNode(
-        id="be-dev1", name="BE-Dev1", role="engineer", parent_id="be-lead",
-    ))
-    await store.add_node(AgentNode(
-        id="be-dev2", name="BE-Dev2", role="engineer", parent_id="be-lead",
-    ))
+    await store.add_node(
+        AgentNode(
+            id="ceo",
+            name="CEO",
+            role="executive",
+            system_prompt="You decompose company goals into tech and product streams.",
+            allowed_tools=("web_search",),
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="cto",
+            name="CTO",
+            role="tech_lead",
+            parent_id="ceo",
+            system_prompt="You lead engineering. Delegate to backend and frontend leads.",
+            allowed_tools=("code_sandbox",),
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="cpo",
+            name="CPO",
+            role="product_owner",
+            parent_id="ceo",
+            system_prompt="You handle product requirements and user stories.",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="be-lead",
+            name="Backend Lead",
+            role="backend_lead",
+            parent_id="cto",
+            system_prompt="You lead the backend team.",
+            allowed_tools=("database",),
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="fe-lead",
+            name="Frontend Lead",
+            role="frontend_lead",
+            parent_id="cto",
+            system_prompt="You lead the frontend team.",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="be-dev1",
+            name="BE-Dev1",
+            role="engineer",
+            parent_id="be-lead",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="be-dev2",
+            name="BE-Dev2",
+            role="engineer",
+            parent_id="be-lead",
+        )
+    )
     return store
 
 
@@ -92,12 +126,16 @@ def event_bus():
 class TestSevenAgentOrchestration:
     """Full integration: 7 agents, 3 levels of delegation, parallel execution."""
 
-    async def test_three_level_delegation(self, seven_agent_org, task_board, event_bus) -> None:
+    async def test_three_level_delegation(
+        self, seven_agent_org, task_board, event_bus
+    ) -> None:
         """CEO → CTO/CPO → leads → devs: all tasks complete."""
         # Track which agents were called
         called_agents: list[str] = []
 
-        async def mock_runner(agent_id: str, task_id: str, goal: str, system_prompt: str) -> str:
+        async def mock_runner(
+            agent_id: str, task_id: str, goal: str, system_prompt: str
+        ) -> str:
             called_agents.append(agent_id)
             await asyncio.sleep(0.02)  # simulate work
             return f"{agent_id} completed: {goal}"
@@ -116,36 +154,60 @@ class TestSevenAgentOrchestration:
         root_task = status.root_task_id
 
         # Level 1: CEO delegates to CTO and CPO (parallel)
-        await orch.delegate(DelegationRequest(
-            task_id="task-cto", agent_id="cto",
-            goal="Design technical architecture", parent_task_id=root_task,
-        ))
-        await orch.delegate(DelegationRequest(
-            task_id="task-cpo", agent_id="cpo",
-            goal="Write user stories", parent_task_id=root_task,
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="task-cto",
+                agent_id="cto",
+                goal="Design technical architecture",
+                parent_task_id=root_task,
+            )
+        )
+        await orch.delegate(
+            DelegationRequest(
+                task_id="task-cpo",
+                agent_id="cpo",
+                goal="Write user stories",
+                parent_task_id=root_task,
+            )
+        )
         await asyncio.sleep(0.1)
 
         # Level 2: CTO delegates to leads
-        await orch.delegate(DelegationRequest(
-            task_id="task-be-lead", agent_id="be-lead",
-            goal="Design API layer", parent_task_id="task-cto",
-        ))
-        await orch.delegate(DelegationRequest(
-            task_id="task-fe-lead", agent_id="fe-lead",
-            goal="Design UI components", parent_task_id="task-cto",
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="task-be-lead",
+                agent_id="be-lead",
+                goal="Design API layer",
+                parent_task_id="task-cto",
+            )
+        )
+        await orch.delegate(
+            DelegationRequest(
+                task_id="task-fe-lead",
+                agent_id="fe-lead",
+                goal="Design UI components",
+                parent_task_id="task-cto",
+            )
+        )
         await asyncio.sleep(0.1)
 
         # Level 3: Backend Lead delegates to devs
-        await orch.delegate(DelegationRequest(
-            task_id="task-be-dev1", agent_id="be-dev1",
-            goal="Implement user API", parent_task_id="task-be-lead",
-        ))
-        await orch.delegate(DelegationRequest(
-            task_id="task-be-dev2", agent_id="be-dev2",
-            goal="Implement payment API", parent_task_id="task-be-lead",
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="task-be-dev1",
+                agent_id="be-dev1",
+                goal="Implement user API",
+                parent_task_id="task-be-lead",
+            )
+        )
+        await orch.delegate(
+            DelegationRequest(
+                task_id="task-be-dev2",
+                agent_id="be-dev2",
+                goal="Implement payment API",
+                parent_task_id="task-be-lead",
+            )
+        )
         await asyncio.sleep(0.2)
 
         # Verify all agents ran
@@ -162,7 +224,9 @@ class TestSevenAgentOrchestration:
         assert await orch.collect_result("task-be-dev1") is not None
         assert await orch.collect_result("task-be-dev2") is not None
 
-    async def test_parallel_execution_bounded(self, seven_agent_org, task_board, event_bus) -> None:
+    async def test_parallel_execution_bounded(
+        self, seven_agent_org, task_board, event_bus
+    ) -> None:
         """Concurrent tasks don't exceed max_concurrent."""
         concurrent_count = 0
         max_seen = 0
@@ -189,17 +253,25 @@ class TestSevenAgentOrchestration:
 
         # Fire 4 tasks simultaneously
         for i in range(4):
-            await orch.delegate(DelegationRequest(
-                task_id=f"t-{i}", agent_id="be-dev1",
-                goal=f"Task {i}", parent_task_id=status.root_task_id,
-            ))
+            await orch.delegate(
+                DelegationRequest(
+                    task_id=f"t-{i}",
+                    agent_id="be-dev1",
+                    goal=f"Task {i}",
+                    parent_task_id=status.root_task_id,
+                )
+            )
         await asyncio.sleep(0.5)
 
         assert max_seen <= 2
 
-    async def test_failure_with_escalation(self, seven_agent_org, task_board, event_bus) -> None:
+    async def test_failure_with_escalation(
+        self, seven_agent_org, task_board, event_bus
+    ) -> None:
         """Agent failure triggers escalation event."""
-        comm = InMemoryGraphCommunication(graph_query=seven_agent_org, event_bus=event_bus)
+        comm = InMemoryGraphCommunication(
+            graph_query=seven_agent_org, event_bus=event_bus
+        )
         delegate_call_count = 0
 
         async def failing_runner(agent_id, task_id, goal, system_prompt):
@@ -221,11 +293,15 @@ class TestSevenAgentOrchestration:
         await asyncio.sleep(0.2)  # Let root agent execution settle
         status = await orch.get_status(run_id)
 
-        await orch.delegate(DelegationRequest(
-            task_id="fail-task", agent_id="be-dev1",
-            goal="Connect to DB", parent_task_id=status.root_task_id,
-            max_retries=1,
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="fail-task",
+                agent_id="be-dev1",
+                goal="Connect to DB",
+                parent_task_id=status.root_task_id,
+                max_retries=1,
+            )
+        )
         await asyncio.sleep(1.0)  # backoff: 0.5s before retry
 
         # Should have retried once (2 attempts total) for the delegated agent
@@ -255,10 +331,14 @@ class TestSevenAgentOrchestration:
         run_id = await orch.start("Build")
         status = await orch.get_status(run_id)
 
-        await orch.delegate(DelegationRequest(
-            task_id="ctx-task", agent_id="be-dev1",
-            goal="Implement API", parent_task_id=status.root_task_id,
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="ctx-task",
+                agent_id="be-dev1",
+                goal="Implement API",
+                parent_task_id=status.root_task_id,
+            )
+        )
         await asyncio.sleep(0.1)
 
         prompt = received_prompts.get("be-dev1", "")
@@ -268,9 +348,13 @@ class TestSevenAgentOrchestration:
         assert "Backend Lead" in prompt
         assert "BE-Dev1" in prompt
         # Should contain inherited tools
-        assert "web_search" in prompt or "code_sandbox" in prompt or "database" in prompt
+        assert (
+            "web_search" in prompt or "code_sandbox" in prompt or "database" in prompt
+        )
 
-    async def test_event_lifecycle(self, seven_agent_org, task_board, event_bus) -> None:
+    async def test_event_lifecycle(
+        self, seven_agent_org, task_board, event_bus
+    ) -> None:
         """EventBus receives full lifecycle: started → delegated → completed."""
         events: list[str] = []
         event_bus.subscribe("graph.orchestrator.*", lambda data: None)
@@ -297,10 +381,14 @@ class TestSevenAgentOrchestration:
         run_id = await orch.start("Build")
         status = await orch.get_status(run_id)
 
-        await orch.delegate(DelegationRequest(
-            task_id="evt-task", agent_id="cto",
-            goal="Design", parent_task_id=status.root_task_id,
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="evt-task",
+                agent_id="cto",
+                goal="Design",
+                parent_task_id=status.root_task_id,
+            )
+        )
         await asyncio.sleep(0.1)
         await orch.stop(run_id)
 
@@ -309,7 +397,9 @@ class TestSevenAgentOrchestration:
         assert "graph.orchestrator.agent_completed" in events
         assert "graph.orchestrator.stopped" in events
 
-    async def test_stop_during_execution(self, seven_agent_org, task_board, event_bus) -> None:
+    async def test_stop_during_execution(
+        self, seven_agent_org, task_board, event_bus
+    ) -> None:
         """Stop cancels pending background tasks."""
         started = asyncio.Event()
 
@@ -328,10 +418,14 @@ class TestSevenAgentOrchestration:
         run_id = await orch.start("Build")
         status = await orch.get_status(run_id)
 
-        await orch.delegate(DelegationRequest(
-            task_id="slow-task", agent_id="be-dev1",
-            goal="Long work", parent_task_id=status.root_task_id,
-        ))
+        await orch.delegate(
+            DelegationRequest(
+                task_id="slow-task",
+                agent_id="be-dev1",
+                goal="Long work",
+                parent_task_id=status.root_task_id,
+            )
+        )
         await started.wait()
         await orch.stop(run_id)
 

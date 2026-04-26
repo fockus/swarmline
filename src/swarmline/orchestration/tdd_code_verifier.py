@@ -17,8 +17,8 @@ from swarmline.orchestration.verification_types import (
 class TddCodeVerifier:
     """CodeVerifier implementation - respects CodingStandardsConfig.
 
-  Disabled check -> auto VerificationStatus.SKIP.
-  """
+    Disabled check -> auto VerificationStatus.SKIP.
+    """
 
     def __init__(self, config: CodingStandardsConfig, runner: CommandRunner) -> None:
         self._config = config
@@ -48,11 +48,17 @@ class TddCodeVerifier:
     async def verify_linters(self) -> VerificationResult:
         """Run linters (ruff check)."""
         result = await self._runner.run("ruff check .")
-        status = VerificationStatus.PASS if result.exit_code == 0 else VerificationStatus.FAIL
+        status = (
+            VerificationStatus.PASS
+            if result.exit_code == 0
+            else VerificationStatus.FAIL
+        )
         return VerificationResult(
             status=status,
             checks=(
-                CheckDetail(name="ruff", status=status, message=result.stdout or result.stderr),
+                CheckDetail(
+                    name="ruff", status=status, message=result.stdout or result.stderr
+                ),
             ),
             summary=result.stdout or result.stderr,
         )
@@ -62,8 +68,14 @@ class TddCodeVerifier:
         if not self._config.tdd_enabled:
             return self._skip("TDD disabled")
         effective_min = max(min_pct, self._config.min_coverage_pct)
-        result = await self._runner.run(f"pytest --cov --cov-fail-under={effective_min}")
-        status = VerificationStatus.PASS if result.exit_code == 0 else VerificationStatus.FAIL
+        result = await self._runner.run(
+            f"pytest --cov --cov-fail-under={effective_min}"
+        )
+        status = (
+            VerificationStatus.PASS
+            if result.exit_code == 0
+            else VerificationStatus.FAIL
+        )
         return VerificationResult(
             status=status,
             checks=(
@@ -79,8 +91,14 @@ class TddCodeVerifier:
     def _skip(self, reason: str) -> VerificationResult:
         return VerificationResult(status=VerificationStatus.SKIP, summary=reason)
 
-    def _from_command(self, result: CommandResult, check_name: str) -> VerificationResult:
-        status = VerificationStatus.PASS if result.exit_code == 0 else VerificationStatus.FAIL
+    def _from_command(
+        self, result: CommandResult, check_name: str
+    ) -> VerificationResult:
+        status = (
+            VerificationStatus.PASS
+            if result.exit_code == 0
+            else VerificationStatus.FAIL
+        )
         return VerificationResult(
             status=status,
             checks=(

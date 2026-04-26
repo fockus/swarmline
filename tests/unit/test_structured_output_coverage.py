@@ -87,7 +87,9 @@ class TestExtractStructuredOutput:
         assert result == [1, 2, 3]
 
     def test_extract_returns_none_for_garbage(self) -> None:
-        assert extract_structured_output("no json here at all", {"type": "object"}) is None
+        assert (
+            extract_structured_output("no json here at all", {"type": "object"}) is None
+        )
 
 
 class TestNormalizeOutputSchema:
@@ -116,5 +118,8 @@ class TestNormalizeOutputSchema:
         assert normalize_output_schema(fmt) is None
 
     def test_normalize_passthrough(self) -> None:
-        fmt: dict[str, Any] = {"type": "object", "properties": {"a": {"type": "string"}}}
+        fmt: dict[str, Any] = {
+            "type": "object",
+            "properties": {"a": {"type": "string"}},
+        }
         assert normalize_output_schema(fmt) == fmt

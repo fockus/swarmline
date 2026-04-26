@@ -43,7 +43,9 @@ class SkillRegistry:
         """All ids of loaded skills."""
         return list(self._skills.keys())
 
-    def get_mcp_servers_for_skills(self, skill_ids: list[str]) -> dict[str, McpServerSpec]:
+    def get_mcp_servers_for_skills(
+        self, skill_ids: list[str]
+    ) -> dict[str, McpServerSpec]:
         """Collect MCP servers for a set of skills (§4.3, R-401/R-402).
 
         Merge policy: settings.json (lower priority) + skill.yaml (upper priority).

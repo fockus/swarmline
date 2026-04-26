@@ -92,7 +92,9 @@ def build_native_notice(
 
     parts = [prefix]
     if selection.alias_mappings:
-        mapped = ", ".join(f"{source}->{target}" for source, target in selection.alias_mappings)
+        mapped = ", ".join(
+            f"{source}->{target}" for source, target in selection.alias_mappings
+        )
         parts.append(f"mapped aliases: {mapped}")
     parts.append(f"native tools: {', '.join(selection.native_tool_names)}")
     return "; ".join(parts)

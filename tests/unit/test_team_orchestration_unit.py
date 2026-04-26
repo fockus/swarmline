@@ -55,7 +55,9 @@ class TestDeepAgentsTeamOrchestrator:
         assert status.state == "completed"
         assert len(status.workers) == 2
 
-    async def test_get_status_all_terminal_failures_returns_failed(self, mock_sub_orch) -> None:
+    async def test_get_status_all_terminal_failures_returns_failed(
+        self, mock_sub_orch
+    ) -> None:
         from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub_orch.get_status.side_effect = [
@@ -77,7 +79,10 @@ class TestDeepAgentsTeamOrchestrator:
         orch = DeepAgentsTeamOrchestrator(mock_sub_orch)
         team_id = await orch.start(_config(), "t")
         msg = TeamMessage(
-            from_agent="lead", to_agent="w1", content="go", timestamp=datetime.now(tz=UTC)
+            from_agent="lead",
+            to_agent="w1",
+            content="go",
+            timestamp=datetime.now(tz=UTC),
         )
         await orch.send_message(team_id, msg)
         status = await orch.get_team_status(team_id)
@@ -117,7 +122,9 @@ class TestDeepAgentsTeamOrchestrator:
         assert "worker 'w2'" in second_task
         mock_sub_orch.register_tool.assert_called_once()
 
-    async def test_resume_agent_reuses_composed_worker_task(self, mock_sub_orch) -> None:
+    async def test_resume_agent_reuses_composed_worker_task(
+        self, mock_sub_orch
+    ) -> None:
         from swarmline.orchestration.deepagents_team import DeepAgentsTeamOrchestrator
 
         mock_sub_orch.register_tool = MagicMock()

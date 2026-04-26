@@ -74,8 +74,16 @@ class TestFilterChatMessagesContentBlocks:
 
     def test_non_chat_messages_filtered_out(self) -> None:
         msgs = [
-            {"role": "system", "content": "sys", "content_blocks": [{"type": "text", "text": "sys"}]},
-            {"role": "user", "content": "hi", "content_blocks": [{"type": "text", "text": "hi"}]},
+            {
+                "role": "system",
+                "content": "sys",
+                "content_blocks": [{"type": "text", "text": "sys"}],
+            },
+            {
+                "role": "user",
+                "content": "hi",
+                "content_blocks": [{"type": "text", "text": "hi"}],
+            },
         ]
         result = _filter_chat_messages(msgs)
         assert len(result) == 1

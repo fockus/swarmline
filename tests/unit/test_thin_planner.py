@@ -58,7 +58,12 @@ class TestThinRuntimePlanner:
                 "type": "plan",
                 "goal": "Оценить финансы",
                 "steps": [
-                    {"id": "s1", "title": "Считать", "mode": "conversational", "max_iterations": 2},
+                    {
+                        "id": "s1",
+                        "title": "Считать",
+                        "mode": "conversational",
+                        "max_iterations": 2,
+                    },
                     {
                         "id": "s2",
                         "title": "Рекомендации",
@@ -72,7 +77,9 @@ class TestThinRuntimePlanner:
 
         step1_result = json.dumps({"type": "final", "final_message": "Шаг 1 готов"})
         step2_result = json.dumps({"type": "final", "final_message": "Шаг 2 готов"})
-        final_assembly = json.dumps({"type": "final", "final_message": "Итого: всё хорошо"})
+        final_assembly = json.dumps(
+            {"type": "final", "final_message": "Итого: всё хорошо"}
+        )
 
         llm = MockLLM([plan, step1_result, step2_result, final_assembly])
         runtime = ThinRuntime(llm_call=llm)
@@ -81,7 +88,9 @@ class TestThinRuntimePlanner:
         types = [e.type for e in events]
 
         assert "status" in types  # mode + plan status
-        status_texts = [str(e.data.get("text", "")) for e in events if e.type == "status"]
+        status_texts = [
+            str(e.data.get("text", "")) for e in events if e.type == "status"
+        ]
         assert any("Следующие шаги:" in text for text in status_texts)
         assert "final" in types
 
@@ -96,7 +105,12 @@ class TestThinRuntimePlanner:
                 "type": "plan",
                 "goal": "Найти вклады",
                 "steps": [
-                    {"id": "s1", "title": "Поиск", "mode": "react", "max_iterations": 3},
+                    {
+                        "id": "s1",
+                        "title": "Поиск",
+                        "mode": "react",
+                        "max_iterations": 3,
+                    },
                 ],
                 "final_format": "Список вкладов",
             }
@@ -106,7 +120,11 @@ class TestThinRuntimePlanner:
         tool_call = json.dumps(
             {
                 "type": "tool_call",
-                "tool": {"name": "search", "args": {"q": "вклады"}, "correlation_id": "c1"},
+                "tool": {
+                    "name": "search",
+                    "args": {"q": "вклады"},
+                    "correlation_id": "c1",
+                },
             }
         )
         step_final = json.dumps({"type": "final", "final_message": "Найдено 3 вклада"})
@@ -148,7 +166,12 @@ class TestThinRuntimePlanner:
                 "type": "plan",
                 "goal": "Test",
                 "steps": [
-                    {"id": "s1", "title": "Bad step", "mode": "react", "max_iterations": 1},
+                    {
+                        "id": "s1",
+                        "title": "Bad step",
+                        "mode": "react",
+                        "max_iterations": 1,
+                    },
                 ],
                 "final_format": "",
             }

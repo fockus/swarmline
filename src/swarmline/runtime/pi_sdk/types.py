@@ -28,8 +28,12 @@ class PiSdkOptions:
 
     def __post_init__(self) -> None:
         if self.toolset not in {"none", "readonly", "coding"}:
-            raise ValueError("PiSdkOptions.toolset must be one of: none, readonly, coding")
+            raise ValueError(
+                "PiSdkOptions.toolset must be one of: none, readonly, coding"
+            )
         if self.session_mode not in {"memory", "persisted"}:
-            raise ValueError("PiSdkOptions.session_mode must be one of: memory, persisted")
+            raise ValueError(
+                "PiSdkOptions.session_mode must be one of: memory, persisted"
+            )
         if self.timeout_seconds <= 0:
             raise ValueError("PiSdkOptions.timeout_seconds must be positive")

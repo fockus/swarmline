@@ -86,11 +86,11 @@ async def run_planner(
 
     yield RuntimeEvent.status(f"План: {plan.goal} ({len(plan.steps)} шагов)")
     steps_preview = " -> ".join(
-        f"{idx}. {step.title} [{step.mode}]" for idx, step in enumerate(plan.steps, start=1)
+        f"{idx}. {step.title} [{step.mode}]"
+        for idx, step in enumerate(plan.steps, start=1)
     )
     if steps_preview:
         yield RuntimeEvent.status(f"Следующие шаги: {steps_preview}")
-
 
     step_results: list[str] = []
     new_messages: list[Message] = []
@@ -101,8 +101,9 @@ async def run_planner(
             f"Шаг {idx}/{len(plan.steps)}: {step.title} (режим: {step.mode})"
         )
 
-        step_context = "\n".join(step_results) if step_results else "Нет предыдущих шагов."
-
+        step_context = (
+            "\n".join(step_results) if step_results else "Нет предыдущих шагов."
+        )
 
         step_config = RuntimeConfig(
             runtime_name="thin",
@@ -130,7 +131,6 @@ async def run_planner(
                 start_time=start_time,
                 checkpoint=checkpoint,
             ):
-
                 if event.type in (
                     "tool_call_started",
                     "tool_call_finished",
@@ -170,7 +170,6 @@ async def run_planner(
                     return
 
         step_results.append(step_text)
-
 
     assembly_prompt = build_final_assembly_prompt(
         append_structured_output_instruction(

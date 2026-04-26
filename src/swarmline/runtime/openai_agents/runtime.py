@@ -16,7 +16,10 @@ from typing import Any
 import structlog
 
 from swarmline.runtime.openai_agents.event_mapper import map_run_error, map_stream_event
-from swarmline.runtime.openai_agents.tool_bridge import ToolExecutorFn, toolspecs_to_agent_tools
+from swarmline.runtime.openai_agents.tool_bridge import (
+    ToolExecutorFn,
+    toolspecs_to_agent_tools,
+)
 from swarmline.runtime.openai_agents.types import OpenAIAgentsConfig
 from swarmline.runtime.types import (
     Message,
@@ -92,7 +95,9 @@ class OpenAIAgentsRuntime:
             return
 
         # Convert Swarmline tools to OpenAI Agent tools
-        agent_tools = toolspecs_to_agent_tools(active_tools, executor=self._tool_executor)
+        agent_tools = toolspecs_to_agent_tools(
+            active_tools, executor=self._tool_executor
+        )
 
         # Build MCP servers list
         mcp_servers = []
@@ -217,9 +222,13 @@ class OpenAIAgentsRuntime:
             params: dict[str, Any] = {
                 "command": "npx",
                 "args": [
-                    "-y", "codex", "mcp-server",
-                    "--sandbox", cfg.codex_sandbox,
-                    "--approval-policy", cfg.codex_approval_policy,
+                    "-y",
+                    "codex",
+                    "mcp-server",
+                    "--sandbox",
+                    cfg.codex_sandbox,
+                    "--approval-policy",
+                    cfg.codex_approval_policy,
                 ],
             }
             if cfg.env:

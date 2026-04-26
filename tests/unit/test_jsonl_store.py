@@ -169,7 +169,9 @@ async def test_roundtrip_tool_message_with_name(store: JsonlMessageStore) -> Non
 async def test_roundtrip_tool_calls_json(store: JsonlMessageStore) -> None:
     """Messages with tool_calls serialize/deserialize correctly."""
     calls = [{"id": "tc1", "name": "calculator", "arguments": {"expr": "2+2"}}]
-    await store.save_message("bob", "t1", "assistant", "Let me calculate.", tool_calls=calls)
+    await store.save_message(
+        "bob", "t1", "assistant", "Let me calculate.", tool_calls=calls
+    )
 
     msgs = await store.get_messages("bob", "t1")
 

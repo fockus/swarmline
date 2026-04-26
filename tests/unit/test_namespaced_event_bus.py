@@ -42,7 +42,9 @@ class TestExactMatching:
         cb.assert_called_once_with({"task_id": "t1"})
 
     @pytest.mark.asyncio
-    async def test_exact_match_different_namespace_not_called(self, bus: NamespacedEventBus) -> None:
+    async def test_exact_match_different_namespace_not_called(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("goal-a:task_completed", cb)
         await bus.emit("goal-b:task_completed", {"task_id": "t1"})
@@ -58,7 +60,9 @@ class TestNamespaceWildcard:
     """Subscribe to all events in a namespace via 'namespace:*'."""
 
     @pytest.mark.asyncio
-    async def test_namespace_wildcard_matches_any_event(self, bus: NamespacedEventBus) -> None:
+    async def test_namespace_wildcard_matches_any_event(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("goal-a:*", cb)
         await bus.emit("goal-a:task_completed", {"x": 1})
@@ -66,7 +70,9 @@ class TestNamespaceWildcard:
         assert cb.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_namespace_wildcard_ignores_other_namespaces(self, bus: NamespacedEventBus) -> None:
+    async def test_namespace_wildcard_ignores_other_namespaces(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("goal-a:*", cb)
         await bus.emit("goal-b:task_completed", {"x": 1})
@@ -82,7 +88,9 @@ class TestEventTypeWildcard:
     """Subscribe to an event_type across all namespaces via '*:event_type'."""
 
     @pytest.mark.asyncio
-    async def test_event_type_wildcard_matches_any_namespace(self, bus: NamespacedEventBus) -> None:
+    async def test_event_type_wildcard_matches_any_namespace(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("*:budget_threshold", cb)
         await bus.emit("goal-a:budget_threshold", {"pct": 80})
@@ -90,7 +98,9 @@ class TestEventTypeWildcard:
         assert cb.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_event_type_wildcard_ignores_other_events(self, bus: NamespacedEventBus) -> None:
+    async def test_event_type_wildcard_ignores_other_events(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("*:budget_threshold", cb)
         await bus.emit("goal-a:task_completed", {"x": 1})
@@ -106,7 +116,9 @@ class TestGlobalWildcard:
     """Subscribe to all namespaced events via '*:*'."""
 
     @pytest.mark.asyncio
-    async def test_global_wildcard_matches_everything(self, bus: NamespacedEventBus) -> None:
+    async def test_global_wildcard_matches_everything(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("*:*", cb)
         await bus.emit("goal-a:task_completed", {"x": 1})
@@ -130,7 +142,9 @@ class TestNonNamespaced:
         cb.assert_called_once_with({"x": 1})
 
     @pytest.mark.asyncio
-    async def test_global_wildcard_does_not_match_plain_events(self, bus: NamespacedEventBus) -> None:
+    async def test_global_wildcard_does_not_match_plain_events(
+        self, bus: NamespacedEventBus
+    ) -> None:
         cb = MagicMock()
         bus.subscribe("*:*", cb)
         await bus.emit("task_completed", {"x": 1})
@@ -197,7 +211,9 @@ class TestFireAndForget:
     """Callback exceptions do not prevent other callbacks from firing."""
 
     @pytest.mark.asyncio
-    async def test_exception_does_not_block_others(self, bus: NamespacedEventBus) -> None:
+    async def test_exception_does_not_block_others(
+        self, bus: NamespacedEventBus
+    ) -> None:
         def bad_cb(data: dict) -> None:
             raise RuntimeError("boom")
 
@@ -208,7 +224,9 @@ class TestFireAndForget:
         good_cb.assert_called_once_with({"x": 1})
 
     @pytest.mark.asyncio
-    async def test_async_exception_does_not_block_others(self, bus: NamespacedEventBus) -> None:
+    async def test_async_exception_does_not_block_others(
+        self, bus: NamespacedEventBus
+    ) -> None:
         async def bad_cb(data: dict) -> None:
             raise RuntimeError("async boom")
 

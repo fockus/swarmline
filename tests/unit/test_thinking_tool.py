@@ -1,5 +1,4 @@
-"""Tests ThinkingTool - CoT + ReAct rassuzhdenie. TDD: RED -> GREEN -> REFACTOR.
-"""
+"""Tests ThinkingTool - CoT + ReAct rassuzhdenie. TDD: RED -> GREEN -> REFACTOR."""
 
 from __future__ import annotations
 

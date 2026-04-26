@@ -38,7 +38,9 @@ async def execute_agent_tool(
         final_text = ""
         final_seen = False
         async for event in run_fn(
-            messages=messages, system_prompt=system_prompt, active_tools=[],
+            messages=messages,
+            system_prompt=system_prompt,
+            active_tools=[],
         ):
             if event.is_error:
                 error_message = event.data.get("message") or "Sub-agent runtime failed"

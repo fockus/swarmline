@@ -289,7 +289,9 @@ class TestStreamReply:
         assert done.native_metadata == {"provider": "thin"}
 
     @pytest.mark.asyncio
-    async def test_stream_runtime_path_preserves_final_new_messages_in_history(self) -> None:
+    async def test_stream_runtime_path_preserves_final_new_messages_in_history(
+        self,
+    ) -> None:
         """canonical final.new_messages should savesya in session history."""
         mgr = InMemorySessionManager()
         fake_runtime = _FakeRuntime(
@@ -319,7 +321,12 @@ class TestStreamReply:
             events.append(event)
 
         assert [event.type for event in events] == ["text_delta", "done"]
-        assert [m.role for m in state.runtime_messages] == ["user", "assistant", "tool", "assistant"]
+        assert [m.role for m in state.runtime_messages] == [
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+        ]
         assert [m.content for m in state.runtime_messages[1:]] == [
             "Thinking",
             "42",
@@ -328,7 +335,9 @@ class TestStreamReply:
         assert state.runtime_messages[2].name == "calc"
 
     @pytest.mark.asyncio
-    async def test_stream_runtime_path_without_terminal_event_yields_error(self) -> None:
+    async def test_stream_runtime_path_without_terminal_event_yields_error(
+        self,
+    ) -> None:
         """silent EOF in runtime path not should schitatsya uspeshnym done."""
         mgr = InMemorySessionManager()
         fake_runtime = _FakeRuntime([RuntimeEvent.assistant_delta("partial")])
@@ -386,14 +395,26 @@ class TestStreamReply:
         assert restored.runtime is None
         assert restored.adapter is None
         assert restored.runtime_config is None
-        assert [m.role for m in restored.runtime_messages] == ["user", "assistant", "tool", "assistant"]
-        assert [m.content for m in restored.runtime_messages] == ["привет", "Thinking", "4", "ok"]
+        assert [m.role for m in restored.runtime_messages] == [
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+        ]
+        assert [m.content for m in restored.runtime_messages] == [
+            "привет",
+            "Thinking",
+            "4",
+            "ok",
+        ]
         assert restored.runtime_messages[2].name == "calc"
         assert restored.active_skill_ids == ["skill-1"]
         assert restored.active_tools[0].name == "calc"
 
     @pytest.mark.asyncio
-    async def test_stream_runtime_exception_yields_error_without_persisting_partial_history(self) -> None:
+    async def test_stream_runtime_exception_yields_error_without_persisting_partial_history(
+        self,
+    ) -> None:
         class BrokenRuntime:
             async def run(self, **kwargs: Any):
                 raise RuntimeError("boom-runtime")
@@ -445,7 +466,9 @@ class TestRunTurn:
         mgr = InMemorySessionManager()
         runtime_events = [
             RuntimeEvent.assistant_delta("ok"),
-            RuntimeEvent.final("ok", new_messages=[Message(role="assistant", content="ok")]),
+            RuntimeEvent.final(
+                "ok", new_messages=[Message(role="assistant", content="ok")]
+            ),
         ]
         fake_runtime = _FakeRuntime(runtime_events)
         state = SessionState(
@@ -469,7 +492,9 @@ class TestRunTurn:
         assert fake_runtime.calls[0]["system_prompt"] == "system"
 
     @pytest.mark.asyncio
-    async def test_run_turn_runtime_exception_without_partial_yields_error_event(self) -> None:
+    async def test_run_turn_runtime_exception_without_partial_yields_error_event(
+        self,
+    ) -> None:
         class BrokenRuntime:
             async def run(self, **kwargs: Any):
                 raise RuntimeError("boom-runtime")

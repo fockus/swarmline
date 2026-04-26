@@ -40,16 +40,24 @@ def toolspec_to_function_tool(
         try:
             parsed = json.loads(args) if args else {}
         except json.JSONDecodeError:
-            _log.warning("tool_invalid_json_args", tool=tool_name, args_preview=args[:200])
-            return json.dumps({"error": f"Invalid JSON arguments for tool '{tool_name}'"})
+            _log.warning(
+                "tool_invalid_json_args", tool=tool_name, args_preview=args[:200]
+            )
+            return json.dumps(
+                {"error": f"Invalid JSON arguments for tool '{tool_name}'"}
+            )
         if tool_executor is None:
             _log.warning("tool_no_executor", tool=tool_name)
-            return json.dumps({"error": f"No executor configured for tool '{tool_name}'"})
+            return json.dumps(
+                {"error": f"No executor configured for tool '{tool_name}'"}
+            )
         return await tool_executor(tool_name, parsed)
 
     params_schema = spec.parameters or {"type": "object", "properties": {}}
     # OpenAI strict mode rejects additionalProperties
-    clean_schema = {k: v for k, v in params_schema.items() if k != "additionalProperties"}
+    clean_schema = {
+        k: v for k, v in params_schema.items() if k != "additionalProperties"
+    }
 
     return FunctionTool(
         name=tool_name,

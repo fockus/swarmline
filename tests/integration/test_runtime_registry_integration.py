@@ -105,7 +105,14 @@ class TestFactoryBackwardCompatAllRuntimes:
         registry = get_default_registry()
         factory = RuntimeFactory(registry=registry)
 
-        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk"):
+        for name in (
+            "claude_sdk",
+            "deepagents",
+            "thin",
+            "cli",
+            "openai_agents",
+            "pi_sdk",
+        ):
             runtime = factory.create(config=RuntimeConfig(runtime_name=name))
             # May be real runtime or _ErrorRuntime (deps missing), but must not crash
             assert runtime is not None
@@ -116,7 +123,10 @@ class TestValidRuntimeNamesDynamic:
 
     def test_custom_name_in_valid_set_after_register(self) -> None:
         """Dynamic get_valid_runtime_names() includes custom registered runtimes."""
-        from swarmline.runtime.registry import get_default_registry, get_valid_runtime_names
+        from swarmline.runtime.registry import (
+            get_default_registry,
+            get_valid_runtime_names,
+        )
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="dyn_test", tier="light")

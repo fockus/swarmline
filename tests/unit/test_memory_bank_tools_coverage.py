@@ -83,19 +83,25 @@ class TestMemoryWrite:
     async def test_write_file(self) -> None:
         provider = InMemoryProvider()
         _, executors = create_memory_bank_tools(provider)
-        result = json.loads(await executors["memory_write"]({"path": "a.md", "content": "hi"}))
+        result = json.loads(
+            await executors["memory_write"]({"path": "a.md", "content": "hi"})
+        )
         assert result["status"] == "ok"
         assert provider._files["a.md"] == "hi"
 
     async def test_write_empty_path(self) -> None:
         provider = InMemoryProvider()
         _, executors = create_memory_bank_tools(provider)
-        result = json.loads(await executors["memory_write"]({"path": "", "content": "x"}))
+        result = json.loads(
+            await executors["memory_write"]({"path": "", "content": "x"})
+        )
         assert result["status"] == "error"
 
     async def test_write_error(self) -> None:
         _, executors = create_memory_bank_tools(ErrorProvider())
-        result = json.loads(await executors["memory_write"]({"path": "x", "content": "y"}))
+        result = json.loads(
+            await executors["memory_write"]({"path": "x", "content": "y"})
+        )
         assert result["status"] == "error"
 
 
@@ -106,19 +112,25 @@ class TestMemoryAppend:
         provider = InMemoryProvider()
         provider._files["log.md"] = "line1\n"
         _, executors = create_memory_bank_tools(provider)
-        result = json.loads(await executors["memory_append"]({"path": "log.md", "content": "line2\n"}))
+        result = json.loads(
+            await executors["memory_append"]({"path": "log.md", "content": "line2\n"})
+        )
         assert result["status"] == "ok"
         assert provider._files["log.md"] == "line1\nline2\n"
 
     async def test_append_empty_path(self) -> None:
         provider = InMemoryProvider()
         _, executors = create_memory_bank_tools(provider)
-        result = json.loads(await executors["memory_append"]({"path": "", "content": "x"}))
+        result = json.loads(
+            await executors["memory_append"]({"path": "", "content": "x"})
+        )
         assert result["status"] == "error"
 
     async def test_append_error(self) -> None:
         _, executors = create_memory_bank_tools(ErrorProvider())
-        result = json.loads(await executors["memory_append"]({"path": "x", "content": "y"}))
+        result = json.loads(
+            await executors["memory_append"]({"path": "x", "content": "y"})
+        )
         assert result["status"] == "error"
 
 
@@ -178,7 +190,13 @@ class TestCreateMemoryBankToolsSpecs:
         specs, executors = create_memory_bank_tools(provider)
         assert len(specs) == 5
         assert len(executors) == 5
-        for name in ["memory_read", "memory_write", "memory_append", "memory_list", "memory_delete"]:
+        for name in [
+            "memory_read",
+            "memory_write",
+            "memory_append",
+            "memory_list",
+            "memory_delete",
+        ]:
             assert name in specs
             assert name in executors
             assert specs[name].name == name

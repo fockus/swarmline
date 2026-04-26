@@ -18,7 +18,6 @@ from swarmline.pipeline.types import (
 
 
 class TestTypes:
-
     def test_pipeline_phase_defaults(self) -> None:
         p = PipelinePhase(id="p1", name="Plan", goal="Plan things")
         assert p.id == "p1"
@@ -33,7 +32,9 @@ class TestTypes:
         assert child.phase_id == "p1"
 
     def test_goal_acceptance_criteria(self) -> None:
-        g = Goal(id="g1", title="Test", acceptance_criteria=("tests pass", "lint clean"))
+        g = Goal(
+            id="g1", title="Test", acceptance_criteria=("tests pass", "lint clean")
+        )
         assert len(g.acceptance_criteria) == 2
 
     def test_cost_record_defaults(self) -> None:
@@ -44,8 +45,12 @@ class TestTypes:
 
     def test_cost_record_full(self) -> None:
         c = CostRecord(
-            agent_id="a1", task_id="t1", phase_id="plan",
-            cost_usd=0.05, tokens_in=100, tokens_out=200,
+            agent_id="a1",
+            task_id="t1",
+            phase_id="plan",
+            cost_usd=0.05,
+            tokens_in=100,
+            tokens_out=200,
             duration_seconds=1.5,
         )
         assert c.cost_usd == 0.05
@@ -58,8 +63,10 @@ class TestTypes:
 
     def test_budget_policy_full(self) -> None:
         p = BudgetPolicy(
-            max_total_usd=10.0, max_per_phase_usd=3.0,
-            max_per_agent_usd=1.0, warn_at_percent=75.0,
+            max_total_usd=10.0,
+            max_per_phase_usd=3.0,
+            max_per_agent_usd=1.0,
+            warn_at_percent=75.0,
         )
         assert p.max_total_usd == 10.0
 
@@ -83,15 +90,20 @@ class TestTypes:
 
 
 class TestProtocols:
-
     def test_quality_gate_is_runtime_checkable(self) -> None:
-        assert hasattr(QualityGate, "__protocol_attrs__") or hasattr(QualityGate, "_is_protocol")
+        assert hasattr(QualityGate, "__protocol_attrs__") or hasattr(
+            QualityGate, "_is_protocol"
+        )
 
     def test_cost_tracker_is_runtime_checkable(self) -> None:
-        assert hasattr(CostTracker, "__protocol_attrs__") or hasattr(CostTracker, "_is_protocol")
+        assert hasattr(CostTracker, "__protocol_attrs__") or hasattr(
+            CostTracker, "_is_protocol"
+        )
 
     def test_goal_decomposer_is_runtime_checkable(self) -> None:
-        assert hasattr(GoalDecomposer, "__protocol_attrs__") or hasattr(GoalDecomposer, "_is_protocol")
+        assert hasattr(GoalDecomposer, "__protocol_attrs__") or hasattr(
+            GoalDecomposer, "_is_protocol"
+        )
 
     def test_quality_gate_check_is_async(self) -> None:
         # Protocol methods are abstract, check via __abstractmethods__ or signature

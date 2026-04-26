@@ -85,10 +85,8 @@ class ModelRegistry:
         if name in self._aliases:
             return self._aliases[name]
 
-
         if name in self._valid_models:
             return name
-
 
         for full_name in sorted(self._valid_models):
             if full_name.startswith(name):
@@ -102,7 +100,6 @@ class ModelRegistry:
         if model_id in self._model_to_provider:
             return self._model_to_provider[model_id]
 
-
         resolved = self.resolve(model_id)
         return self._model_to_provider.get(resolved, "unknown")
 
@@ -114,7 +111,9 @@ class ModelRegistry:
     def list_models(self, provider: str | None = None) -> list[str]:
         """List models."""
         if provider:
-            return sorted(m for m, p in self._model_to_provider.items() if p == provider)
+            return sorted(
+                m for m, p in self._model_to_provider.items() if p == provider
+            )
         return sorted(self._valid_models)
 
     def list_aliases(self) -> dict[str, str]:

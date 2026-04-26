@@ -67,7 +67,9 @@ class TestToolExecutorLocal:
         async def greet(name: str) -> str:
             return f"Hello, {name}!"
 
-        executor = ToolExecutor(local_tools={"greet": greet.__tool_definition__.handler})
+        executor = ToolExecutor(
+            local_tools={"greet": greet.__tool_definition__.handler}
+        )
         result = await executor.execute("greet", {"name": "Alice"})
 
         assert result == "Hello, Alice!"
@@ -115,7 +117,9 @@ class TestToolExecutorMcp:
                 _ = (args, kwargs)
                 return _Response()
 
-        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client
+        )
 
         executor = ToolExecutor(mcp_servers={"iss": "https://example.test/mcp"})
         result = await executor.execute("mcp__iss__get_bonds", {"q": "test"})
@@ -150,7 +154,9 @@ class TestToolExecutorMcp:
                 _ = (args, kwargs)
                 raise httpx.TimeoutException("timeout")
 
-        monkeypatch.setattr("swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client)
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client
+        )
 
         executor = ToolExecutor(
             mcp_servers={"iss": "https://example.test/mcp"}, timeout_seconds=0.01

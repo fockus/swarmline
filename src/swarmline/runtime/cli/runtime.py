@@ -65,7 +65,9 @@ def _build_cli_input_payload(
     """Serialize runtime input according to the selected CLI protocol."""
     prompt = _build_stdin_payload(messages, system_prompt)
     if cli_config.input_format == "pi-rpc":
-        return json.dumps({"type": "prompt", "message": prompt}, ensure_ascii=False) + "\n"
+        return (
+            json.dumps({"type": "prompt", "message": prompt}, ensure_ascii=False) + "\n"
+        )
     return prompt
 
 
@@ -89,10 +91,8 @@ def _normalize_claude_command(command: list[str], output_format: str) -> list[st
         return list(command)
 
     normalized = [
-        "--output-format" if token == "--output" else token
-        for token in command
+        "--output-format" if token == "--output" else token for token in command
     ]
-
 
     prompt_placeholder = normalized[-1] == "-" if normalized else False
     core = normalized[:-1] if prompt_placeholder else normalized[:]
@@ -114,9 +114,9 @@ def _normalize_claude_command(command: list[str], output_format: str) -> list[st
 class CliAgentRuntime:
     """Run external CLI agents via subprocess + NDJSON parsing.
 
-  Implements AgentRuntime protocol. Parser is auto-selected based on
-  the command name (``Claude`` -> ClaudeNdJSONParser, else Generic).
-  """
+    Implements AgentRuntime protocol. Parser is auto-selected based on
+    the command name (``Claude`` -> ClaudeNdJSONParser, else Generic).
+    """
 
     def __init__(
         self,
@@ -126,13 +126,22 @@ class CliAgentRuntime:
     ) -> None:
         self._config = config
         self._cli_config = cli_config or CliConfig(
-            command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]
+            command=[
+                "claude",
+                "--print",
+                "--verbose",
+                "--output-format",
+                "stream-json",
+                "-",
+            ]
         )
         if parser is not None:
             self._parser = parser
         elif _is_claude_command(self._cli_config.command):
             self._parser = ClaudeNdjsonParser()
-        elif self._cli_config.output_format == "pi-rpc" or _is_pi_command(self._cli_config.command):
+        elif self._cli_config.output_format == "pi-rpc" or _is_pi_command(
+            self._cli_config.command
+        ):
             self._parser = PiRpcParser()
         else:
             self._parser = GenericNdjsonParser()
@@ -252,7 +261,9 @@ class CliAgentRuntime:
         except Exception:
             logger.exception("CliAgentRuntime.run() failed")
             yield RuntimeEvent.error(
-                RuntimeErrorData(kind="runtime_crash", message="Unexpected error in CLI runtime")
+                RuntimeErrorData(
+                    kind="runtime_crash", message="Unexpected error in CLI runtime"
+                )
             )
 
     def cancel(self) -> None:

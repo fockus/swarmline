@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from typing import Any, Protocol, cast
 
-from swarmline.runtime.thin.parsers import strip_markdown_fences as _strip_markdown_fences
+from swarmline.runtime.thin.parsers import (
+    strip_markdown_fences as _strip_markdown_fences,
+)
 
 
 class _StructuredOutputModel(Protocol):
@@ -21,12 +23,12 @@ class _StructuredOutputModel(Protocol):
 def validate_structured_output(text: str, output_type: _StructuredOutputModel) -> Any:
     """Parse JSON from text and validate against a Pydantic model.
 
-  Strips markdown fences before parsing. Returns a validated model instance.
+    Strips markdown fences before parsing. Returns a validated model instance.
 
-  Raises:
-    ValueError: if text is not valid JSON.
-    pydantic.ValidationError: if JSON does not match the model schema.
-  """
+    Raises:
+      ValueError: if text is not valid JSON.
+      pydantic.ValidationError: if JSON does not match the model schema.
+    """
     cleaned = _strip_markdown_fences(text).strip()
     try:
         json.loads(cleaned)  # validate JSON syntax first
@@ -47,15 +49,15 @@ def resolve_structured_output(
 ) -> Any | None:
     """Resolve structured output: validate via Pydantic if output_type set, else extract JSON.
 
-  Returns:
-    - Pydantic model instance if output_type is set and validation succeeds
-    - dict/list if output_format is set (no output_type) and JSON parses
-    - None if no structured output configured
+    Returns:
+      - Pydantic model instance if output_type is set and validation succeeds
+      - dict/list if output_format is set (no output_type) and JSON parses
+      - None if no structured output configured
 
-  Raises:
-    ValueError: if output_type is set but text is not valid JSON
-    pydantic.ValidationError: if output_type is set but JSON doesn't match schema
-  """
+    Raises:
+      ValueError: if output_type is set but text is not valid JSON
+      pydantic.ValidationError: if output_type is set but JSON doesn't match schema
+    """
     if output_type is not None:
         model = cast(_StructuredOutputModel, output_type)
         return validate_structured_output(text, model)
@@ -69,10 +71,10 @@ def try_resolve_structured_output(
 ) -> tuple[Any | None, str | None]:
     """Try to resolve structured output, returning (result, error_message).
 
-  If output_type is set and validation fails, returns (None, error_str).
-  If no output_type, falls back to extract_structured_output (never errors).
-  On success returns (parsed_output, None).
-  """
+    If output_type is set and validation fails, returns (None, error_str).
+    If no output_type, falls back to extract_structured_output (never errors).
+    On success returns (parsed_output, None).
+    """
     if output_type is not None:
         try:
             model = cast(_StructuredOutputModel, output_type)
@@ -134,7 +136,9 @@ def extract_structured_output(
     return None
 
 
-def normalize_output_schema(output_format: dict[str, Any] | None) -> dict[str, Any] | None:
+def normalize_output_schema(
+    output_format: dict[str, Any] | None,
+) -> dict[str, Any] | None:
     """Normalize output schema."""
     if not output_format:
         return None

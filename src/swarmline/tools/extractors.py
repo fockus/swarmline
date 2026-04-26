@@ -68,8 +68,7 @@ async def extract_jupyter(source: str | bytes) -> str:
         import nbformat  # ty: ignore[unresolved-import]  # optional dep
     except ImportError:
         raise ImportError(
-            "nbformat is required for Jupyter extraction. "
-            "Install: pip install nbformat"
+            "nbformat is required for Jupyter extraction. Install: pip install nbformat"
         ) from None
 
     if isinstance(source, bytes):

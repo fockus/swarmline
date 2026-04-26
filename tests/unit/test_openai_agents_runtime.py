@@ -208,7 +208,10 @@ class TestOpenAIAgentsRegistration:
 
     def test_registry_has_factory(self) -> None:
         """openai_agents factory is in the default registry."""
-        from swarmline.runtime.registry import get_default_registry, reset_default_registry
+        from swarmline.runtime.registry import (
+            get_default_registry,
+            reset_default_registry,
+        )
 
         reset_default_registry()
         registry = get_default_registry()
@@ -321,15 +324,21 @@ class TestToolBridge:
         from swarmline.runtime.types import ToolSpec
 
         specs = [
-            ToolSpec(name="remote_tool", description="Remote", parameters={}, is_local=False),
-            ToolSpec(name="local_tool", description="Local", parameters={}, is_local=True),
+            ToolSpec(
+                name="remote_tool", description="Remote", parameters={}, is_local=False
+            ),
+            ToolSpec(
+                name="local_tool", description="Local", parameters={}, is_local=True
+            ),
         ]
         result = toolspecs_to_agent_tools(specs)
         assert len(result) == 1
 
     def test_toolspec_to_function_tool_with_executor(self) -> None:
         """Tool with executor calls the executor."""
-        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.openai_agents.tool_bridge import (
+            toolspec_to_function_tool,
+        )
         from swarmline.runtime.types import ToolSpec
 
         calls: list[tuple[str, dict]] = []
@@ -338,23 +347,31 @@ class TestToolBridge:
             calls.append((name, kwargs))
             return '{"result": "ok"}'
 
-        spec = ToolSpec(name="my_tool", description="Test", parameters={}, is_local=True)
+        spec = ToolSpec(
+            name="my_tool", description="Test", parameters={}, is_local=True
+        )
         tool = toolspec_to_function_tool(spec, executor=mock_executor)
         assert tool is not None
 
     def test_toolspec_to_function_tool_no_executor(self) -> None:
         """Tool without executor returns error JSON."""
-        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.openai_agents.tool_bridge import (
+            toolspec_to_function_tool,
+        )
         from swarmline.runtime.types import ToolSpec
 
-        spec = ToolSpec(name="orphan", description="No exec", parameters={}, is_local=True)
+        spec = ToolSpec(
+            name="orphan", description="No exec", parameters={}, is_local=True
+        )
         tool = toolspec_to_function_tool(spec, executor=None)
         assert tool is not None
 
     @pytest.mark.asyncio
     async def test_on_invoke_calls_executor(self) -> None:
         """_on_invoke delegates to executor and returns result."""
-        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.openai_agents.tool_bridge import (
+            toolspec_to_function_tool,
+        )
         from swarmline.runtime.types import ToolSpec
 
         calls: list[tuple[str, dict]] = []
@@ -363,7 +380,9 @@ class TestToolBridge:
             calls.append((name, kwargs))
             return '{"result": "ok"}'
 
-        spec = ToolSpec(name="calc", description="Calculator", parameters={}, is_local=True)
+        spec = ToolSpec(
+            name="calc", description="Calculator", parameters={}, is_local=True
+        )
         tool = toolspec_to_function_tool(spec, executor=mock_executor)
         result = await tool.on_invoke_tool(None, '{"x": 1}')
         assert result == '{"result": "ok"}'
@@ -372,7 +391,9 @@ class TestToolBridge:
     @pytest.mark.asyncio
     async def test_on_invoke_invalid_json_returns_error(self) -> None:
         """_on_invoke with invalid JSON returns error instead of crashing."""
-        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.openai_agents.tool_bridge import (
+            toolspec_to_function_tool,
+        )
         from swarmline.runtime.types import ToolSpec
 
         spec = ToolSpec(name="t", description="T", parameters={}, is_local=True)
@@ -384,12 +405,14 @@ class TestToolBridge:
     @pytest.mark.asyncio
     async def test_on_invoke_no_executor_returns_error(self) -> None:
         """_on_invoke without executor returns error JSON."""
-        from swarmline.runtime.openai_agents.tool_bridge import toolspec_to_function_tool
+        from swarmline.runtime.openai_agents.tool_bridge import (
+            toolspec_to_function_tool,
+        )
         from swarmline.runtime.types import ToolSpec
 
         spec = ToolSpec(name="t", description="T", parameters={}, is_local=True)
         tool = toolspec_to_function_tool(spec, executor=None)
-        result = await tool.on_invoke_tool(None, '{}')
+        result = await tool.on_invoke_tool(None, "{}")
         assert "error" in result
         assert "No executor" in result
 
@@ -488,7 +511,9 @@ class TestOpenAIAgentsFactory:
 
         handler = MagicMock()
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr("swarmline.runtime.openai_agents.runtime.OpenAIAgentsRuntime", fake_cls)
+            mp.setattr(
+                "swarmline.runtime.openai_agents.runtime.OpenAIAgentsRuntime", fake_cls
+            )
             runtime = _create_openai_agents(
                 RuntimeConfig(runtime_name="openai_agents"),
                 tool_executors={"calc": handler},

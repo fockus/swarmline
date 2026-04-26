@@ -17,7 +17,6 @@ def _task(id: str, title: str = "Task", **kwargs) -> GraphTaskItem:
 
 
 class TestDefaultNamespace:
-
     def test_default_namespace_is_empty_string(self) -> None:
         board = InMemoryGraphTaskBoard()
         assert board.namespace == ""
@@ -40,7 +39,6 @@ class TestDefaultNamespace:
 
 
 class TestNamespaceIsolation:
-
     async def test_explicit_namespace(self) -> None:
         board = InMemoryGraphTaskBoard(namespace="goal-a")
         assert board.namespace == "goal-a"
@@ -110,7 +108,6 @@ class TestNamespaceIsolation:
 
 
 class TestNamespaceProperty:
-
     def test_namespace_property_returns_value(self) -> None:
         board = InMemoryGraphTaskBoard(namespace="my-ns")
         assert board.namespace == "my-ns"
@@ -122,7 +119,6 @@ class TestNamespaceProperty:
 
 
 class TestNamespacedScheduling:
-
     async def test_get_ready_tasks_isolated(self) -> None:
         board_a = InMemoryGraphTaskBoard(namespace="goal-a")
         board_b = InMemoryGraphTaskBoard(namespace="goal-b")

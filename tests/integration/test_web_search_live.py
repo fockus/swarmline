@@ -32,10 +32,14 @@ class TestDdgsLiveSearch:
         provider = DuckDuckGoSearchProvider(timeout=15)
         results = await provider.search("Python programming language", max_results=3)
 
-        assert len(results) > 0, "ddgs не вернул результатов — сеть недоступна или API изменился"
+        assert len(results) > 0, (
+            "ddgs не вернул результатов — сеть недоступна или API изменился"
+        )
         assert all(isinstance(r, SearchResult) for r in results)
         assert all(r.title for r in results), "Заголовки не должны быть пустыми"
-        assert all(r.url.startswith("http") for r in results), "URL должны начинаться с http"
+        assert all(r.url.startswith("http") for r in results), (
+            "URL должны начинаться с http"
+        )
 
     @pytest.mark.skipif(not _HAS_DDGS, reason="ddgs не установлен")
     async def test_ddgs_russian_query(self) -> None:

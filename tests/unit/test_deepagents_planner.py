@@ -1,5 +1,4 @@
-"""Tests DeepAgentsPlannerMode - TDD with mocknutym LangChain. Optional dependency: if langchain not ustanovlen -> error.
-"""
+"""Tests DeepAgentsPlannerMode - TDD with mocknutym LangChain. Optional dependency: if langchain not ustanovlen -> error."""
 
 from __future__ import annotations
 

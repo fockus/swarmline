@@ -39,13 +39,18 @@ class PersistentBudgetStore(Protocol):
     """Cross-run budget tracking with time windows. ISP: 4 methods."""
 
     async def record_cost(
-        self, scope: BudgetScope, amount_usd: float, description: str = "",
+        self,
+        scope: BudgetScope,
+        amount_usd: float,
+        description: str = "",
     ) -> None: ...
 
     async def get_usage(self, scope: BudgetScope, window: BudgetWindow) -> float: ...
 
     async def check_threshold(
-        self, scope: BudgetScope, window: BudgetWindow,
+        self,
+        scope: BudgetScope,
+        window: BudgetWindow,
     ) -> ThresholdResult: ...
 
     async def list_incidents(self, scope: BudgetScope) -> list[BudgetIncident]: ...
@@ -76,7 +81,10 @@ class InMemoryPersistentBudgetStore:
         self._thresholds[key] = threshold
 
     async def record_cost(
-        self, scope: BudgetScope, amount_usd: float, description: str = "",
+        self,
+        scope: BudgetScope,
+        amount_usd: float,
+        description: str = "",
     ) -> None:
         async with self._lock:
             event = CostEvent(
@@ -97,12 +105,12 @@ class InMemoryPersistentBudgetStore:
                     if c.scope == scope and c.timestamp >= cutoff
                 )
             # LIFETIME
-            return sum(
-                c.amount_usd for c in self._costs if c.scope == scope
-            )
+            return sum(c.amount_usd for c in self._costs if c.scope == scope)
 
     async def check_threshold(
-        self, scope: BudgetScope, window: BudgetWindow,
+        self,
+        scope: BudgetScope,
+        window: BudgetWindow,
     ) -> ThresholdResult:
         usage = await self.get_usage(scope, window)
         key = (scope.scope_type.value, scope.scope_id, window.value)
@@ -118,7 +126,9 @@ class InMemoryPersistentBudgetStore:
                 action=ThresholdAction.OK,
             )
 
-        percent = (usage / threshold.limit_usd * 100.0) if threshold.limit_usd > 0 else 0.0
+        percent = (
+            (usage / threshold.limit_usd * 100.0) if threshold.limit_usd > 0 else 0.0
+        )
 
         if percent >= 100.0 and threshold.hard_stop:
             action = ThresholdAction.STOP
@@ -160,15 +170,18 @@ class InMemoryPersistentBudgetStore:
         if self._bus is None:
             return
         try:
-            await self._bus.emit("pipeline.budget.threshold_exceeded", {
-                "scope_type": result.scope.scope_type.value,
-                "scope_id": result.scope.scope_id,
-                "window": result.window.value,
-                "usage_usd": result.usage_usd,
-                "limit_usd": result.limit_usd,
-                "percent": result.percent,
-                "action": result.action.value,
-            })
+            await self._bus.emit(
+                "pipeline.budget.threshold_exceeded",
+                {
+                    "scope_type": result.scope.scope_type.value,
+                    "scope_id": result.scope.scope_id,
+                    "window": result.window.value,
+                    "usage_usd": result.usage_usd,
+                    "limit_usd": result.limit_usd,
+                    "percent": result.percent,
+                    "action": result.action.value,
+                },
+            )
         except Exception:
             pass  # fire-and-forget
 
@@ -261,8 +274,13 @@ class SqlitePersistentBudgetStore:
             self._conn.commit()
 
     def _record_cost_sync(
-        self, cost_id: str, scope_type: str, scope_id: str,
-        amount_usd: float, description: str, ts: float,
+        self,
+        cost_id: str,
+        scope_type: str,
+        scope_id: str,
+        amount_usd: float,
+        description: str,
+        ts: float,
     ) -> None:
         with self._lock:
             self._conn.execute(
@@ -274,7 +292,10 @@ class SqlitePersistentBudgetStore:
             self._conn.commit()
 
     def _get_usage_sync(
-        self, scope_type: str, scope_id: str, cutoff: float,
+        self,
+        scope_type: str,
+        scope_id: str,
+        cutoff: float,
     ) -> float:
         with self._lock:
             cursor = self._conn.execute(
@@ -286,7 +307,10 @@ class SqlitePersistentBudgetStore:
         return float(row[0]) if row else 0.0
 
     def _get_threshold_sync(
-        self, scope_type: str, scope_id: str, window: str,
+        self,
+        scope_type: str,
+        scope_id: str,
+        window: str,
     ) -> BudgetThreshold | None:
         with self._lock:
             cursor = self._conn.execute(
@@ -311,21 +335,38 @@ class SqlitePersistentBudgetStore:
         )
 
     def _add_incident_sync(
-        self, incident_id: str, scope_type: str, scope_id: str,
-        window: str, usage_usd: float, limit_usd: float,
-        action: str, ts: float,
+        self,
+        incident_id: str,
+        scope_type: str,
+        scope_id: str,
+        window: str,
+        usage_usd: float,
+        limit_usd: float,
+        action: str,
+        ts: float,
     ) -> None:
         with self._lock:
             self._conn.execute(
                 "INSERT INTO budget_incidents "
                 "(id, scope_type, scope_id, window, usage_usd, limit_usd, action, timestamp) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (incident_id, scope_type, scope_id, window, usage_usd, limit_usd, action, ts),
+                (
+                    incident_id,
+                    scope_type,
+                    scope_id,
+                    window,
+                    usage_usd,
+                    limit_usd,
+                    action,
+                    ts,
+                ),
             )
             self._conn.commit()
 
     def _list_incidents_sync(
-        self, scope_type: str, scope_id: str,
+        self,
+        scope_type: str,
+        scope_id: str,
     ) -> list[BudgetIncident]:
         with self._lock:
             cursor = self._conn.execute(
@@ -354,14 +395,21 @@ class SqlitePersistentBudgetStore:
     # -- async API --
 
     async def record_cost(
-        self, scope: BudgetScope, amount_usd: float, description: str = "",
+        self,
+        scope: BudgetScope,
+        amount_usd: float,
+        description: str = "",
     ) -> None:
         cost_id = _generate_id()
         ts = time.time()
         await asyncio.to_thread(
             self._record_cost_sync,
-            cost_id, scope.scope_type.value, scope.scope_id,
-            amount_usd, description, ts,
+            cost_id,
+            scope.scope_type.value,
+            scope.scope_id,
+            amount_usd,
+            description,
+            ts,
         )
 
     async def get_usage(self, scope: BudgetScope, window: BudgetWindow) -> float:
@@ -371,16 +419,22 @@ class SqlitePersistentBudgetStore:
             cutoff = 0.0
         return await asyncio.to_thread(
             self._get_usage_sync,
-            scope.scope_type.value, scope.scope_id, cutoff,
+            scope.scope_type.value,
+            scope.scope_id,
+            cutoff,
         )
 
     async def check_threshold(
-        self, scope: BudgetScope, window: BudgetWindow,
+        self,
+        scope: BudgetScope,
+        window: BudgetWindow,
     ) -> ThresholdResult:
         usage = await self.get_usage(scope, window)
         threshold = await asyncio.to_thread(
             self._get_threshold_sync,
-            scope.scope_type.value, scope.scope_id, window.value,
+            scope.scope_type.value,
+            scope.scope_id,
+            window.value,
         )
 
         if threshold is None:
@@ -393,7 +447,9 @@ class SqlitePersistentBudgetStore:
                 action=ThresholdAction.OK,
             )
 
-        percent = (usage / threshold.limit_usd * 100.0) if threshold.limit_usd > 0 else 0.0
+        percent = (
+            (usage / threshold.limit_usd * 100.0) if threshold.limit_usd > 0 else 0.0
+        )
 
         if percent >= 100.0 and threshold.hard_stop:
             action = ThresholdAction.STOP
@@ -416,9 +472,14 @@ class SqlitePersistentBudgetStore:
             ts = time.time()
             await asyncio.to_thread(
                 self._add_incident_sync,
-                incident_id, scope.scope_type.value, scope.scope_id,
-                window.value, usage, threshold.limit_usd,
-                action.value, ts,
+                incident_id,
+                scope.scope_type.value,
+                scope.scope_id,
+                window.value,
+                usage,
+                threshold.limit_usd,
+                action.value,
+                ts,
             )
             await self._emit_event(result)
 
@@ -427,7 +488,8 @@ class SqlitePersistentBudgetStore:
     async def list_incidents(self, scope: BudgetScope) -> list[BudgetIncident]:
         return await asyncio.to_thread(
             self._list_incidents_sync,
-            scope.scope_type.value, scope.scope_id,
+            scope.scope_type.value,
+            scope.scope_id,
         )
 
     async def _emit_event(self, result: ThresholdResult) -> None:
@@ -435,15 +497,18 @@ class SqlitePersistentBudgetStore:
         if self._bus is None:
             return
         try:
-            await self._bus.emit("pipeline.budget.threshold_exceeded", {
-                "scope_type": result.scope.scope_type.value,
-                "scope_id": result.scope.scope_id,
-                "window": result.window.value,
-                "usage_usd": result.usage_usd,
-                "limit_usd": result.limit_usd,
-                "percent": result.percent,
-                "action": result.action.value,
-            })
+            await self._bus.emit(
+                "pipeline.budget.threshold_exceeded",
+                {
+                    "scope_type": result.scope.scope_type.value,
+                    "scope_id": result.scope.scope_id,
+                    "window": result.window.value,
+                    "usage_usd": result.usage_usd,
+                    "limit_usd": result.limit_usd,
+                    "percent": result.percent,
+                    "action": result.action.value,
+                },
+            )
         except Exception:
             pass  # fire-and-forget
 

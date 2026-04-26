@@ -20,12 +20,12 @@ class NdjsonParser(Protocol):
 class ClaudeNdjsonParser:
     """Parse Claude Code stream-JSON NDJSON output into RuntimeEvents.
 
-  Supported event mappings:
-  - assistant + text content -> RuntimeEvent.assistant_delta
-  - assistant + tool_use content -> RuntimeEvent.tool_call_started
-  - result -> RuntimeEvent.final
-  - invalid JSON / unknown type -> None
-  """
+    Supported event mappings:
+    - assistant + text content -> RuntimeEvent.assistant_delta
+    - assistant + tool_use content -> RuntimeEvent.tool_call_started
+    - result -> RuntimeEvent.final
+    - invalid JSON / unknown type -> None
+    """
 
     def parse_line(self, line: str) -> RuntimeEvent | None:
         """Parse a Claude Code NDJSON line."""
@@ -76,9 +76,9 @@ class ClaudeNdjsonParser:
 class GenericNdjsonParser:
     """Fallback parser: wraps raw JSON as RuntimeEvent status data.
 
-  Any valid JSON object is passed through as a status event.
-  Invalid JSON returns None.
-  """
+    Any valid JSON object is passed through as a status event.
+    Invalid JSON returns None.
+    """
 
     def parse_line(self, line: str) -> RuntimeEvent | None:
         """Parse a generic NDJSON line."""
@@ -122,7 +122,9 @@ class PiRpcParser:
                 correlation_id=str(data.get("toolCallId", "")),
             )
         if event_type == "tool_execution_update":
-            return RuntimeEvent.status(_summarize_tool_result(data.get("partialResult")))
+            return RuntimeEvent.status(
+                _summarize_tool_result(data.get("partialResult"))
+            )
         if event_type == "tool_execution_end":
             return RuntimeEvent.tool_call_finished(
                 name=str(data.get("toolName", "")),
@@ -157,7 +159,9 @@ class PiRpcParser:
             return RuntimeEvent.status("PI queue updated")
         if event_type == "extension_ui_request":
             return RuntimeEvent.user_input_requested(
-                prompt=str(data.get("title") or data.get("message") or data.get("method") or ""),
+                prompt=str(
+                    data.get("title") or data.get("message") or data.get("method") or ""
+                ),
                 interrupt_id=str(data.get("id", "")),
             )
         if event_type == "extension_error":

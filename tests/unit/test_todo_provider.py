@@ -157,12 +157,24 @@ class TestInMemoryTodoProvider:
 
         await provider.write_todos(
             [
-                TodoItem(id="1", content="old", status="pending", created_at=now, updated_at=now),
+                TodoItem(
+                    id="1",
+                    content="old",
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
+                ),
             ]
         )
         await provider.write_todos(
             [
-                TodoItem(id="2", content="new", status="pending", created_at=now, updated_at=now),
+                TodoItem(
+                    id="2",
+                    content="new",
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
+                ),
             ]
         )
 
@@ -179,7 +191,13 @@ class TestInMemoryTodoProvider:
         now = datetime.now(tz=UTC)
 
         items = [
-            TodoItem(id=str(i), content=f"t{i}", status="pending", created_at=now, updated_at=now)
+            TodoItem(
+                id=str(i),
+                content=f"t{i}",
+                status="pending",
+                created_at=now,
+                updated_at=now,
+            )
             for i in range(5)
         ]
         with pytest.raises(ValueError, match="max_todos"):
@@ -197,7 +215,11 @@ class TestInMemoryTodoProvider:
         await p1.write_todos(
             [
                 TodoItem(
-                    id="1", content="alice task", status="pending", created_at=now, updated_at=now
+                    id="1",
+                    content="alice task",
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
                 ),
             ]
         )

@@ -23,7 +23,9 @@ class DeepAgentsSubagentOrchestrator(ThinSubagentOrchestrator):
     ) -> None:
         super().__init__(max_concurrent=max_concurrent)
         self._runtime_factory = runtime_factory
-        self._runtime_config = runtime_config or RuntimeConfig(runtime_name="deepagents")
+        self._runtime_config = runtime_config or RuntimeConfig(
+            runtime_name="deepagents"
+        )
 
     def _create_runtime(self, spec: SubagentSpec) -> _DeepAgentsWorkerRuntime:
         runtime = (

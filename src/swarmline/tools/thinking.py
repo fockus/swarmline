@@ -17,7 +17,7 @@ _THINKING_SCHEMA: dict = {
     "properties": {
         "thought": {
             "type": "string",
-        "description": "Agent reasoning: situation analysis, conclusions, hypotheses.",
+            "description": "Agent reasoning: situation analysis, conclusions, hypotheses.",
         },
         "next_steps": {
             "type": "array",
@@ -43,7 +43,9 @@ async def thinking_executor(args: dict) -> str:
         return json.dumps({"status": "error", "message": "thought cannot be empty"})
 
     if not next_steps or not isinstance(next_steps, list) or len(next_steps) == 0:
-        return json.dumps({"status": "error", "message": "next_steps is required (at least 1 step)"})
+        return json.dumps(
+            {"status": "error", "message": "next_steps is required (at least 1 step)"}
+        )
 
     return json.dumps(
         {

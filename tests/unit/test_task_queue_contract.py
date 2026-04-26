@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 class _ValidTaskQueue:
     """Minimal valid implementation for protocol shape tests."""
 
@@ -45,7 +46,8 @@ class _ValidTaskQueue:
         return False
 
     async def list_tasks(
-        self, filters: TaskFilter | None = None,
+        self,
+        filters: TaskFilter | None = None,
     ) -> list[TaskItem]:
         return []
 
@@ -74,6 +76,7 @@ def _task(
 # Part 1: Protocol shape tests
 # ---------------------------------------------------------------------------
 
+
 class TestTaskQueueProtocol:
     """Contract tests for TaskQueue Protocol shape."""
 
@@ -87,7 +90,8 @@ class TestTaskQueueProtocol:
         methods = [
             name
             for name, _ in inspect.getmembers(
-                TaskQueue, predicate=inspect.isfunction,
+                TaskQueue,
+                predicate=inspect.isfunction,
             )
             if not name.startswith("_")
         ]
@@ -98,7 +102,8 @@ class TestTaskQueueProtocol:
         methods = {
             name
             for name, _ in inspect.getmembers(
-                TaskQueue, predicate=inspect.isfunction,
+                TaskQueue,
+                predicate=inspect.isfunction,
             )
             if not name.startswith("_")
         }
@@ -107,14 +112,13 @@ class TestTaskQueueProtocol:
     def test_task_queue_all_methods_are_async(self) -> None:
         for name in ("put", "get", "complete", "cancel", "list_tasks"):
             method = getattr(TaskQueue, name)
-            assert inspect.iscoroutinefunction(method), (
-                f"{name} must be async"
-            )
+            assert inspect.iscoroutinefunction(method), f"{name} must be async"
 
 
 # ---------------------------------------------------------------------------
 # Part 2: Behavioral contract tests (parametrized fixture)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(params=["inmemory", "sqlite"])
 def queue(request: pytest.FixtureRequest, tmp_path):

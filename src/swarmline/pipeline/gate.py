@@ -21,7 +21,9 @@ class CompositeGate:
         details_parts: list[str] = []
         for gate in self._gates:
             result = await gate.check(phase_id, results)
-            details_parts.append(f"{result.gate_name}: {'PASS' if result.passed else 'FAIL'}")
+            details_parts.append(
+                f"{result.gate_name}: {'PASS' if result.passed else 'FAIL'}"
+            )
             if not result.passed:
                 return GateResult(
                     passed=False,

@@ -132,7 +132,15 @@ class TestBuiltinRegistration:
 
         registry = get_default_registry()
         available = registry.list_available()
-        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"):
+        for name in (
+            "claude_sdk",
+            "deepagents",
+            "thin",
+            "cli",
+            "openai_agents",
+            "pi_sdk",
+            "headless",
+        ):
             assert name in available
 
     def test_is_registered_builtins(self) -> None:
@@ -140,7 +148,15 @@ class TestBuiltinRegistration:
         from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
-        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"):
+        for name in (
+            "claude_sdk",
+            "deepagents",
+            "thin",
+            "cli",
+            "openai_agents",
+            "pi_sdk",
+            "headless",
+        ):
             assert registry.is_registered(name)
 
     def test_get_capabilities_builtins(self) -> None:
@@ -148,7 +164,15 @@ class TestBuiltinRegistration:
         from swarmline.runtime.registry import get_default_registry
 
         registry = get_default_registry()
-        for name in ("claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"):
+        for name in (
+            "claude_sdk",
+            "deepagents",
+            "thin",
+            "cli",
+            "openai_agents",
+            "pi_sdk",
+            "headless",
+        ):
             caps = registry.get_capabilities(name)
             assert caps is not None
             assert caps.runtime_name == name
@@ -174,7 +198,10 @@ class TestCustomRuntimeRegistration:
 
     def test_custom_runtime_in_valid_names(self) -> None:
         """Registered custom runtime passes RuntimeConfig validation."""
-        from swarmline.runtime.registry import get_default_registry, get_valid_runtime_names
+        from swarmline.runtime.registry import (
+            get_default_registry,
+            get_valid_runtime_names,
+        )
 
         registry = get_default_registry()
         caps = RuntimeCapabilities(runtime_name="my_rt", tier="light")
@@ -332,8 +359,7 @@ class TestThreadSafety:
                 errors.append(e)
 
         threads = [
-            threading.Thread(target=register_many, args=(f"t{t}",))
-            for t in range(4)
+            threading.Thread(target=register_many, args=(f"t{t}",)) for t in range(4)
         ]
         for t in threads:
             t.start()

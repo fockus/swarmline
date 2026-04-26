@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 class CancellationToken:
     """Cooperative cancellation token for agent runtime loops.
 
-  Thread-safe: cancel() and on_cancel() can be called from any thread.
-  Callbacks registered after cancel() are invoked immediately.
-  """
+    Thread-safe: cancel() and on_cancel() can be called from any thread.
+    Callbacks registered after cancel() are invoked immediately.
+    """
 
     _cancelled: bool = field(default=False, init=False)
     _callbacks: list[Callable[[], None]] = field(default_factory=list, init=False)
@@ -36,9 +36,9 @@ class CancellationToken:
     def cancel(self) -> None:
         """Signal cancellation and invoke all registered callbacks.
 
-    Idempotent: calling cancel() multiple times is safe.
-    Callbacks are invoked only on the first cancel() call.
-    """
+        Idempotent: calling cancel() multiple times is safe.
+        Callbacks are invoked only on the first cancel() call.
+        """
         with self._lock:
             if self._cancelled:
                 return
@@ -54,8 +54,8 @@ class CancellationToken:
     def on_cancel(self, callback: Callable[[], None]) -> None:
         """Register a callback to be invoked on cancellation.
 
-    If already cancelled, the callback is invoked immediately.
-    """
+        If already cancelled, the callback is invoked immediately.
+        """
         with self._lock:
             if self._cancelled:
                 invoke_now = True

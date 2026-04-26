@@ -132,7 +132,9 @@ class TestRetryPolicyProtocol:
 
     def test_custom_implementation_satisfies_protocol(self) -> None:
         class CustomRetry:
-            def should_retry(self, error: Exception, attempt: int) -> tuple[bool, float]:
+            def should_retry(
+                self, error: Exception, attempt: int
+            ) -> tuple[bool, float]:
                 return False, 0.0
 
         assert isinstance(CustomRetry(), RetryPolicy)

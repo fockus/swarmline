@@ -128,15 +128,21 @@ def create_subagent_executor(
             # --- validate task ---
             task = args.get("task")
             if not task or not str(task).strip():
-                return _json_error("Missing required argument: 'task' must be a non-empty string.")
+                return _json_error(
+                    "Missing required argument: 'task' must be a non-empty string."
+                )
 
             task = str(task).strip()
-            system_prompt = str(args.get("system_prompt", "You are a helpful assistant")).strip()
+            system_prompt = str(
+                args.get("system_prompt", "You are a helpful assistant")
+            ).strip()
 
             # --- resolve tools ---
             requested_names: list[str] | None = args.get("tools")
             if requested_names is not None:
-                child_tools = [tools_by_name[n] for n in requested_names if n in tools_by_name]
+                child_tools = [
+                    tools_by_name[n] for n in requested_names if n in tools_by_name
+                ]
             else:
                 child_tools = list(parent_tools)
 
@@ -163,11 +169,13 @@ def create_subagent_executor(
 
             # --- background: return immediately ---
             if run_in_background:
-                return json.dumps({
-                    "agent_id": agent_id,
-                    "status": "spawned",
-                    "message": "Agent spawned in background. Use monitor_agent to check status.",
-                })
+                return json.dumps(
+                    {
+                        "agent_id": agent_id,
+                        "status": "spawned",
+                        "message": "Agent spawned in background. Use monitor_agent to check status.",
+                    }
+                )
 
             # --- foreground: wait with timeout ---
             result = await asyncio.wait_for(
@@ -178,17 +186,21 @@ def create_subagent_executor(
             # --- map result to JSON ---
             state = result.status.state
             if state == "failed":
-                return json.dumps({
-                    "agent_id": result.agent_id,
-                    "status": "failed",
-                    "error": result.status.error or "Unknown error",
-                })
+                return json.dumps(
+                    {
+                        "agent_id": result.agent_id,
+                        "status": "failed",
+                        "error": result.status.error or "Unknown error",
+                    }
+                )
 
-            return json.dumps({
-                "agent_id": result.agent_id,
-                "status": "completed",
-                "result": result.output,
-            })
+            return json.dumps(
+                {
+                    "agent_id": result.agent_id,
+                    "status": "completed",
+                    "result": result.output,
+                }
+            )
 
         except asyncio.TimeoutError:
             if agent_id is not None:
@@ -222,7 +234,9 @@ def create_monitor_executor(
         try:
             agent_id = args.get("agent_id")
             if not agent_id or not str(agent_id).strip():
-                return _json_error("Missing required argument: 'agent_id' must be a non-empty string.")
+                return _json_error(
+                    "Missing required argument: 'agent_id' must be a non-empty string."
+                )
 
             agent_id = str(agent_id).strip()
             status = await orchestrator.get_status(agent_id)

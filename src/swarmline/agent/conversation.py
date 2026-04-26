@@ -69,11 +69,11 @@ class Conversation:
             )
         self._session_id = session_id
         memory_messages = await self._message_store.get_messages(
-            self._user_id, session_id, limit=2**31 - 1,
+            self._user_id,
+            session_id,
+            limit=2**31 - 1,
         )
-        self._history = [
-            Message.from_memory_message(mm) for mm in memory_messages
-        ]
+        self._history = [Message.from_memory_message(mm) for mm in memory_messages]
         if self._compaction_config and self._history:
             from swarmline.compaction import ConversationCompactionFilter
 
@@ -96,7 +96,10 @@ class Conversation:
         self._history.append(Message(role="user", content=effective_prompt))
 
         # Execute + collect
-        from swarmline.agent.agent import collect_stream_result, _runtime_messages_from_payloads
+        from swarmline.agent.agent import (
+            collect_stream_result,
+            _runtime_messages_from_payloads,
+        )
 
         collected = await collect_stream_result(self._execute(effective_prompt))
         result_payload = dict(collected)
@@ -107,7 +110,9 @@ class Conversation:
         if not has_error and new_messages:
             self._history.extend(new_messages)
         elif not has_error and result_payload["text"]:
-            self._history.append(Message(role="assistant", content=result_payload["text"]))
+            self._history.append(
+                Message(role="assistant", content=result_payload["text"])
+            )
 
         # Auto-persist new messages to store
         if self._message_store is not None:
@@ -236,9 +241,12 @@ class Conversation:
         async for event in self._adapter.stream_reply(prompt):
             yield event
 
-    async def _execute_agent_runtime(self, prompt: str, runtime_name: str) -> AsyncIterator[Any]:
+    async def _execute_agent_runtime(
+        self, prompt: str, runtime_name: str
+    ) -> AsyncIterator[Any]:
         """Multi-turn via AgentRuntime (accumulated messages)."""
         from swarmline.agent.agent import _ErrorEvent, _RuntimeEventAdapter
+
         async for event in run_portable_runtime(
             agent_config=self._agent.config,
             runtime_name=runtime_name,

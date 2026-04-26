@@ -10,7 +10,12 @@ from swarmline.runtime.structured_output import try_resolve_structured_output
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.helpers import _build_metrics
 from swarmline.runtime.thin.parsers import parse_envelope
-from swarmline.runtime.types import Message, RuntimeConfig, RuntimeErrorData, RuntimeEvent
+from swarmline.runtime.types import (
+    Message,
+    RuntimeConfig,
+    RuntimeErrorData,
+    RuntimeEvent,
+)
 
 _RETRY_INSTRUCTION = (
     "Previous response was not valid JSON matching the schema. "
@@ -76,7 +81,9 @@ def _make_final_event(
         tokens_out=usage["output_tokens"],
     )
     new_messages = list(new_messages_prefix or [])
-    new_messages.append(Message(role="assistant", content=text, metadata=assistant_metadata))
+    new_messages.append(
+        Message(role="assistant", content=text, metadata=assistant_metadata)
+    )
     return RuntimeEvent.final(
         text=text,
         new_messages=new_messages,

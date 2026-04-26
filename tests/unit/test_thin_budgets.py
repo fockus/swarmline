@@ -12,7 +12,9 @@ from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSp
 class MockLLM:
     """Mock LLM: vechnye tool_call for testirovaniya limitov."""
 
-    def __init__(self, response: str | None = None, responses: list[str] | None = None) -> None:
+    def __init__(
+        self, response: str | None = None, responses: list[str] | None = None
+    ) -> None:
         self._response = response
         self._responses = responses or []
         self._idx = 0
@@ -27,7 +29,9 @@ class MockLLM:
         return self._response or ""
 
 
-async def collect(runtime: ThinRuntime, config: RuntimeConfig | None = None) -> list[RuntimeEvent]:
+async def collect(
+    runtime: ThinRuntime, config: RuntimeConfig | None = None
+) -> list[RuntimeEvent]:
     events = []
     async for ev in runtime.run(
         messages=[Message(role="user", content="test")],
@@ -59,7 +63,9 @@ class TestLoopLimit:
             local_tools={"calc": lambda args: {"r": 1}},
         )
 
-        config = RuntimeConfig(runtime_name="thin", max_iterations=3, max_tool_calls=100)
+        config = RuntimeConfig(
+            runtime_name="thin", max_iterations=3, max_tool_calls=100
+        )
         events = await collect(runtime, config)
 
         errors = [e for e in events if e.type == "error"]

@@ -84,7 +84,9 @@ class MixedRuntimeExecutor:
             state["__runtime_executions__"] = executions
             return state
 
-        return await wf.execute(initial_state, node_interceptor=_observability_interceptor)
+        return await wf.execute(
+            initial_state, node_interceptor=_observability_interceptor
+        )
 
 
 def _build_active_tools(local_tools: dict[str, Callable[..., Any]]) -> list[ToolSpec]:

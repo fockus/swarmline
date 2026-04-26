@@ -43,7 +43,6 @@ def _task_with_message(text: str, task_id: str = "t1") -> Task:
 
 
 class TestAdapterAgentCard:
-
     def test_agent_card_has_name_and_url(self) -> None:
         adapter = SwarmlineA2AAdapter(
             _mock_agent(), name="TestBot", url="http://localhost:9000"
@@ -58,7 +57,9 @@ class TestAdapterAgentCard:
 
     def test_agent_card_with_skills(self) -> None:
         skills = [AgentSkill(id="search", name="Search")]
-        adapter = SwarmlineA2AAdapter(_mock_agent(), url="http://test:8000", skills=skills)
+        adapter = SwarmlineA2AAdapter(
+            _mock_agent(), url="http://test:8000", skills=skills
+        )
         assert len(adapter.agent_card.skills) == 1
         assert adapter.agent_card.skills[0].id == "search"
 
@@ -69,7 +70,6 @@ class TestAdapterAgentCard:
 
 
 class TestAdapterHandleTask:
-
     async def test_handle_task_success(self) -> None:
         agent = _mock_agent(text="Hello from agent")
         adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
@@ -125,7 +125,6 @@ class TestAdapterHandleTask:
 
 
 class TestAdapterHandleTaskStreaming:
-
     async def test_streaming_emits_working_then_completed(self) -> None:
         agent = MagicMock()
 
@@ -133,6 +132,7 @@ class TestAdapterHandleTaskStreaming:
             class E:
                 def __init__(self, **kw: Any) -> None:
                     self.__dict__.update(kw)
+
             yield E(type="text_delta", text="Hello ")
             yield E(type="done", text="Hello World", is_final=True)
 
@@ -157,7 +157,6 @@ class TestAdapterHandleTaskStreaming:
 
 
 class TestAdapterTaskManagement:
-
     async def test_get_task_after_handle(self) -> None:
         agent = _mock_agent()
         adapter = SwarmlineA2AAdapter(agent, url="http://test:8000")
@@ -196,7 +195,6 @@ class TestAdapterTaskManagement:
 
 
 class TestExtractUserText:
-
     def test_extracts_text_from_user_message(self) -> None:
         task = _task_with_message("Hello world")
         assert _extract_user_text(task) == "Hello world"
@@ -206,9 +204,11 @@ class TestExtractUserText:
         assert _extract_user_text(task) == ""
 
     def test_returns_last_user_message(self) -> None:
-        task = Task(messages=[
-            Message(role="user", parts=[TextPart(text="First")]),
-            Message(role="agent", parts=[TextPart(text="Reply")]),
-            Message(role="user", parts=[TextPart(text="Second")]),
-        ])
+        task = Task(
+            messages=[
+                Message(role="user", parts=[TextPart(text="First")]),
+                Message(role="agent", parts=[TextPart(text="Reply")]),
+                Message(role="user", parts=[TextPart(text="Second")]),
+            ]
+        )
         assert _extract_user_text(task) == "Second"

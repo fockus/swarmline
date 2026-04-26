@@ -1,5 +1,4 @@
-"""Tests for SessionRehydrator (sektsiya 8.4 arhitektury). Contract: build_rehydration_payload(ctx) -> Mapping with klyuchami: role_id, active_skill_ids, summary, last_messages, goal, phase_state ISP: konstruktor prinimaet 5 melkih protocolov, a not monolitnyy MemoryProvider.
-"""
+"""Tests for SessionRehydrator (sektsiya 8.4 arhitektury). Contract: build_rehydration_payload(ctx) -> Mapping with klyuchami: role_id, active_skill_ids, summary, last_messages, goal, phase_state ISP: konstruktor prinimaet 5 melkih protocolov, a not monolitnyy MemoryProvider."""
 
 from unittest.mock import AsyncMock
 
@@ -83,7 +82,9 @@ class TestBuildPayload:
         assert payload["role_id"] == "deposit_advisor"
 
     @pytest.mark.asyncio
-    async def test_returns_active_skills(self, rehydrator: DefaultSessionRehydrator) -> None:
+    async def test_returns_active_skills(
+        self, rehydrator: DefaultSessionRehydrator
+    ) -> None:
         """Payload contains active_skill_ids."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["active_skill_ids"] == ["finuslugi", "iss-price"]
@@ -95,21 +96,27 @@ class TestBuildPayload:
         assert "вкладами" in payload["summary"]
 
     @pytest.mark.asyncio
-    async def test_returns_last_messages(self, rehydrator: DefaultSessionRehydrator) -> None:
+    async def test_returns_last_messages(
+        self, rehydrator: DefaultSessionRehydrator
+    ) -> None:
         """Payload contains last N messages."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert len(payload["last_messages"]) == 2
         assert payload["last_messages"][0].role == "user"
 
     @pytest.mark.asyncio
-    async def test_returns_active_goal(self, rehydrator: DefaultSessionRehydrator) -> None:
+    async def test_returns_active_goal(
+        self, rehydrator: DefaultSessionRehydrator
+    ) -> None:
         """Payload contains aktivnuyu tsel."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["goal"].title == "Накопить 500к"
         assert payload["goal"].phase == "savings"
 
     @pytest.mark.asyncio
-    async def test_returns_phase_state(self, rehydrator: DefaultSessionRehydrator) -> None:
+    async def test_returns_phase_state(
+        self, rehydrator: DefaultSessionRehydrator
+    ) -> None:
         """Payload contains phase_state (R-703)."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["phase_state"] is not None
@@ -117,7 +124,9 @@ class TestBuildPayload:
         assert payload["phase_state"].notes == "50% от цели"
 
     @pytest.mark.asyncio
-    async def test_returns_prompt_hash(self, rehydrator: DefaultSessionRehydrator) -> None:
+    async def test_returns_prompt_hash(
+        self, rehydrator: DefaultSessionRehydrator
+    ) -> None:
         """Payload contains prompt_hash for diagnostics (GAP-2, §8.4)."""
         payload = await rehydrator.build_rehydration_payload(_make_ctx())
         assert payload["prompt_hash"] == "abc123def456"

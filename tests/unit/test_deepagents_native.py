@@ -94,7 +94,9 @@ class TestBuildDeepAgentsGraph:
             system_prompt="sys",
         )
 
-    def test_validate_native_backend_config_requires_backend_for_native_builtins(self) -> None:
+    def test_validate_native_backend_config_requires_backend_for_native_builtins(
+        self,
+    ) -> None:
         """Native built-ins without backend should fail-fast."""
         error = validate_native_backend_config(
             native_tool_names=["execute", "read_file"],
@@ -106,7 +108,9 @@ class TestBuildDeepAgentsGraph:
         assert "backend" in error.message
         assert error.details == {"native_tools": ["execute", "read_file"]}
 
-    def test_validate_native_backend_config_allows_no_backend_without_native_builtins(self) -> None:
+    def test_validate_native_backend_config_allows_no_backend_without_native_builtins(
+        self,
+    ) -> None:
         """If native built-ins are not requested, backend is not required."""
         error = validate_native_backend_config(
             native_tool_names=[],

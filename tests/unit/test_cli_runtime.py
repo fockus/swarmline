@@ -7,7 +7,11 @@ import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from swarmline.runtime.cli.parser import ClaudeNdjsonParser, GenericNdjsonParser, PiRpcParser
+from swarmline.runtime.cli.parser import (
+    ClaudeNdjsonParser,
+    GenericNdjsonParser,
+    PiRpcParser,
+)
 from swarmline.runtime.cli.types import CliConfig
 from swarmline.runtime.types import Message, RuntimeConfig
 
@@ -205,7 +209,9 @@ class TestCliRuntimeEnvironment:
         from swarmline.runtime.cli.runtime import _build_subprocess_env
 
         cli_config = CliConfig(command=["claude"], inherit_host_env=True)
-        with patch.dict("os.environ", {"PATH": "/usr/bin", "SECRET_TOKEN": "top-secret"}, clear=True):
+        with patch.dict(
+            "os.environ", {"PATH": "/usr/bin", "SECRET_TOKEN": "top-secret"}, clear=True
+        ):
             env = _build_subprocess_env(cli_config)
 
         assert env["SECRET_TOKEN"] == "top-secret"
@@ -223,10 +229,12 @@ class TestCliRuntimeRun:
         rt = CliAgentRuntime(config=config, cli_config=cli_config)
 
         # Mock subprocess
-        ndjson_line = json.dumps({
-            "type": "assistant",
-            "message": {"content": [{"type": "text", "text": "hello"}]},
-        })
+        ndjson_line = json.dumps(
+            {
+                "type": "assistant",
+                "message": {"content": [{"type": "text", "text": "hello"}]},
+            }
+        )
         result_line = json.dumps({"type": "result", "result": "done"})
         stdout_data = f"{ndjson_line}\n{result_line}\n".encode()
 
@@ -258,12 +266,16 @@ class TestCliRuntimeRun:
         assert events[0].data["text"] == "hello"
         assert events[1].type == "final"
 
-    async def test_cli_runtime_run_normalizes_legacy_claude_command_before_exec(self) -> None:
+    async def test_cli_runtime_run_normalizes_legacy_claude_command_before_exec(
+        self,
+    ) -> None:
         """Legacy Claude command shape is upgraded before subprocess spawn."""
         from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")
-        cli_config = CliConfig(command=["claude", "--print", "--output", "stream-json", "-"])
+        cli_config = CliConfig(
+            command=["claude", "--print", "--output", "stream-json", "-"]
+        )
         rt = CliAgentRuntime(config=config, cli_config=cli_config)
 
         mock_process = MagicMock()
@@ -277,7 +289,9 @@ class TestCliRuntimeRun:
         mock_process.stderr.read = AsyncMock(return_value=b"")
         mock_process.wait = AsyncMock(return_value=0)
 
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process) as create_proc:
+        with patch(
+            "asyncio.create_subprocess_exec", return_value=mock_process
+        ) as create_proc:
             events = []
             async for event in rt.run(
                 messages=[Message(role="user", content="hi")],
@@ -326,7 +340,10 @@ class TestCliRuntimeRun:
 
         error_events = [e for e in events if e.type == "error"]
         assert len(error_events) == 1
-        assert "process_error" in str(error_events[0].data) or error_events[0].data.get("kind") == "runtime_crash"
+        assert (
+            "process_error" in str(error_events[0].data)
+            or error_events[0].data.get("kind") == "runtime_crash"
+        )
 
     async def test_cli_runtime_run_max_output_exceeded_yields_error(self) -> None:
         """Output exceeding max_output_bytes -> error event."""
@@ -407,7 +424,9 @@ class TestCliRuntimeCancel:
         rt = CliAgentRuntime(config=config)
         rt.cancel()  # Should not raise
 
-    async def test_cli_runtime_cancel_running_process_yields_cancelled_error(self) -> None:
+    async def test_cli_runtime_cancel_running_process_yields_cancelled_error(
+        self,
+    ) -> None:
         from swarmline.runtime.cli.runtime import CliAgentRuntime
 
         config = RuntimeConfig(runtime_name="cli")

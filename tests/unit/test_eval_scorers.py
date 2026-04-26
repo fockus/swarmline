@@ -26,7 +26,6 @@ def _case(expected: str | None = None, **ctx: object) -> EvalCase:
 
 
 class TestExactMatchScorer:
-
     @pytest.fixture
     def scorer(self) -> ExactMatchScorer:
         return ExactMatchScorer()
@@ -61,7 +60,6 @@ class TestExactMatchScorer:
 
 
 class TestContainsScorer:
-
     @pytest.fixture
     def scorer(self) -> ContainsScorer:
         return ContainsScorer()
@@ -90,7 +88,6 @@ class TestContainsScorer:
 
 
 class TestRegexScorer:
-
     async def test_pattern_matches(self) -> None:
         scorer = RegexScorer(pattern=r"\d{3}-\d{4}")
         result = await scorer.score(_case(), "call 555-1234 now")
@@ -118,7 +115,6 @@ class TestRegexScorer:
 
 
 class TestLatencyScorer:
-
     async def test_under_threshold(self) -> None:
         scorer = LatencyScorer(max_ms=500.0)
         # LatencyScorer reads latency_ms from context
@@ -142,7 +138,6 @@ class TestLatencyScorer:
 
 
 class TestCostScorer:
-
     async def test_under_budget(self) -> None:
         scorer = CostScorer(max_cost_usd=1.0)
         result = await scorer.score(_case(cost_usd=0.05), "output")

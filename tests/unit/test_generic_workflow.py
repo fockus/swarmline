@@ -1,5 +1,4 @@
-"""TDD RED: GenericWorkflowEngine - pluggable VerifierPort + ExecutorPort. CRP-5.2: Obobshchenie CodeWorkflowEngine for proizvolnyh verifiers.
-"""
+"""TDD RED: GenericWorkflowEngine - pluggable VerifierPort + ExecutorPort. CRP-5.2: Obobshchenie CodeWorkflowEngine for proizvolnyh verifiers."""
 
 from __future__ import annotations
 
@@ -22,7 +21,9 @@ class TestGenericWorkflowPassFirstTry:
         async def verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
             return True, "All checks passed"
 
-        engine = GenericWorkflowEngine(executor=executor, verifier=verifier, max_retries=3)
+        engine = GenericWorkflowEngine(
+            executor=executor, verifier=verifier, max_retries=3
+        )
         result = await engine.run("do something", context={})
 
         assert isinstance(result, GenericWorkflowResult)
@@ -52,7 +53,9 @@ class TestGenericWorkflowRetryOnFail:
                 return True, "Passed on retry"
             return False, "Quality check failed"
 
-        engine = GenericWorkflowEngine(executor=executor, verifier=verifier, max_retries=5)
+        engine = GenericWorkflowEngine(
+            executor=executor, verifier=verifier, max_retries=5
+        )
         result = await engine.run("task", context={})
 
         assert result.status == GenericWorkflowStatus.SUCCESS
@@ -75,7 +78,9 @@ class TestGenericWorkflowMaxRetriesExceeded:
         async def verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
             return False, "Still failing"
 
-        engine = GenericWorkflowEngine(executor=executor, verifier=verifier, max_retries=3)
+        engine = GenericWorkflowEngine(
+            executor=executor, verifier=verifier, max_retries=3
+        )
         result = await engine.run("task", context={})
 
         assert result.status == GenericWorkflowStatus.MAX_RETRIES_EXCEEDED
@@ -94,7 +99,9 @@ class TestGenericWorkflowCustomVerifier:
         async def content_executor(task: str, context: dict[str, Any]) -> str:
             return "This is a well-written article about Python."
 
-        async def quality_verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
+        async def quality_verifier(
+            output: str, context: dict[str, Any]
+        ) -> tuple[bool, str]:
             checks = []
             if len(output) > 10:
                 checks.append("length OK")
@@ -134,7 +141,9 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                     VerificationStatus,
                 )
 
-                return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
+                return VerificationResult(
+                    status=VerificationStatus.PASS, checks=(), summary="ok"
+                )
 
             async def verify_tests_substantive(self):
                 from swarmline.orchestration.verification_types import (
@@ -142,7 +151,9 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                     VerificationStatus,
                 )
 
-                return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
+                return VerificationResult(
+                    status=VerificationStatus.PASS, checks=(), summary="ok"
+                )
 
             async def verify_tests_before_code(self):
                 from swarmline.orchestration.verification_types import (
@@ -150,7 +161,9 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                     VerificationStatus,
                 )
 
-                return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
+                return VerificationResult(
+                    status=VerificationStatus.PASS, checks=(), summary="ok"
+                )
 
             async def verify_linters(self):
                 from swarmline.orchestration.verification_types import (
@@ -158,7 +171,9 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                     VerificationStatus,
                 )
 
-                return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
+                return VerificationResult(
+                    status=VerificationStatus.PASS, checks=(), summary="ok"
+                )
 
             async def verify_coverage(self, min_pct=85):
                 from swarmline.orchestration.verification_types import (
@@ -166,7 +181,9 @@ class TestGenericWorkflowCodeVerifierBackwardCompat:
                     VerificationStatus,
                 )
 
-                return VerificationResult(status=VerificationStatus.PASS, checks=(), summary="ok")
+                return VerificationResult(
+                    status=VerificationStatus.PASS, checks=(), summary="ok"
+                )
 
         verifier = MockVerifier()
         dod = DoDStateMachine(max_loops=3)
@@ -183,7 +200,9 @@ class TestGenericWorkflowWithWorkflowGraphNode:
     """GenericWorkflowEngine as node in WorkflowGraph."""
 
     async def test_generic_workflow_with_workflow_graph_node(self) -> None:
-        from swarmline.orchestration.generic_workflow_engine import GenericWorkflowEngine
+        from swarmline.orchestration.generic_workflow_engine import (
+            GenericWorkflowEngine,
+        )
         from swarmline.orchestration.workflow_graph import WorkflowGraph
 
         async def executor(task: str, context: dict[str, Any]) -> str:
@@ -192,7 +211,9 @@ class TestGenericWorkflowWithWorkflowGraphNode:
         async def verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
             return True, "OK"
 
-        engine = GenericWorkflowEngine(executor=executor, verifier=verifier, max_retries=2)
+        engine = GenericWorkflowEngine(
+            executor=executor, verifier=verifier, max_retries=2
+        )
 
         async def engine_node(state: dict[str, Any]) -> dict[str, Any]:
             result = await engine.run(state.get("task", "default"), context=state)

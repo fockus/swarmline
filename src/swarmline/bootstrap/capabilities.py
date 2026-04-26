@@ -94,9 +94,13 @@ def collect_capability_tools(
 
     if tool_budget_config is not None:
         selected_names = _select_tool_names_by_budget(all_specs, tool_budget_config)
-        all_specs = {name: spec for name, spec in all_specs.items() if name in selected_names}
+        all_specs = {
+            name: spec for name, spec in all_specs.items() if name in selected_names
+        }
         all_executors = {
-            name: executor for name, executor in all_executors.items() if name in selected_names
+            name: executor
+            for name, executor in all_executors.items()
+            if name in selected_names
         }
 
     return all_specs, all_executors
@@ -125,7 +129,16 @@ def _tool_group_for_name(tool_name: str) -> ToolGroup:
         return ToolGroup.MEMORY
     if tool_name.startswith("plan_"):
         return ToolGroup.PLANNING
-    if tool_name in {"bash", "read", "write", "edit", "multi_edit", "ls", "glob", "grep"}:
+    if tool_name in {
+        "bash",
+        "read",
+        "write",
+        "edit",
+        "multi_edit",
+        "ls",
+        "glob",
+        "grep",
+    }:
         return ToolGroup.SANDBOX
     if tool_name.startswith("web_"):
         return ToolGroup.WEB

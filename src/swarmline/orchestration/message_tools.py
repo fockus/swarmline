@@ -41,14 +41,14 @@ def create_send_message_tool(
 ) -> Callable[[dict[str, Any]], Coroutine[Any, Any, str]]:
     """Create an executor that sends messages through the MessageBus.
 
-  Args:
-    bus: MessageBus instance for the team.
-    sender_agent_id: Name/ID of the sending agent.
-    team_members: List of other agent names (required for broadcast '*').
+    Args:
+      bus: MessageBus instance for the team.
+      sender_agent_id: Name/ID of the sending agent.
+      team_members: List of other agent names (required for broadcast '*').
 
-  Returns:
-    Async callable that accepts a dict with 'to_agent' and 'content' keys.
-  """
+    Returns:
+      Async callable that accepts a dict with 'to_agent' and 'content' keys.
+    """
 
     async def _execute(args: dict[str, Any]) -> str:
         to_agent: str = args["to_agent"]

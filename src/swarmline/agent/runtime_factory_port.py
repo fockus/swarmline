@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from swarmline.agent.config import AgentConfig
-    from swarmline.runtime.capabilities import CapabilityRequirements, RuntimeCapabilities
+    from swarmline.runtime.capabilities import (
+        CapabilityRequirements,
+        RuntimeCapabilities,
+    )
     from swarmline.runtime.types import RuntimeConfig, RuntimeErrorData
 
 

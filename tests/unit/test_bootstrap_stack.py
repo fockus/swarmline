@@ -29,7 +29,9 @@ def _create_fixture_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
     skills_dir.mkdir()
 
     # Minimal identity.md
-    (prompts_dir / "identity.md").write_text("You are a helpful assistant.", encoding="utf-8")
+    (prompts_dir / "identity.md").write_text(
+        "You are a helpful assistant.", encoding="utf-8"
+    )
 
     # Role skills YAML
     (prompts_dir / "role_skills.yaml").write_text(
@@ -94,7 +96,9 @@ class TestSwarmlineStackCreate:
             project_root=project_root,
         )
 
-        assert stack.role_skills_loader.get_local_tools("coach") == ["calculate_goal_plan"]
+        assert stack.role_skills_loader.get_local_tools("coach") == [
+            "calculate_goal_plan"
+        ]
         assert stack.role_skills_loader.get_skills("coach") == []
 
     def test_escalate_roles_passed_to_model_policy(self, tmp_path: Path) -> None:
@@ -129,7 +133,9 @@ class TestSwarmlineStackCreate:
         assert stack.role_router_config.default_role == "default"
         assert stack.role_skills_loader.get_skills("nonexistent") == []
 
-    def test_accepts_runtime_config_and_local_tool_resolver(self, tmp_path: Path) -> None:
+    def test_accepts_runtime_config_and_local_tool_resolver(
+        self, tmp_path: Path
+    ) -> None:
         """create() takes runtime_config and local_tool_resolver from app."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
@@ -159,12 +165,16 @@ class TestSwarmlineStackCreate:
         assert stack.runtime_config.base_url == "https://example.test"
         assert stack.local_tool_resolver is resolver
 
-    def test_memory_bank_prompt_autoloaded_when_provider_passed(self, tmp_path: Path) -> None:
+    def test_memory_bank_prompt_autoloaded_when_provider_passed(
+        self, tmp_path: Path
+    ) -> None:
         """When memory_bank_provider stack loads default_prompt.md."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
         class DummyMemoryProvider:
-            async def read_file(self, path: str) -> str | None:  # pragma: no cover - contract-only
+            async def read_file(
+                self, path: str
+            ) -> str | None:  # pragma: no cover - contract-only
                 _ = path
                 return None
 
@@ -180,7 +190,9 @@ class TestSwarmlineStackCreate:
         assert stack.memory_bank_prompt is not None
         assert "Memory Bank" in stack.memory_bank_prompt
 
-    def test_tool_budget_config_applies_to_capability_tools(self, tmp_path: Path) -> None:
+    def test_tool_budget_config_applies_to_capability_tools(
+        self, tmp_path: Path
+    ) -> None:
         """tool_budget_config really limits the set of capability tools."""
         project_root, prompts_dir, skills_dir = _create_fixture_dirs(tmp_path)
 
@@ -189,7 +201,9 @@ class TestSwarmlineStackCreate:
                 _ = path
                 return ""
 
-            async def write_file(self, path: str, content: str):  # pragma: no cover - contract-only
+            async def write_file(
+                self, path: str, content: str
+            ):  # pragma: no cover - contract-only
                 _ = (path, content)
                 return None
 
@@ -197,11 +211,15 @@ class TestSwarmlineStackCreate:
                 _ = command
                 return None
 
-            async def list_dir(self, path: str = "."):  # pragma: no cover - contract-only
+            async def list_dir(
+                self, path: str = "."
+            ):  # pragma: no cover - contract-only
                 _ = path
                 return []
 
-            async def glob_files(self, pattern: str):  # pragma: no cover - contract-only
+            async def glob_files(
+                self, pattern: str
+            ):  # pragma: no cover - contract-only
                 _ = pattern
                 return []
 
@@ -229,7 +247,11 @@ class TestSwarmlineStackCreate:
         )
 
         assert len(stack.capability_specs) <= 2
-        assert set(stack.capability_specs.keys()) <= {"web_fetch", "web_search", "thinking"}
+        assert set(stack.capability_specs.keys()) <= {
+            "web_fetch",
+            "web_search",
+            "thinking",
+        }
 
 
 class TestLocalToolResolverProtocol:
@@ -256,5 +278,9 @@ class TestLocalToolResolverProtocol:
 
     def test_isp_2_methods(self) -> None:
         """LocalToolResolver has exactly 2 methods (ISP)."""
-        methods = [n for n in dir(LocalToolResolver) if not n.startswith("_") and n != "register"]
+        methods = [
+            n
+            for n in dir(LocalToolResolver)
+            if not n.startswith("_") and n != "register"
+        ]
         assert len(methods) == 2

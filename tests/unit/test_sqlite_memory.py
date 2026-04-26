@@ -192,7 +192,9 @@ async def provider(tmp_path: Path) -> SQLiteMemoryProvider:
 
 class TestSQLiteMessages:
     @pytest.mark.asyncio
-    async def test_save_get_count_and_trim(self, provider: SQLiteMemoryProvider) -> None:
+    async def test_save_get_count_and_trim(
+        self, provider: SQLiteMemoryProvider
+    ) -> None:
         await provider.save_message("u1", "t1", "user", "m1")
         await provider.save_message("u1", "t1", "assistant", "m2")
         await provider.save_message("u1", "t1", "assistant", "m3")
@@ -206,7 +208,9 @@ class TestSQLiteMessages:
         assert await provider.count_messages("u1", "t1") == 1
 
     @pytest.mark.asyncio
-    async def test_save_and_get_rich_message_roundtrip(self, provider: SQLiteMemoryProvider) -> None:
+    async def test_save_and_get_rich_message_roundtrip(
+        self, provider: SQLiteMemoryProvider
+    ) -> None:
         await provider.save_message(
             "u1",
             "t-rich",
@@ -229,7 +233,9 @@ class TestSQLiteFacts:
     @pytest.mark.asyncio
     async def test_global_and_topic_facts(self, provider: SQLiteMemoryProvider) -> None:
         await provider.upsert_fact("u1", "income", 120000, source="user")
-        await provider.upsert_fact("u1", "product", "deposit", topic_id="t1", source="system")
+        await provider.upsert_fact(
+            "u1", "product", "deposit", topic_id="t1", source="system"
+        )
 
         global_facts = await provider.get_facts("u1")
         topic_facts = await provider.get_facts("u1", topic_id="t1")
@@ -243,7 +249,9 @@ class TestSQLiteFacts:
         self, provider: SQLiteMemoryProvider
     ) -> None:
         await provider.upsert_fact("u1", "status", "global", source="user")
-        await provider.upsert_fact("u1", "status", "topic", topic_id="t1", source="system")
+        await provider.upsert_fact(
+            "u1", "status", "topic", topic_id="t1", source="system"
+        )
 
         topic_facts = await provider.get_facts("u1", topic_id="t1")
 
@@ -297,7 +305,9 @@ class TestSQLiteFacts:
 
 class TestSQLiteSummaryAndGoal:
     @pytest.mark.asyncio
-    async def test_summary_upsert_and_goal(self, provider: SQLiteMemoryProvider) -> None:
+    async def test_summary_upsert_and_goal(
+        self, provider: SQLiteMemoryProvider
+    ) -> None:
         await provider.save_summary("u1", "t1", "summary-1", 3)
         await provider.save_summary("u1", "t1", "summary-2", 5)
         assert await provider.get_summary("u1", "t1") == "summary-2"
@@ -353,8 +363,12 @@ class TestSQLiteSummaryAndGoal:
 
 class TestSQLiteSessionAndPhase:
     @pytest.mark.asyncio
-    async def test_session_state_and_phase(self, provider: SQLiteMemoryProvider) -> None:
-        await provider.save_session_state("u1", "t1", "coach", ["finuslugi"], prompt_hash="abc")
+    async def test_session_state_and_phase(
+        self, provider: SQLiteMemoryProvider
+    ) -> None:
+        await provider.save_session_state(
+            "u1", "t1", "coach", ["finuslugi"], prompt_hash="abc"
+        )
         state = await provider.get_session_state("u1", "t1")
         assert state is not None
         assert state["role_id"] == "coach"
@@ -373,7 +387,9 @@ class TestSQLiteSessionAndPhase:
         assert phase.notes == "Погашение"
 
     @pytest.mark.asyncio
-    async def test_session_state_delegation_persist(self, provider: SQLiteMemoryProvider) -> None:
+    async def test_session_state_delegation_persist(
+        self, provider: SQLiteMemoryProvider
+    ) -> None:
         """Delegation fields are correctly saved and restored."""
         await provider.save_session_state(
             "u1",

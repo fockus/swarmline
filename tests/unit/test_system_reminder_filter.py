@@ -214,7 +214,10 @@ class TestReminderOutputFormat:
 
         _, prompt = await f.filter([], "base")
 
-        assert '<system-reminder id="ctx1">\nimportant context\n</system-reminder>' in prompt
+        assert (
+            '<system-reminder id="ctx1">\nimportant context\n</system-reminder>'
+            in prompt
+        )
 
     @pytest.mark.asyncio
     async def test_reminder_appended_to_system_prompt(self) -> None:

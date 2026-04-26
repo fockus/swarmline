@@ -70,21 +70,29 @@ class NatsGraphCommunication:
             await self._nc.drain()
 
     def _msg_to_payload(self, msg: GraphMessage) -> bytes:
-        return json.dumps({
-            "id": msg.id, "from": msg.from_agent_id,
-            "to": msg.to_agent_id, "channel": msg.channel.value,
-            "content": msg.content, "task_id": msg.task_id,
-            "created_at": msg.created_at,
-            "metadata": msg.metadata,
-        }).encode()
+        return json.dumps(
+            {
+                "id": msg.id,
+                "from": msg.from_agent_id,
+                "to": msg.to_agent_id,
+                "channel": msg.channel.value,
+                "content": msg.content,
+                "task_id": msg.task_id,
+                "created_at": msg.created_at,
+                "metadata": msg.metadata,
+            }
+        ).encode()
 
     @staticmethod
     def _payload_to_msg(data: bytes) -> GraphMessage:
         d = json.loads(data.decode())
         return GraphMessage(
-            id=d["id"], from_agent_id=d["from"],
-            to_agent_id=d["to"], channel=ChannelType(d["channel"]),
-            content=d["content"], task_id=d.get("task_id"),
+            id=d["id"],
+            from_agent_id=d["from"],
+            to_agent_id=d["to"],
+            channel=ChannelType(d["channel"]),
+            content=d["content"],
+            task_id=d.get("task_id"),
             created_at=float(d.get("created_at", 0)),
             metadata=d.get("metadata", {}),
         )
@@ -103,7 +111,11 @@ class NatsGraphCommunication:
         await self._emit("graph.message.direct", msg)
 
     async def broadcast_subtree(
-        self, from_id: str, content: str, *, task_id: str | None = None,
+        self,
+        from_id: str,
+        content: str,
+        *,
+        task_id: str | None = None,
     ) -> None:
         descendants = await self._graph.get_subtree(from_id)
         for node in descendants:
@@ -111,24 +123,32 @@ class NatsGraphCommunication:
                 continue
             msg = GraphMessage(
                 id=uuid.uuid4().hex,
-                from_agent_id=from_id, to_agent_id=node.id,
+                from_agent_id=from_id,
+                to_agent_id=node.id,
                 channel=ChannelType.BROADCAST,
-                content=content, task_id=task_id,
+                content=content,
+                task_id=task_id,
             )
             subject = f"{self._prefix}.inbox.{node.id}"
             await self._publish(subject, msg)
             await self._emit("graph.message.broadcast", msg)
 
     async def escalate(
-        self, from_id: str, content: str, *, task_id: str | None = None,
+        self,
+        from_id: str,
+        content: str,
+        *,
+        task_id: str | None = None,
     ) -> None:
         chain = await self._graph.get_chain_of_command(from_id)
         for node in chain[1:]:
             msg = GraphMessage(
                 id=uuid.uuid4().hex,
-                from_agent_id=from_id, to_agent_id=node.id,
+                from_agent_id=from_id,
+                to_agent_id=node.id,
                 channel=ChannelType.ESCALATION,
-                content=content, task_id=task_id,
+                content=content,
+                task_id=task_id,
             )
             subject = f"{self._prefix}.inbox.{node.id}"
             await self._publish(subject, msg)
@@ -181,8 +201,13 @@ class NatsGraphCommunication:
 
     async def _emit(self, topic: str, msg: GraphMessage) -> None:
         if self._bus is not None:
-            await self._bus.emit(topic, {
-                "id": msg.id, "from": msg.from_agent_id,
-                "to": msg.to_agent_id, "channel": msg.channel.value,
-                "task_id": msg.task_id,
-            })
+            await self._bus.emit(
+                topic,
+                {
+                    "id": msg.id,
+                    "from": msg.from_agent_id,
+                    "to": msg.to_agent_id,
+                    "channel": msg.channel.value,
+                    "task_id": msg.task_id,
+                },
+            )

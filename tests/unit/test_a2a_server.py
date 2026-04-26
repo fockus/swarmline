@@ -59,7 +59,6 @@ def _rpc(method: str, params: dict[str, Any] | None = None, rpc_id: str = "1") -
 
 
 class TestAgentCardEndpoint:
-
     def test_returns_agent_card(self) -> None:
         _, client = _make_server()
         resp = client.get("/.well-known/agent.json")
@@ -86,15 +85,25 @@ class TestAgentCardEndpoint:
 
 
 class TestTasksSend:
-
     def test_send_task_returns_completed(self) -> None:
         _, client = _make_server()
-        resp = client.post("/", json=_rpc("tasks/send", {
-            "task": {
-                "id": "t1",
-                "messages": [{"role": "user", "parts": [{"type": "text", "text": "Hello"}]}],
-            }
-        }))
+        resp = client.post(
+            "/",
+            json=_rpc(
+                "tasks/send",
+                {
+                    "task": {
+                        "id": "t1",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "parts": [{"type": "text", "text": "Hello"}],
+                            }
+                        ],
+                    }
+                },
+            ),
+        )
         assert resp.status_code == 200
         body = resp.json()
         assert body["jsonrpc"] == "2.0"
@@ -102,9 +111,9 @@ class TestTasksSend:
 
     def test_send_task_shorthand_message(self) -> None:
         _, client = _make_server()
-        resp = client.post("/", json=_rpc("tasks/send", {
-            "task": {"id": "t2", "message": "Hi there"}
-        }))
+        resp = client.post(
+            "/", json=_rpc("tasks/send", {"task": {"id": "t2", "message": "Hi there"}})
+        )
         assert resp.status_code == 200
         assert resp.json()["result"]["status"]["state"] == "completed"
 
@@ -113,9 +122,9 @@ class TestTasksSend:
         agent.query = AsyncMock(return_value=Result(text="", error="Agent failed"))
         _, client = _make_server(agent)
 
-        resp = client.post("/", json=_rpc("tasks/send", {
-            "task": {"id": "t3", "message": "Hi"}
-        }))
+        resp = client.post(
+            "/", json=_rpc("tasks/send", {"task": {"id": "t3", "message": "Hi"}})
+        )
         assert resp.json()["result"]["status"]["state"] == "failed"
 
 
@@ -125,13 +134,12 @@ class TestTasksSend:
 
 
 class TestTasksGet:
-
     def test_get_existing_task(self) -> None:
         _, client = _make_server()
         # First send a task
-        client.post("/", json=_rpc("tasks/send", {
-            "task": {"id": "get-1", "message": "Hello"}
-        }))
+        client.post(
+            "/", json=_rpc("tasks/send", {"task": {"id": "get-1", "message": "Hello"}})
+        )
         # Then get it
         resp = client.post("/", json=_rpc("tasks/get", {"id": "get-1"}))
         assert resp.status_code == 200
@@ -150,7 +158,6 @@ class TestTasksGet:
 
 
 class TestTasksCancel:
-
     def test_cancel_nonexistent_task(self) -> None:
         _, client = _make_server()
         resp = client.post("/", json=_rpc("tasks/cancel", {"id": "nope"}))
@@ -163,7 +170,6 @@ class TestTasksCancel:
 
 
 class TestUnknownMethod:
-
     def test_unknown_method_returns_error(self) -> None:
         _, client = _make_server()
         resp = client.post("/", json=_rpc("unknown/method"))
@@ -173,6 +179,8 @@ class TestUnknownMethod:
 
     def test_invalid_json_returns_parse_error(self) -> None:
         _, client = _make_server()
-        resp = client.post("/", content=b"not json", headers={"content-type": "application/json"})
+        resp = client.post(
+            "/", content=b"not json", headers={"content-type": "application/json"}
+        )
         body = resp.json()
         assert body["error"]["code"] == -32700

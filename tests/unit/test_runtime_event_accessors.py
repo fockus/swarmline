@@ -24,7 +24,9 @@ class TestTextAccessor:
         assert event.text == "done answer"
 
     def test_error_no_text(self) -> None:
-        event = RuntimeEvent.error(RuntimeErrorData(kind="runtime_crash", message="boom"))
+        event = RuntimeEvent.error(
+            RuntimeErrorData(kind="runtime_crash", message="boom")
+        )
         assert event.text == ""
 
     def test_tool_call_no_text(self) -> None:

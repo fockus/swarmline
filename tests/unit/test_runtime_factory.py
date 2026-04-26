@@ -171,7 +171,9 @@ class TestCreate:
         fake_runtime = object()
         fake_cls = MagicMock(return_value=fake_runtime)
 
-        with patch.object(RuntimeFactory, "_effective_registry", new_callable=PropertyMock) as mock_registry:
+        with patch.object(
+            RuntimeFactory, "_effective_registry", new_callable=PropertyMock
+        ) as mock_registry:
             mock_registry.return_value = None
             with patch("swarmline.runtime.cli.runtime.CliAgentRuntime", fake_cls):
                 runtime = factory.create(config=cfg)
@@ -208,7 +210,9 @@ class TestCapabilities:
         from swarmline.runtime.registry import RuntimeRegistry
 
         registry = RuntimeRegistry()
-        custom_caps = RuntimeCapabilities(runtime_name="custom_factory_rt", tier="light")
+        custom_caps = RuntimeCapabilities(
+            runtime_name="custom_factory_rt", tier="light"
+        )
         registry.register(
             "custom_factory_rt",
             lambda config, **kwargs: object(),

@@ -23,7 +23,13 @@ class TestFilesystemTodoProvider:
 
         p = FilesystemTodoProvider(tmp_path, "u1", "t1")
         items = [
-            TodoItem(id="1", content="task", status="pending", created_at=_now(), updated_at=_now())
+            TodoItem(
+                id="1",
+                content="task",
+                status="pending",
+                created_at=_now(),
+                updated_at=_now(),
+            )
         ]
         await p.write_todos(items)
         result = await p.read_todos()
@@ -36,10 +42,26 @@ class TestFilesystemTodoProvider:
         p = FilesystemTodoProvider(tmp_path, "u1", "t1")
         now = _now()
         await p.write_todos(
-            [TodoItem(id="1", content="old", status="pending", created_at=now, updated_at=now)]
+            [
+                TodoItem(
+                    id="1",
+                    content="old",
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
+                )
+            ]
         )
         await p.write_todos(
-            [TodoItem(id="2", content="new", status="pending", created_at=now, updated_at=now)]
+            [
+                TodoItem(
+                    id="2",
+                    content="new",
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
+                )
+            ]
         )
         result = await p.read_todos()
         assert len(result) == 1
@@ -52,7 +74,15 @@ class TestFilesystemTodoProvider:
         p2 = FilesystemTodoProvider(tmp_path, "bob", "t1")
         now = _now()
         await p1.write_todos(
-            [TodoItem(id="1", content="t", status="pending", created_at=now, updated_at=now)]
+            [
+                TodoItem(
+                    id="1",
+                    content="t",
+                    status="pending",
+                    created_at=now,
+                    updated_at=now,
+                )
+            ]
         )
         assert len(await p1.read_todos()) == 1
         assert len(await p2.read_todos()) == 0

@@ -19,7 +19,9 @@ from swarmline.tools.types import SandboxConfig, SandboxViolation
 pytestmark = pytest.mark.security
 
 
-def _sandbox_config(tmp_path, user_id: str = "u1", topic_id: str = "t1") -> SandboxConfig:
+def _sandbox_config(
+    tmp_path, user_id: str = "u1", topic_id: str = "t1"
+) -> SandboxConfig:
     return SandboxConfig(
         root_path=str(tmp_path),
         user_id=user_id,
@@ -33,8 +35,12 @@ class TestPathIsolationParity:
     async def test_traversal_blocked_for_all_sandbox_providers(self, tmp_path) -> None:
         local = LocalSandboxProvider(_sandbox_config(tmp_path))
         e2b = E2BSandboxProvider(_sandbox_config(tmp_path), _sandbox=AsyncMock())
-        docker = DockerSandboxProvider(_sandbox_config(tmp_path), _container=AsyncMock())
-        openshell = OpenShellSandboxProvider(_sandbox_config(tmp_path), _session=AsyncMock())
+        docker = DockerSandboxProvider(
+            _sandbox_config(tmp_path), _container=AsyncMock()
+        )
+        openshell = OpenShellSandboxProvider(
+            _sandbox_config(tmp_path), _session=AsyncMock()
+        )
 
         with pytest.raises(SandboxViolation):
             await local.read_file("../secret.txt")
@@ -51,8 +57,12 @@ class TestPathIsolationParity:
         mock_openshell = AsyncMock()
 
         e2b = E2BSandboxProvider(_sandbox_config(tmp_path), _sandbox=mock_e2b)
-        docker = DockerSandboxProvider(_sandbox_config(tmp_path), _container=mock_docker)
-        openshell = OpenShellSandboxProvider(_sandbox_config(tmp_path), _session=mock_openshell)
+        docker = DockerSandboxProvider(
+            _sandbox_config(tmp_path), _container=mock_docker
+        )
+        openshell = OpenShellSandboxProvider(
+            _sandbox_config(tmp_path), _session=mock_openshell
+        )
 
         with pytest.raises(SandboxViolation):
             await e2b.execute("rm -rf /workspace")

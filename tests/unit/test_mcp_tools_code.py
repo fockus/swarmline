@@ -26,7 +26,9 @@ class TestExecCode:
     async def test_exec_json_output_valid(self) -> None:
         import json
 
-        result = await exec_code("import json; print(json.dumps({'ok': True}))", trusted=True)
+        result = await exec_code(
+            "import json; print(json.dumps({'ok': True}))", trusted=True
+        )
         assert result["ok"] is True
         parsed = json.loads(result["data"]["stdout"])
         assert parsed == {"ok": True}
@@ -40,7 +42,9 @@ class TestExecCode:
 
     @pytest.mark.asyncio
     async def test_exec_timeout_kills_process(self) -> None:
-        result = await exec_code("import time; time.sleep(60)", timeout_seconds=1, trusted=True)
+        result = await exec_code(
+            "import time; time.sleep(60)", timeout_seconds=1, trusted=True
+        )
         assert result["ok"] is False
         assert "timed out" in result["error"]
         assert result["data"]["timeout"] is True
@@ -76,7 +80,9 @@ class TestExecCode:
 
     @pytest.mark.asyncio
     async def test_exec_stderr_captured(self) -> None:
-        result = await exec_code("import sys; print('err', file=sys.stderr)", trusted=True)
+        result = await exec_code(
+            "import sys; print('err', file=sys.stderr)", trusted=True
+        )
         assert result["ok"] is True
         assert result["data"]["stderr"] == "err"
 

@@ -43,7 +43,9 @@ def _success_response(request_id: str | None, result: object) -> dict:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        sys.stderr.write("Usage: python -m swarmline.plugins._worker_shim <module_path>\n")
+        sys.stderr.write(
+            "Usage: python -m swarmline.plugins._worker_shim <module_path>\n"
+        )
         sys.stderr.flush()
         sys.exit(1)
 
@@ -81,7 +83,9 @@ def main() -> None:
         method = request.get("method")
 
         if not method:
-            _respond(_error_response(request_id, -32600, "Invalid request: missing method"))
+            _respond(
+                _error_response(request_id, -32600, "Invalid request: missing method")
+            )
             continue
 
         # Built-in: ping

@@ -57,7 +57,9 @@ class TestDeepAgentsStage4Surface:
         fake_factory = MagicMock()
         fake_factory.create.return_value = runtime
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             result = await agent.query("hello")
 
         assert result.ok is True
@@ -68,7 +70,9 @@ class TestDeepAgentsStage4Surface:
         }
 
     @pytest.mark.asyncio
-    async def test_conversation_passes_thread_id_into_deepagents_runtime_config(self) -> None:
+    async def test_conversation_passes_thread_id_into_deepagents_runtime_config(
+        self,
+    ) -> None:
         agent = Agent(
             AgentConfig(
                 system_prompt="Be helpful",
@@ -82,7 +86,9 @@ class TestDeepAgentsStage4Surface:
         fake_factory = MagicMock()
         fake_factory.create.return_value = runtime
 
-        with patch("swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
+        ):
             async for _ in conv._execute_agent_runtime("hello", "deepagents"):
                 pass
 
@@ -100,7 +106,9 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
             def __init__(self) -> None:
                 self.calls: list[tuple[Any, Any]] = []
 
-            async def astream_events(self, payload: Any, config: Any = None, *, version: str):
+            async def astream_events(
+                self, payload: Any, config: Any = None, *, version: str
+            ):
                 self.calls.append((payload, config))
                 if getattr(payload, "resume", None) is not None:
                     chunk = MagicMock()
@@ -125,7 +133,10 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
                                         "review_configs": [
                                             {
                                                 "action_name": "edit_file",
-                                                "allowed_decisions": ["approve", "reject"],
+                                                "allowed_decisions": [
+                                                    "approve",
+                                                    "reject",
+                                                ],
                                             }
                                         ],
                                     },
@@ -151,8 +162,14 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
         )
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch("swarmline.runtime.deepagents.build_deepagents_graph", return_value=fake_graph),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch(
+                "swarmline.runtime.deepagents.build_deepagents_graph",
+                return_value=fake_graph,
+            ),
         ):
             first_events = []
             async for event in runtime.run(
@@ -169,7 +186,10 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
         ]
         assert first_events[1].data["action_name"] == "edit_file"
         assert first_events[-1].data["session_id"] == "thread-1"
-        assert first_events[-1].data["native_metadata"]["history_source"] == "native_thread"
+        assert (
+            first_events[-1].data["native_metadata"]["history_source"]
+            == "native_thread"
+        )
 
         resumed_runtime = DeepAgentsRuntime(
             config=RuntimeConfig(
@@ -183,8 +203,14 @@ class TestDeepAgentsStage4RuntimeRoundtrip:
         )
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch("swarmline.runtime.deepagents.build_deepagents_graph", return_value=fake_graph),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch(
+                "swarmline.runtime.deepagents.build_deepagents_graph",
+                return_value=fake_graph,
+            ),
         ):
             resumed_events = []
             async for event in resumed_runtime.run(

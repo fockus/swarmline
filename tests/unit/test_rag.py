@@ -71,9 +71,7 @@ class TestSimpleRetriever:
             Document(content="Python has great libraries for data science"),
         ]
 
-    async def test_retrieve_returns_sorted_by_score(
-        self, docs: list[Document]
-    ) -> None:
+    async def test_retrieve_returns_sorted_by_score(self, docs: list[Document]) -> None:
         retriever = SimpleRetriever(documents=docs)
         results = await retriever.retrieve("Python programming", top_k=10)
         assert len(results) > 0
@@ -83,9 +81,7 @@ class TestSimpleRetriever:
         scores = [r.score for r in results if r.score is not None]
         assert scores == sorted(scores, reverse=True)
 
-    async def test_retrieve_top_k_limits_results(
-        self, docs: list[Document]
-    ) -> None:
+    async def test_retrieve_top_k_limits_results(self, docs: list[Document]) -> None:
         retriever = SimpleRetriever(documents=docs)
         results = await retriever.retrieve("programming language", top_k=2)
         assert len(results) == 2
@@ -118,7 +114,10 @@ class TestSimpleRetriever:
 
 class TestRagInputFilter:
     async def test_injects_context_into_system_prompt(self) -> None:
-        docs = [Document(content="Relevant fact A"), Document(content="Relevant fact B")]
+        docs = [
+            Document(content="Relevant fact A"),
+            Document(content="Relevant fact B"),
+        ]
         retriever = SimpleRetriever(documents=docs)
         rag_filter = RagInputFilter(retriever=retriever, top_k=5)
 

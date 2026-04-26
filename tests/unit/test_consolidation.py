@@ -43,7 +43,6 @@ def _ep(
 
 
 class TestKeywordFactExtractor:
-
     async def test_extracts_tool_pattern(self) -> None:
         extractor = KeywordFactExtractor(min_frequency=2)
         episodes = [
@@ -81,7 +80,6 @@ class TestKeywordFactExtractor:
 
 
 class TestConsolidationPipeline:
-
     async def test_consolidate_below_min_episodes(self) -> None:
         episodic = InMemoryEpisodicMemory()
         await episodic.store(_ep("e1"))
@@ -112,7 +110,12 @@ class TestConsolidationPipeline:
         episodic = InMemoryEpisodicMemory()
         for i in range(5):
             await episodic.store(
-                _ep(f"e{i}", tools=("web_search",), outcome="success", tags=("research",))
+                _ep(
+                    f"e{i}",
+                    tools=("web_search",),
+                    outcome="success",
+                    tags=("research",),
+                )
             )
         pipeline = ConsolidationPipeline(episodic=episodic)
 

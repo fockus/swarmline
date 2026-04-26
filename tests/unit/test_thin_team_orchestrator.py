@@ -16,7 +16,10 @@ from datetime import UTC, datetime
 
 import pytest
 from swarmline.orchestration.subagent_types import SubagentSpec
-from swarmline.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
+from swarmline.orchestration.team_protocol import (
+    ResumableTeamOrchestrator,
+    TeamOrchestrator,
+)
 from swarmline.orchestration.team_types import TeamConfig, TeamMessage, TeamStatus
 
 # ---------------------------------------------------------------------------
@@ -247,7 +250,9 @@ class TestThinTeamEdgeCases:
         orch = ThinTeamOrchestrator()
         status = await orch.get_team_status("nonexistent-team-id")
         assert status.team_id == "nonexistent-team-id"
-        assert status.workers == {} or status.workers is None or len(status.workers) == 0
+        assert (
+            status.workers == {} or status.workers is None or len(status.workers) == 0
+        )
 
     @pytest.mark.asyncio
     async def test_thin_team_send_message_unknown_team_noop(self) -> None:

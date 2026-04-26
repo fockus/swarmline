@@ -98,7 +98,9 @@ class SqliteAgentRegistry:
     async def get(self, agent_id: str) -> AgentRecord | None:
         return await asyncio.to_thread(self._get_sync, agent_id)
 
-    async def list_agents(self, filters: AgentFilter | None = None) -> list[AgentRecord]:
+    async def list_agents(
+        self, filters: AgentFilter | None = None
+    ) -> list[AgentRecord]:
         records = await asyncio.to_thread(self._list_sync)
         if filters:
             if filters.role is not None:

@@ -17,12 +17,16 @@ class TestImports:
         assert PostgresAgentGraph is not None
 
     def test_import_postgres_graph_task_board(self) -> None:
-        from swarmline.multi_agent.graph_task_board_postgres import PostgresGraphTaskBoard
+        from swarmline.multi_agent.graph_task_board_postgres import (
+            PostgresGraphTaskBoard,
+        )
 
         assert PostgresGraphTaskBoard is not None
 
     def test_import_postgres_graph_communication(self) -> None:
-        from swarmline.multi_agent.graph_communication_postgres import PostgresGraphCommunication
+        from swarmline.multi_agent.graph_communication_postgres import (
+            PostgresGraphCommunication,
+        )
 
         assert PostgresGraphCommunication is not None
 
@@ -59,12 +63,16 @@ class TestSchemas:
         assert "agent_nodes" in POSTGRES_GRAPH_SCHEMA
 
     def test_task_board_schema_exists(self) -> None:
-        from swarmline.multi_agent.graph_task_board_postgres import POSTGRES_GRAPH_TASK_SCHEMA
+        from swarmline.multi_agent.graph_task_board_postgres import (
+            POSTGRES_GRAPH_TASK_SCHEMA,
+        )
 
         assert "graph_tasks" in POSTGRES_GRAPH_TASK_SCHEMA
 
     def test_communication_schema_exists(self) -> None:
-        from swarmline.multi_agent.graph_communication_postgres import POSTGRES_GRAPH_COMM_SCHEMA
+        from swarmline.multi_agent.graph_communication_postgres import (
+            POSTGRES_GRAPH_COMM_SCHEMA,
+        )
 
         assert "graph_messages" in POSTGRES_GRAPH_COMM_SCHEMA
 
@@ -74,7 +82,9 @@ class TestSchemas:
         assert "task_queue" in POSTGRES_TASK_QUEUE_SCHEMA
 
     def test_agent_registry_schema_exists(self) -> None:
-        from swarmline.multi_agent.agent_registry_postgres import POSTGRES_AGENT_REGISTRY_SCHEMA
+        from swarmline.multi_agent.agent_registry_postgres import (
+            POSTGRES_AGENT_REGISTRY_SCHEMA,
+        )
 
         assert "agent_registry" in POSTGRES_AGENT_REGISTRY_SCHEMA
 
@@ -100,7 +110,9 @@ class TestConstructors:
         from swarmline.memory.procedural_postgres import PostgresProceduralMemory
         from swarmline.multi_agent.agent_registry_postgres import PostgresAgentRegistry
         from swarmline.multi_agent.graph_store_postgres import PostgresAgentGraph
-        from swarmline.multi_agent.graph_task_board_postgres import PostgresGraphTaskBoard
+        from swarmline.multi_agent.graph_task_board_postgres import (
+            PostgresGraphTaskBoard,
+        )
         from swarmline.multi_agent.task_queue_postgres import PostgresTaskQueue
         from swarmline.session.backends_postgres import PostgresSessionBackend
 
@@ -114,11 +126,17 @@ class TestConstructors:
             PostgresSessionBackend,
         ]:
             params = list(inspect.signature(cls.__init__).parameters.keys())
-            assert "session_factory" in params, f"{cls.__name__} missing session_factory param"
+            assert "session_factory" in params, (
+                f"{cls.__name__} missing session_factory param"
+            )
 
     def test_communication_takes_graph_query(self) -> None:
-        from swarmline.multi_agent.graph_communication_postgres import PostgresGraphCommunication
+        from swarmline.multi_agent.graph_communication_postgres import (
+            PostgresGraphCommunication,
+        )
 
-        params = list(inspect.signature(PostgresGraphCommunication.__init__).parameters.keys())
+        params = list(
+            inspect.signature(PostgresGraphCommunication.__init__).parameters.keys()
+        )
         assert "session_factory" in params
         assert "graph_query" in params

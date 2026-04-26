@@ -128,9 +128,7 @@ class A2AServer:
             if method == "tasks/send":
                 return await _handle_send(adapter, params, rpc_id, JSONResponse)
             elif method == "tasks/sendSubscribe":
-                return await _handle_send_subscribe(
-                    adapter, params, rpc_id, Response
-                )
+                return await _handle_send_subscribe(adapter, params, rpc_id, Response)
             elif method == "tasks/get":
                 return _handle_get(adapter, params, rpc_id, JSONResponse)
             elif method == "tasks/cancel":
@@ -203,7 +201,9 @@ async def _handle_send(
     result_task = await adapter.handle_task(task)
 
     return JSONResponse(
-        _json_rpc_result(rpc_id, result_task.model_dump(by_alias=True, exclude_none=True))
+        _json_rpc_result(
+            rpc_id, result_task.model_dump(by_alias=True, exclude_none=True)
+        )
     )
 
 

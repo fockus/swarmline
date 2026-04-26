@@ -9,7 +9,13 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from swarmline.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
+from swarmline.memory.types import (
+    GoalState,
+    MemoryMessage,
+    PhaseState,
+    ToolEvent,
+    UserProfile,
+)
 
 
 class InMemoryMemoryProvider:
@@ -35,6 +41,7 @@ class InMemoryMemoryProvider:
         self._phase_states: dict[str, PhaseState] = {}
         # tool_events: bounded deque to prevent memory leak
         from collections import deque
+
         self._tool_events: deque[dict[str, Any]] = deque(maxlen=10000)
 
     @staticmethod
@@ -66,7 +73,9 @@ class InMemoryMemoryProvider:
                 name=name,
                 tool_calls=tool_calls,
                 metadata=dict(metadata) if metadata is not None else None,
-                content_blocks=list(content_blocks) if content_blocks is not None else None,
+                content_blocks=list(content_blocks)
+                if content_blocks is not None
+                else None,
             )
         )
 

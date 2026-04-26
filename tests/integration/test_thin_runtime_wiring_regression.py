@@ -53,7 +53,9 @@ class TestThinRuntimeWiring:
             runtime="thin",
             subagent_config=SubagentToolConfig(),
         )
-        with pytest.raises(ValueError, match="AgentConfig\\.cwd is required when subagent_config"):
+        with pytest.raises(
+            ValueError, match="AgentConfig\\.cwd is required when subagent_config"
+        ):
             build_portable_runtime_plan(cfg, "thin")
 
     def test_thin_runtime_receives_subagent_inheritance_dependencies(
@@ -67,7 +69,9 @@ class TestThinRuntimeWiring:
             cwd=str(tmp_path),
             hooks=hooks,
             tool_policy=explicit_policy,
-            coding_profile=CodingProfileConfig(enabled=True, allow_host_execution=False),
+            coding_profile=CodingProfileConfig(
+                enabled=True, allow_host_execution=False
+            ),
             subagent_config=SubagentToolConfig(
                 max_concurrent=2,
                 max_worktrees=3,
@@ -113,9 +117,7 @@ class TestThinRuntimeWiring:
         orch = runtime._subagent_orchestrator
         assert orch is not None
 
-        async def _fake_create_worktree(
-            agent_id: str, spec: Any
-        ) -> WorkspaceHandle:
+        async def _fake_create_worktree(agent_id: str, spec: Any) -> WorkspaceHandle:
             del spec
             return WorkspaceHandle(
                 workspace_id=f"ws-{agent_id}",
@@ -184,4 +186,3 @@ class TestThinRuntimeWiring:
         assert f"cwd: {tmp_path}" in prompt
         assert '"task_id": "sess-42"' in prompt
         assert any(event.is_final for event in events)
-

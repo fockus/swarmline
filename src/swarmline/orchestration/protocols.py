@@ -15,8 +15,8 @@ from swarmline.orchestration.types import ApprovalSource, Plan, PlanStep
 class PlanStore(Protocol):
     """Store planoin - ISP: <=4 methods.
 
-  Multi-tenant: user_id + topic_id in each other.
-  """
+    Multi-tenant: user_id + topic_id in each other.
+    """
 
     async def save(self, plan: Plan) -> None:
         """Save or update plan."""

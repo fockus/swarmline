@@ -32,9 +32,7 @@ class TestThinRuntimeStructuredOutputIntegration:
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            return json.dumps(
-                {"type": "final", "final_message": valid_json}
-            )
+            return json.dumps({"type": "final", "final_message": valid_json})
 
         config = RuntimeConfig(
             runtime_name="thin",
@@ -74,16 +72,10 @@ class TestThinRuntimeStructuredOutputIntegration:
 
             if call_count == 1:
                 # Pervyy call - final with notvalidnym JSON
-                return json.dumps(
-                    {"type": "final", "final_message": "not a json"}
-                )
+                return json.dumps({"type": "final", "final_message": "not a json"})
             # Retry - valid response
-            valid = json.dumps(
-                {"city": "SPb", "temperature": 2.0, "summary": "Cloudy"}
-            )
-            return json.dumps(
-                {"type": "final", "final_message": valid}
-            )
+            valid = json.dumps({"city": "SPb", "temperature": 2.0, "summary": "Cloudy"})
+            return json.dumps({"type": "final", "final_message": valid})
 
         config = RuntimeConfig(
             runtime_name="thin",
@@ -144,11 +136,18 @@ class TestThinRuntimeStructuredOutputIntegration:
         assert isinstance(structured, WeatherReport)
         assert structured.city == "Berlin"
         assert captured_kwargs[0]["response_format"]["type"] == "json_schema"
-        assert captured_kwargs[0]["response_format"]["json_schema"]["name"] == "weather_report_v1"
-        assert captured_kwargs[0]["extra_body"]["provider"] == {"require_parameters": True}
+        assert (
+            captured_kwargs[0]["response_format"]["json_schema"]["name"]
+            == "weather_report_v1"
+        )
+        assert captured_kwargs[0]["extra_body"]["provider"] == {
+            "require_parameters": True
+        }
 
     @pytest.mark.asyncio
-    async def test_thin_runtime_native_structured_output_retries_until_valid(self) -> None:
+    async def test_thin_runtime_native_structured_output_retries_until_valid(
+        self,
+    ) -> None:
         """Native mode retries raw JSON responses until Pydantic validation passes."""
         call_count = 0
 
@@ -185,7 +184,9 @@ class TestThinRuntimeStructuredOutputIntegration:
         assert isinstance(final.data["structured_output"], WeatherReport)
 
     @pytest.mark.asyncio
-    async def test_thin_runtime_native_structured_output_emits_validation_events(self) -> None:
+    async def test_thin_runtime_native_structured_output_emits_validation_events(
+        self,
+    ) -> None:
         """Structured validation emits start, retry, and end observability events."""
         bus = InMemoryEventBus()
         observed: list[tuple[str, dict[str, Any]]] = []
@@ -194,7 +195,10 @@ class TestThinRuntimeStructuredOutputIntegration:
             "structured_retry",
             "structured_validation_end",
         ):
-            bus.subscribe(event_type, lambda data, event_type=event_type: observed.append((event_type, data)))
+            bus.subscribe(
+                event_type,
+                lambda data, event_type=event_type: observed.append((event_type, data)),
+            )
 
         call_count = 0
 
@@ -276,9 +280,7 @@ class TestThinRuntimeStructuredOutputIntegration:
     ) -> None:
         """Streaming invalid reply is not emitted before structured-output retry succeeds."""
         call_count = 0
-        valid = json.dumps(
-            {"city": "Paris", "temperature": 18.0, "summary": "Sunny"}
-        )
+        valid = json.dumps({"city": "Paris", "temperature": 18.0, "summary": "Sunny"})
 
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
@@ -287,6 +289,7 @@ class TestThinRuntimeStructuredOutputIntegration:
             call_count += 1
 
             if kwargs.get("stream"):
+
                 async def _stream():
                     yield '{"type":"final","final_message":"not json"}'
 
@@ -310,7 +313,9 @@ class TestThinRuntimeStructuredOutputIntegration:
         ):
             events.append(event)
 
-        deltas = [event.data["text"] for event in events if event.type == "assistant_delta"]
+        deltas = [
+            event.data["text"] for event in events if event.type == "assistant_delta"
+        ]
         final = next(event for event in events if event.type == "final")
         assert call_count == 2
         assert deltas == [valid]
@@ -324,9 +329,7 @@ class TestThinRuntimeStructuredOutputIntegration:
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            return json.dumps(
-                {"type": "final", "final_message": '{"x": 42}'}
-            )
+            return json.dumps({"type": "final", "final_message": '{"x": 42}'})
 
         config = RuntimeConfig(
             runtime_name="thin",
@@ -358,9 +361,7 @@ class TestThinRuntimeStructuredOutputIntegration:
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
             # Vsegda returns final with notvalidnym JSON for output_type
-            return json.dumps(
-                {"type": "final", "final_message": "not valid json ever"}
-            )
+            return json.dumps({"type": "final", "final_message": "not valid json ever"})
 
         config = RuntimeConfig(
             runtime_name="thin",
@@ -432,9 +433,7 @@ class TestThinRuntimeStructuredOutputIntegration:
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
         ) -> str:
-            return json.dumps(
-                {"type": "final", "final_message": "Hello, world!"}
-            )
+            return json.dumps({"type": "final", "final_message": "Hello, world!"})
 
         config = RuntimeConfig(
             runtime_name="thin",
@@ -466,7 +465,10 @@ class TestThinRuntimeStructuredOutputIntegration:
             call_count += 1
             if call_count == 1:
                 return json.dumps(
-                    {"type": "tool_call", "tool": {"name": "lookup", "args": {"city": "Kazan"}}}
+                    {
+                        "type": "tool_call",
+                        "tool": {"name": "lookup", "args": {"city": "Kazan"}},
+                    }
                 )
             if call_count == 2:
                 return json.dumps({"type": "final", "final_message": "not json"})
@@ -510,9 +512,7 @@ class TestThinRuntimeStructuredOutputIntegration:
     ) -> None:
         """React mode does not emit invalid streaming payload before structured-output retry."""
         call_count = 0
-        valid = json.dumps(
-            {"city": "Kazan", "temperature": 10.0, "summary": "Warm"}
-        )
+        valid = json.dumps({"city": "Kazan", "temperature": 10.0, "summary": "Warm"})
 
         async def fake_llm(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any
@@ -520,6 +520,7 @@ class TestThinRuntimeStructuredOutputIntegration:
             nonlocal call_count
             call_count += 1
             if kwargs.get("stream"):
+
                 async def _stream():
                     yield '{"type":"final","final_message":"not json"}'
 
@@ -543,7 +544,9 @@ class TestThinRuntimeStructuredOutputIntegration:
         ):
             events.append(event)
 
-        deltas = [event.data["text"] for event in events if event.type == "assistant_delta"]
+        deltas = [
+            event.data["text"] for event in events if event.type == "assistant_delta"
+        ]
         final = next(event for event in events if event.type == "final")
         assert call_count == 2
         assert deltas == [valid]
@@ -551,7 +554,9 @@ class TestThinRuntimeStructuredOutputIntegration:
         assert isinstance(final.data["structured_output"], WeatherReport)
 
     @pytest.mark.asyncio
-    async def test_thin_runtime_structured_output_retry_exhausted_in_react_mode(self) -> None:
+    async def test_thin_runtime_structured_output_retry_exhausted_in_react_mode(
+        self,
+    ) -> None:
         """React mode returns bad_model_output when structured-output retries are exhausted."""
 
         async def fake_llm(
@@ -582,7 +587,9 @@ class TestThinRuntimeStructuredOutputIntegration:
         assert error_events[0].data["kind"] == "bad_model_output"
 
     @pytest.mark.asyncio
-    async def test_thin_runtime_structured_output_retry_exhausted_in_planner_mode(self) -> None:
+    async def test_thin_runtime_structured_output_retry_exhausted_in_planner_mode(
+        self,
+    ) -> None:
         """Planner final assembly uses the same structured-output retry/error semantics."""
         call_count = 0
 

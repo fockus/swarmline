@@ -7,7 +7,9 @@ from swarmline.runtime.types import ToolSpec
 
 
 def _spec(name: str) -> ToolSpec:
-    return ToolSpec(name=name, description="d", parameters={"type": "object", "properties": {}})
+    return ToolSpec(
+        name=name, description="d", parameters={"type": "object", "properties": {}}
+    )
 
 
 class TestToolBudgetConfig:
@@ -60,9 +62,12 @@ class TestToolSelector:
 
         selector = ToolSelector(max_tools=5)
         selector.add_group(
-            ToolGroup.ALWAYS, [_spec("thinking"), _spec("todo_read"), _spec("todo_write")]
+            ToolGroup.ALWAYS,
+            [_spec("thinking"), _spec("todo_read"), _spec("todo_write")],
         )
-        selector.add_group(ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write")])
+        selector.add_group(
+            ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write")]
+        )
 
         selected = selector.select()
         names = {s.name for s in selected}
@@ -86,7 +91,8 @@ class TestToolSelector:
         selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
         selector.add_group(ToolGroup.MCP, [_spec("mcp_search"), _spec("mcp_get")])
         selector.add_group(
-            ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write"), _spec("edit")]
+            ToolGroup.SANDBOX,
+            [_spec("bash"), _spec("read"), _spec("write"), _spec("edit")],
         )
 
         selected = selector.select()
@@ -98,24 +104,36 @@ class TestToolSelector:
 
     def test_config_based_selector(self) -> None:
         """ToolSelector with yavnym config."""
-        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import (
+            ToolBudgetConfig,
+            ToolGroup,
+            ToolSelector,
+        )
 
         cfg = ToolBudgetConfig(max_tools=4, group_limits={ToolGroup.SANDBOX: 2})
         selector = ToolSelector(config=cfg)
         selector.add_group(ToolGroup.ALWAYS, [_spec("thinking")])
         selector.add_group(
-            ToolGroup.SANDBOX, [_spec("bash"), _spec("read"), _spec("write"), _spec("edit")]
+            ToolGroup.SANDBOX,
+            [_spec("bash"), _spec("read"), _spec("write"), _spec("edit")],
         )
 
         selected = selector.select()
         names = [s.name for s in selected]
         # thinking (1) + sandbox limited to 2 = 3 total
         assert "thinking" in names
-        assert len([n for n in names if n.startswith(("bash", "read", "write", "edit"))]) <= 2
+        assert (
+            len([n for n in names if n.startswith(("bash", "read", "write", "edit"))])
+            <= 2
+        )
 
     def test_custom_priority_order(self) -> None:
         """Kastomnyy poryadok: SANDBOX pered MCP."""
-        from swarmline.policy.tool_selector import ToolBudgetConfig, ToolGroup, ToolSelector
+        from swarmline.policy.tool_selector import (
+            ToolBudgetConfig,
+            ToolGroup,
+            ToolSelector,
+        )
 
         cfg = ToolBudgetConfig(
             max_tools=3,

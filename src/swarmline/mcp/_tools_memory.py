@@ -66,10 +66,7 @@ async def memory_get_messages(
     """Retrieve recent messages from conversation history."""
     try:
         messages = await session.memory.get_messages(user_id, topic_id, limit=limit)
-        serialized = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-        ]
+        serialized = [{"role": m.role, "content": m.content} for m in messages]
         return {"ok": True, "data": serialized}
     except Exception as exc:
         logger.warning("memory_get_messages_failed", error=str(exc))

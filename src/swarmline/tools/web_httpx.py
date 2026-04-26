@@ -15,7 +15,11 @@ from urllib.parse import urljoin, urlparse
 import structlog
 
 from swarmline.observability.security import log_security_decision
-from swarmline.tools.web_protocols import SearchResult, WebFetchProvider, WebSearchProvider
+from swarmline.tools.web_protocols import (
+    SearchResult,
+    WebFetchProvider,
+    WebSearchProvider,
+)
 
 try:
     import trafilatura  # ty: ignore[unresolved-import]  # optional dep
@@ -79,7 +83,9 @@ def _resolve_public_connect_host(hostname: str) -> str | None:
     return public_addrs[0] if public_addrs else None
 
 
-def _build_safe_request_target(url: str) -> tuple[str, dict[str, str], dict[str, object]]:
+def _build_safe_request_target(
+    url: str,
+) -> tuple[str, dict[str, str], dict[str, object]]:
     """Bind a request to a validated IP while preserving Host/SNI semantics."""
     parsed = urlparse(url)
     hostname = parsed.hostname or ""
@@ -103,7 +109,9 @@ def _build_safe_request_target(url: str) -> tuple[str, dict[str, str], dict[str,
     if port is not None:
         connect_netloc = f"{connect_netloc}:{port}"
 
-    default_port = 80 if parsed.scheme == "http" else 443 if parsed.scheme == "https" else None
+    default_port = (
+        80 if parsed.scheme == "http" else 443 if parsed.scheme == "https" else None
+    )
     host_header = hostname
     if port is not None and port != default_port:
         host_header = f"{host_header}:{port}"
@@ -154,10 +162,14 @@ class HttpxWebProvider:
         self._search_provider = search_provider
         self._fetch_provider = fetch_provider
         self._allowed_domains = (
-            frozenset(d.lower() for d in allowed_domains) if allowed_domains else frozenset()
+            frozenset(d.lower() for d in allowed_domains)
+            if allowed_domains
+            else frozenset()
         )
         self._blocked_domains = (
-            frozenset(d.lower() for d in blocked_domains) if blocked_domains else frozenset()
+            frozenset(d.lower() for d in blocked_domains)
+            if blocked_domains
+            else frozenset()
         )
 
     def _is_domain_blocked(self, url: str) -> str | None:
@@ -212,7 +224,11 @@ class HttpxWebProvider:
             return "Invalid URL"
 
         # Block cloud metadata endpoints
-        _BLOCKED_HOSTS = {"169.254.169.254", "metadata.google.internal", "100.100.100.200"}
+        _BLOCKED_HOSTS = {
+            "169.254.169.254",
+            "metadata.google.internal",
+            "100.100.100.200",
+        }
         if hostname in _BLOCKED_HOSTS:
             return f"Blocked host: {hostname}"
 
@@ -270,7 +286,9 @@ class HttpxWebProvider:
             return "httpx не установлен. pip install swarmline[web]"
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=False) as client:
+            async with httpx.AsyncClient(
+                timeout=self._timeout, follow_redirects=False
+            ) as client:
                 current_url = url
                 for _redirect_hop in range(6):
                     rejection = self._validate_url(current_url)
@@ -279,7 +297,9 @@ class HttpxWebProvider:
                         return f"URL blocked: {rejection}"
 
                     try:
-                        safe_url, headers, extensions = _build_safe_request_target(current_url)
+                        safe_url, headers, extensions = _build_safe_request_target(
+                            current_url
+                        )
                     except ValueError as exc:
                         _log_network_target_denied(current_url, str(exc))
                         return f"URL blocked: {exc}"
@@ -303,7 +323,9 @@ class HttpxWebProvider:
                     html = response.text
                     return _extract_text(html)
 
-                _log.warning("httpx_fetch_failed", url=url[:200], error="Too many redirects")
+                _log.warning(
+                    "httpx_fetch_failed", url=url[:200], error="Too many redirects"
+                )
                 return ""
         except Exception as exc:
             _log.warning("httpx_fetch_failed", url=url[:200], error=str(exc))

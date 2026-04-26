@@ -172,9 +172,7 @@ async def test_create_git_worktree(tmp_path: object) -> None:
     await _run("git", "-C", str(repo), "commit", "-m", "init")
 
     ws = LocalWorkspace()
-    spec = WorkspaceSpec(
-        strategy=WorkspaceStrategy.GIT_WORKTREE, base_path=str(repo)
-    )
+    spec = WorkspaceSpec(strategy=WorkspaceStrategy.GIT_WORKTREE, base_path=str(repo))
     handle = await ws.create(spec, "agent1", "task1")
     assert os.path.isdir(handle.path)
     assert handle.strategy == WorkspaceStrategy.GIT_WORKTREE

@@ -28,7 +28,11 @@ def _default_mapper(action: str) -> Callable[[dict[str, Any]], ActivityEntry]:
             action=action,
             entity_type=data.get("entity_type", "unknown"),
             entity_id=data.get("entity_id", "unknown"),
-            details={k: v for k, v in data.items() if k not in ("actor_id", "entity_type", "entity_id")},
+            details={
+                k: v
+                for k, v in data.items()
+                if k not in ("actor_id", "entity_type", "entity_id")
+            },
         )
 
     return _map
@@ -75,7 +79,8 @@ class ActivityLogSubscriber:
             self._event_bus.subscribe(topic, self._make_handler(mapper))
 
     def _make_handler(
-        self, mapper: Callable[[dict[str, Any]], ActivityEntry],
+        self,
+        mapper: Callable[[dict[str, Any]], ActivityEntry],
     ) -> Callable[[dict[str, Any]], Any]:
         """Create an async callback that maps event data to an ActivityEntry and logs it."""
 

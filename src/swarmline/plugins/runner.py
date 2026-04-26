@@ -94,7 +94,9 @@ class SubprocessPluginRunner:
             restart_count=0,
         )
         self._processes[plugin_id] = pp
-        logger.info("plugin.started name=%s pid=%s id=%s", manifest.name, process.pid, plugin_id)
+        logger.info(
+            "plugin.started name=%s pid=%s id=%s", manifest.name, process.pid, plugin_id
+        )
         return handle
 
     async def call(
@@ -129,9 +131,12 @@ class SubprocessPluginRunner:
         process = pp.process
         if process is not None and process.returncode is None:
             # Try graceful shutdown via JSON-RPC
-            shutdown_req = json.dumps(
-                {"jsonrpc": "2.0", "method": "__shutdown__", "id": "shutdown"}
-            ) + "\n"
+            shutdown_req = (
+                json.dumps(
+                    {"jsonrpc": "2.0", "method": "__shutdown__", "id": "shutdown"}
+                )
+                + "\n"
+            )
             try:
                 async with pp.rpc_lock:
                     assert process.stdin is not None
@@ -228,7 +233,7 @@ class SubprocessPluginRunner:
                 f"({pp.manifest.max_restarts})"
             )
 
-        backoff = pp.manifest.restart_backoff_base ** pp.restart_count
+        backoff = pp.manifest.restart_backoff_base**pp.restart_count
         logger.warning(
             "plugin.restarting name=%s attempt=%d backoff=%.1fs",
             pp.manifest.name,

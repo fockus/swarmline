@@ -34,7 +34,7 @@ class TestGenericWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_generic_workflow_full_cycle_pass_on_third(self) -> None:
-        """Executor vyzyvaetsya 3 raza, verifier propuskaet on 3-y popytke. Verify: status, output, verification_log, loop_count. """
+        """Executor vyzyvaetsya 3 raza, verifier propuskaet on 3-y popytke. Verify: status, output, verification_log, loop_count."""
         attempt = 0
 
         async def executor(task: str, ctx: dict[str, Any]) -> str:
@@ -67,6 +67,7 @@ class TestGenericWorkflowE2E:
     @pytest.mark.asyncio
     async def test_generic_workflow_max_retries_exceeded(self) -> None:
         """Vse popytki fail -> MAX_RETRIES_EXCEEDED."""
+
         async def executor(task: str, ctx: dict[str, Any]) -> str:
             return "always_failing_output"
 
@@ -89,6 +90,7 @@ class TestGenericWorkflowE2E:
     @pytest.mark.asyncio
     async def test_generic_workflow_pass_first_try(self) -> None:
         """Verifier propuskaet with pervoy popytki."""
+
         async def executor(task: str, ctx: dict[str, Any]) -> str:
             return "perfect_output"
 
@@ -172,7 +174,7 @@ class TestCodeWorkflowE2E:
 
     @pytest.mark.asyncio
     async def test_code_workflow_delegates_to_generic(self) -> None:
-        """CodeWorkflowEngine ispolzuet GenericWorkflowEngine vnutri. Verify: result correct, uses planner + DoD verifier. """
+        """CodeWorkflowEngine ispolzuet GenericWorkflowEngine vnutri. Verify: result correct, uses planner + DoD verifier."""
 
         class FakePlanner:
             """Fake CodePlannerPort: create_plan -> execute_plan."""
@@ -195,7 +197,9 @@ class TestCodeWorkflowE2E:
             async def verify_contracts(self) -> VerificationResult:
                 return VerificationResult(
                     status=VerificationStatus.PASS,
-                    checks=(CheckDetail(name="contracts", status=VerificationStatus.PASS),),
+                    checks=(
+                        CheckDetail(name="contracts", status=VerificationStatus.PASS),
+                    ),
                 )
 
             async def verify_tests_substantive(self) -> VerificationResult:
@@ -213,13 +217,17 @@ class TestCodeWorkflowE2E:
             async def verify_linters(self) -> VerificationResult:
                 return VerificationResult(
                     status=VerificationStatus.PASS,
-                    checks=(CheckDetail(name="linters", status=VerificationStatus.PASS),),
+                    checks=(
+                        CheckDetail(name="linters", status=VerificationStatus.PASS),
+                    ),
                 )
 
             async def verify_coverage(self, min_pct: int = 85) -> VerificationResult:
                 return VerificationResult(
                     status=VerificationStatus.PASS,
-                    checks=(CheckDetail(name="coverage", status=VerificationStatus.PASS),),
+                    checks=(
+                        CheckDetail(name="coverage", status=VerificationStatus.PASS),
+                    ),
                 )
 
         planner = FakePlanner()

@@ -347,9 +347,7 @@ class TestTier2LlmSummarization:
             _msg("user", "last"),
         ]
         result_msgs, _ = await f.filter(msgs, "sys")
-        summary_msgs = [
-            m for m in result_msgs if "[Conversation summary]" in m.content
-        ]
+        summary_msgs = [m for m in result_msgs if "[Conversation summary]" in m.content]
         assert len(summary_msgs) == 1
         assert summary_msgs[0].role == "system"
 
@@ -470,24 +468,28 @@ class TestCascade:
 
         # Lots of non-tool messages that Tier 1 can't collapse
         config = CompactionConfig(
-            threshold_tokens=100, preserve_recent_pairs=0, tier_3_enabled=False,
+            threshold_tokens=100,
+            preserve_recent_pairs=0,
+            tier_3_enabled=False,
         )
         f = ConversationCompactionFilter(config=config, llm_call=mock_llm)
-        msgs = [
-            _msg("user", "long message " * 100),
-            _msg("assistant", "long response " * 100),
-            _msg("user", "more context " * 100),
-            _msg("assistant", "another reply " * 100),
-        ] + _tool_pair("tool1", "data " * 50) + [
-            _msg("user", "question"),
-        ]
+        msgs = (
+            [
+                _msg("user", "long message " * 100),
+                _msg("assistant", "long response " * 100),
+                _msg("user", "more context " * 100),
+                _msg("assistant", "another reply " * 100),
+            ]
+            + _tool_pair("tool1", "data " * 50)
+            + [
+                _msg("user", "question"),
+            ]
+        )
         result_msgs, _ = await f.filter(msgs, "sys")
         assert result_msgs[-1].content == "question"
         assert len(result_msgs) < len(msgs)
         # Should have a summary message from Tier 2
-        summary_msgs = [
-            m for m in result_msgs if "[Conversation summary]" in m.content
-        ]
+        summary_msgs = [m for m in result_msgs if "[Conversation summary]" in m.content]
         assert len(summary_msgs) == 1
 
     @pytest.mark.asyncio
@@ -541,7 +543,9 @@ class TestNonCompactableTier2:
             return "Summarized conversation."
 
         config = CompactionConfig(
-            threshold_tokens=20, preserve_recent_pairs=0, tier_1_enabled=False,
+            threshold_tokens=20,
+            preserve_recent_pairs=0,
+            tier_1_enabled=False,
         )
         f = ConversationCompactionFilter(config=config, llm_call=mock_llm)
         msgs = [
@@ -553,8 +557,7 @@ class TestNonCompactableTier2:
         result_msgs, _ = await f.filter(msgs, "sys")
         # non_compactable message must survive
         nc_msgs = [
-            m for m in result_msgs
-            if m.metadata and m.metadata.get("non_compactable")
+            m for m in result_msgs if m.metadata and m.metadata.get("non_compactable")
         ]
         assert len(nc_msgs) == 1
         assert nc_msgs[0].content == "thinking content"
@@ -571,7 +574,9 @@ class TestNonCompactableTier2:
             return "Summary."
 
         config = CompactionConfig(
-            threshold_tokens=20, preserve_recent_pairs=0, tier_1_enabled=False,
+            threshold_tokens=20,
+            preserve_recent_pairs=0,
+            tier_1_enabled=False,
         )
         f = ConversationCompactionFilter(config=config, llm_call=capture_llm)
         msgs = [
@@ -608,8 +613,7 @@ class TestNonCompactableTier3:
         result_msgs, _ = await f.filter(msgs, "sys")
         # non_compactable must survive
         nc_msgs = [
-            m for m in result_msgs
-            if m.metadata and m.metadata.get("non_compactable")
+            m for m in result_msgs if m.metadata and m.metadata.get("non_compactable")
         ]
         assert len(nc_msgs) == 1
         assert nc_msgs[0].content == "thinking"

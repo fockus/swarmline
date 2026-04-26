@@ -74,7 +74,9 @@ class SqliteActivityLog:
     PRAGMA journal_mode=WAL for concurrent read safety.
     """
 
-    def __init__(self, db_path: str = "swarmline_activity.db", *, max_entries: int = 10_000) -> None:
+    def __init__(
+        self, db_path: str = "swarmline_activity.db", *, max_entries: int = 10_000
+    ) -> None:
         self._db_path = db_path
         self._max_entries = max_entries
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -105,8 +107,7 @@ class SqliteActivityLog:
                 "ON activity_log(entity_type, entity_id)"
             )
             self._conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_al_timestamp "
-                "ON activity_log(timestamp)"
+                "CREATE INDEX IF NOT EXISTS idx_al_timestamp ON activity_log(timestamp)"
             )
             self._conn.commit()
 
@@ -122,7 +123,9 @@ class SqliteActivityLog:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     entry.id,
-                    entry.actor_type.value if isinstance(entry.actor_type, ActorType) else entry.actor_type,
+                    entry.actor_type.value
+                    if isinstance(entry.actor_type, ActorType)
+                    else entry.actor_type,
                     entry.actor_id,
                     entry.action,
                     entry.entity_type,
@@ -161,7 +164,11 @@ class SqliteActivityLog:
 
         if filter.actor_type is not None:
             clauses.append("actor_type = ?")
-            params.append(filter.actor_type.value if isinstance(filter.actor_type, ActorType) else filter.actor_type)
+            params.append(
+                filter.actor_type.value
+                if isinstance(filter.actor_type, ActorType)
+                else filter.actor_type
+            )
         if filter.actor_id is not None:
             clauses.append("actor_id = ?")
             params.append(filter.actor_id)
@@ -210,7 +217,11 @@ class SqliteActivityLog:
 
         if filter.actor_type is not None:
             clauses.append("actor_type = ?")
-            params.append(filter.actor_type.value if isinstance(filter.actor_type, ActorType) else filter.actor_type)
+            params.append(
+                filter.actor_type.value
+                if isinstance(filter.actor_type, ActorType)
+                else filter.actor_type
+            )
         if filter.actor_id is not None:
             clauses.append("actor_id = ?")
             params.append(filter.actor_id)

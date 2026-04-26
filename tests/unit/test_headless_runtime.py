@@ -18,7 +18,9 @@ class TestHeadlessRuntime:
     @pytest.mark.asyncio
     async def test_run_raises_not_implemented(self) -> None:
         rt = self._make_runtime()
-        with pytest.raises(NotImplementedError, match="HeadlessRuntime does not support LLM"):
+        with pytest.raises(
+            NotImplementedError, match="HeadlessRuntime does not support LLM"
+        ):
             async for _ in rt.run(
                 messages=[Message(role="user", content="hi")],
                 system_prompt="test",

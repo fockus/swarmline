@@ -11,7 +11,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from swarmline.tools.web_httpx import HttpxWebProvider
-from swarmline.tools.web_protocols import SearchResult, WebFetchProvider, WebSearchProvider
+from swarmline.tools.web_protocols import (
+    SearchResult,
+    WebFetchProvider,
+    WebSearchProvider,
+)
 from swarmline.tools.web_providers.brave import BraveSearchProvider
 from swarmline.tools.web_providers.crawl4ai import Crawl4AIFetchProvider
 from swarmline.tools.web_providers.duckduckgo import DuckDuckGoSearchProvider
@@ -102,7 +106,9 @@ class TestDuckDuckGoSearchProvider:
         finally:
             ddg_mod.DDGS = original
 
-        mock_ddgs_instance.text.assert_called_once_with("test", max_results=3, timeout=20)
+        mock_ddgs_instance.text.assert_called_once_with(
+            "test", max_results=3, timeout=20
+        )
 
     async def test_missing_dep_returns_empty(self) -> None:
         """Without ddgs (not ustanovlen) -> empty list (graceful)."""
@@ -186,7 +192,11 @@ class TestTavilySearchProvider:
 
         mock_response = {
             "results": [
-                {"title": "Tavily", "url": "https://tavily.com", "content": "AI search"},
+                {
+                    "title": "Tavily",
+                    "url": "https://tavily.com",
+                    "content": "AI search",
+                },
             ]
         }
 
@@ -244,7 +254,11 @@ class TestSearXNGSearchProvider:
         """HTTP JSON response → SearchResult."""
         mock_json = {
             "results": [
-                {"title": "SearXNG", "url": "https://searxng.org", "content": "Metasearch"},
+                {
+                    "title": "SearXNG",
+                    "url": "https://searxng.org",
+                    "content": "Metasearch",
+                },
             ]
         }
 
@@ -274,7 +288,9 @@ class TestSearXNGSearchProvider:
         import httpx as real_httpx
 
         mock_client = AsyncMock()
-        mock_client.get = AsyncMock(side_effect=real_httpx.ConnectError("Connection refused"))
+        mock_client.get = AsyncMock(
+            side_effect=real_httpx.ConnectError("Connection refused")
+        )
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
@@ -312,7 +328,11 @@ class TestBraveSearchProvider:
         mock_json = {
             "web": {
                 "results": [
-                    {"title": "Brave", "url": "https://brave.com", "description": "Browser"},
+                    {
+                        "title": "Brave",
+                        "url": "https://brave.com",
+                        "description": "Browser",
+                    },
                 ]
             }
         }
@@ -420,7 +440,9 @@ class TestJinaReaderFetchProvider:
         import httpx as real_httpx
 
         mock_client = AsyncMock()
-        mock_client.get = AsyncMock(side_effect=real_httpx.ConnectError("Connection refused"))
+        mock_client.get = AsyncMock(
+            side_effect=real_httpx.ConnectError("Connection refused")
+        )
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
@@ -518,7 +540,9 @@ class TestHttpxWebProviderDelegation:
 
     async def test_delegates_search_to_provider(self) -> None:
         """search() delegates in search_provider."""
-        expected = [SearchResult(title="Test", url="https://test.com", snippet="snippet")]
+        expected = [
+            SearchResult(title="Test", url="https://test.com", snippet="snippet")
+        ]
         mock_provider = AsyncMock()
         mock_provider.search = AsyncMock(return_value=expected)
 
@@ -632,7 +656,9 @@ class TestExtractText:
         """style tegi polnostyu udalyayutsya (regex fallback)."""
         from swarmline.tools.web_httpx import _extract_text
 
-        html = "<html><body><style>.cls { color: red; }</style><p>World</p></body></html>"
+        html = (
+            "<html><body><style>.cls { color: red; }</style><p>World</p></body></html>"
+        )
         with patch("swarmline.tools.web_httpx.trafilatura", None):
             text = _extract_text(html)
         assert "color" not in text

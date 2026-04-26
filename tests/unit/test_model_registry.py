@@ -163,7 +163,9 @@ class TestModelRegistryProvider:
         assert registry.get_provider("4o") == "openai"
         assert registry.get_provider("gemini") == "google"
 
-    def test_unknown_model_falls_back_to_default_provider(self, registry: ModelRegistry) -> None:
+    def test_unknown_model_falls_back_to_default_provider(
+        self, registry: ModelRegistry
+    ) -> None:
         """Not known model -> resolve fallback on default -> provider default models."""
         # "llama-70b" resolves in default (claude-sonnet) -> provider = anthropic
         assert registry.get_provider("llama-70b") == "anthropic"

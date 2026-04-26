@@ -80,9 +80,7 @@ class TestWorktreeOrchestratorConstructor:
     def test_accepts_workspace_and_event_bus(
         self, mock_workspace: AsyncMock, mock_event_bus: AsyncMock
     ) -> None:
-        orch = WorktreeOrchestrator(
-            workspace=mock_workspace, event_bus=mock_event_bus
-        )
+        orch = WorktreeOrchestrator(workspace=mock_workspace, event_bus=mock_event_bus)
         assert orch._bus is mock_event_bus
 
 
@@ -104,9 +102,7 @@ class TestCreateWorkspace:
         mock_event_bus: AsyncMock,
         policy: WorktreePolicy,
     ) -> None:
-        orch = WorktreeOrchestrator(
-            workspace=mock_workspace, event_bus=mock_event_bus
-        )
+        orch = WorktreeOrchestrator(workspace=mock_workspace, event_bus=mock_event_bus)
         handle = await orch.create_workspace(policy, agent_id="dev1", task_id="t1")
         mock_event_bus.emit.assert_awaited()
         call_args = mock_event_bus.emit.call_args
@@ -182,9 +178,7 @@ class TestMergeWorkspace:
     async def test_emits_merge_started_and_completed(
         self, mock_workspace: AsyncMock, mock_event_bus: AsyncMock
     ) -> None:
-        orch = WorktreeOrchestrator(
-            workspace=mock_workspace, event_bus=mock_event_bus
-        )
+        orch = WorktreeOrchestrator(workspace=mock_workspace, event_bus=mock_event_bus)
         handle = _make_handle()
         mock_proc = AsyncMock()
         mock_proc.returncode = 0
@@ -198,9 +192,7 @@ class TestMergeWorkspace:
     async def test_emits_merge_failed_on_conflict(
         self, mock_workspace: AsyncMock, mock_event_bus: AsyncMock
     ) -> None:
-        orch = WorktreeOrchestrator(
-            workspace=mock_workspace, event_bus=mock_event_bus
-        )
+        orch = WorktreeOrchestrator(workspace=mock_workspace, event_bus=mock_event_bus)
         handle = _make_handle()
         mock_proc = AsyncMock()
         mock_proc.returncode = 1
@@ -231,9 +223,7 @@ class TestCleanupWorkspace:
         mock_event_bus: AsyncMock,
         policy: WorktreePolicy,
     ) -> None:
-        orch = WorktreeOrchestrator(
-            workspace=mock_workspace, event_bus=mock_event_bus
-        )
+        orch = WorktreeOrchestrator(workspace=mock_workspace, event_bus=mock_event_bus)
         handle = await orch.create_workspace(policy, agent_id="dev1", task_id="t1")
         mock_event_bus.emit.reset_mock()
         await orch.cleanup_workspace(handle)
@@ -254,9 +244,7 @@ class TestCleanupWorkspace:
 
 
 class TestScanOrphans:
-    async def test_finds_orphan_worktrees(
-        self, mock_workspace: AsyncMock
-    ) -> None:
+    async def test_finds_orphan_worktrees(self, mock_workspace: AsyncMock) -> None:
         orch = WorktreeOrchestrator(workspace=mock_workspace)
         porcelain_output = (
             b"worktree /repo\n"
@@ -306,9 +294,7 @@ class TestScanOrphans:
 
 
 class TestCleanupOrphans:
-    async def test_removes_orphan_worktrees(
-        self, mock_workspace: AsyncMock
-    ) -> None:
+    async def test_removes_orphan_worktrees(self, mock_workspace: AsyncMock) -> None:
         orch = WorktreeOrchestrator(workspace=mock_workspace)
         porcelain_output = (
             b"worktree /repo\n"
@@ -322,9 +308,7 @@ class TestCleanupOrphans:
         )
         mock_scan_proc = AsyncMock()
         mock_scan_proc.returncode = 0
-        mock_scan_proc.communicate = AsyncMock(
-            return_value=(porcelain_output, b"")
-        )
+        mock_scan_proc.communicate = AsyncMock(return_value=(porcelain_output, b""))
         mock_remove_proc = AsyncMock()
         mock_remove_proc.returncode = 0
         mock_remove_proc.communicate = AsyncMock(return_value=(b"", b""))
@@ -347,9 +331,7 @@ class TestFullLifecycle:
         mock_event_bus: AsyncMock,
         policy: WorktreePolicy,
     ) -> None:
-        orch = WorktreeOrchestrator(
-            workspace=mock_workspace, event_bus=mock_event_bus
-        )
+        orch = WorktreeOrchestrator(workspace=mock_workspace, event_bus=mock_event_bus)
         handle = await orch.create_workspace(policy, agent_id="dev1", task_id="t1")
         assert handle.workspace_id in orch._active
 

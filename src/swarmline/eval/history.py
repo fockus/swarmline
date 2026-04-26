@@ -79,12 +79,14 @@ class EvalHistory:
                 )
                 for name, s in r.get("scores", {}).items()
             }
-            results.append(EvalResult(
-                case=case,
-                output=r.get("output", ""),
-                error=r.get("error"),
-                latency_ms=r.get("latency_ms", 0.0),
-                scores=scores,
-            ))
+            results.append(
+                EvalResult(
+                    case=case,
+                    output=r.get("output", ""),
+                    error=r.get("error"),
+                    latency_ms=r.get("latency_ms", 0.0),
+                    scores=scores,
+                )
+            )
 
         return EvalReport(results=tuple(results))

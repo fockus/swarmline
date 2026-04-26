@@ -1,5 +1,4 @@
-"""TDD RED: WorkflowGraph - deklarativnye grafy vypolnotniya. CRP-4.1: linear, conditional, loop, parallel, subgraph, interrupt, mermaid.
-"""
+"""TDD RED: WorkflowGraph - deklarativnye grafy vypolnotniya. CRP-4.1: linear, conditional, loop, parallel, subgraph, interrupt, mermaid."""
 
 from __future__ import annotations
 
@@ -134,7 +133,10 @@ class TestWorkflowCheckpointResume:
     """crash → resume from checkpoint."""
 
     async def test_workflow_checkpoint_resume(self) -> None:
-        from swarmline.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
+        from swarmline.orchestration.workflow_graph import (
+            InMemoryCheckpoint,
+            WorkflowGraph,
+        )
 
         checkpoint = InMemoryCheckpoint()
         call_count = 0
@@ -170,8 +172,13 @@ class TestWorkflowCheckpointResume:
         # step1 should NOT re-run on resume (was checkpointed)
         assert call_count == 0 or result.get("count") is not None
 
-    async def test_workflow_resume_replays_checkpointed_node_instead_of_skipping_it(self) -> None:
-        from swarmline.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
+    async def test_workflow_resume_replays_checkpointed_node_instead_of_skipping_it(
+        self,
+    ) -> None:
+        from swarmline.orchestration.workflow_graph import (
+            InMemoryCheckpoint,
+            WorkflowGraph,
+        )
 
         checkpoint = InMemoryCheckpoint()
         step2_calls = 0
@@ -203,13 +210,18 @@ class TestWorkflowCheckpointResume:
         with pytest.raises(RuntimeError, match="step2 crashed"):
             await wf.execute({}, checkpoint=checkpoint, run_id="run-2")
 
-        result = await wf.execute({}, checkpoint=checkpoint, run_id="run-2", resume=True)
+        result = await wf.execute(
+            {}, checkpoint=checkpoint, run_id="run-2", resume=True
+        )
 
         assert result["execution_order"] == ["step1", "step2", "step3"]
         assert step2_calls == 2
 
     async def test_workflow_checkpoint_resume_replays_checkpointed_node(self) -> None:
-        from swarmline.orchestration.workflow_graph import InMemoryCheckpoint, WorkflowGraph
+        from swarmline.orchestration.workflow_graph import (
+            InMemoryCheckpoint,
+            WorkflowGraph,
+        )
 
         checkpoint = InMemoryCheckpoint()
         call_counts = {"a": 0, "b": 0, "c": 0}
@@ -263,7 +275,10 @@ class TestWorkflowInterruptHITL:
     """pause at node → resume with input."""
 
     async def test_workflow_interrupt_hitl(self) -> None:
-        from swarmline.orchestration.workflow_graph import WorkflowGraph, WorkflowInterrupt
+        from swarmline.orchestration.workflow_graph import (
+            WorkflowGraph,
+            WorkflowInterrupt,
+        )
 
         wf = WorkflowGraph("interrupt-test")
         wf.add_node("prepare", await _tag_node("PREPARE"))

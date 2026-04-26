@@ -139,9 +139,12 @@ class TestHealth:
     ) -> None:
         mock_proc = _make_mock_process()
         # Simulate ping response
-        ping_response = json.dumps(
-            {"jsonrpc": "2.0", "result": {"ok": True}, "id": "ping"}
-        ).encode() + b"\n"
+        ping_response = (
+            json.dumps(
+                {"jsonrpc": "2.0", "result": {"ok": True}, "id": "ping"}
+            ).encode()
+            + b"\n"
+        )
         mock_proc.stdout.readline = AsyncMock(return_value=ping_response)
 
         with patch.object(runner, "_launch", return_value=mock_proc):
@@ -180,9 +183,12 @@ class TestCall:
         self, runner: SubprocessPluginRunner, manifest: PluginManifest
     ) -> None:
         mock_proc = _make_mock_process()
-        rpc_response = json.dumps(
-            {"jsonrpc": "2.0", "result": {"echoed": "hi"}, "id": "abc"}
-        ).encode() + b"\n"
+        rpc_response = (
+            json.dumps(
+                {"jsonrpc": "2.0", "result": {"echoed": "hi"}, "id": "abc"}
+            ).encode()
+            + b"\n"
+        )
         mock_proc.stdout.readline = AsyncMock(return_value=rpc_response)
 
         with patch.object(runner, "_launch", return_value=mock_proc):
@@ -195,13 +201,16 @@ class TestCall:
         self, runner: SubprocessPluginRunner, manifest: PluginManifest
     ) -> None:
         mock_proc = _make_mock_process()
-        err_response = json.dumps(
-            {
-                "jsonrpc": "2.0",
-                "error": {"code": -32601, "message": "Method not found: nope"},
-                "id": "abc",
-            }
-        ).encode() + b"\n"
+        err_response = (
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32601, "message": "Method not found: nope"},
+                    "id": "abc",
+                }
+            ).encode()
+            + b"\n"
+        )
         mock_proc.stdout.readline = AsyncMock(return_value=err_response)
 
         with patch.object(runner, "_launch", return_value=mock_proc):

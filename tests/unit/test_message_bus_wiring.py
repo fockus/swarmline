@@ -85,10 +85,12 @@ class TestSendMessageTool:
         )
 
         # Vyzyvaem tool kak if by LLM ego vyzvala
-        await send_message_executor({
-            "to_agent": "worker_1",
-            "content": "I found the answer",
-        })
+        await send_message_executor(
+            {
+                "to_agent": "worker_1",
+                "content": "I found the answer",
+            }
+        )
 
         # Message should byt in shinot
         inbox = await bus.get_inbox("worker_1")
@@ -108,10 +110,12 @@ class TestSendMessageTool:
             team_members=["worker_0", "worker_1"],
         )
 
-        await send_message_executor({
-            "to_agent": "*",
-            "content": "All hands meeting",
-        })
+        await send_message_executor(
+            {
+                "to_agent": "*",
+                "content": "All hands meeting",
+            }
+        )
 
         for worker in ["worker_0", "worker_1"]:
             inbox = await bus.get_inbox(worker)

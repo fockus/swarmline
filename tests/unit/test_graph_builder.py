@@ -14,7 +14,6 @@ from swarmline.multi_agent.graph_store import InMemoryAgentGraph
 
 
 class TestFluentAPI:
-
     async def test_add_root_and_build(self) -> None:
         store = InMemoryAgentGraph()
         builder = GraphBuilder(store)
@@ -68,7 +67,9 @@ class TestFluentAPI:
         store = InMemoryAgentGraph()
         builder = GraphBuilder(store)
         builder.add_root(
-            "ceo", "CEO", "executive",
+            "ceo",
+            "CEO",
+            "executive",
             mcp_servers=("filesystem", "github"),
         )
         snap = await builder.build()
@@ -79,7 +80,10 @@ class TestFluentAPI:
         builder = GraphBuilder(store)
         builder.add_root("ceo", "CEO", "executive")
         builder.add_child(
-            "cto", "ceo", "CTO", "tech",
+            "cto",
+            "ceo",
+            "CTO",
+            "tech",
             mcp_servers=("database",),
         )
         await builder.build()
@@ -101,7 +105,6 @@ class TestFluentAPI:
 
 
 class TestFromDict:
-
     async def test_simple_dict(self) -> None:
         store = InMemoryAgentGraph()
         config = {
@@ -187,7 +190,6 @@ class TestFromDict:
 
 
 class TestFromYaml:
-
     async def test_yaml_file(self, tmp_path: Path) -> None:
         yaml_content = """\
 id: ceo

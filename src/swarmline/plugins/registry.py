@@ -51,12 +51,14 @@ class PluginRegistry:
 
         for ptype, group in groups.items():
             for ep in _entry_points(group):
-                plugins.append(PluginInfo(
-                    name=ep.name,
-                    module_path=ep.value,
-                    plugin_type=ptype,
-                    entry_point_group=group,
-                ))
+                plugins.append(
+                    PluginInfo(
+                        name=ep.name,
+                        module_path=ep.value,
+                        plugin_type=ptype,
+                        entry_point_group=group,
+                    )
+                )
 
         # Deduplicate by name
         seen: set[str] = set()

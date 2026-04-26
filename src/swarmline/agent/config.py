@@ -13,7 +13,11 @@ if TYPE_CHECKING:
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
-    from swarmline.runtime.types import ModelRequestOptions, StructuredMode, ThinkingConfig
+    from swarmline.runtime.types import (
+        ModelRequestOptions,
+        StructuredMode,
+        ThinkingConfig,
+    )
     from swarmline.runtime.thin.coding_profile import CodingProfileConfig
     from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
 

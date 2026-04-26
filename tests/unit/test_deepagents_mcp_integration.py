@@ -81,7 +81,8 @@ class TestDeepAgentsMcpToolDiscovery:
         ]
 
         with patch.object(
-            runtime._mcp_bridge, "discover_all_tools",
+            runtime._mcp_bridge,
+            "discover_all_tools",
             new_callable=AsyncMock,
             return_value=mock_tools,
         ):
@@ -126,7 +127,8 @@ class TestDeepAgentsMcpToolExecution:
 
         # Mock internal call_tool
         with patch.object(
-            bridge._client, "call_tool",
+            bridge._client,
+            "call_tool",
             new_callable=AsyncMock,
             return_value={"result": "ok"},
         ):
@@ -166,7 +168,8 @@ class TestDeepAgentsMcpMergedWithCustomTools:
         runtime = DeepAgentsRuntime(config=config, mcp_servers=mcp_servers)
 
         with patch.object(
-            runtime._mcp_bridge, "discover_all_tools",
+            runtime._mcp_bridge,
+            "discover_all_tools",
             new_callable=AsyncMock,
             return_value=mcp_tools,
         ):

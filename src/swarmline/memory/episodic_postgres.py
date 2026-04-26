@@ -47,12 +47,15 @@ class PostgresEpisodicMemory:
     @staticmethod
     def _serialize(ep: Episode) -> dict[str, Any]:
         return {
-            "id": ep.id, "summary": ep.summary,
+            "id": ep.id,
+            "summary": ep.summary,
             "key_decisions": list(ep.key_decisions),
             "tools_used": list(ep.tools_used),
-            "outcome": ep.outcome, "session_id": ep.session_id,
+            "outcome": ep.outcome,
+            "session_id": ep.session_id,
             "timestamp": ep.timestamp.isoformat(),
-            "tags": list(ep.tags), "metadata": ep.metadata,
+            "tags": list(ep.tags),
+            "metadata": ep.metadata,
         }
 
     @staticmethod
@@ -63,7 +66,8 @@ class PostgresEpisodicMemory:
         elif not isinstance(ts, datetime):
             ts = datetime.now(UTC)
         return Episode(
-            id=data["id"], summary=data["summary"],
+            id=data["id"],
+            summary=data["summary"],
             key_decisions=tuple(data.get("key_decisions", ())),
             tools_used=tuple(data.get("tools_used", ())),
             outcome=data.get("outcome", "unknown"),
@@ -81,8 +85,10 @@ class PostgresEpisodicMemory:
                     "VALUES (:id, :summary, :outcome, :session_id, :ts, CAST(:data AS jsonb))"
                 ),
                 {
-                    "id": episode.id, "summary": episode.summary,
-                    "outcome": episode.outcome, "session_id": episode.session_id,
+                    "id": episode.id,
+                    "summary": episode.summary,
+                    "outcome": episode.outcome,
+                    "session_id": episode.session_id,
                     "ts": episode.timestamp,
                     "data": json.dumps(self._serialize(episode)),
                 },
@@ -90,34 +96,42 @@ class PostgresEpisodicMemory:
 
     async def recall(self, query: str, *, top_k: int = 5) -> list[Episode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text(
-                    "SELECT data, ts_rank(search_vector, plainto_tsquery('english', :query)) AS rank "
-                    "FROM episodes "
-                    "WHERE search_vector @@ plainto_tsquery('english', :query) "
-                    "ORDER BY rank DESC LIMIT :limit"
-                ),
-                {"query": query, "limit": top_k},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text(
+                        "SELECT data, ts_rank(search_vector, plainto_tsquery('english', :query)) AS rank "
+                        "FROM episodes "
+                        "WHERE search_vector @@ plainto_tsquery('english', :query) "
+                        "ORDER BY rank DESC LIMIT :limit"
+                    ),
+                    {"query": query, "limit": top_k},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def recall_recent(self, n: int = 10) -> list[Episode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("SELECT data FROM episodes ORDER BY timestamp DESC LIMIT :n"),
-                {"n": n},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text("SELECT data FROM episodes ORDER BY timestamp DESC LIMIT :n"),
+                    {"n": n},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def recall_by_tag(self, tag: str) -> list[Episode]:
         async with self._session() as session:
-            rows = (await session.execute(
-                text("SELECT data FROM episodes WHERE data->'tags' ? :tag"),
-                {"tag": tag},
-            )).fetchall()
+            rows = (
+                await session.execute(
+                    text("SELECT data FROM episodes WHERE data->'tags' ? :tag"),
+                    {"tag": tag},
+                )
+            ).fetchall()
             return [self._deserialize(r[0]) for r in rows]
 
     async def count(self) -> int:
         async with self._session() as session:
-            row = (await session.execute(text("SELECT count(*) FROM episodes"))).fetchone()
+            row = (
+                await session.execute(text("SELECT count(*) FROM episodes"))
+            ).fetchone()
             return row[0] if row else 0

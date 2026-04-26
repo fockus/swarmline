@@ -178,11 +178,13 @@ class TestThinSubagentFullImplementation:
     @pytest.mark.asyncio
     async def test_thin_subagent_tools_inherited(self) -> None:
         """Worker inherits tools from SubagentSpec - tools are passed in runtime.run()."""
-        tool_call_json = json.dumps({
-            "type": "tool_call",
-            "tool": {"name": "my_tool", "args": {"x": 1}, "correlation_id": "c1"},
-            "assistant_message": "",
-        })
+        tool_call_json = json.dumps(
+            {
+                "type": "tool_call",
+                "tool": {"name": "my_tool", "args": {"x": 1}, "correlation_id": "c1"},
+                "assistant_message": "",
+            }
+        )
         final_json = _make_final("Used tool successfully")
 
         call_idx = {"n": 0}

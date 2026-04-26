@@ -15,6 +15,9 @@ Fetch providers:
 - crawl4ai: Crawl4AI + Playwright -> markdown (pip install crawl4ai)
 """
 
-from swarmline.tools.web_providers.factory import create_fetch_provider, create_search_provider
+from swarmline.tools.web_providers.factory import (
+    create_fetch_provider,
+    create_search_provider,
+)
 
 __all__ = ["create_fetch_provider", "create_search_provider"]

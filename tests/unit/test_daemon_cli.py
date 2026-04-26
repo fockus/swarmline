@@ -13,7 +13,6 @@ from swarmline.daemon.types import DaemonConfig
 
 
 class TestCliParsing:
-
     def test_no_command_exits(self) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main([])
@@ -31,9 +30,9 @@ class TestCliParsing:
 
 
 class TestLoadConfig:
-
     def test_defaults_from_args(self) -> None:
         import argparse
+
         args = argparse.Namespace(
             config=None,
             pid_path=None,
@@ -49,6 +48,7 @@ class TestLoadConfig:
 
     def test_cli_args_override(self) -> None:
         import argparse
+
         args = argparse.Namespace(
             config=None,
             pid_path="/tmp/test.pid",
@@ -106,7 +106,6 @@ class TestLoadConfig:
 
 
 class TestStopCommand:
-
     def test_stop_no_pid_file(self, tmp_path, capsys) -> None:
         pid_path = str(tmp_path / "nonexistent.pid")
         with pytest.raises(SystemExit) as exc_info:
@@ -134,6 +133,7 @@ class TestStopCommand:
         lock_path = pid_path + ".lock"
         lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o644)
         import fcntl
+
         fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
         try:

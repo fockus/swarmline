@@ -12,7 +12,11 @@ from swarmline.multi_agent.task_types import TaskFilter, TaskItem
 
 if TYPE_CHECKING:
     from swarmline.domain_types import ToolSpec
-    from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
+    from swarmline.multi_agent.registry_types import (
+        AgentFilter,
+        AgentRecord,
+        AgentStatus,
+    )
 
 
 @runtime_checkable
@@ -53,9 +57,7 @@ class TaskQueue(Protocol):
         """Mark a task as cancelled. Returns True if found and cancelled."""
         ...
 
-    async def list_tasks(
-        self, filters: TaskFilter | None = None
-    ) -> list[TaskItem]:
+    async def list_tasks(self, filters: TaskFilter | None = None) -> list[TaskItem]:
         """List all tasks matching filters. Returns all if filters is None."""
         ...
 
@@ -73,7 +75,8 @@ class AgentRegistry(Protocol):
     async def get(self, agent_id: str) -> AgentRecord | None: ...
 
     async def list_agents(
-        self, filters: AgentFilter | None = None,
+        self,
+        filters: AgentFilter | None = None,
     ) -> list[AgentRecord]: ...
 
     async def update_status(self, agent_id: str, status: AgentStatus) -> bool: ...

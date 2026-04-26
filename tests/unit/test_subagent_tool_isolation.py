@@ -52,8 +52,12 @@ def config() -> SubagentToolConfig:
 @pytest.fixture
 def parent_tools() -> list[ToolSpec]:
     return [
-        ToolSpec(name="read_file", description="Read a file", parameters={"type": "object"}),
-        ToolSpec(name="write_file", description="Write a file", parameters={"type": "object"}),
+        ToolSpec(
+            name="read_file", description="Read a file", parameters={"type": "object"}
+        ),
+        ToolSpec(
+            name="write_file", description="Write a file", parameters={"type": "object"}
+        ),
     ]
 
 
@@ -141,12 +145,14 @@ class TestExecutorIsolationPassthrough:
     ) -> None:
         mock_spec_cls.return_value = MagicMock()
         executor = create_subagent_executor(orchestrator, config, parent_tools)
-        await executor({
-            "task": "complex work",
-            "system_prompt": "Be careful",
-            "tools": ["read_file"],
-            "isolation": "worktree",
-        })
+        await executor(
+            {
+                "task": "complex work",
+                "system_prompt": "Be careful",
+                "tools": ["read_file"],
+                "isolation": "worktree",
+            }
+        )
 
         call_kwargs: dict[str, Any] = mock_spec_cls.call_args.kwargs
         assert call_kwargs["isolation"] == "worktree"

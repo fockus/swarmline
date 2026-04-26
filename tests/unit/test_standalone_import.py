@@ -1,5 +1,4 @@
-"""Smoke test: swarmline importable standalone (without freedom_agent in sys.path). Iteration 4: E2E-uroven - verify chto library not imeet obratnyh zavisimostey.
-"""
+"""Smoke test: swarmline importable standalone (without freedom_agent in sys.path). Iteration 4: E2E-uroven - verify chto library not imeet obratnyh zavisimostey."""
 
 from __future__ import annotations
 
@@ -35,16 +34,18 @@ class TestStandaloneImport:
             text=True,
             timeout=30,
         )
-        assert (
-            result.returncode == 0
-        ), f"Import failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        assert result.returncode == 0, (
+            f"Import failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        )
         assert "OK" in result.stdout
 
     def test_no_reverse_dependency_in_source(self) -> None:
         """Ishodnyy kod swarmline not contains imports from freedom_agent."""
         import pathlib
 
-        swarmline_src = pathlib.Path(__file__).parent.parent.parent / "src" / "swarmline"
+        swarmline_src = (
+            pathlib.Path(__file__).parent.parent.parent / "src" / "swarmline"
+        )
         violations: list[str] = []
 
         for py_file in swarmline_src.rglob("*.py"):
@@ -55,17 +56,22 @@ class TestStandaloneImport:
                 if stripped.startswith("#"):
                     continue
                 if "freedom_agent" in stripped:
-                    violations.append(f"{py_file.relative_to(swarmline_src)}:{i}: {stripped}")
+                    violations.append(
+                        f"{py_file.relative_to(swarmline_src)}:{i}: {stripped}"
+                    )
 
-        assert (
-            violations == []
-        ), "Найдены обратные зависимости swarmline → freedom_agent:\n" + "\n".join(violations)
+        assert violations == [], (
+            "Найдены обратные зависимости swarmline → freedom_agent:\n"
+            + "\n".join(violations)
+        )
 
     def test_no_domain_leaks(self) -> None:
         """swarmline not contains domain-specific strok (PF5, finance, Freedom)."""
         import pathlib
 
-        swarmline_src = pathlib.Path(__file__).parent.parent.parent / "src" / "swarmline"
+        swarmline_src = (
+            pathlib.Path(__file__).parent.parent.parent / "src" / "swarmline"
+        )
         domain_terms = {"PF5", "finance", "Freedom"}
         violations: list[str] = []
 
@@ -81,6 +87,6 @@ class TestStandaloneImport:
                             f"{py_file.relative_to(swarmline_src)}:{i}: [{term}] {stripped}"
                         )
 
-        assert violations == [], "Найдены domain-specific утечки в swarmline:\n" + "\n".join(
-            violations
+        assert violations == [], (
+            "Найдены domain-specific утечки в swarmline:\n" + "\n".join(violations)
         )

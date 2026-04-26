@@ -85,7 +85,9 @@ class TestE2BSandboxProvider:
         mock_sandbox = AsyncMock()
         # Glob via execute + find
         mock_proc = MagicMock()
-        mock_proc.stdout = "/home/user/workspace/main.py\n/home/user/workspace/src/utils.py\n"
+        mock_proc.stdout = (
+            "/home/user/workspace/main.py\n/home/user/workspace/src/utils.py\n"
+        )
         mock_proc.stderr = ""
         mock_proc.exit_code = 0
         mock_sandbox.process.start.return_value = mock_proc

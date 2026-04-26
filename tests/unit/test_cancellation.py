@@ -209,7 +209,10 @@ class TestThinRuntimeCancel:
         await task
 
         assert not any(event.type == "final" for event in events)
-        assert any(event.type == "error" and event.data["kind"] == "cancelled" for event in events)
+        assert any(
+            event.type == "error" and event.data["kind"] == "cancelled"
+            for event in events
+        )
 
     async def test_thin_runtime_cancel_during_react_loop(self) -> None:
         """Cancel between tool execution and final emit stops the react loop."""
@@ -259,7 +262,10 @@ class TestThinRuntimeCancel:
         await task
 
         assert not any(event.type == "final" for event in events)
-        assert any(event.type == "error" and event.data["kind"] == "cancelled" for event in events)
+        assert any(
+            event.type == "error" and event.data["kind"] == "cancelled"
+            for event in events
+        )
 
     async def test_thin_runtime_cancel_during_retry_backoff(self) -> None:
         """Cancellation during retry sleep exits quickly instead of waiting full delay."""
@@ -284,7 +290,9 @@ class TestThinRuntimeCancel:
         cfg = RuntimeConfig(
             runtime_name="thin",
             cancellation_token=token,
-            retry_policy=ExponentialBackoff(max_retries=3, base_delay=0.5, jitter=False),
+            retry_policy=ExponentialBackoff(
+                max_retries=3, base_delay=0.5, jitter=False
+            ),
         )
         runtime = ThinRuntime(config=cfg, llm_call=failing_llm)
 
@@ -304,7 +312,10 @@ class TestThinRuntimeCancel:
         token.cancel()
         await asyncio.wait_for(task, timeout=0.2)
 
-        assert any(event.type == "error" and event.data["kind"] == "cancelled" for event in events)
+        assert any(
+            event.type == "error" and event.data["kind"] == "cancelled"
+            for event in events
+        )
 
 
 async def _noop_llm(messages: list, system_prompt: str, **kwargs) -> str:  # type: ignore[override]

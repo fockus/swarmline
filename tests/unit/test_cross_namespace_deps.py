@@ -26,7 +26,6 @@ async def resolver(boards):
 
 
 class TestCrossNamespaceResolverBasics:
-
     async def test_resolve_task_found(self, boards, resolver) -> None:
         await boards["goal-a"].create_task(_task("t1"))
         result = await resolver.resolve_task("t1")
@@ -67,7 +66,9 @@ class TestCrossNamespaceDependencies:
         met = await resolver.are_dependencies_met("t1", namespace="goal-a")
         assert met is False
 
-    async def test_are_deps_met_true_after_dep_completed(self, boards, resolver) -> None:
+    async def test_are_deps_met_true_after_dep_completed(
+        self, boards, resolver
+    ) -> None:
         await boards["goal-b"].create_task(_task("dep-b"))
         await boards["goal-a"].create_task(_task("t1", dependencies=("dep-b",)))
         await self._complete(boards["goal-b"], "dep-b")
@@ -106,11 +107,15 @@ class TestCrossNamespaceDependencies:
         met = await resolver.are_dependencies_met("t1", namespace="goal-a")
         assert met is True
 
-    async def test_get_blocked_by_returns_empty_for_task_with_no_deps(self, boards, resolver) -> None:
+    async def test_get_blocked_by_returns_empty_for_task_with_no_deps(
+        self, boards, resolver
+    ) -> None:
         await boards["goal-a"].create_task(_task("t1"))
         blockers = await resolver.get_blocked_by("t1", namespace="goal-a")
         assert blockers == []
 
-    async def test_nonexistent_task_returns_empty_blockers(self, boards, resolver) -> None:
+    async def test_nonexistent_task_returns_empty_blockers(
+        self, boards, resolver
+    ) -> None:
         blockers = await resolver.get_blocked_by("nonexistent", namespace="goal-a")
         assert blockers == []

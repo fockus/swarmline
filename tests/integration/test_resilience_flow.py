@@ -4,7 +4,11 @@ model escalation from-za tool failures.
 
 import time
 
-from swarmline.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry, CircuitState
+from swarmline.resilience.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerRegistry,
+    CircuitState,
+)
 from swarmline.runtime.model_policy import ModelPolicy
 
 

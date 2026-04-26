@@ -104,7 +104,9 @@ class TestContextPack:
         """ContextPack mozhno sortirovat by prioritetu."""
         packs = [
             ContextPack(pack_id="summary", priority=6, content="s", tokens_estimate=1),
-            ContextPack(pack_id="guardrails", priority=0, content="g", tokens_estimate=1),
+            ContextPack(
+                pack_id="guardrails", priority=0, content="g", tokens_estimate=1
+            ),
             ContextPack(pack_id="role", priority=1, content="r", tokens_estimate=1),
         ]
         sorted_packs = sorted(packs, key=lambda p: p.priority)

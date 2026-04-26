@@ -61,10 +61,16 @@ class TestAgentRegistryIntegration:
         registry = InMemoryAgentRegistry()
         parent = _record(id="lead-1", name="Lead", role="lead")
         child_a = _record(
-            id="worker-1", name="Worker A", role="coder", parent_id="lead-1",
+            id="worker-1",
+            name="Worker A",
+            role="coder",
+            parent_id="lead-1",
         )
         child_b = _record(
-            id="worker-2", name="Worker B", role="reviewer", parent_id="lead-1",
+            id="worker-2",
+            name="Worker B",
+            role="reviewer",
+            parent_id="lead-1",
         )
 
         # Act: register parent and children

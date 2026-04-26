@@ -34,7 +34,6 @@ def store(request, tmp_path):
 
 
 class TestProtocolShape:
-
     def test_protocol_shape_inmemory(self) -> None:
         store = InMemoryTaskSessionStore()
         assert isinstance(store, TaskSessionStore)
@@ -50,7 +49,6 @@ class TestProtocolShape:
 
 
 class TestSaveAndLoad:
-
     async def test_save_and_load_roundtrip(self, store) -> None:
         params = {"model": "sonnet", "temperature": 0.7, "tools": ["web", "code"]}
         await store.save("agent-1", "task-42", params)
@@ -89,7 +87,6 @@ class TestSaveAndLoad:
 
 
 class TestDelete:
-
     async def test_delete_existing_returns_true(self, store) -> None:
         await store.save("a1", "t1", {"x": 1})
         result = await store.delete("a1", "t1")
@@ -107,7 +104,6 @@ class TestDelete:
 
 
 class TestListByAgent:
-
     async def test_list_by_agent_filters_correctly(self, store) -> None:
         await store.save("agent-1", "task-a", {"a": 1})
         await store.save("agent-1", "task-b", {"b": 2})
@@ -150,7 +146,6 @@ class TestListByAgent:
 
 
 class TestUpsert:
-
     async def test_save_overwrites_existing(self, store) -> None:
         await store.save("a1", "t1", {"v": 1})
         first = await store.list_by_agent("a1")
@@ -185,7 +180,6 @@ class TestUpsert:
 
 
 class TestConcurrency:
-
     async def test_concurrent_save_load(self, store) -> None:
         """Multiple concurrent saves and loads must not corrupt data."""
 
@@ -211,7 +205,6 @@ class TestConcurrency:
 
 
 class TestTaskSessionParamsType:
-
     def test_frozen(self) -> None:
         p = TaskSessionParams(agent_id="a", task_id="t")
         with pytest.raises(AttributeError):

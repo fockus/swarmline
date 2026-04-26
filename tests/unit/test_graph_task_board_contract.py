@@ -8,7 +8,12 @@ import pytest
 
 from swarmline.multi_agent.graph_task_types import GraphTaskItem, TaskComment
 from swarmline.multi_agent.task_types import TaskStatus
-from swarmline.protocols.graph_task import GraphTaskBlocker, GraphTaskBoard, GraphTaskScheduler, TaskCommentStore
+from swarmline.protocols.graph_task import (
+    GraphTaskBlocker,
+    GraphTaskBoard,
+    GraphTaskScheduler,
+    TaskCommentStore,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +67,6 @@ def _task(
 
 
 class TestProtocol:
-
     def test_board_protocol(self, board) -> None:
         assert isinstance(board, GraphTaskBoard)
 
@@ -76,7 +80,6 @@ class TestProtocol:
 
 
 class TestCRUD:
-
     async def test_create_and_list(self, board) -> None:
         await board.create_task(_task("t1", "Task 1"))
         tasks = await board.list_tasks()
@@ -112,7 +115,6 @@ class TestCRUD:
 
 
 class TestHierarchyValidation:
-
     async def test_self_parent_rejected(self, board) -> None:
         with pytest.raises(ValueError, match="own parent"):
             await board.create_task(_task("t1", "Task", parent_id="t1"))
@@ -129,7 +131,6 @@ class TestHierarchyValidation:
 
 
 class TestAtomicCheckout:
-
     async def test_checkout_claims_task(self, board) -> None:
         await board.create_task(_task("t1", "Task", assignee="agent1"))
         result = await board.checkout_task("t1", "agent1")
@@ -168,7 +169,6 @@ class TestAtomicCheckout:
 
 
 class TestStatusPropagation:
-
     async def test_complete_requires_in_progress(self, board) -> None:
         await board.create_task(_task("t1", "Task"))
         assert await board.complete_task("t1") is False
@@ -216,11 +216,14 @@ class TestStatusPropagation:
 
 
 class TestGoalAncestry:
-
     async def test_get_goal_ancestry(self, board) -> None:
         await board.create_task(_task("root", "Root Goal", goal_id="g1"))
-        await board.create_task(_task("sub", "Sub Task", parent_id="root", goal_id="g1"))
-        await board.create_task(_task("leaf", "Leaf Task", parent_id="sub", goal_id="g1"))
+        await board.create_task(
+            _task("sub", "Sub Task", parent_id="root", goal_id="g1")
+        )
+        await board.create_task(
+            _task("leaf", "Leaf Task", parent_id="sub", goal_id="g1")
+        )
 
         ancestry = await board.get_goal_ancestry("leaf")
         assert ancestry is not None
@@ -245,12 +248,16 @@ class TestGoalAncestry:
 
 
 class TestComments:
-
     async def test_add_and_get_comments(self, board) -> None:
         await board.create_task(_task("t1", "Task"))
-        await board.add_comment(TaskComment(
-            id="c1", task_id="t1", author_agent_id="agent1", content="Progress update"
-        ))
+        await board.add_comment(
+            TaskComment(
+                id="c1",
+                task_id="t1",
+                author_agent_id="agent1",
+                content="Progress update",
+            )
+        )
         comments = await board.get_comments("t1")
         assert len(comments) == 1
         assert comments[0].content == "Progress update"
@@ -258,12 +265,19 @@ class TestComments:
     async def test_thread_includes_subtask_comments(self, board) -> None:
         await board.create_task(_task("parent", "Parent"))
         await board.create_task(_task("child", "Child", parent_id="parent"))
-        await board.add_comment(TaskComment(
-            id="c1", task_id="parent", author_agent_id="a1", content="Parent comment"
-        ))
-        await board.add_comment(TaskComment(
-            id="c2", task_id="child", author_agent_id="a2", content="Child comment"
-        ))
+        await board.add_comment(
+            TaskComment(
+                id="c1",
+                task_id="parent",
+                author_agent_id="a1",
+                content="Parent comment",
+            )
+        )
+        await board.add_comment(
+            TaskComment(
+                id="c2", task_id="child", author_agent_id="a2", content="Child comment"
+            )
+        )
         thread = await board.get_thread("parent")
         assert len(thread) == 2
 
@@ -278,7 +292,6 @@ class TestComments:
 
 
 class TestDependencies:
-
     def test_scheduler_protocol(self, board) -> None:
         assert isinstance(board, GraphTaskScheduler)
 
@@ -360,11 +373,15 @@ class TestDependencies:
 
 
 class TestDelegationMetadata:
-
     async def test_delegated_by_preserved(self, board) -> None:
-        await board.create_task(_task(
-            "t1", "Task", delegated_by="ceo", delegation_reason="need frontend help",
-        ))
+        await board.create_task(
+            _task(
+                "t1",
+                "Task",
+                delegated_by="ceo",
+                delegation_reason="need frontend help",
+            )
+        )
         tasks = await board.list_tasks()
         assert tasks[0].delegated_by == "ceo"
         assert tasks[0].delegation_reason == "need frontend help"
@@ -388,7 +405,6 @@ class TestDelegationMetadata:
 
 
 class TestTimestamps:
-
     async def test_started_at_set_on_checkout(self, board) -> None:
         await board.create_task(_task("t1", "Task"))
         task = await board.checkout_task("t1", "agent1")
@@ -428,7 +444,6 @@ class TestTimestamps:
 
 
 class TestNewFields:
-
     async def test_new_task_defaults(self, board) -> None:
         """New tasks have progress=0.0, stage='', blocked_reason=''."""
         await board.create_task(_task("t1", "Test"))
@@ -445,7 +460,6 @@ class TestNewFields:
 
 
 class TestBlocked:
-
     def test_blocker_protocol(self, board) -> None:
         assert isinstance(board, GraphTaskBlocker)
 
@@ -524,7 +538,6 @@ class TestBlocked:
 
 
 class TestProgress:
-
     async def test_completed_leaf_has_full_progress(self, board) -> None:
         await board.create_task(_task("t1", "Leaf"))
         await board.checkout_task("t1", "agent1")
@@ -622,7 +635,6 @@ class TestProgress:
 
 
 class TestConcurrentReadWrite:
-
     async def test_concurrent_reads_and_writes_no_errors(self, board) -> None:
         """Concurrent list/get/complete must not raise due to dict mutation during iteration."""
         for i in range(20):

@@ -72,7 +72,9 @@ class TestPlanCreate:
 
     async def test_create_auto_execute(self, tools) -> None:
         _specs, executors = tools
-        result = await executors["plan_create"]({"goal": "Задача", "auto_execute": True})
+        result = await executors["plan_create"](
+            {"goal": "Задача", "auto_execute": True}
+        )
         data = json.loads(result)
         assert data["status"] == "ok"
         assert data["plan"]["status"] == "approved"
@@ -103,7 +105,9 @@ class TestPlanStatus:
 class TestPlanExecute:
     async def test_execute(self, tools) -> None:
         _specs, executors = tools
-        create_result = await executors["plan_create"]({"goal": "g", "auto_execute": True})
+        create_result = await executors["plan_create"](
+            {"goal": "g", "auto_execute": True}
+        )
         plan_id = json.loads(create_result)["plan"]["id"]
         result = await executors["plan_execute"]({"plan_id": plan_id})
         data = json.loads(result)

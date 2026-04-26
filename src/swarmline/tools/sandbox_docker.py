@@ -54,7 +54,9 @@ class DockerSandboxProvider:
         try:
             argv = shlex.split(command, posix=True)
         except ValueError as exc:
-            raise SandboxViolation(f"Невалидная команда: {command}", path=command) from exc
+            raise SandboxViolation(
+                f"Невалидная команда: {command}", path=command
+            ) from exc
         if not argv:
             raise SandboxViolation("Пустая команда запрещена", path=command)
         return argv
@@ -63,11 +65,15 @@ class DockerSandboxProvider:
         denied = self._config.denied_commands or frozenset()
         cmd_name = os.path.basename(argv[0])
         if cmd_name in _DENYLIST_WRAPPERS:
-            raise SandboxViolation(f"Shell wrapper '{cmd_name}' запрещён", path=raw_command)
+            raise SandboxViolation(
+                f"Shell wrapper '{cmd_name}' запрещён", path=raw_command
+            )
         for word in argv:
             cmd_name = os.path.basename(word)
             if cmd_name in denied:
-                raise SandboxViolation(f"Команда '{cmd_name}' запрещена", path=raw_command)
+                raise SandboxViolation(
+                    f"Команда '{cmd_name}' запрещена", path=raw_command
+                )
 
     @staticmethod
     def _validate_glob_pattern(pattern: str) -> None:
@@ -112,7 +118,9 @@ class DockerSandboxProvider:
                 read_only=getattr(self._config, "read_only", False),
             )
         except Exception as exc:
-            raise RuntimeError("Docker daemon is unavailable for the sandbox container.") from exc
+            raise RuntimeError(
+                "Docker daemon is unavailable for the sandbox container."
+            ) from exc
         return self._container
 
     async def _exec(
@@ -138,7 +146,9 @@ class DockerSandboxProvider:
         full_path = f"{self._workspace}/{safe_path}"
         _exit_code, output = await self._exec(["cat", full_path])
         return (
-            output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+            output.decode("utf-8", errors="replace")
+            if isinstance(output, bytes)
+            else str(output)
         )
 
     async def write_file(self, path: str, content: str) -> None:
@@ -156,7 +166,8 @@ class DockerSandboxProvider:
         encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
         await self._exec(
             [
-                "python3", "-c",
+                "python3",
+                "-c",
                 "import base64,os,sys;"
                 "p=sys.argv[1];d=sys.argv[2];"
                 "os.makedirs(os.path.dirname(p),exist_ok=True);"
@@ -186,14 +197,20 @@ class DockerSandboxProvider:
                 stdout=stdout, stderr="", exit_code=exit_code or 0, timed_out=False
             )
         except TimeoutError:
-            return ExecutionResult(stdout="", stderr="timeout", exit_code=-1, timed_out=True)
+            return ExecutionResult(
+                stdout="", stderr="timeout", exit_code=-1, timed_out=True
+            )
 
     async def list_dir(self, path: str = ".") -> list[str]:
         """List files via docker exec ls."""
         safe_path = self._resolve_path(path)
         full_path = f"{self._workspace}/{safe_path}" if safe_path else self._workspace
         _exit_code, output = await self._exec(["ls", full_path])
-        raw = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+        raw = (
+            output.decode("utf-8", errors="replace")
+            if isinstance(output, bytes)
+            else str(output)
+        )
         return [f for f in raw.strip().split("\n") if f]
 
     async def glob_files(self, pattern: str) -> list[str]:
@@ -204,7 +221,11 @@ class DockerSandboxProvider:
             f"&& find . -name {shlex.quote(pattern)} -type f | sed 's|^\\./||'"
         )
         _exit_code, output = await self._exec(["sh", "-c", cmd])
-        raw = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+        raw = (
+            output.decode("utf-8", errors="replace")
+            if isinstance(output, bytes)
+            else str(output)
+        )
         return sorted(f for f in raw.strip().split("\n") if f)
 
     async def close(self) -> None:

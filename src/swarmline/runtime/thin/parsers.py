@@ -43,14 +43,12 @@ def parse_json_dict(raw: str) -> dict[str, Any] | None:
     """Parse json dict."""
     cleaned = strip_markdown_fences(raw)
 
-
     try:
         data = json.loads(cleaned)
         if isinstance(data, dict):
             return data
     except json.JSONDecodeError:
         pass
-
 
     extracted = extract_first_json_object(cleaned)
     if not extracted:

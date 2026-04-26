@@ -38,7 +38,9 @@ class TestMemoryUpsertFact:
         assert facts["ok"] is True
         assert facts["data"]["db"] == "PostgreSQL"
 
-    async def test_upsert_overwrites_existing_value(self, session: StatefulSession) -> None:
+    async def test_upsert_overwrites_existing_value(
+        self, session: StatefulSession
+    ) -> None:
         await memory_upsert_fact(session, "user1", "db", "MySQL")
         await memory_upsert_fact(session, "user1", "db", "PostgreSQL")
         facts = await memory_get_facts(session, "user1")
@@ -63,7 +65,9 @@ class TestMemoryUpsertFact:
 
 
 class TestMemoryGetFacts:
-    async def test_get_facts_empty_returns_empty_dict(self, session: StatefulSession) -> None:
+    async def test_get_facts_empty_returns_empty_dict(
+        self, session: StatefulSession
+    ) -> None:
         facts = await memory_get_facts(session, "nobody")
         assert facts["ok"] is True
         assert facts["data"] == {}
@@ -80,7 +84,9 @@ class TestMemorySaveMessage:
         assert result["ok"] is True
         assert result["data"]["action"] == "saved"
 
-    async def test_save_and_get_messages_roundtrip(self, session: StatefulSession) -> None:
+    async def test_save_and_get_messages_roundtrip(
+        self, session: StatefulSession
+    ) -> None:
         await memory_save_message(session, "u1", "t1", "user", "hello")
         await memory_save_message(session, "u1", "t1", "assistant", "hi there")
         msgs = await memory_get_messages(session, "u1", "t1")
@@ -102,7 +108,9 @@ class TestMemorySaveMessage:
 
 
 class TestMemoryGetMessages:
-    async def test_get_messages_empty_returns_empty_list(self, session: StatefulSession) -> None:
+    async def test_get_messages_empty_returns_empty_list(
+        self, session: StatefulSession
+    ) -> None:
         msgs = await memory_get_messages(session, "nobody", "no-topic")
         assert msgs["ok"] is True
         assert msgs["data"] == []
@@ -115,11 +123,15 @@ class TestMemoryGetMessages:
 
 class TestMemorySaveSummary:
     async def test_save_summary_returns_ok(self, session: StatefulSession) -> None:
-        result = await memory_save_summary(session, "u1", "t1", "conversation about X", 5)
+        result = await memory_save_summary(
+            session, "u1", "t1", "conversation about X", 5
+        )
         assert result["ok"] is True
         assert result["data"]["action"] == "saved"
 
-    async def test_save_and_get_summary_roundtrip(self, session: StatefulSession) -> None:
+    async def test_save_and_get_summary_roundtrip(
+        self, session: StatefulSession
+    ) -> None:
         await memory_save_summary(session, "u1", "t1", "summary text here", 10)
         result = await memory_get_summary(session, "u1", "t1")
         assert result["ok"] is True
@@ -133,7 +145,9 @@ class TestMemorySaveSummary:
 
 
 class TestMemoryGetSummary:
-    async def test_get_summary_missing_returns_none(self, session: StatefulSession) -> None:
+    async def test_get_summary_missing_returns_none(
+        self, session: StatefulSession
+    ) -> None:
         result = await memory_get_summary(session, "nobody", "no-topic")
         assert result["ok"] is True
         assert result["data"]["summary"] is None

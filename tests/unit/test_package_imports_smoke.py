@@ -127,6 +127,6 @@ def test_package_import_exports_in_clean_subprocess(
         timeout=30,
     )
 
-    assert (
-        result.returncode == 0
-    ), f"Import smoke failed for {module_name}:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+    assert result.returncode == 0, (
+        f"Import smoke failed for {module_name}:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+    )

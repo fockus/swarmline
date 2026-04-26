@@ -69,21 +69,25 @@ class InMemoryKnowledgeSearcher:
             overlap = len(query_words & text_words)
             if overlap > 0:
                 score = overlap / len(query_words)
-                scored.append((
-                    score,
-                    IndexEntry(
-                        path=e.path,
-                        kind=e.meta.kind,
-                        tags=e.meta.tags,
-                        importance=e.meta.importance,
-                        summary=e.content[:100],
-                        updated=e.meta.updated,
-                    ),
-                ))
+                scored.append(
+                    (
+                        score,
+                        IndexEntry(
+                            path=e.path,
+                            kind=e.meta.kind,
+                            tags=e.meta.tags,
+                            importance=e.meta.importance,
+                            summary=e.content[:100],
+                            updated=e.meta.updated,
+                        ),
+                    )
+                )
         scored.sort(key=lambda x: x[0], reverse=True)
         return [entry for _, entry in scored[:top_k]]
 
-    async def search_by_tags(self, tags: list[str], *, top_k: int = 10) -> list[IndexEntry]:
+    async def search_by_tags(
+        self, tags: list[str], *, top_k: int = 10
+    ) -> list[IndexEntry]:
         tag_set = {t.lower() for t in tags}
         results: list[IndexEntry] = []
         for e in self._store._entries.values():

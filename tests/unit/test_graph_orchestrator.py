@@ -23,7 +23,9 @@ from swarmline.protocols.graph_orchestrator import GraphOrchestrator
 # ---------------------------------------------------------------------------
 
 
-def _make_agent_runner(results: dict[str, str] | None = None, fail_ids: set[str] | None = None):
+def _make_agent_runner(
+    results: dict[str, str] | None = None, fail_ids: set[str] | None = None
+):
     """Create a mock agent_runner callable.
 
     agent_runner(agent_id, task_id, goal, system_prompt) -> str
@@ -48,23 +50,39 @@ def _make_agent_runner(results: dict[str, str] | None = None, fail_ids: set[str]
 async def org():
     """CEO → CTO → [Eng1, Eng2]."""
     store = InMemoryAgentGraph()
-    await store.add_node(AgentNode(
-        id="ceo", name="CEO", role="executive",
-        system_prompt="You are the CEO. Decompose goals into tasks for your reports.",
-    ))
-    await store.add_node(AgentNode(
-        id="cto", name="CTO", role="tech_lead",
-        parent_id="ceo",
-        system_prompt="You lead engineering.",
-    ))
-    await store.add_node(AgentNode(
-        id="eng1", name="Engineer 1", role="engineer",
-        parent_id="cto",
-    ))
-    await store.add_node(AgentNode(
-        id="eng2", name="Engineer 2", role="engineer",
-        parent_id="cto",
-    ))
+    await store.add_node(
+        AgentNode(
+            id="ceo",
+            name="CEO",
+            role="executive",
+            system_prompt="You are the CEO. Decompose goals into tasks for your reports.",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="cto",
+            name="CTO",
+            role="tech_lead",
+            parent_id="ceo",
+            system_prompt="You lead engineering.",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="eng1",
+            name="Engineer 1",
+            role="engineer",
+            parent_id="cto",
+        )
+    )
+    await store.add_node(
+        AgentNode(
+            id="eng2",
+            name="Engineer 2",
+            role="engineer",
+            parent_id="cto",
+        )
+    )
     return store
 
 
@@ -83,9 +101,11 @@ def event_bus():
 @pytest.fixture
 def make_orchestrator(org, task_board, event_bus):
     """Factory to create orchestrator with custom runner."""
+
     def _make(agent_runner=None, max_concurrent=5, max_retries=2, approval_gate=None):
         # Lazy import — implementation doesn't exist yet during TDD red phase
         from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+
         return DefaultGraphOrchestrator(
             graph=org,
             task_board=task_board,
@@ -95,6 +115,7 @@ def make_orchestrator(org, task_board, event_bus):
             max_retries=max_retries,
             approval_gate=approval_gate,
         )
+
     return _make
 
 
@@ -104,7 +125,6 @@ def make_orchestrator(org, task_board, event_bus):
 
 
 class TestProtocol:
-
     def test_implements_protocol(self, make_orchestrator) -> None:
         orch = make_orchestrator()
         assert isinstance(orch, GraphOrchestrator)
@@ -116,7 +136,6 @@ class TestProtocol:
 
 
 class TestStart:
-
     async def test_start_returns_run_id(self, make_orchestrator) -> None:
         orch = make_orchestrator()
         run_id = await orch.start("Build a web app")
@@ -152,8 +171,9 @@ class TestStart:
 
 
 class TestDelegate:
-
-    async def test_delegate_creates_subtask(self, make_orchestrator, task_board) -> None:
+    async def test_delegate_creates_subtask(
+        self, make_orchestrator, task_board
+    ) -> None:
         orch = make_orchestrator()
         run_id = await orch.start("Build a web app")
         status = await orch.get_status(run_id)
@@ -175,8 +195,10 @@ class TestDelegate:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="cto",
-            goal="Design", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="cto",
+            goal="Design",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         # Wait for async execution
@@ -189,8 +211,10 @@ class TestDelegate:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="eng1",
-            goal="Code it", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="eng1",
+            goal="Code it",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         await asyncio.sleep(0.1)
@@ -205,7 +229,6 @@ class TestDelegate:
 
 
 class TestCollectResult:
-
     async def test_collect_after_completion(self, make_orchestrator) -> None:
         runner = AsyncMock(return_value="API designed")
         orch = make_orchestrator(agent_runner=runner)
@@ -213,8 +236,10 @@ class TestCollectResult:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="cto",
-            goal="Design API", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="cto",
+            goal="Design API",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         await asyncio.sleep(0.1)
@@ -234,7 +259,6 @@ class TestCollectResult:
 
 
 class TestGetStatus:
-
     async def test_status_after_start(self, make_orchestrator) -> None:
         orch = make_orchestrator()
         run_id = await orch.start("Build")
@@ -249,8 +273,10 @@ class TestGetStatus:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="eng1",
-            goal="Code", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         await asyncio.sleep(0.1)
@@ -283,7 +309,6 @@ class TestGetStatus:
 
 
 class TestStop:
-
     async def test_stop_sets_stopped_state(self, make_orchestrator) -> None:
         orch = make_orchestrator()
         run_id = await orch.start("Build")
@@ -310,7 +335,6 @@ class TestStop:
 
 
 class TestFailureHandling:
-
     async def test_retry_on_failure(self, make_orchestrator) -> None:
         """Agent fails first, succeeds on retry."""
         task_calls: dict[str, int] = {}
@@ -327,8 +351,10 @@ class TestFailureHandling:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="eng1",
-            goal="Code", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         await asyncio.sleep(1.0)  # backoff: 0.5s before retry
@@ -337,8 +363,11 @@ class TestFailureHandling:
         assert result == "Recovered"
         assert task_calls["sub-1"] == 2
 
-    async def test_escalate_after_max_retries(self, make_orchestrator, event_bus) -> None:
+    async def test_escalate_after_max_retries(
+        self, make_orchestrator, event_bus
+    ) -> None:
         """After exhausting retries, escalation event is emitted."""
+
         async def always_fail(agent_id, task_id, goal, system_prompt):
             raise RuntimeError("Permanent error")
 
@@ -347,8 +376,10 @@ class TestFailureHandling:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="eng1",
-            goal="Code", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
             max_retries=1,
         )
         await orch.delegate(req)
@@ -364,7 +395,6 @@ class TestFailureHandling:
 
 
 class TestRetryBackoff:
-
     async def test_retry_uses_exponential_backoff(self, make_orchestrator) -> None:
         """After a transient failure, the orchestrator sleeps with exponential backoff
         before retrying (0.5s, 1s, 2s, ...)."""
@@ -387,28 +417,34 @@ class TestRetryBackoff:
             sleep_calls.append(delay)
             await original_sleep(0)  # yield control without actual delay
 
-        with unittest.mock.patch("swarmline.multi_agent.graph_orchestrator.asyncio.sleep", side_effect=mock_sleep):
+        with unittest.mock.patch(
+            "swarmline.multi_agent.graph_orchestrator.asyncio.sleep",
+            side_effect=mock_sleep,
+        ):
             run_id = await orch.start("Build")
             await asyncio.sleep(0.3)
             status = await orch.get_status(run_id)
 
             req = DelegationRequest(
-                task_id="backoff-task", agent_id="eng1",
-                goal="Code", parent_task_id=status.root_task_id,
+                task_id="backoff-task",
+                agent_id="eng1",
+                goal="Code",
+                parent_task_id=status.root_task_id,
             )
             await orch.delegate(req)
             await asyncio.sleep(0.3)
 
         # eng1 failed twice then succeeded on 3rd attempt, so 2 backoff sleeps
         eng_sleeps = [s for s in sleep_calls if s >= 0.5]
-        assert len(eng_sleeps) >= 2, f"Expected at least 2 backoff sleeps, got {eng_sleeps}"
+        assert len(eng_sleeps) >= 2, (
+            f"Expected at least 2 backoff sleeps, got {eng_sleeps}"
+        )
         # First backoff: 0.5s, second: 1.0s
         assert eng_sleeps[0] == pytest.approx(0.5)
         assert eng_sleeps[1] == pytest.approx(1.0)
 
 
 class TestConcurrency:
-
     async def test_parallel_delegation(self, make_orchestrator) -> None:
         """Multiple delegations run in parallel, bounded by semaphore."""
         execution_order: list[str] = []
@@ -425,8 +461,12 @@ class TestConcurrency:
         status = await orch.get_status(run_id)
 
         reqs = [
-            DelegationRequest(task_id=f"sub-{i}", agent_id=f"eng{i % 2 + 1}",
-                              goal=f"Task {i}", parent_task_id=status.root_task_id)
+            DelegationRequest(
+                task_id=f"sub-{i}",
+                agent_id=f"eng{i % 2 + 1}",
+                goal=f"Task {i}",
+                parent_task_id=status.root_task_id,
+            )
             for i in range(3)
         ]
         for req in reqs:
@@ -444,7 +484,6 @@ class TestConcurrency:
 
 
 class TestApprovalGate:
-
     async def test_delegate_with_approval(self, make_orchestrator) -> None:
         """Delegation proceeds when approval gate approves."""
         gate = AsyncMock()
@@ -455,8 +494,10 @@ class TestApprovalGate:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="eng1",
-            goal="Code", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         await asyncio.sleep(0.1)
@@ -465,7 +506,9 @@ class TestApprovalGate:
         result = await orch.collect_result("sub-1")
         assert result is not None
 
-    async def test_delegate_denied_by_gate(self, make_orchestrator, event_bus, task_board) -> None:
+    async def test_delegate_denied_by_gate(
+        self, make_orchestrator, event_bus, task_board
+    ) -> None:
         """Delegation is rejected when approval gate denies."""
         gate = AsyncMock()
         gate.check = AsyncMock(return_value=False)
@@ -475,8 +518,10 @@ class TestApprovalGate:
         status = await orch.get_status(run_id)
 
         req = DelegationRequest(
-            task_id="sub-1", agent_id="eng1",
-            goal="Code", parent_task_id=status.root_task_id,
+            task_id="sub-1",
+            agent_id="eng1",
+            goal="Code",
+            parent_task_id=status.root_task_id,
         )
         await orch.delegate(req)
         await asyncio.sleep(0.1)
@@ -498,9 +543,9 @@ class TestApprovalGate:
 
 
 class TestContextAwareRunner:
-
     async def test_context_aware_runner_receives_execution_context(
-        self, make_orchestrator,
+        self,
+        make_orchestrator,
     ) -> None:
         """Orchestrator with 1-arg runner passes AgentExecutionContext."""
         from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
@@ -526,7 +571,9 @@ class TestContextAwareRunner:
         """Orchestrator with 4-arg runner continues to work (backward compat)."""
         calls: list[tuple[str, str, str, str]] = []
 
-        async def legacy_runner(agent_id: str, task_id: str, goal: str, system_prompt: str) -> str:
+        async def legacy_runner(
+            agent_id: str, task_id: str, goal: str, system_prompt: str
+        ) -> str:
             calls.append((agent_id, task_id, goal, system_prompt))
             return f"Legacy result from {agent_id}"
 
@@ -540,7 +587,9 @@ class TestContextAwareRunner:
         assert isinstance(system_prompt, str)
         assert goal == "Build"
 
-    async def test_context_has_tools_and_skills(self, org, task_board, event_bus) -> None:
+    async def test_context_has_tools_and_skills(
+        self, org, task_board, event_bus
+    ) -> None:
         """AgentExecutionContext includes tools and skills from AgentNode."""
         from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
         from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
@@ -550,14 +599,16 @@ class TestContextAwareRunner:
         from swarmline.multi_agent.graph_store import InMemoryAgentGraph
 
         store = InMemoryAgentGraph()
-        await store.add_node(AgentNode(
-            id="root",
-            name="Root",
-            role="root",
-            system_prompt="You are root.",
-            allowed_tools=("search", "code_exec"),
-            skills=("python", "sql"),
-        ))
+        await store.add_node(
+            AgentNode(
+                id="root",
+                name="Root",
+                role="root",
+                system_prompt="You are root.",
+                allowed_tools=("search", "code_exec"),
+                skills=("python", "sql"),
+            )
+        )
 
         received: list[AgentExecutionContext] = []
 
@@ -588,8 +639,9 @@ class TestContextAwareRunner:
 
 
 class TestDelegateWithStage:
-
-    async def test_delegate_passes_stage_to_task(self, make_orchestrator, task_board) -> None:
+    async def test_delegate_passes_stage_to_task(
+        self, make_orchestrator, task_board
+    ) -> None:
         """DelegationRequest.stage is propagated to the GraphTaskItem."""
         runner = AsyncMock(return_value="Done")
         orch = make_orchestrator(agent_runner=runner)
@@ -613,7 +665,9 @@ class TestDelegateWithStage:
         assert task.stage == "review"
 
     async def test_delegate_without_stage_creates_task_with_empty_stage(
-        self, make_orchestrator, task_board,
+        self,
+        make_orchestrator,
+        task_board,
     ) -> None:
         """DelegationRequest without stage creates GraphTaskItem with empty stage."""
         runner = AsyncMock(return_value="Done")
@@ -651,7 +705,9 @@ class TestTaskBoardConsistency:
     3. On asyncio.CancelledError (stop), task board is never updated
     """
 
-    async def test_start_checks_out_root_task(self, make_orchestrator, task_board) -> None:
+    async def test_start_checks_out_root_task(
+        self, make_orchestrator, task_board
+    ) -> None:
         """start() must call checkout_task so root task transitions to IN_PROGRESS."""
         runner = AsyncMock(return_value="Done")
         orch = make_orchestrator(agent_runner=runner)
@@ -666,7 +722,9 @@ class TestTaskBoardConsistency:
         # After the runner completes, task should be DONE (or at least IN_PROGRESS)
         assert root.status in (TaskStatus.IN_PROGRESS, TaskStatus.DONE)
 
-    async def test_delegate_checks_out_task(self, make_orchestrator, task_board) -> None:
+    async def test_delegate_checks_out_task(
+        self, make_orchestrator, task_board
+    ) -> None:
         """delegate() must call checkout_task so subtask transitions to IN_PROGRESS."""
         runner = AsyncMock(return_value="Done")
         orch = make_orchestrator(agent_runner=runner)
@@ -690,13 +748,18 @@ class TestTaskBoardConsistency:
         assert sub.status in (TaskStatus.IN_PROGRESS, TaskStatus.DONE)
 
     async def test_failed_agent_cancels_task_on_board(
-        self, make_orchestrator, task_board,
+        self,
+        make_orchestrator,
+        task_board,
     ) -> None:
         """After max retries exhausted, task must be CANCELLED on the board."""
         call_count = 0
 
         async def failing_runner(
-            agent_id: str, task_id: str, goal: str, system_prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            system_prompt: str,
         ) -> str:
             nonlocal call_count
             call_count += 1
@@ -727,11 +790,17 @@ class TestTaskBoardConsistency:
         )
 
     async def test_cancelled_agent_cancels_task_on_board(
-        self, make_orchestrator, task_board,
+        self,
+        make_orchestrator,
+        task_board,
     ) -> None:
         """On asyncio.CancelledError (stop()), task must be CANCELLED on the board."""
+
         async def slow_runner(
-            agent_id: str, task_id: str, goal: str, system_prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            system_prompt: str,
         ) -> str:
             await asyncio.sleep(10)
             return "done"

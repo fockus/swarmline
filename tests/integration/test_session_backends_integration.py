@@ -65,7 +65,9 @@ class TestSessionManagerWithSqliteBackend:
         backend.close()
 
     @pytest.mark.asyncio
-    async def test_lazy_restore_rehydrates_snapshot_without_live_runtime(self, tmp_path: Any) -> None:
+    async def test_lazy_restore_rehydrates_snapshot_without_live_runtime(
+        self, tmp_path: Any
+    ) -> None:
         db = str(tmp_path / "rehydrate.db")
         backend = SqliteSessionBackend(db_path=db)
         mgr = InMemorySessionManager(backend=backend)
@@ -91,7 +93,9 @@ class TestSessionManagerWithSqliteBackend:
         backend.close()
 
     @pytest.mark.asyncio
-    async def test_close_all_keeps_snapshot_for_later_rehydration(self, tmp_path: Any) -> None:
+    async def test_close_all_keeps_snapshot_for_later_rehydration(
+        self, tmp_path: Any
+    ) -> None:
         db = str(tmp_path / "close_all_persist.db")
         backend = SqliteSessionBackend(db_path=db)
         mgr = InMemorySessionManager(backend=backend)
@@ -115,7 +119,9 @@ class TestSessionManagerWithSqliteBackend:
         backend.close()
 
     @pytest.mark.asyncio
-    async def test_delimiter_containing_session_keys_do_not_collide(self, tmp_path: Any) -> None:
+    async def test_delimiter_containing_session_keys_do_not_collide(
+        self, tmp_path: Any
+    ) -> None:
         db = str(tmp_path / "collisions.db")
         backend = SqliteSessionBackend(db_path=db)
         mgr = InMemorySessionManager(backend=backend)

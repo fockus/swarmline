@@ -201,8 +201,14 @@ class TestToolGoogleDocstringDescriptions:
             return query
 
         td: ToolDefinition = fn.__tool_definition__
-        assert td.parameters["properties"]["query"]["description"] == "The search query string."
-        assert td.parameters["properties"]["limit"]["description"] == "Maximum number of results."
+        assert (
+            td.parameters["properties"]["query"]["description"]
+            == "The search query string."
+        )
+        assert (
+            td.parameters["properties"]["limit"]["description"]
+            == "Maximum number of results."
+        )
 
 
 class TestToolAutoDescriptionFromDocstring:

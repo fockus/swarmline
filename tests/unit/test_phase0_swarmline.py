@@ -22,8 +22,17 @@ from swarmline.multi_agent.graph_governance import (
     validate_capability_delegation,
 )
 from swarmline.multi_agent.graph_store import InMemoryAgentGraph
-from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode, LifecycleMode
-from swarmline.protocols.host_adapter import AgentAuthority, AgentHandle, AgentHandleStatus, HostAdapter
+from swarmline.multi_agent.graph_types import (
+    AgentCapabilities,
+    AgentNode,
+    LifecycleMode,
+)
+from swarmline.protocols.host_adapter import (
+    AgentAuthority,
+    AgentHandle,
+    AgentHandleStatus,
+    HostAdapter,
+)
 from swarmline.runtime.agent_sdk_adapter import AgentSDKAdapter
 from swarmline.runtime.codex_adapter import CodexAdapter
 from swarmline.runtime.model_registry import get_registry, reset_registry
@@ -107,7 +116,9 @@ class TestGraphBuilder:
         store = InMemoryAgentGraph()
         builder = GraphBuilder(store)
         builder.add_root(
-            "ceo", "CEO", "executive",
+            "ceo",
+            "CEO",
+            "executive",
             lifecycle=LifecycleMode.PERSISTENT,
             hooks=("pre_check",),
         )
@@ -121,7 +132,10 @@ class TestGraphBuilder:
         builder = GraphBuilder(store)
         builder.add_root("ceo", "CEO", "executive")
         builder.add_child(
-            "eng", "ceo", "Eng", "engineer",
+            "eng",
+            "ceo",
+            "Eng",
+            "engineer",
             lifecycle=LifecycleMode.EPHEMERAL,
             hooks=("hook_a", "hook_b"),
         )
@@ -176,7 +190,9 @@ class TestGovernanceCheckHireAllowed:
         config = GraphGovernanceConfig(max_depth=10)
         store = InMemoryAgentGraph()
         root = AgentNode(
-            id="root", name="Root", role="lead",
+            id="root",
+            name="Root",
+            role="lead",
             capabilities=AgentCapabilities(can_hire=True, max_depth=1),
         )
         await store.add_node(root)
@@ -210,7 +226,9 @@ class TestGovernanceCheckAuthorityDelegation:
 class TestGovernanceValidateCapabilityDelegation:
     def test_tool_subset_enforcement(self) -> None:
         parent = AgentNode(
-            id="p", name="P", role="lead",
+            id="p",
+            name="P",
+            role="lead",
             allowed_tools=("Read", "Write"),
         )
         result = validate_capability_delegation(
@@ -234,7 +252,9 @@ class TestGovernanceValidateCapabilityDelegation:
 
     def test_extra_tools_returns_error(self) -> None:
         parent = AgentNode(
-            id="p", name="P", role="lead",
+            id="p",
+            name="P",
+            role="lead",
             allowed_tools=("Read",),
         )
         result = validate_capability_delegation(
@@ -282,7 +302,9 @@ class TestAgentSDKAdapter:
     def adapter(self) -> AgentSDKAdapter:
         return AgentSDKAdapter()
 
-    async def test_spawn_agent_returns_agent_handle(self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_spawn_agent_returns_agent_handle(
+        self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(
             "swarmline.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
             self._patched_spawn,
@@ -291,7 +313,9 @@ class TestAgentSDKAdapter:
         assert isinstance(handle, AgentHandle)
         assert handle.role == "dev"
 
-    async def test_get_status_returns_idle_after_spawn(self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_get_status_returns_idle_after_spawn(
+        self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(
             "swarmline.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
             self._patched_spawn,
@@ -300,7 +324,9 @@ class TestAgentSDKAdapter:
         status = await adapter.get_status(handle)
         assert status == AgentHandleStatus.IDLE
 
-    async def test_stop_agent_sets_stopped(self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_stop_agent_sets_stopped(
+        self, adapter: AgentSDKAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(
             "swarmline.runtime.agent_sdk_adapter.AgentSDKAdapter.spawn_agent",
             self._patched_spawn,
@@ -310,7 +336,9 @@ class TestAgentSDKAdapter:
         status = await adapter.get_status(handle)
         assert status == AgentHandleStatus.STOPPED
 
-    async def test_model_registry_resolution(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_model_registry_resolution(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         reset_registry()
         adapter = AgentSDKAdapter(default_model="opus")
         handle = await self._patched_spawn(adapter, "dev", "test")
@@ -326,13 +354,16 @@ class TestAgentSDKAdapter:
         """Spawn without requiring claude_code_sdk import."""
         import uuid
 
-        resolved_model = get_registry().resolve(kwargs.get("model") or self_adapter._default_model)
+        resolved_model = get_registry().resolve(
+            kwargs.get("model") or self_adapter._default_model
+        )
         agent_id = f"claude-{role}-{uuid.uuid4().hex[:8]}"
         lifecycle = kwargs.get("lifecycle", LifecycleMode.SUPERVISED)
 
         self_adapter._sessions[agent_id] = {
             "model": resolved_model,
-            "system_prompt": kwargs.get("system_prompt", "") or f"You are a {role} agent. Goal: {goal}",
+            "system_prompt": kwargs.get("system_prompt", "")
+            or f"You are a {role} agent. Goal: {goal}",
             "tools": kwargs.get("tools", ()),
             "goal": goal,
             "lifecycle": lifecycle,
@@ -357,13 +388,17 @@ class TestCodexAdapter:
     def adapter(self) -> CodexAdapter:
         return CodexAdapter()
 
-    async def test_spawn_agent_returns_agent_handle(self, adapter: CodexAdapter) -> None:
+    async def test_spawn_agent_returns_agent_handle(
+        self, adapter: CodexAdapter
+    ) -> None:
         handle = await adapter.spawn_agent("dev", "build feature")
         assert isinstance(handle, AgentHandle)
         assert handle.role == "dev"
         assert handle.metadata.get("provider") == "openai"
 
-    async def test_get_status_returns_idle_after_spawn(self, adapter: CodexAdapter) -> None:
+    async def test_get_status_returns_idle_after_spawn(
+        self, adapter: CodexAdapter
+    ) -> None:
         handle = await adapter.spawn_agent("dev", "test")
         status = await adapter.get_status(handle)
         assert status == AgentHandleStatus.IDLE
@@ -487,16 +522,22 @@ class TestOrchestratorLifecycle:
     def event_bus(self) -> _SimpleEventBus:
         return _SimpleEventBus()
 
-    async def test_ephemeral_agent_removed_after_task(self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus) -> None:
+    async def test_ephemeral_agent_removed_after_task(
+        self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus
+    ) -> None:
         from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
 
         root = AgentNode(
-            id="root", name="Root", role="lead",
+            id="root",
+            name="Root",
+            role="lead",
             lifecycle=LifecycleMode.SUPERVISED,
             capabilities=AgentCapabilities(can_hire=True, can_delegate=True),
         )
         ephemeral = AgentNode(
-            id="worker", name="Worker", role="dev",
+            id="worker",
+            name="Worker",
+            role="dev",
             parent_id="root",
             lifecycle=LifecycleMode.EPHEMERAL,
         )
@@ -506,7 +547,10 @@ class TestOrchestratorLifecycle:
         runner = AsyncMock(return_value="done")
         task_board = _MinimalTaskBoard()
         orch = DefaultGraphOrchestrator(
-            store, task_board, runner, event_bus=event_bus,
+            store,
+            task_board,
+            runner,
+            event_bus=event_bus,
         )
 
         # Directly test lifecycle handler
@@ -518,11 +562,15 @@ class TestOrchestratorLifecycle:
         topics = [e[0] for e in event_bus.events]
         assert "graph.agent.self_terminated" in topics
 
-    async def test_supervised_agent_stays_after_task(self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus) -> None:
+    async def test_supervised_agent_stays_after_task(
+        self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus
+    ) -> None:
         from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
 
         root = AgentNode(
-            id="root", name="Root", role="lead",
+            id="root",
+            name="Root",
+            role="lead",
             lifecycle=LifecycleMode.SUPERVISED,
         )
         await store.add_node(root)
@@ -530,7 +578,10 @@ class TestOrchestratorLifecycle:
         runner = AsyncMock(return_value="done")
         task_board = _MinimalTaskBoard()
         orch = DefaultGraphOrchestrator(
-            store, task_board, runner, event_bus=event_bus,
+            store,
+            task_board,
+            runner,
+            event_bus=event_bus,
         )
 
         await orch._handle_lifecycle("root", "task-2")
@@ -541,12 +592,16 @@ class TestOrchestratorLifecycle:
         topics = [e[0] for e in event_bus.events]
         assert "graph.agent.awaiting_review" in topics
 
-    async def test_persistent_agent_resets_to_idle(self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus) -> None:
+    async def test_persistent_agent_resets_to_idle(
+        self, store: InMemoryAgentGraph, event_bus: _SimpleEventBus
+    ) -> None:
         from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
         from swarmline.multi_agent.registry_types import AgentStatus
 
         persistent = AgentNode(
-            id="svc", name="Service", role="service",
+            id="svc",
+            name="Service",
+            role="service",
             lifecycle=LifecycleMode.PERSISTENT,
             status=AgentStatus.RUNNING,
         )
@@ -555,7 +610,10 @@ class TestOrchestratorLifecycle:
         runner = AsyncMock(return_value="done")
         task_board = _MinimalTaskBoard()
         orch = DefaultGraphOrchestrator(
-            store, task_board, runner, event_bus=event_bus,
+            store,
+            task_board,
+            runner,
+            event_bus=event_bus,
         )
 
         await orch._handle_lifecycle("svc", "task-3")

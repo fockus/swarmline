@@ -216,6 +216,7 @@ class TestDispatchPreTool:
 
     async def test_multiple_modify_hooks_chain_input(self) -> None:
         """Multiple modify hooks chain: each receives already-modified input."""
+
         async def add_x(**kwargs: Any) -> HookResult:
             tool_input = kwargs["tool_input"]
             return HookResult.modify({**tool_input, "x": 1})
@@ -233,7 +234,9 @@ class TestDispatchPreTool:
         assert result.action == "modify"
         assert result.modified_input == {"original": True, "x": 1, "y": 2}
 
-    async def test_exception_in_pre_hook_is_fail_open(self, caplog: pytest.LogCaptureFixture) -> None:
+    async def test_exception_in_pre_hook_is_fail_open(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Fail-open: exception in pre-tool hook → log warning, allow."""
         reg = HookRegistry()
         reg.on_pre_tool_use(_raising_hook)
@@ -274,7 +277,9 @@ class TestDispatchPostTool:
         result = await dispatcher.dispatch_post_tool("tool", {}, "original")
         assert result == "modified output"
 
-    async def test_exception_in_post_hook_is_fail_open(self, caplog: pytest.LogCaptureFixture) -> None:
+    async def test_exception_in_post_hook_is_fail_open(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Fail-open: exception in post-tool hook → log warning, return None."""
         reg = HookRegistry()
         reg.on_post_tool_use(_raising_post_hook)
@@ -383,7 +388,9 @@ class TestDispatchStop:
         await dispatcher.dispatch_stop("done")
         assert called == ["a", "b"]
 
-    async def test_exception_in_stop_hook_is_fail_open(self, caplog: pytest.LogCaptureFixture) -> None:
+    async def test_exception_in_stop_hook_is_fail_open(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Fail-open: exception in stop hook → log warning, continue."""
         called: list[str] = []
 
@@ -432,7 +439,9 @@ class TestDispatchUserPrompt:
         result = await dispatcher.dispatch_user_prompt("hello")
         assert result == "PREFIX: HELLO"
 
-    async def test_exception_in_prompt_hook_is_fail_open(self, caplog: pytest.LogCaptureFixture) -> None:
+    async def test_exception_in_prompt_hook_is_fail_open(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Fail-open: exception in prompt hook → log warning, return current prompt."""
         reg = HookRegistry()
         reg.on_user_prompt(_raising_prompt_hook)

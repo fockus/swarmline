@@ -238,7 +238,9 @@ class TestSchedulerRespectsMaxConcurrent:
         # Should not raise, and should store the value
         assert sched._semaphore is not None
 
-    async def test_scheduler_does_not_accumulate_unbounded_pending_launches(self) -> None:
+    async def test_scheduler_does_not_accumulate_unbounded_pending_launches(
+        self,
+    ) -> None:
         """Pending asyncio tasks must stay bounded by max_concurrent."""
         started = asyncio.Event()
         release = asyncio.Event()

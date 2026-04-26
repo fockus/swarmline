@@ -190,9 +190,7 @@ class TestChatProjection:
     def test_tool_call_finished_adds_tool_result_block(self) -> None:
         proj = ChatProjection()
         proj.apply(
-            RuntimeEvent.tool_call_started(
-                name="calc", args={}, correlation_id="t2"
-            )
+            RuntimeEvent.tool_call_started(name="calc", args={}, correlation_id="t2")
         )
         proj.apply(
             RuntimeEvent.tool_call_finished(

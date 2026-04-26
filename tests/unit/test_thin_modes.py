@@ -15,7 +15,9 @@ class TestDetectModeHint:
         assert detect_mode("привет", mode_hint="react") == "react"
 
     def test_hint_conversational(self) -> None:
-        assert detect_mode("план на год", mode_hint="conversational") == "conversational"
+        assert (
+            detect_mode("план на год", mode_hint="conversational") == "conversational"
+        )
 
     def test_invalid_hint_ignored(self) -> None:
         """Invalid hint -> uses heuristic."""

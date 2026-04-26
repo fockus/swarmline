@@ -48,6 +48,7 @@ def _make_streaming_llm_call(chunks: list[str], fallback_response: str | None = 
         **kwargs: Any,
     ) -> Any:
         if kwargs.get("stream"):
+
             async def _stream():
                 for chunk in chunks:
                     yield chunk
@@ -62,7 +63,9 @@ VALID_FINAL_JSON = '{"type": "final", "final_message": "Hello, world!"}'
 SECRET_FINAL_JSON = '{"type": "final", "final_message": "The SECRET_123 is leaked"}'
 
 
-async def _collect_events(runtime: ThinRuntime, user_text: str = "hi") -> list[RuntimeEvent]:
+async def _collect_events(
+    runtime: ThinRuntime, user_text: str = "hi"
+) -> list[RuntimeEvent]:
     events: list[RuntimeEvent] = []
     async for ev in runtime.run(
         messages=[Message(role="user", content=user_text)],
@@ -139,7 +142,9 @@ class TestOutputGuardrailBlocks:
         assert error_events[0].data["kind"] == "guardrail_tripwire"
 
     @pytest.mark.asyncio
-    async def test_output_guardrail_blocks_streaming_secret_before_any_delta(self) -> None:
+    async def test_output_guardrail_blocks_streaming_secret_before_any_delta(
+        self,
+    ) -> None:
         cfg = RuntimeConfig(
             runtime_name="thin",
             output_guardrails=[RegexGuardrail(patterns=[r"SECRET_\d+"])],

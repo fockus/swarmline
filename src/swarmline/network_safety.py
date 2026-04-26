@@ -8,7 +8,9 @@ from typing import Any
 from urllib.parse import urlparse
 
 _LOCAL_HOSTS = frozenset({"localhost", "localhost.localdomain", "127.0.0.1", "::1"})
-_METADATA_HOSTS = frozenset({"169.254.169.254", "metadata.google.internal", "100.100.100.200"})
+_METADATA_HOSTS = frozenset(
+    {"169.254.169.254", "metadata.google.internal", "100.100.100.200"}
+)
 
 
 def is_loopback_host(host: str) -> bool:

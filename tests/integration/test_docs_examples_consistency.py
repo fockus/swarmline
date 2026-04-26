@@ -69,6 +69,7 @@ def _readme_quickstart_python_blocks() -> list[str]:
 
 async def _fake_dispatch_runtime(runtime_name: str, claude_handler, portable_handler):
     del runtime_name, claude_handler, portable_handler
+
     async def _events():
         yield SimpleNamespace(type="text_delta", text="Paris")
         yield SimpleNamespace(
@@ -109,8 +110,13 @@ async def test_readme_quickstart_code_fences_execute_offline(
 def test_cli_runtime_docs_use_stream_json_claude_command() -> None:
     cli_docs = (ROOT / "docs" / "cli-runtime.md").read_text(encoding="utf-8")
     assert 'command=["claude", "--print", "-"]' not in cli_docs
-    assert 'command=["claude", "--print", "--output", "stream-json", "-"]' not in cli_docs
-    assert 'command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]' in cli_docs
+    assert (
+        'command=["claude", "--print", "--output", "stream-json", "-"]' not in cli_docs
+    )
+    assert (
+        'command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]'
+        in cli_docs
+    )
     assert "registry.create(" not in cli_docs
 
 
@@ -139,7 +145,10 @@ def test_credentials_docs_cover_runtime_env_matrix() -> None:
     ):
         assert variable in credentials
 
-    assert "AgentConfig.env` is currently used by the `claude_sdk` runtime path" in credentials
+    assert (
+        "AgentConfig.env` is currently used by the `claude_sdk` runtime path"
+        in credentials
+    )
     assert "does **not** accept `openrouter:*`" in credentials
 
 

@@ -147,6 +147,7 @@ class TestToolExecutorPolicy:
                 nonlocal policy_called
                 policy_called = True
                 from swarmline.policy.tool_policy import PermissionAllow
+
                 return PermissionAllow()
 
         async def block_hook(**kwargs: Any) -> HookResult:

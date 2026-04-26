@@ -81,7 +81,9 @@ class TestExecutionResult:
         """ExecutionResult for uspeshnoy commands."""
         from swarmline.tools.types import ExecutionResult
 
-        result = ExecutionResult(stdout="hello\n", stderr="", exit_code=0, timed_out=False)
+        result = ExecutionResult(
+            stdout="hello\n", stderr="", exit_code=0, timed_out=False
+        )
 
         assert result.stdout == "hello\n"
         assert result.stderr == ""
@@ -92,7 +94,9 @@ class TestExecutionResult:
         """ExecutionResult for upavshey commands."""
         from swarmline.tools.types import ExecutionResult
 
-        result = ExecutionResult(stdout="", stderr="not found", exit_code=1, timed_out=False)
+        result = ExecutionResult(
+            stdout="", stderr="not found", exit_code=1, timed_out=False
+        )
 
         assert result.exit_code == 1
         assert result.stderr == "not found"
@@ -101,7 +105,9 @@ class TestExecutionResult:
         """ExecutionResult for commands with timeout."""
         from swarmline.tools.types import ExecutionResult
 
-        result = ExecutionResult(stdout="partial", stderr="", exit_code=-1, timed_out=True)
+        result = ExecutionResult(
+            stdout="partial", stderr="", exit_code=-1, timed_out=True
+        )
 
         assert result.timed_out is True
 
@@ -176,9 +182,12 @@ class TestSandboxProviderProtocol:
         methods = [
             name
             for name in dir(SandboxProvider)
-            if not name.startswith("_") and callable(getattr(SandboxProvider, name, None))
+            if not name.startswith("_")
+            and callable(getattr(SandboxProvider, name, None))
         ]
-        assert len(methods) <= 5, f"ISP violation: {len(methods)} methods > 5: {methods}"
+        assert len(methods) <= 5, (
+            f"ISP violation: {len(methods)} methods > 5: {methods}"
+        )
 
     def test_no_freedom_agent_imports(self) -> None:
         """CHistyy domain: nott importov from freedom_agent."""

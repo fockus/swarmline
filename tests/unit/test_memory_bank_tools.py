@@ -48,7 +48,9 @@ class TestMemoryRead:
 class TestMemoryWrite:
     async def test_write(self, provider, tools) -> None:
         _specs, executors = tools
-        result = await executors["memory_write"]({"path": "test.md", "content": "hello"})
+        result = await executors["memory_write"](
+            {"path": "test.md", "content": "hello"}
+        )
         data = json.loads(result)
         assert data["status"] == "ok"
         assert await provider.read_file("test.md") == "hello"
@@ -99,6 +101,12 @@ class TestMemoryDelete:
 class TestToolSpecs:
     def test_all_specs_present(self, tools) -> None:
         specs, executors = tools
-        expected = {"memory_read", "memory_write", "memory_append", "memory_list", "memory_delete"}
+        expected = {
+            "memory_read",
+            "memory_write",
+            "memory_append",
+            "memory_list",
+            "memory_delete",
+        }
         assert set(specs.keys()) == expected
         assert set(executors.keys()) == expected

@@ -136,7 +136,9 @@ class GraphContextBuilder:
 
         # Tools
         if snapshot.available_tools:
-            sections.append(f"## Available Tools\n{', '.join(snapshot.available_tools)}")
+            sections.append(
+                f"## Available Tools\n{', '.join(snapshot.available_tools)}"
+            )
 
         # Skills
         if snapshot.skills:
@@ -185,7 +187,9 @@ class GraphContextBuilder:
         from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
         snapshot = await self.build_context(
-            agent_id, task_id=task_id, shared_knowledge=shared_knowledge,
+            agent_id,
+            task_id=task_id,
+            shared_knowledge=shared_knowledge,
         )
         system_prompt = self.render_system_prompt(snapshot)
         node = snapshot.agent_node

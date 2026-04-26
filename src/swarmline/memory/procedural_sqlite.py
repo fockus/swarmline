@@ -34,14 +34,26 @@ class SqliteProceduralMemory:
 
     @staticmethod
     def _ser(proc: Procedure) -> str:
-        return json.dumps({
-            "id": proc.id, "name": proc.name, "description": proc.description,
-            "trigger": proc.trigger,
-            "steps": [{"tool_name": s.tool_name, "args_template": s.args_template,
-                        "expected_outcome": s.expected_outcome} for s in proc.steps],
-            "success_count": proc.success_count, "failure_count": proc.failure_count,
-            "tags": list(proc.tags), "metadata": proc.metadata,
-        })
+        return json.dumps(
+            {
+                "id": proc.id,
+                "name": proc.name,
+                "description": proc.description,
+                "trigger": proc.trigger,
+                "steps": [
+                    {
+                        "tool_name": s.tool_name,
+                        "args_template": s.args_template,
+                        "expected_outcome": s.expected_outcome,
+                    }
+                    for s in proc.steps
+                ],
+                "success_count": proc.success_count,
+                "failure_count": proc.failure_count,
+                "tags": list(proc.tags),
+                "metadata": proc.metadata,
+            }
+        )
 
     @staticmethod
     def _deser(raw: str) -> Procedure:
@@ -55,8 +67,11 @@ class SqliteProceduralMemory:
             for s in d.get("steps", ())
         )
         return Procedure(
-            id=d["id"], name=d["name"], description=d.get("description", ""),
-            trigger=d.get("trigger", ""), steps=steps,
+            id=d["id"],
+            name=d["name"],
+            description=d.get("description", ""),
+            trigger=d.get("trigger", ""),
+            steps=steps,
             success_count=d.get("success_count", 0),
             failure_count=d.get("failure_count", 0),
             tags=tuple(d.get("tags", ())),
@@ -106,7 +121,9 @@ class SqliteProceduralMemory:
 
     def _record_outcome_sync(self, proc_id: str, success: bool) -> None:
         with self._lock:
-            cur = self._conn.execute("SELECT data FROM procedures WHERE id = ?", (proc_id,))
+            cur = self._conn.execute(
+                "SELECT data FROM procedures WHERE id = ?", (proc_id,)
+            )
             row = cur.fetchone()
             if not row:
                 return
@@ -123,7 +140,9 @@ class SqliteProceduralMemory:
 
     def _get_sync(self, proc_id: str) -> Procedure | None:
         with self._lock:
-            cur = self._conn.execute("SELECT data FROM procedures WHERE id = ?", (proc_id,))
+            cur = self._conn.execute(
+                "SELECT data FROM procedures WHERE id = ?", (proc_id,)
+            )
             row = cur.fetchone()
             return self._deser(row[0]) if row else None
 

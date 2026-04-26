@@ -59,7 +59,6 @@ def runtime(board, session_store):
 
 
 class TestCodingTaskStatus:
-
     def test_all_statuses_defined(self) -> None:
         expected = {"pending", "active", "completed", "blocked", "cancelled"}
         actual = {s.value for s in CodingTaskStatus}
@@ -105,7 +104,6 @@ class TestCodingTaskStatus:
 
 
 class TestCodingTaskSnapshot:
-
     def test_frozen(self) -> None:
         snap = CodingTaskSnapshot(
             task_id="t1",
@@ -140,7 +138,15 @@ class TestCodingTaskSnapshot:
             metadata={"key": "val"},
         )
         d = snap.to_dict()
-        expected_keys = {"task_id", "status", "session_id", "title", "created_at", "updated_at", "metadata"}
+        expected_keys = {
+            "task_id",
+            "status",
+            "session_id",
+            "title",
+            "created_at",
+            "updated_at",
+            "metadata",
+        }
         assert set(d.keys()) == expected_keys
         assert d["status"] == "active"
         assert d["metadata"] == {"key": "val"}
@@ -168,8 +174,12 @@ class TestCodingTaskSnapshot:
     @pytest.mark.parametrize("status", list(CodingTaskStatus))
     def test_roundtrip_all_statuses(self, status: CodingTaskStatus) -> None:
         snap = CodingTaskSnapshot(
-            task_id="t1", status=status, session_id="s1", title="T",
-            created_at=100.0, updated_at=200.0,
+            task_id="t1",
+            status=status,
+            session_id="s1",
+            title="T",
+            created_at=100.0,
+            updated_at=200.0,
         )
         rebuilt = CodingTaskSnapshot.from_dict(snap.to_dict())
         assert rebuilt.status == status
@@ -205,7 +215,6 @@ class TestCodingTaskSnapshot:
 
 
 class TestProtocolShape:
-
     def test_lifecycle_port(self, runtime) -> None:
         assert isinstance(runtime, CodingTaskLifecyclePort)
 
@@ -222,7 +231,6 @@ class TestProtocolShape:
 
 
 class TestMissingProviderFailFast:
-
     def test_none_board_raises(self, session_store) -> None:
         with pytest.raises(ValueError, match="board is required"):
             DefaultCodingTaskRuntime(None, session_store)  # type: ignore[arg-type]
@@ -242,7 +250,6 @@ class TestMissingProviderFailFast:
 
 
 class TestLifecycleCreate:
-
     async def test_create_task_returns_pending_snapshot(self, runtime) -> None:
         snap = await runtime.create_task("t1", "My Task", session_id="s1")
         assert isinstance(snap, CodingTaskSnapshot)
@@ -267,7 +274,6 @@ class TestLifecycleCreate:
 
 
 class TestLifecycleStart:
-
     async def test_start_task_returns_active_snapshot(self, runtime) -> None:
         await runtime.create_task("t1", "Task", session_id="s1")
         snap = await runtime.start_task("t1", "agent-1")
@@ -293,7 +299,6 @@ class TestLifecycleStart:
 
 
 class TestLifecycleComplete:
-
     async def test_complete_task_returns_completed_snapshot(self, runtime) -> None:
         await runtime.create_task("t1", "Task", session_id="s1")
         await runtime.start_task("t1", "agent-1")
@@ -319,7 +324,6 @@ class TestLifecycleComplete:
 
 
 class TestLifecycleCancel:
-
     async def test_cancel_pending_returns_true(self, runtime) -> None:
         await runtime.create_task("t1", "Task", session_id="s1")
         result = await runtime.cancel_task("t1")
@@ -344,7 +348,6 @@ class TestLifecycleCancel:
 
 
 class TestLifecycleGetStatus:
-
     async def test_status_after_create(self, runtime) -> None:
         await runtime.create_task("t1", "Task", session_id="s1")
         status = await runtime.get_status("t1")
@@ -375,7 +378,6 @@ class TestLifecycleGetStatus:
 
 
 class TestLifecycleFullPath:
-
     async def test_create_start_complete(self, runtime) -> None:
         """Full happy path: create -> start -> complete."""
         s1 = await runtime.create_task("t1", "Task", session_id="s1")
@@ -411,7 +413,6 @@ class TestLifecycleFullPath:
 
 
 class TestInvalidTransitions:
-
     @pytest.mark.parametrize(
         ("setup_status", "action", "action_kwargs"),
         [
@@ -432,7 +433,11 @@ class TestInvalidTransitions:
         ],
     )
     async def test_invalid_transition_raises(
-        self, runtime, setup_status: str, action: str, action_kwargs: dict,
+        self,
+        runtime,
+        setup_status: str,
+        action: str,
+        action_kwargs: dict,
     ) -> None:
         await runtime.create_task("t1", "Task", session_id="s1")
         if setup_status in ("completed", "cancelled"):
@@ -452,7 +457,6 @@ class TestInvalidTransitions:
 
 
 class TestReadiness:
-
     async def test_is_ready_no_deps(self, runtime) -> None:
         await runtime.create_task("t1", "Task", session_id="s1")
         assert await runtime.is_ready("t1") is True
@@ -490,7 +494,6 @@ class TestReadiness:
 
 
 class TestSnapshotResume:
-
     async def test_save_and_load_snapshot(self, runtime) -> None:
         snap = CodingTaskSnapshot(
             task_id="t1",
@@ -580,7 +583,6 @@ class TestSnapshotResume:
 
 
 class TestAllowListExpansion:
-
     def test_coding_tool_names_includes_todo_read(self) -> None:
         assert "todo_read" in CODING_TOOL_NAMES
 
@@ -593,7 +595,16 @@ class TestAllowListExpansion:
 
     def test_original_sandbox_tools_preserved(self) -> None:
         """Expansion must not drop any existing tools."""
-        original_eight = {"read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep"}
+        original_eight = {
+            "read",
+            "write",
+            "edit",
+            "multi_edit",
+            "bash",
+            "ls",
+            "glob",
+            "grep",
+        }
         assert original_eight.issubset(CODING_TOOL_NAMES)
 
 
@@ -616,7 +627,9 @@ class TestListByStatusFallback:
     """list_by_status constructs synthetic snapshot when no persisted snapshot exists."""
 
     async def test_list_by_status_fallback_for_board_only_task(
-        self, board, session_store,
+        self,
+        board,
+        session_store,
     ) -> None:
         """Task created directly on board (no runtime.create_task) shows in list_by_status."""
         from swarmline.multi_agent.graph_task_types import GraphTaskItem

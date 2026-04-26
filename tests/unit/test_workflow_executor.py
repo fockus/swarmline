@@ -1,5 +1,4 @@
-"""Tests WorkflowExecutor - runtime adapters for WorkflowGraph. CRP-4.2: thin executor, LangGraph compiler, mixed runtimes.
-"""
+"""Tests WorkflowExecutor - runtime adapters for WorkflowGraph. CRP-4.2: thin executor, LangGraph compiler, mixed runtimes."""
 
 from __future__ import annotations
 
@@ -77,7 +76,9 @@ class TestWorkflowThinExecutor:
         wf = WorkflowGraph("thin-llm-test")
 
         async def node_a(state: dict[str, Any]) -> dict[str, Any]:
-            result = await executor.run_node("research agent", "Research topic X", state)
+            result = await executor.run_node(
+                "research agent", "Research topic X", state
+            )
             state["research"] = result
             return state
 
@@ -161,7 +162,9 @@ class TestWorkflowThinExecutor:
 class TestWorkflowLangGraphCompile:
     """WorkflowGraph → LangGraph StateGraph compile."""
 
-    def test_workflow_langgraph_compile_raises_import_error_if_not_installed(self) -> None:
+    def test_workflow_langgraph_compile_raises_import_error_if_not_installed(
+        self,
+    ) -> None:
         """compile_to_langgraph raises ImportError if langgraph not ustanovlen."""
         from swarmline.orchestration.workflow_langgraph import compile_to_langgraph
 
@@ -265,7 +268,9 @@ class TestWorkflowMixedRuntimes:
         assert result["__runtime_executions__"]["thin_step"] == "thin"
         assert result["__runtime_executions__"]["deep_step"] == "deepagents"
 
-    async def test_workflow_mixed_runtimes_unmapped_node_uses_thin_fallback(self) -> None:
+    async def test_workflow_mixed_runtimes_unmapped_node_uses_thin_fallback(
+        self,
+    ) -> None:
         """Node without mapping gets thin metadata, no execution stays direct."""
         from swarmline.orchestration.workflow_executor import MixedRuntimeExecutor
 

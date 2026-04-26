@@ -84,13 +84,17 @@ class TestSimpleTierGenerator:
     async def test_l0_returns_first_line(self) -> None:
         gen = SimpleTierGenerator()
         content = "First line\nSecond line\nThird line"
-        result = await gen.generate("Create a one-line abstract (max 100 tokens)", content)
+        result = await gen.generate(
+            "Create a one-line abstract (max 100 tokens)", content
+        )
         assert "First line" in result
 
     async def test_l1_returns_truncated(self) -> None:
         gen = SimpleTierGenerator()
         content = "x" * 20000
-        result = await gen.generate("Create a concise overview (max 2000 tokens)", content)
+        result = await gen.generate(
+            "Create a concise overview (max 2000 tokens)", content
+        )
         assert len(result) < len(content)
 
 
@@ -192,10 +196,18 @@ class TestSearch:
         manager = TieredContextManager(provider)
 
         # Write L0 and L1 tiers manually
-        await provider.write_file(".tiers/plans/auth.md.l0", "authentication login security")
-        await provider.write_file(".tiers/plans/auth.md.l1", "Auth module overview with JWT tokens")
-        await provider.write_file(".tiers/plans/ui.md.l0", "user interface components layout")
-        await provider.write_file(".tiers/plans/ui.md.l1", "UI components design system")
+        await provider.write_file(
+            ".tiers/plans/auth.md.l0", "authentication login security"
+        )
+        await provider.write_file(
+            ".tiers/plans/auth.md.l1", "Auth module overview with JWT tokens"
+        )
+        await provider.write_file(
+            ".tiers/plans/ui.md.l0", "user interface components layout"
+        )
+        await provider.write_file(
+            ".tiers/plans/ui.md.l1", "UI components design system"
+        )
 
         results = await manager.search("authentication security")
         assert len(results) >= 1
@@ -222,7 +234,9 @@ class TestSearch:
         # Create many L0/L1 entries
         for i in range(20):
             await provider.write_file(f".tiers/doc{i}.md.l0", f"keyword topic{i}")
-            await provider.write_file(f".tiers/doc{i}.md.l1", f"Overview of topic{i} " * 100)
+            await provider.write_file(
+                f".tiers/doc{i}.md.l1", f"Overview of topic{i} " * 100
+            )
 
         results = await manager.search("keyword", budget_tokens=500)
         total_tokens = sum(e.token_count for e in results)

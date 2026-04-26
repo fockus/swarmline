@@ -163,9 +163,9 @@ class TestCodingContextBudgetDiscipline:
     @pytest.mark.parametrize(
         ("total_tokens", "expected_omitted_count_gte"),
         [
-            (8000, 0),    # generous budget: nothing omitted
-            (40, 1),      # tight budget: some slices omitted
-            (15, 3),      # extreme pressure: most slices omitted
+            (8000, 0),  # generous budget: nothing omitted
+            (40, 1),  # tight budget: some slices omitted
+            (15, 3),  # extreme pressure: most slices omitted
         ],
         ids=["generous", "tight", "extreme"],
     )
@@ -203,7 +203,14 @@ class TestCodingContextBudgetDiscipline:
 
         if "task" in result.omitted_slices:
             # If task is omitted, every other non-empty slice must also be omitted
-            all_non_empty = {"task", "board", "workspace", "search", "session", "skill_profile"}
+            all_non_empty = {
+                "task",
+                "board",
+                "workspace",
+                "search",
+                "session",
+                "skill_profile",
+            }
             assert all_non_empty.issubset(set(result.omitted_slices))
 
     def test_result_token_count_within_budget(self) -> None:
@@ -243,8 +250,12 @@ class TestCodingContextBudgetDiscipline:
         assembler = CodingContextAssembler()
         result = assembler.assemble(inp)
 
-        has_truncation = len(result.truncated_slices) > 0 or len(result.omitted_slices) > 0
-        assert has_truncation, "Large slice under tight budget must cause truncation or omission"
+        has_truncation = (
+            len(result.truncated_slices) > 0 or len(result.omitted_slices) > 0
+        )
+        assert has_truncation, (
+            "Large slice under tight budget must cause truncation or omission"
+        )
 
 
 # ---------------------------------------------------------------------------

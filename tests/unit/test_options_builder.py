@@ -27,7 +27,9 @@ class TestSpecToSdkConfig:
 
     def test_http_transport(self) -> None:
         """HTTP transport -> analogichno url (Streamable HTTP)."""
-        spec = McpServerSpec(name="iss", transport="http", url="https://example.com/mcp")
+        spec = McpServerSpec(
+            name="iss", transport="http", url="https://example.com/mcp"
+        )
         result = _spec_to_sdk_config(spec)
         assert result == {"type": "http", "url": "https://example.com/mcp"}
 
@@ -83,7 +85,10 @@ class TestBuildUrlConfig:
 
     def test_build_url(self) -> None:
         spec = McpServerSpec(name="t", url="https://test.example")
-        assert _build_url_config(spec) == {"type": "http", "url": "https://test.example"}
+        assert _build_url_config(spec) == {
+            "type": "http",
+            "url": "https://test.example",
+        }
 
     def test_build_sse(self) -> None:
         spec = McpServerSpec(name="t", url="https://test.example")
@@ -183,7 +188,7 @@ class TestClaudeOptionsBuilder:
         assert opts.cwd == "/tmp/test"
 
     def test_default_setting_sources_empty(self) -> None:
-        """Po umolchaniyu setting_sources=[] - not chitaem CLAUDE.md and .claude/settings.json. CLAUDE.md contains developer-facing instruktsii (arhitektura, commands), kotorye konfliktuyut with rolyu finansovogo koucha from system_prompt. """
+        """Po umolchaniyu setting_sources=[] - not chitaem CLAUDE.md and .claude/settings.json. CLAUDE.md contains developer-facing instruktsii (arhitektura, commands), kotorye konfliktuyut with rolyu finansovogo koucha from system_prompt."""
         builder = ClaudeOptionsBuilder()
         opts = builder.build(role_id="coach", system_prompt="test")
         assert opts.setting_sources == []

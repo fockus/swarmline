@@ -61,13 +61,18 @@ class Pipeline:
         self._phase_results = []
         self._stopped = False
 
-        await self._emit("pipeline.started", {"goal": goal, "phase_count": len(self._phases)})
+        await self._emit(
+            "pipeline.started", {"goal": goal, "phase_count": len(self._phases)}
+        )
 
         for phase in self._phases:
             if self._stopped:
-                self._phase_results.append(PhaseResult(
-                    phase_id=phase.id, status=PhaseStatus.SKIPPED,
-                ))
+                self._phase_results.append(
+                    PhaseResult(
+                        phase_id=phase.id,
+                        status=PhaseStatus.SKIPPED,
+                    )
+                )
                 continue
 
             result = await self._run_single_phase(phase, goal)
@@ -76,16 +81,24 @@ class Pipeline:
             if result.status == PhaseStatus.FAILED:
                 # Record remaining phases as SKIPPED
                 idx = self._phases.index(phase)
-                for remaining in self._phases[idx + 1:]:
-                    self._phase_results.append(PhaseResult(
-                        phase_id=remaining.id, status=PhaseStatus.SKIPPED,
-                    ))
+                for remaining in self._phases[idx + 1 :]:
+                    self._phase_results.append(
+                        PhaseResult(
+                            phase_id=remaining.id,
+                            status=PhaseStatus.SKIPPED,
+                        )
+                    )
                 break
 
         total_duration = time.monotonic() - start_time
-        status = "stopped" if self._stopped else (
-            "failed" if any(r.status == PhaseStatus.FAILED for r in self._phase_results)
-            else "completed"
+        status = (
+            "stopped"
+            if self._stopped
+            else (
+                "failed"
+                if any(r.status == PhaseStatus.FAILED for r in self._phase_results)
+                else "completed"
+            )
         )
 
         pipeline_result = PipelineResult(
@@ -102,7 +115,8 @@ class Pipeline:
         phase = next((p for p in self._phases if p.id == phase_id), None)
         if phase is None:
             return PhaseResult(
-                phase_id=phase_id, status=PhaseStatus.FAILED,
+                phase_id=phase_id,
+                status=PhaseStatus.FAILED,
                 error=f"Phase '{phase_id}' not found",
             )
         return await self._run_single_phase(phase, phase.goal)
@@ -130,7 +144,9 @@ class Pipeline:
                 pass
         await self._emit("pipeline.stopped", {})
 
-    async def _execute_phase_orchestration(self, phase: PipelinePhase, goal: str) -> str:
+    async def _execute_phase_orchestration(
+        self, phase: PipelinePhase, goal: str
+    ) -> str:
         """Run orchestration for a single phase. Returns run_id."""
         phase_goal = f"[{phase.name}] {goal}" if phase.goal == goal else phase.goal
         run_id = await self._orch.start(phase_goal)
@@ -147,35 +163,51 @@ class Pipeline:
         return run_id
 
     async def _run_single_phase(
-        self, phase: PipelinePhase, goal: str,
+        self,
+        phase: PipelinePhase,
+        goal: str,
     ) -> PhaseResult:
         """Execute one phase: budget check → run → gates."""
         phase_start = time.monotonic()
         self._current_phase_id = phase.id
 
-        await self._emit("pipeline.phase.started", {
-            "phase_id": phase.id, "name": phase.name,
-        })
+        await self._emit(
+            "pipeline.phase.started",
+            {
+                "phase_id": phase.id,
+                "name": phase.name,
+            },
+        )
 
         # Budget check
         if self._budget and self._budget.is_exceeded():
             result = PhaseResult(
-                phase_id=phase.id, status=PhaseStatus.FAILED,
+                phase_id=phase.id,
+                status=PhaseStatus.FAILED,
                 error="Budget exceeded before phase start",
             )
-            await self._emit("pipeline.phase.failed", {
-                "phase_id": phase.id, "error": result.error,
-            })
+            await self._emit(
+                "pipeline.phase.failed",
+                {
+                    "phase_id": phase.id,
+                    "error": result.error,
+                },
+            )
             return result
 
         if self._budget and self._budget.is_phase_exceeded(phase.id):
             result = PhaseResult(
-                phase_id=phase.id, status=PhaseStatus.FAILED,
+                phase_id=phase.id,
+                status=PhaseStatus.FAILED,
                 error="Phase budget exceeded",
             )
-            await self._emit("pipeline.phase.failed", {
-                "phase_id": phase.id, "error": result.error,
-            })
+            await self._emit(
+                "pipeline.phase.failed",
+                {
+                    "phase_id": phase.id,
+                    "error": result.error,
+                },
+            )
             return result
 
         # Run phase via orchestrator (with optional timeout)
@@ -183,49 +215,71 @@ class Pipeline:
         try:
             phase_coro = self._execute_phase_orchestration(phase, goal)
             if phase.timeout_seconds and phase.timeout_seconds > 0:
-                run_id = await asyncio.wait_for(phase_coro, timeout=phase.timeout_seconds)
+                run_id = await asyncio.wait_for(
+                    phase_coro, timeout=phase.timeout_seconds
+                )
             else:
                 run_id = await phase_coro
 
         except TimeoutError:
             result = PhaseResult(
-                phase_id=phase.id, status=PhaseStatus.FAILED,
+                phase_id=phase.id,
+                status=PhaseStatus.FAILED,
                 error=f"Phase timed out after {phase.timeout_seconds}s",
                 duration_seconds=time.monotonic() - phase_start,
             )
-            await self._emit("pipeline.phase.failed", {
-                "phase_id": phase.id, "error": result.error,
-            })
+            await self._emit(
+                "pipeline.phase.failed",
+                {
+                    "phase_id": phase.id,
+                    "error": result.error,
+                },
+            )
             return result
         except asyncio.CancelledError:
             result = PhaseResult(
-                phase_id=phase.id, status=PhaseStatus.FAILED,
+                phase_id=phase.id,
+                status=PhaseStatus.FAILED,
                 error="Phase cancelled (pipeline stopped)",
                 duration_seconds=time.monotonic() - phase_start,
             )
-            await self._emit("pipeline.phase.failed", {
-                "phase_id": phase.id, "error": result.error,
-            })
+            await self._emit(
+                "pipeline.phase.failed",
+                {
+                    "phase_id": phase.id,
+                    "error": result.error,
+                },
+            )
             return result
         except BudgetExceededError as exc:
             result = PhaseResult(
-                phase_id=phase.id, status=PhaseStatus.FAILED,
+                phase_id=phase.id,
+                status=PhaseStatus.FAILED,
                 error=str(exc),
                 duration_seconds=time.monotonic() - phase_start,
             )
-            await self._emit("pipeline.phase.failed", {
-                "phase_id": phase.id, "error": result.error,
-            })
+            await self._emit(
+                "pipeline.phase.failed",
+                {
+                    "phase_id": phase.id,
+                    "error": result.error,
+                },
+            )
             return result
         except Exception as exc:  # noqa: BLE001
             result = PhaseResult(
-                phase_id=phase.id, status=PhaseStatus.FAILED,
+                phase_id=phase.id,
+                status=PhaseStatus.FAILED,
                 error=str(exc),
                 duration_seconds=time.monotonic() - phase_start,
             )
-            await self._emit("pipeline.phase.failed", {
-                "phase_id": phase.id, "error": result.error,
-            })
+            await self._emit(
+                "pipeline.phase.failed",
+                {
+                    "phase_id": phase.id,
+                    "error": result.error,
+                },
+            )
             return result
 
         # Run quality gates
@@ -242,9 +296,13 @@ class Pipeline:
                         duration_seconds=time.monotonic() - phase_start,
                         error=f"Gate '{gr.gate_name}' failed: {gr.details}",
                     )
-                    await self._emit("pipeline.phase.failed", {
-                        "phase_id": phase.id, "error": result.error,
-                    })
+                    await self._emit(
+                        "pipeline.phase.failed",
+                        {
+                            "phase_id": phase.id,
+                            "error": result.error,
+                        },
+                    )
                     return result
 
         duration = time.monotonic() - phase_start

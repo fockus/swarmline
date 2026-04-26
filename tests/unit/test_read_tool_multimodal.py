@@ -206,13 +206,21 @@ class TestExtractJupyter:
                     "nbformat_minor": 2,
                     "metadata": {},
                     "cells": [
-                        {"cell_type": "markdown", "source": ["# Title"], "metadata": {}},
+                        {
+                            "cell_type": "markdown",
+                            "source": ["# Title"],
+                            "metadata": {},
+                        },
                         {
                             "cell_type": "code",
                             "source": ["print('hello')"],
                             "metadata": {},
                             "outputs": [
-                                {"output_type": "stream", "text": ["hello\n"], "name": "stdout"}
+                                {
+                                    "output_type": "stream",
+                                    "text": ["hello\n"],
+                                    "name": "stdout",
+                                }
                             ],
                             "execution_count": 1,
                         },

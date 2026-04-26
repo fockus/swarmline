@@ -144,7 +144,10 @@ class TestAliasIsNotSecondImplementation:
         for alias_name in ["read_file", "write_file", "edit_file", "execute"]:
             if alias_name in alias_specs:
                 canonical = CODING_ALIAS_MAP[alias_name]
-                assert alias_specs[alias_name].description == pack.specs[canonical].description
+                assert (
+                    alias_specs[alias_name].description
+                    == pack.specs[canonical].description
+                )
 
     def test_alias_count_matches_map(self, coding_sandbox) -> None:
         """build_alias_specs produces exactly as many specs as aliases in the map."""
@@ -153,8 +156,7 @@ class TestAliasIsNotSecondImplementation:
 
         # Only aliases whose canonical target exists in the pack are produced
         expected_count = sum(
-            1 for canonical in CODING_ALIAS_MAP.values()
-            if canonical in pack.specs
+            1 for canonical in CODING_ALIAS_MAP.values() if canonical in pack.specs
         )
         assert len(alias_specs) == expected_count
 

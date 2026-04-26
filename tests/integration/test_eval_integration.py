@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 from swarmline.eval.reporters import ConsoleReporter, JsonReporter
 from swarmline.eval.runner import EvalRunner
-from swarmline.eval.scorers import ContainsScorer, CostScorer, ExactMatchScorer, LatencyScorer
+from swarmline.eval.scorers import (
+    ContainsScorer,
+    CostScorer,
+    ExactMatchScorer,
+    LatencyScorer,
+)
 from swarmline.eval.types import EvalCase
 
 
@@ -57,14 +62,15 @@ SUITE = [
 
 
 class TestEvalIntegration:
-
     async def test_full_eval_pipeline(self) -> None:
-        agent = _mock_agent({
-            "What is the capital of France?": "The capital of France is Paris.",
-            "What is 2+2?": "4",
-            "What is the capital of Japan?": "Tokyo is the capital.",
-            "Who wrote Hamlet?": "William Shakespeare wrote Hamlet.",
-        })
+        agent = _mock_agent(
+            {
+                "What is the capital of France?": "The capital of France is Paris.",
+                "What is 2+2?": "4",
+                "What is the capital of Japan?": "Tokyo is the capital.",
+                "Who wrote Hamlet?": "William Shakespeare wrote Hamlet.",
+            }
+        )
 
         runner = EvalRunner()
         report = await runner.run(
@@ -87,7 +93,9 @@ class TestEvalIntegration:
 
         # ExactMatchScorer: only "4" is exact
         assert report.results[1].scores["exact_match"].score == 1.0
-        assert report.results[0].scores["exact_match"].score == 0.0  # "Paris" != "The capital..."
+        assert (
+            report.results[0].scores["exact_match"].score == 0.0
+        )  # "Paris" != "The capital..."
 
     async def test_console_reporter_output(self) -> None:
         agent = _mock_agent({"hi": "hello"})
@@ -122,7 +130,12 @@ class TestEvalIntegration:
         report = await runner.run(
             agent=agent,
             suite=[EvalCase(id="c1", input="test", expected="result")],
-            scorers=[ExactMatchScorer(), ContainsScorer(), LatencyScorer(), CostScorer()],
+            scorers=[
+                ExactMatchScorer(),
+                ContainsScorer(),
+                LatencyScorer(),
+                CostScorer(),
+            ],
         )
         result = report.results[0]
         assert len(result.scores) == 4

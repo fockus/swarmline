@@ -32,7 +32,6 @@ def _fast_runner(config: DaemonConfig, **kwargs) -> DaemonRunner:
 
 
 class TestDaemonRunnerLifecycle:
-
     async def test_start_and_stop(self, config: DaemonConfig) -> None:
         runner = DaemonRunner(config=config)
         assert runner.state == DaemonState.STOPPED
@@ -98,7 +97,6 @@ class TestDaemonRunnerLifecycle:
 
 
 class TestDaemonRunnerStatus:
-
     async def test_get_status(self, config: DaemonConfig) -> None:
         runner = DaemonRunner(config=config)
 
@@ -130,7 +128,6 @@ class TestDaemonRunnerStatus:
 
 
 class TestDaemonRunnerEventBus:
-
     async def test_emits_events(self, config: DaemonConfig) -> None:
         events: list[tuple[str, dict]] = []
 
@@ -152,7 +149,6 @@ class TestDaemonRunnerEventBus:
 
 
 class TestDaemonRunnerCustomComponents:
-
     async def test_custom_pid_file(self, tmp_path) -> None:
         """DaemonRunner accepts custom ProcessLock implementation."""
         custom_pid = PidFile(str(tmp_path / "custom.pid"))
@@ -179,6 +175,7 @@ class TestDaemonRunnerCustomComponents:
         runner = DaemonRunner(config=config, scheduler=custom_sched)
 
         counter = {"val": 0}
+
         async def inc():
             counter["val"] += 1
 
@@ -199,6 +196,7 @@ class TestDaemonRunnerCustomComponents:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _noop() -> None:
     pass

@@ -1,11 +1,14 @@
-"""Tests for PostgresMemoryProvider - cherez mock SQLAlchemy session. Verify, chto metody vyzyvayut pravilnye SQL-queries with pravilnymi parameterami.
-"""
+"""Tests for PostgresMemoryProvider - cherez mock SQLAlchemy session. Verify, chto metody vyzyvayut pravilnye SQL-queries with pravilnymi parameterami."""
 
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from swarmline.memory.postgres import _USER_ID_SUB, PostgresMemoryProvider, _json_or_none
+from swarmline.memory.postgres import (
+    _USER_ID_SUB,
+    PostgresMemoryProvider,
+    _json_or_none,
+)
 from swarmline.memory.types import GoalState
 
 

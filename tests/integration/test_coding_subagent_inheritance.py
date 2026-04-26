@@ -52,7 +52,9 @@ def _make_llm_call_returning(text: str) -> Any:
     """Create a fake llm_call that returns a canned response."""
 
     async def _fake_llm_call(
-        messages: Any, system_prompt: str = "", **kwargs: Any,
+        messages: Any,
+        system_prompt: str = "",
+        **kwargs: Any,
     ) -> str:
         return text
 
@@ -158,7 +160,9 @@ class TestCodingPolicyInheritedByChild:
         )
 
         spec = SubagentSpec(
-            name="child", system_prompt="test", tools=[],
+            name="child",
+            system_prompt="test",
+            tools=[],
             sandbox_config=_make_sandbox_config(),
         )
 
@@ -194,7 +198,9 @@ class TestTaskContextPropagation:
 
         # With sandbox → no error (validation passes)
         spec_ok = SubagentSpec(
-            name="child", system_prompt="test", tools=[],
+            name="child",
+            system_prompt="test",
+            tools=[],
             sandbox_config=_make_sandbox_config(),
         )
         worker = orchestrator._create_runtime(spec_ok)
@@ -202,7 +208,9 @@ class TestTaskContextPropagation:
 
         # Without sandbox → ValueError (validation catches it)
         spec_bad = SubagentSpec(
-            name="child-bad", system_prompt="test", tools=[],
+            name="child-bad",
+            system_prompt="test",
+            tools=[],
             sandbox_config=None,
         )
         with pytest.raises(ValueError, match="sandbox"):
@@ -252,7 +260,10 @@ class TestIncompatibleInheritanceFailsFast:
         )
 
         spec = SubagentSpec(
-            name="child", system_prompt="test", tools=[], sandbox_config=None,
+            name="child",
+            system_prompt="test",
+            tools=[],
+            sandbox_config=None,
         )
 
         worker = orchestrator._create_runtime(spec)

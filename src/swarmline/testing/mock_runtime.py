@@ -30,8 +30,7 @@ from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSp
 DEFAULT_REPLIES: Mapping[str, str] = {
     "capital of france": "Paris.",
     "haiku": (
-        "Python softly hums / Clean functions guide the logic / "
-        "Bugs fade into tests."
+        "Python softly hums / Clean functions guide the logic / Bugs fade into tests."
     ),
     "one-line joke": (
         "I told my debugger a joke, but it kept stepping over the punchline."

@@ -176,7 +176,10 @@ class Scheduler:
         for name, task in list(self._tasks.items()):
             if not task.active:
                 continue
-            if self._max_concurrent > 0 and len(self._pending_asyncio_tasks) >= self._max_concurrent:
+            if (
+                self._max_concurrent > 0
+                and len(self._pending_asyncio_tasks) >= self._max_concurrent
+            ):
                 break
             if task.next_run <= now:
                 # Fire task and track reference

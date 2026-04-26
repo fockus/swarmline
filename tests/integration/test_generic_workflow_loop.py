@@ -32,7 +32,9 @@ class TestGenericWorkflowExecuteVerifyLoop:
                 return "partial result: data gathered but no summary yet"
             return "Complete analysis. SUMMARY: market is bullish, growth 15% YoY"
 
-        async def real_verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
+        async def real_verifier(
+            output: str, context: dict[str, Any]
+        ) -> tuple[bool, str]:
             """Verifier: verifies nalichie markera 'SUMMARY:' in output."""
             if "SUMMARY:" in output:
                 return True, "Verification passed: summary section present"
@@ -59,7 +61,9 @@ class TestGenericWorkflowExecuteVerifyLoop:
         async def failing_executor(task: str, context: dict[str, Any]) -> str:
             return "always incomplete"
 
-        async def strict_verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
+        async def strict_verifier(
+            output: str, context: dict[str, Any]
+        ) -> tuple[bool, str]:
             return False, "Missing required sections"
 
         engine = GenericWorkflowEngine(
@@ -83,7 +87,9 @@ class TestGenericWorkflowExecuteVerifyLoop:
         async def good_executor(task: str, context: dict[str, Any]) -> str:
             return "Perfect output with all required data"
 
-        async def lenient_verifier(output: str, context: dict[str, Any]) -> tuple[bool, str]:
+        async def lenient_verifier(
+            output: str, context: dict[str, Any]
+        ) -> tuple[bool, str]:
             return True, "All checks passed"
 
         engine = GenericWorkflowEngine(

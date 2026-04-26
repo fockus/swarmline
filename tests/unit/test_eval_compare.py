@@ -34,7 +34,6 @@ def _report(*results: EvalResult) -> EvalReport:
 
 
 class TestEvalComparator:
-
     def test_compare_improved_case(self) -> None:
         base = _report(_result("c1", {"s": 0.3}))
         target = _report(_result("c1", {"s": 0.9}))
@@ -104,7 +103,6 @@ class TestEvalComparator:
 
 
 class TestEvalHistory:
-
     def test_save_and_load(self, tmp_path: Path) -> None:
         report = _report(_result("c1", {"s": 0.8}))
         path = tmp_path / "eval_run.json"

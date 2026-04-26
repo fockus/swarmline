@@ -21,10 +21,12 @@ from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent, ToolSp
 
 
 class MockStreamingLLM:
-    """Mock LLM with podderzhkoy streaming (returns tokeny by odnomu). Pri stream=True returns AsyncIterator[str] (tokeny). Pri stream=False returns full response. """
+    """Mock LLM with podderzhkoy streaming (returns tokeny by odnomu). Pri stream=True returns AsyncIterator[str] (tokeny). Pri stream=False returns full response."""
 
-    def __init__(self, token_chunks: list[list[str]], full_responses: list[str] | None = None):
-        """ Args: token_chunks: Dlya kazhdogo vyzova - list token chunks. full_responses: Fallback full responsey (for non-stream mode). """
+    def __init__(
+        self, token_chunks: list[list[str]], full_responses: list[str] | None = None
+    ):
+        """Args: token_chunks: Dlya kazhdogo vyzova - list token chunks. full_responses: Fallback full responsey (for non-stream mode)."""
         self._token_chunks = list(token_chunks)
         self._full_responses = list(full_responses or [])
         self._call_count = 0
@@ -105,7 +107,9 @@ class TestIncrementalEnvelopeParser:
 
         for chunk in chunks[:-1]:
             result = parser.feed(chunk)
-            assert result is None, f"Не должно быть результата на промежуточном chunk: {chunk}"
+            assert result is None, (
+                f"Не должно быть результата на промежуточном chunk: {chunk}"
+            )
 
         result = parser.feed(chunks[-1])
         assert result is not None
@@ -230,7 +234,9 @@ class TestIncrementalEnvelopeParserEdgeCases:
         from swarmline.runtime.thin.stream_parser import IncrementalEnvelopeParser
 
         parser = IncrementalEnvelopeParser()
-        result = parser.feed('Some prefix text {"type": "final", "final_message": "ok"}')
+        result = parser.feed(
+            'Some prefix text {"type": "final", "final_message": "ok"}'
+        )
         assert result is not None
         assert result["type"] == "final"
 
@@ -461,7 +467,9 @@ class TestThinRuntimeStreaming:
 
         # Final response was streamed with multiple deltas
         final_idx = next(i for i, e in enumerate(events) if e.type == "final")
-        deltas_before_final = [e for e in events[:final_idx] if e.type == "assistant_delta"]
+        deltas_before_final = [
+            e for e in events[:final_idx] if e.type == "assistant_delta"
+        ]
         assert len(deltas_before_final) > 1, (
             f"Final response в react mode должен стримиться после tool call, "
             f"получено {len(deltas_before_final)} delta events перед final"

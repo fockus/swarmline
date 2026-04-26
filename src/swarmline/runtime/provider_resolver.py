@@ -20,7 +20,6 @@ class ResolvedProvider:
     base_url: str | None
 
 
-
 _OPENAI_COMPAT_PROVIDERS: dict[str, str | None] = {
     "openai": None,  # standard OpenAI endpoint
     "openrouter": "https://openrouter.ai/api/v1",
@@ -39,6 +38,7 @@ _PROVIDER_SDK_MAP: dict[str, SdkType] = {
     **{provider: "openai_compat" for provider in _OPENAI_COMPAT_PROVIDERS},
 }
 
+
 def _parse_prefix(raw: str) -> tuple[str | None, str]:
     """Parse prefix."""
     if ":" not in raw:
@@ -53,7 +53,6 @@ def _parse_prefix(raw: str) -> tuple[str | None, str]:
 
     if normalized in _PROVIDER_SDK_MAP:
         return normalized, model_part.strip()
-
 
     return None, raw
 
@@ -92,7 +91,9 @@ def resolve_provider(
         provider = registry.get_provider(model_id)
 
     sdk_type = _PROVIDER_SDK_MAP.get(provider, "openai_compat")
-    effective_base_url = base_url if base_url is not None else _get_default_base_url(provider)
+    effective_base_url = (
+        base_url if base_url is not None else _get_default_base_url(provider)
+    )
 
     return ResolvedProvider(
         model_id=model_id,

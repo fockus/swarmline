@@ -46,12 +46,10 @@ def detect_mode(
     if mode_hint and mode_hint in VALID_MODES:
         return mode_hint
 
-
     effective_planner_patterns = planner_patterns or _PLANNER_PATTERNS
     for pattern in effective_planner_patterns:
         if pattern.search(text):
             return "planner"
-
 
     effective_react_patterns = react_patterns or _REACT_PATTERNS
     for pattern in effective_react_patterns:

@@ -21,7 +21,9 @@ from swarmline.session.task_session_types import TaskSessionParams
 class TaskSessionStore(Protocol):
     """Bind session state to (agent_id, task_id) pair. ISP: 4 methods."""
 
-    async def save(self, agent_id: str, task_id: str, params: dict[str, Any]) -> None: ...
+    async def save(
+        self, agent_id: str, task_id: str, params: dict[str, Any]
+    ) -> None: ...
 
     async def load(self, agent_id: str, task_id: str) -> dict[str, Any] | None: ...
 
@@ -61,10 +63,13 @@ class InMemoryTaskSessionStore:
                 updated_at=now,
             )
         if self._event_bus is not None:
-            await self._event_bus.emit("session.task.saved", {
-                "agent_id": agent_id,
-                "task_id": task_id,
-            })
+            await self._event_bus.emit(
+                "session.task.saved",
+                {
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                },
+            )
 
     async def load(self, agent_id: str, task_id: str) -> dict[str, Any] | None:
         async with self._lock:
@@ -82,10 +87,13 @@ class InMemoryTaskSessionStore:
             else:
                 found = False
         if found and self._event_bus is not None:
-            await self._event_bus.emit("session.task.deleted", {
-                "agent_id": agent_id,
-                "task_id": task_id,
-            })
+            await self._event_bus.emit(
+                "session.task.deleted",
+                {
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                },
+            )
         return found
 
     async def list_by_agent(self, agent_id: str) -> list[TaskSessionParams]:
@@ -115,7 +123,9 @@ class SqliteTaskSessionStore:
     Matches the threading.Lock + WAL pattern from backends.py.
     """
 
-    def __init__(self, db_path: str = "swarmline_task_sessions.db", event_bus: Any | None = None) -> None:
+    def __init__(
+        self, db_path: str = "swarmline_task_sessions.db", event_bus: Any | None = None
+    ) -> None:
         self._db_path = db_path
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._lock = threading.Lock()
@@ -135,8 +145,7 @@ class SqliteTaskSessionStore:
                 "PRIMARY KEY (agent_id, task_id))"
             )
             self._conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_ts_agent "
-                "ON task_sessions(agent_id)"
+                "CREATE INDEX IF NOT EXISTS idx_ts_agent ON task_sessions(agent_id)"
             )
             self._conn.commit()
 
@@ -202,10 +211,13 @@ class SqliteTaskSessionStore:
         params_json = json.dumps(params, ensure_ascii=False)
         await asyncio.to_thread(self._save_sync, agent_id, task_id, params_json)
         if self._event_bus is not None:
-            await self._event_bus.emit("session.task.saved", {
-                "agent_id": agent_id,
-                "task_id": task_id,
-            })
+            await self._event_bus.emit(
+                "session.task.saved",
+                {
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                },
+            )
 
     async def load(self, agent_id: str, task_id: str) -> dict[str, Any] | None:
         raw = await asyncio.to_thread(self._load_sync, agent_id, task_id)
@@ -216,10 +228,13 @@ class SqliteTaskSessionStore:
     async def delete(self, agent_id: str, task_id: str) -> bool:
         found = await asyncio.to_thread(self._delete_sync, agent_id, task_id)
         if found and self._event_bus is not None:
-            await self._event_bus.emit("session.task.deleted", {
-                "agent_id": agent_id,
-                "task_id": task_id,
-            })
+            await self._event_bus.emit(
+                "session.task.deleted",
+                {
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                },
+            )
         return found
 
     async def list_by_agent(self, agent_id: str) -> list[TaskSessionParams]:

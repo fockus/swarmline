@@ -22,9 +22,7 @@ CODING_SANDBOX_TOOL_NAMES: frozenset[str] = frozenset(
     {"read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep"}
 )
 
-CODING_TODO_TOOL_NAMES: frozenset[str] = frozenset(
-    {"todo_read", "todo_write"}
-)
+CODING_TODO_TOOL_NAMES: frozenset[str] = frozenset({"todo_read", "todo_write"})
 
 # Full canonical coding tool surface (sandbox + todo).
 CODING_TOOL_NAMES: frozenset[str] = CODING_SANDBOX_TOOL_NAMES | CODING_TODO_TOOL_NAMES
@@ -129,7 +127,9 @@ class CodingToolPack:
 
 
 def build_coding_toolpack(
-    sandbox: Any, *, todo_provider: Any = None,
+    sandbox: Any,
+    *,
+    todo_provider: Any = None,
 ) -> CodingToolPack:
     """Build the canonical coding tool pack from a SandboxProvider.
 

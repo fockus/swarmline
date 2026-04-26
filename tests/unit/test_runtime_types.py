@@ -409,13 +409,17 @@ class TestResolveModelName:
         assert resolve_model_name("Opus") == "claude-opus-4-20250514"
 
     def test_full_name_sonnet(self) -> None:
-        assert resolve_model_name("claude-sonnet-4-20250514") == "claude-sonnet-4-20250514"
+        assert (
+            resolve_model_name("claude-sonnet-4-20250514") == "claude-sonnet-4-20250514"
+        )
 
     def test_full_name_opus(self) -> None:
         assert resolve_model_name("claude-opus-4-20250514") == "claude-opus-4-20250514"
 
     def test_full_name_haiku(self) -> None:
-        assert resolve_model_name("claude-haiku-3-20250307") == "claude-haiku-3-20250307"
+        assert (
+            resolve_model_name("claude-haiku-3-20250307") == "claude-haiku-3-20250307"
+        )
 
     def test_prefix_match(self) -> None:
         """Prefix match for notpolnyh imen."""

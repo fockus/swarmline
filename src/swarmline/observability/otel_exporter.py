@@ -108,18 +108,10 @@ class OTelExporter:
         if bus is None:
             raise ValueError("No EventBus provided to attach()")
         self._bus = bus
-        self._sub_ids.append(
-            bus.subscribe("llm_call_start", self._on_llm_start)
-        )
-        self._sub_ids.append(
-            bus.subscribe("llm_call_end", self._on_llm_end)
-        )
-        self._sub_ids.append(
-            bus.subscribe("tool_call_start", self._on_tool_start)
-        )
-        self._sub_ids.append(
-            bus.subscribe("tool_call_end", self._on_tool_end)
-        )
+        self._sub_ids.append(bus.subscribe("llm_call_start", self._on_llm_start))
+        self._sub_ids.append(bus.subscribe("llm_call_end", self._on_llm_end))
+        self._sub_ids.append(bus.subscribe("tool_call_start", self._on_tool_start))
+        self._sub_ids.append(bus.subscribe("tool_call_end", self._on_tool_end))
 
     def detach(self, event_bus: Any = None) -> None:
         """Unsubscribe from all events and end any lingering spans.
@@ -178,13 +170,9 @@ class OTelExporter:
             return
 
         if "input_tokens" in data:
-            span.set_attribute(
-                _ATTR_GEN_AI_USAGE_INPUT_TOKENS, data["input_tokens"]
-            )
+            span.set_attribute(_ATTR_GEN_AI_USAGE_INPUT_TOKENS, data["input_tokens"])
         if "output_tokens" in data:
-            span.set_attribute(
-                _ATTR_GEN_AI_USAGE_OUTPUT_TOKENS, data["output_tokens"]
-            )
+            span.set_attribute(_ATTR_GEN_AI_USAGE_OUTPUT_TOKENS, data["output_tokens"])
         if "finish_reasons" in data:
             span.set_attribute(
                 _ATTR_GEN_AI_RESPONSE_FINISH_REASONS,
@@ -225,9 +213,7 @@ class OTelExporter:
 
     def _on_tool_end(self, data: dict[str, Any]) -> None:
         """Handle tool_call_end event -- end OTel span."""
-        correlation_id = data.get(
-            "correlation_id", data.get("name", "unknown")
-        )
+        correlation_id = data.get("correlation_id", data.get("name", "unknown"))
         key = f"tool_call:{correlation_id}"
         span = self._active_spans.pop(key, None)
         if span is None:

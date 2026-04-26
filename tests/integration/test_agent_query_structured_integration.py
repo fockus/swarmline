@@ -59,15 +59,19 @@ class TestAgentQueryStructuredIntegration:
 
     async def test_full_pipeline_valid_json(self) -> None:
         """LLM returns valid JSON → query_structured returns Pydantic model."""
-        valid_response = json.dumps({
-            "label": "positive",
-            "score": 0.92,
-            "reasoning": "The text expresses joy and excitement.",
-        })
+        valid_response = json.dumps(
+            {
+                "label": "positive",
+                "score": 0.92,
+                "reasoning": "The text expresses joy and excitement.",
+            }
+        )
 
         call_count = 0
 
-        async def mock_llm(messages: list[dict[str, str]], system_prompt: str, **kw: Any) -> str:
+        async def mock_llm(
+            messages: list[dict[str, str]], system_prompt: str, **kw: Any
+        ) -> str:
             nonlocal call_count
             call_count += 1
             return json.dumps({"type": "final", "final_message": valid_response})
@@ -79,10 +83,14 @@ class TestAgentQueryStructuredIntegration:
 
         from swarmline.runtime.thin.runtime import ThinRuntime
 
-        def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
+        def patched_factory_create(
+            self_factory: Any, config: Any, **kwargs: Any
+        ) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create
+        ):
             result = await agent.query_structured(
                 "Analyze sentiment: I love sunny days!",
                 Sentiment,
@@ -96,14 +104,20 @@ class TestAgentQueryStructuredIntegration:
 
     async def test_full_pipeline_retry_on_invalid_json(self) -> None:
         """LLM returns invalid JSON first, valid on retry → succeeds."""
-        valid_response = json.dumps({"name": "Alice", "age": 30, "email": "alice@example.com"})
+        valid_response = json.dumps(
+            {"name": "Alice", "age": 30, "email": "alice@example.com"}
+        )
         attempts: list[int] = []
 
-        async def mock_llm(messages: list[dict[str, str]], system_prompt: str, **kw: Any) -> str:
+        async def mock_llm(
+            messages: list[dict[str, str]], system_prompt: str, **kw: Any
+        ) -> str:
             attempts.append(1)
             if len(attempts) == 1:
                 # First attempt: invalid JSON
-                return json.dumps({"type": "final", "final_message": "Not valid JSON at all"})
+                return json.dumps(
+                    {"type": "final", "final_message": "Not valid JSON at all"}
+                )
             # Retry: valid JSON
             return json.dumps({"type": "final", "final_message": valid_response})
 
@@ -113,10 +127,14 @@ class TestAgentQueryStructuredIntegration:
 
         from swarmline.runtime.thin.runtime import ThinRuntime
 
-        def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
+        def patched_factory_create(
+            self_factory: Any, config: Any, **kwargs: Any
+        ) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create
+        ):
             result = await agent.query_structured("Get user profile", UserProfile)
 
         assert isinstance(result, UserProfile)
@@ -126,7 +144,10 @@ class TestAgentQueryStructuredIntegration:
 
     async def test_full_pipeline_all_retries_exhausted(self) -> None:
         """LLM returns invalid JSON every time → StructuredOutputError."""
-        async def mock_llm(messages: list[dict[str, str]], system_prompt: str, **kw: Any) -> str:
+
+        async def mock_llm(
+            messages: list[dict[str, str]], system_prompt: str, **kw: Any
+        ) -> str:
             return json.dumps({"type": "final", "final_message": "always invalid"})
 
         agent = _make_thin_agent()
@@ -135,10 +156,14 @@ class TestAgentQueryStructuredIntegration:
 
         from swarmline.runtime.thin.runtime import ThinRuntime
 
-        def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
+        def patched_factory_create(
+            self_factory: Any, config: Any, **kwargs: Any
+        ) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create
+        ):
             with pytest.raises(StructuredOutputError, match="Failed to parse"):
                 await agent.query_structured("Get sentiment", Sentiment)
 
@@ -146,7 +171,9 @@ class TestAgentQueryStructuredIntegration:
         """Agent.query() (not query_structured) still returns text, not model."""
         valid_response = json.dumps({"label": "pos", "score": 0.5, "reasoning": "ok"})
 
-        async def mock_llm(messages: list[dict[str, str]], system_prompt: str, **kw: Any) -> str:
+        async def mock_llm(
+            messages: list[dict[str, str]], system_prompt: str, **kw: Any
+        ) -> str:
             return json.dumps({"type": "final", "final_message": valid_response})
 
         agent = _make_thin_agent()
@@ -155,10 +182,14 @@ class TestAgentQueryStructuredIntegration:
 
         from swarmline.runtime.thin.runtime import ThinRuntime
 
-        def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
+        def patched_factory_create(
+            self_factory: Any, config: Any, **kwargs: Any
+        ) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create
+        ):
             result = await agent.query("Give me sentiment")
 
         # query() returns Result with text, no structured_output (no output_type set)
@@ -170,7 +201,9 @@ class TestAgentQueryStructuredIntegration:
         """AgentConfig with output_type set — query() also validates."""
         valid_response = json.dumps({"name": "Bob", "age": 25, "email": "bob@test.com"})
 
-        async def mock_llm(messages: list[dict[str, str]], system_prompt: str, **kw: Any) -> str:
+        async def mock_llm(
+            messages: list[dict[str, str]], system_prompt: str, **kw: Any
+        ) -> str:
             return json.dumps({"type": "final", "final_message": valid_response})
 
         agent = _make_thin_agent(output_type=UserProfile)
@@ -179,10 +212,14 @@ class TestAgentQueryStructuredIntegration:
 
         from swarmline.runtime.thin.runtime import ThinRuntime
 
-        def patched_factory_create(self_factory: Any, config: Any, **kwargs: Any) -> ThinRuntime:
+        def patched_factory_create(
+            self_factory: Any, config: Any, **kwargs: Any
+        ) -> ThinRuntime:
             return ThinRuntime(config=config, llm_call=mock_llm)
 
-        with patch("swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create):
+        with patch(
+            "swarmline.runtime.factory.RuntimeFactory.create", patched_factory_create
+        ):
             result = await agent.query("Get user")
 
         assert result.ok

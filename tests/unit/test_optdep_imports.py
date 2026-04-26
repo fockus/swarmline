@@ -38,10 +38,10 @@ import pytest
 # Sourced directly from `ty check src/swarmline/` 2026-04-25 baseline=62.
 # Update this list ONLY in lock-step with deliberate ty-baseline movement.
 OPT_IMPORT_LOCATIONS: list[tuple[str, int, str]] = [
-    ("src/swarmline/runtime/agent_sdk_adapter.py", 45, "claude_code_sdk"),
-    ("src/swarmline/runtime/agent_sdk_adapter.py", 85, "claude_code_sdk"),
-    ("src/swarmline/runtime/openai_agents/runtime.py", 66, "agents"),
-    ("src/swarmline/runtime/openai_agents/runtime.py", 214, "agents.mcp"),
+    ("src/swarmline/runtime/agent_sdk_adapter.py", 49, "claude_code_sdk"),
+    ("src/swarmline/runtime/agent_sdk_adapter.py", 89, "claude_code_sdk"),
+    ("src/swarmline/runtime/openai_agents/runtime.py", 69, "agents"),
+    ("src/swarmline/runtime/openai_agents/runtime.py", 219, "agents.mcp"),
     ("src/swarmline/runtime/openai_agents/tool_bridge.py", 34, "agents"),
     ("src/swarmline/multi_agent/graph_communication_nats.py", 48, "nats"),
     ("src/swarmline/multi_agent/graph_communication_redis.py", 48, "redis.asyncio"),
@@ -53,10 +53,10 @@ OPT_IMPORT_LOCATIONS: list[tuple[str, int, str]] = [
     ("src/swarmline/tools/extractors.py", 26, "pymupdf4llm"),
     ("src/swarmline/tools/extractors.py", 35, "fitz"),
     ("src/swarmline/tools/extractors.py", 68, "nbformat"),
-    ("src/swarmline/tools/sandbox_docker.py", 93, "docker"),
+    ("src/swarmline/tools/sandbox_docker.py", 99, "docker"),
     ("src/swarmline/tools/sandbox_e2b.py", 56, "e2b_code_interpreter"),
     ("src/swarmline/tools/sandbox_openshell.py", 80, "openshell"),
-    ("src/swarmline/tools/web_httpx.py", 21, "trafilatura"),
+    ("src/swarmline/tools/web_httpx.py", 25, "trafilatura"),
     ("src/swarmline/tools/web_providers/crawl4ai.py", 17, "crawl4ai"),
     (
         "src/swarmline/tools/web_providers/crawl4ai.py",

@@ -18,21 +18,21 @@ async def collect_runtime_output(
 ) -> str:
     """Collect final text from a stream of RuntimeEvents.
 
-  Logic (same across all 3 former call sites):
-  - assistant_delta: accumulate text
-  - final: use data["text"] as authoritative result
-  - error: raise RuntimeError with message
+    Logic (same across all 3 former call sites):
+    - assistant_delta: accumulate text
+    - final: use data["text"] as authoritative result
+    - error: raise RuntimeError with message
 
-  Args:
-    events: Async iterator of RuntimeEvent.
-    error_prefix: Optional prefix for error messages (e.g. "ThinRuntime subagent error").
+    Args:
+      events: Async iterator of RuntimeEvent.
+      error_prefix: Optional prefix for error messages (e.g. "ThinRuntime subagent error").
 
-  Returns:
-    Final text output.
+    Returns:
+      Final text output.
 
-  Raises:
-    RuntimeError: On error events.
-  """
+    Raises:
+      RuntimeError: On error events.
+    """
     final_text = ""
     saw_terminal_event = False
     async for event in events:

@@ -73,7 +73,14 @@ def _runtime_config() -> RuntimeConfig:
 
 def _cli_config() -> CliConfig:
     return CliConfig(
-        command=["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]
+        command=[
+            "claude",
+            "--print",
+            "--verbose",
+            "--output-format",
+            "stream-json",
+            "-",
+        ]
     )
 
 
@@ -150,9 +157,7 @@ class TestCliRuntimeErrorRecovery:
         stdout_lines = _make_ndjson_lines(
             {
                 "type": "assistant",
-                "message": {
-                    "content": [{"type": "text", "text": "Starting..."}]
-                },
+                "message": {"content": [{"type": "text", "text": "Starting..."}]},
             },
             {"type": "result", "result": "Partial answer"},
         )
@@ -182,7 +187,10 @@ class TestCliRuntimeErrorRecovery:
         assert events[2].type == "error"
         assert events[2].data["kind"] == "runtime_crash"
         assert "segfault" in events[2].data["message"]
-        assert "exit" in events[2].data["message"].lower() or "1" in events[2].data["message"]
+        assert (
+            "exit" in events[2].data["message"].lower()
+            or "1" in events[2].data["message"]
+        )
 
 
 class TestCliRuntimeContextManagerCleanup:
@@ -223,6 +231,7 @@ class TestCliRuntimeTimeout:
         # Arrange — subprocess that never finishes
         async def _stuck_stdout():
             import asyncio
+
             await asyncio.sleep(999)
             yield b""  # pragma: no cover
 

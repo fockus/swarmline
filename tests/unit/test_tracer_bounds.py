@@ -6,7 +6,6 @@ from swarmline.observability.tracer import ConsoleTracer
 
 
 class TestTracerRemovesEndedSpans:
-
     def test_tracer_removes_ended_spans(self) -> None:
         """Start 3 spans, end 2 -- _spans should only contain the 1 active span."""
         tracer = ConsoleTracer()

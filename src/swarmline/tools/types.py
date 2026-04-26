@@ -37,7 +37,11 @@ class SandboxConfig:
     @property
     def workspace_path(self) -> str:
         """Absolute path to the agent workspace."""
-        return str(build_isolated_path(self.root_path, self.user_id, self.topic_id, "workspace"))
+        return str(
+            build_isolated_path(
+                self.root_path, self.user_id, self.topic_id, "workspace"
+            )
+        )
 
 
 @dataclass(frozen=True)

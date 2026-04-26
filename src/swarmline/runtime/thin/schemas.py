@@ -46,14 +46,11 @@ class ActionEnvelope(BaseModel):
 
     type: str = Field(..., pattern=r"^(tool_call|final|clarify)$")
 
-
     tool: ToolCallAction | None = None
-
 
     final_message: str | None = None
     citations: list[str] = Field(default_factory=list)
     next_suggestions: list[str] = Field(default_factory=list)
-
 
     questions: list[ClarifyQuestion] = Field(default_factory=list)
     assistant_message: str = Field(default="")

@@ -94,9 +94,7 @@ class TestThinRuntimeReactWithRealTools:
         # Verify event types in streame
         event_types = [e.type for e in events]
 
-        assert "tool_call_started" in event_types, (
-            "Должен быть tool_call_started event"
-        )
+        assert "tool_call_started" in event_types, "Должен быть tool_call_started event"
         assert "tool_call_finished" in event_types, (
             "Должен быть tool_call_finished event"
         )

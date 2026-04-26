@@ -126,18 +126,12 @@ class TracingSubscriber:
 
     def attach(self) -> None:
         """Subscribe to relevant EventBus events."""
-        self._sub_ids.append(
-            self._bus.subscribe("llm_call_start", self._on_llm_start)
-        )
-        self._sub_ids.append(
-            self._bus.subscribe("llm_call_end", self._on_llm_end)
-        )
+        self._sub_ids.append(self._bus.subscribe("llm_call_start", self._on_llm_start))
+        self._sub_ids.append(self._bus.subscribe("llm_call_end", self._on_llm_end))
         self._sub_ids.append(
             self._bus.subscribe("tool_call_start", self._on_tool_start)
         )
-        self._sub_ids.append(
-            self._bus.subscribe("tool_call_end", self._on_tool_end)
-        )
+        self._sub_ids.append(self._bus.subscribe("tool_call_end", self._on_tool_end))
 
     def detach(self) -> None:
         """Unsubscribe from all events."""

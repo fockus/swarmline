@@ -201,12 +201,14 @@ class TieredContextManager:
                 else:
                     break
 
-            results.append(TieredEntry(
-                path=original_path,
-                tier="L1",
-                content=l1_content,
-                token_count=tokens,
-            ))
+            results.append(
+                TieredEntry(
+                    path=original_path,
+                    tier="L1",
+                    content=l1_content,
+                    token_count=tokens,
+                )
+            )
             used_tokens += tokens
 
         return results
@@ -258,7 +260,9 @@ class TieredContextManager:
                 details.append(f"### {original}\n{l1_content}")
                 remaining -= tokens
             elif remaining > 100:
-                details.append(f"### {original}\n{_truncate_to_tokens(l1_content, remaining)}")
+                details.append(
+                    f"### {original}\n{_truncate_to_tokens(l1_content, remaining)}"
+                )
                 break
 
         if details:

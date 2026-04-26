@@ -144,9 +144,7 @@ class TestSubprocessCall:
         finally:
             await runner.stop(handle)
 
-    async def test_call_timeout(
-        self, runner: SubprocessPluginRunner
-    ) -> None:
+    async def test_call_timeout(self, runner: SubprocessPluginRunner) -> None:
         """A very short timeout should cause TimeoutError / asyncio timeout."""
         short_manifest = PluginManifest(
             name="echo-timeout",

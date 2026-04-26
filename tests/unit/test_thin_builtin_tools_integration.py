@@ -70,7 +70,9 @@ def sandbox() -> FakeSandboxProvider:
 class TestThinBuiltinToolsRegistration:
     """Registering built-in tools in ThinRuntime."""
 
-    def test_thin_builtin_tools_registered_by_default(self, sandbox: FakeSandboxProvider) -> None:
+    def test_thin_builtin_tools_registered_by_default(
+        self, sandbox: FakeSandboxProvider
+    ) -> None:
         """If there is a sandbox provider 9 tools appear in active_tools."""
         specs, executors = create_thin_builtin_tools(sandbox)
 
@@ -85,7 +87,9 @@ class TestThinBuiltinToolsRegistration:
         assert specs == {}
         assert executors == {}
 
-    def test_thin_builtin_specs_list_has_9_items(self, sandbox: FakeSandboxProvider) -> None:
+    def test_thin_builtin_specs_list_has_9_items(
+        self, sandbox: FakeSandboxProvider
+    ) -> None:
         """get_thin_builtin_specs returns exactly 9 ToolSpec."""
         specs = get_thin_builtin_specs(sandbox)
         assert len(specs) == 9
@@ -134,7 +138,9 @@ class TestThinBuiltinToolsFeatureMode:
             ),
         ]
 
-        merged = merge_tools_with_builtins(user_tools, builtin_specs, feature_mode="hybrid")
+        merged = merge_tools_with_builtins(
+            user_tools, builtin_specs, feature_mode="hybrid"
+        )
 
         names = [t.name for t in merged]
         assert "my_tool" in names
@@ -149,10 +155,14 @@ class TestThinBuiltinToolsFeatureMode:
         """merge_tools_with_builtins in portable mode -> user tools only."""
         builtin_specs = get_thin_builtin_specs(sandbox)
         user_tools = [
-            ToolSpec(name="my_tool", description="Custom", parameters={"type": "object"}),
+            ToolSpec(
+                name="my_tool", description="Custom", parameters={"type": "object"}
+            ),
         ]
 
-        merged = merge_tools_with_builtins(user_tools, builtin_specs, feature_mode="portable")
+        merged = merge_tools_with_builtins(
+            user_tools, builtin_specs, feature_mode="portable"
+        )
         assert len(merged) == 1
         assert merged[0].name == "my_tool"
 
@@ -174,7 +184,9 @@ class TestThinBuiltinToolsAliases:
 
     def test_thin_builtin_aliases_cover_deepagents_set(self) -> None:
         """All DeepAgents aliases have mapping in THIN_BUILTIN_ALIASES."""
-        from swarmline.runtime.deepagents_builtins import DEEPAGENTS_NATIVE_BUILTIN_ALIASES
+        from swarmline.runtime.deepagents_builtins import (
+            DEEPAGENTS_NATIVE_BUILTIN_ALIASES,
+        )
 
         for alias, canonical in DEEPAGENTS_NATIVE_BUILTIN_ALIASES.items():
             assert alias in THIN_BUILTIN_ALIASES, f"Missing alias: {alias}"
@@ -210,9 +222,7 @@ class TestThinBuiltinToolsExecution:
         assert data["exit_code"] == 0
 
     @pytest.mark.asyncio
-    async def test_thin_builtin_write_todos(
-        self, sandbox: FakeSandboxProvider
-    ) -> None:
+    async def test_thin_builtin_write_todos(self, sandbox: FakeSandboxProvider) -> None:
         """write_todos executor saves todo list."""
         _specs, executors = create_thin_builtin_tools(sandbox)
         result = await executors["write_todos"]({"todos": "- [ ] Task 1\n- [x] Task 2"})

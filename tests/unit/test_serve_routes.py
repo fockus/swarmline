@@ -49,7 +49,6 @@ def open_query_client():
 
 
 class TestHealth:
-
     def test_health_returns_200(self, client) -> None:
         tc, _ = client
         resp = tc.get("/v1/health")
@@ -69,7 +68,6 @@ class TestHealth:
 
 
 class TestInfo:
-
     def test_info_returns_200(self, client) -> None:
         tc, _ = client
         resp = tc.get("/v1/info")
@@ -92,7 +90,6 @@ class TestInfo:
 
 
 class TestQuery:
-
     def test_query_closed_by_default(self, client) -> None:
         tc, _ = client
         with patch("swarmline.serve.app._log") as mock_log:
@@ -159,7 +156,6 @@ class TestQuery:
 
 
 class TestAuth:
-
     def test_no_auth_by_default(self, client) -> None:
         tc, _ = client
         resp = tc.get("/v1/health")

@@ -12,7 +12,6 @@ from swarmline.daemon.health import HealthServer, _build_response, _parse_reques
 
 
 class TestParseRequest:
-
     def test_get_health(self) -> None:
         data = b"GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n"
         method, path, headers = _parse_request(data)
@@ -43,7 +42,6 @@ class TestParseRequest:
 
 
 class TestBuildResponse:
-
     def test_200_ok(self) -> None:
         resp = _build_response(200, {"status": "ok"})
         assert b"HTTP/1.1 200 OK\r\n" in resp
@@ -62,7 +60,6 @@ class TestBuildResponse:
 
 
 class TestHealthServer:
-
     @pytest.fixture()
     async def server_and_port(self):
         """Start a HealthServer on ephemeral port."""
@@ -93,8 +90,12 @@ class TestHealthServer:
         await srv.stop()
 
     async def _request(
-        self, port: int, method: str, path: str,
-        *, headers: dict[str, str] | None = None,
+        self,
+        port: int,
+        method: str,
+        path: str,
+        *,
+        headers: dict[str, str] | None = None,
     ) -> tuple[int, dict]:
         """Send a raw HTTP request and parse response."""
         reader, writer = await asyncio.open_connection("127.0.0.1", port)
@@ -182,12 +183,12 @@ class TestHealthServer:
 
     def test_protocol_compliance(self) -> None:
         from swarmline.daemon.protocols import HealthEndpoint
+
         srv = HealthServer(allow_unauthenticated_local=True)
         assert isinstance(srv, HealthEndpoint)
 
 
 class TestHealthServerAuth:
-
     @pytest.fixture()
     async def auth_server(self):
         """Start a HealthServer with auth token."""
@@ -204,8 +205,12 @@ class TestHealthServerAuth:
         await srv.stop()
 
     async def _request(
-        self, port: int, method: str, path: str,
-        *, headers: dict[str, str] | None = None,
+        self,
+        port: int,
+        method: str,
+        path: str,
+        *,
+        headers: dict[str, str] | None = None,
     ) -> tuple[int, dict]:
         reader, writer = await asyncio.open_connection("127.0.0.1", port)
         hdr_lines = ""
@@ -231,7 +236,9 @@ class TestHealthServerAuth:
     async def test_pause_with_wrong_token_401(self, auth_server) -> None:
         _, port = auth_server
         status, body = await self._request(
-            port, "POST", "/pause",
+            port,
+            "POST",
+            "/pause",
             headers={"Authorization": "Bearer wrong-token"},
         )
         assert status == 401
@@ -239,7 +246,9 @@ class TestHealthServerAuth:
     async def test_pause_with_correct_token_200(self, auth_server) -> None:
         _, port = auth_server
         status, body = await self._request(
-            port, "POST", "/pause",
+            port,
+            "POST",
+            "/pause",
             headers={"Authorization": "Bearer test-secret"},
         )
         assert status == 200

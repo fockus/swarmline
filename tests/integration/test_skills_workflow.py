@@ -53,7 +53,9 @@ class TestRealSkillsLoading:
     def test_skills_have_instructions(self, registry: SkillRegistry) -> None:
         """All skills have instruction content."""
         for skill in registry.list_all():
-            assert skill.instruction_md, f"Skill {skill.spec.skill_id} has no instructions"
+            assert skill.instruction_md, (
+                f"Skill {skill.spec.skill_id} has no instructions"
+            )
 
 
 class TestRegistryAggregation:
@@ -66,7 +68,9 @@ class TestRegistryAggregation:
 
     def test_nonexistent_skill_ignored(self, registry: SkillRegistry) -> None:
         """Non-existent skill is ignored without error."""
-        servers = registry.get_mcp_servers_for_skills(["swarmline-agents", "nonexistent"])
+        servers = registry.get_mcp_servers_for_skills(
+            ["swarmline-agents", "nonexistent"]
+        )
         assert "swarmline" in servers
 
 

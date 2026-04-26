@@ -18,7 +18,9 @@ class TestCostTrackerWithRealPricing:
         tracker = CostTracker(budget=budget, pricing=pricing)
 
         # Use a known model from pricing.json
-        tracker.record("claude-sonnet-4-20250514", input_tokens=1_000_000, output_tokens=1_000_000)
+        tracker.record(
+            "claude-sonnet-4-20250514", input_tokens=1_000_000, output_tokens=1_000_000
+        )
         # 3.0 + 15.0 = 18.0
         assert tracker.total_cost_usd == pytest.approx(18.0)
         assert tracker.check_budget() == "exceeded"
@@ -143,7 +145,9 @@ class TestThinRuntimeCostBudgetIntegration:
         assert len(errors) == 0
         assert len(finals) == 1
 
-    async def test_thin_runtime_post_call_budget_exceeded_suppresses_final(self) -> None:
+    async def test_thin_runtime_post_call_budget_exceeded_suppresses_final(
+        self,
+    ) -> None:
         """If the response itself blows the budget, runtime emits budget_exceeded without final."""
         from swarmline.runtime.cost import CostBudget
         from swarmline.runtime.thin.runtime import ThinRuntime
@@ -166,7 +170,9 @@ class TestThinRuntimeCostBudgetIntegration:
         assert len(errors) == 1
         assert errors[0].data["kind"] == "budget_exceeded"
 
-    async def test_thin_runtime_post_call_budget_warn_emits_status_and_final(self) -> None:
+    async def test_thin_runtime_post_call_budget_warn_emits_status_and_final(
+        self,
+    ) -> None:
         """Warn mode reports the over-budget turn but still returns the final event."""
         from swarmline.runtime.cost import CostBudget
         from swarmline.runtime.thin.runtime import ThinRuntime
@@ -186,7 +192,9 @@ class TestThinRuntimeCostBudgetIntegration:
 
         finals = [event for event in events if event.type == "final"]
         warnings = [
-            event for event in events if event.type == "status" and "Budget warning" in event.text
+            event
+            for event in events
+            if event.type == "status" and "Budget warning" in event.text
         ]
         assert len(finals) == 1
         assert len(warnings) == 1

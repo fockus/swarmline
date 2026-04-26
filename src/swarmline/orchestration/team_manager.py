@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from swarmline.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
+from swarmline.orchestration.team_protocol import (
+    ResumableTeamOrchestrator,
+    TeamOrchestrator,
+)
 from swarmline.orchestration.team_types import TeamConfig, TeamMessage, TeamStatus
 
 

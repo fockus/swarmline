@@ -86,7 +86,9 @@ class TestDeepAgentsMcpToolInjection:
         )
 
         # V hybrid mode vse tools are preserved
-        assert len(selected) == 1  # select_active_tools not dobavlyaet MCP - eto delaet run()
+        assert (
+            len(selected) == 1
+        )  # select_active_tools not dobavlyaet MCP - eto delaet run()
 
         # Verify chto bridge.discover_all_tools returns MCP tools
         discovered = await runtime._mcp_bridge.discover_all_tools()  # type: ignore[union-attr]
@@ -119,8 +121,12 @@ class TestDeepAgentsMcpToolInjection:
         )
 
         tools = [
-            ToolSpec(name="read_file", description="Read", parameters={}, is_local=True),
-            ToolSpec(name="custom_tool", description="Custom", parameters={}, is_local=True),
+            ToolSpec(
+                name="read_file", description="Read", parameters={}, is_local=True
+            ),
+            ToolSpec(
+                name="custom_tool", description="Custom", parameters={}, is_local=True
+            ),
         ]
 
         selected = runtime.select_active_tools(
@@ -144,8 +150,12 @@ class TestDeepAgentsMcpToolInjection:
         )
 
         tools = [
-            ToolSpec(name="read_file", description="Read", parameters={}, is_local=True),
-            ToolSpec(name="custom_tool", description="Custom", parameters={}, is_local=True),
+            ToolSpec(
+                name="read_file", description="Read", parameters={}, is_local=True
+            ),
+            ToolSpec(
+                name="custom_tool", description="Custom", parameters={}, is_local=True
+            ),
         ]
 
         selected = runtime.select_active_tools(

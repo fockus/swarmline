@@ -27,7 +27,9 @@ def _block_packages(*names: str) -> Generator[None, None, None]:
     }
     for name in names:
         # Block the package itself and all subpackages already loaded
-        keys_to_block = [k for k in sys.modules if k == name or k.startswith(f"{name}.")]
+        keys_to_block = [
+            k for k in sys.modules if k == name or k.startswith(f"{name}.")
+        ]
         for k in keys_to_block:
             saved[k] = sys.modules.pop(k)
         # Sentinel that prevents import
@@ -181,9 +183,13 @@ class TestCoreImportsWithoutOptionalDeps:
             assert "HookRegistry" in namespace
             assert "registry_to_sdk_hooks" not in namespace
 
-    def test_runtime_ports_reexports_fail_fast_when_optional_modules_unavailable(self) -> None:
+    def test_runtime_ports_reexports_fail_fast_when_optional_modules_unavailable(
+        self,
+    ) -> None:
         """Optional runtime ports should fail fast when port modules cannot be imported."""
-        with _block_packages("swarmline.runtime.ports.thin", "swarmline.runtime.ports.deepagents"):
+        with _block_packages(
+            "swarmline.runtime.ports.thin", "swarmline.runtime.ports.deepagents"
+        ):
             for key in list(sys.modules):
                 if key.startswith("swarmline.runtime") and key not in {
                     "swarmline.runtime.ports.thin",
@@ -197,9 +203,13 @@ class TestCoreImportsWithoutOptionalDeps:
             with pytest.raises(ImportError, match="DeepAgentsRuntimePort"):
                 from swarmline.runtime.ports import DeepAgentsRuntimePort  # noqa: F401
 
-    def test_runtime_ports_star_import_skips_optional_ports_when_unavailable(self) -> None:
+    def test_runtime_ports_star_import_skips_optional_ports_when_unavailable(
+        self,
+    ) -> None:
         """Star import should expose only base runtime port symbols."""
-        with _block_packages("swarmline.runtime.ports.thin", "swarmline.runtime.ports.deepagents"):
+        with _block_packages(
+            "swarmline.runtime.ports.thin", "swarmline.runtime.ports.deepagents"
+        ):
             for key in list(sys.modules):
                 if key.startswith("swarmline.runtime") and key not in {
                     "swarmline.runtime.ports.thin",
@@ -231,7 +241,10 @@ class TestCoreImportsWithoutOptionalDeps:
         """Optional skill loader exports should raise instead of disappearing."""
         with _block_packages("swarmline.skills.loader"):
             for key in list(sys.modules):
-                if key.startswith("swarmline.skills") and key != "swarmline.skills.loader":
+                if (
+                    key.startswith("swarmline.skills")
+                    and key != "swarmline.skills.loader"
+                ):
                     del sys.modules[key]
 
             with pytest.raises(ImportError, match="YamlSkillLoader"):
@@ -240,11 +253,16 @@ class TestCoreImportsWithoutOptionalDeps:
             with pytest.raises(ImportError, match="load_mcp_from_settings"):
                 from swarmline.skills import load_mcp_from_settings  # noqa: F401
 
-    def test_skills_star_import_skips_loader_helpers_when_loader_unavailable(self) -> None:
+    def test_skills_star_import_skips_loader_helpers_when_loader_unavailable(
+        self,
+    ) -> None:
         """Star import should keep core skill symbols available without loader helper."""
         with _block_packages("swarmline.skills.loader"):
             for key in list(sys.modules):
-                if key.startswith("swarmline.skills") and key != "swarmline.skills.loader":
+                if (
+                    key.startswith("swarmline.skills")
+                    and key != "swarmline.skills.loader"
+                ):
                     del sys.modules[key]
 
             namespace: dict[str, Any] = {}
@@ -287,24 +305,37 @@ class TestAgentRuntimeFactoryBoundary:
     @staticmethod
     def _assert_no_concrete_runtime_factory_imports() -> None:
         import swarmline.agent as _agent_mod
+
         base = Path(_agent_mod.__file__).parent
         forbidden = {
             "swarmline.runtime.factory",
             "swarmline.runtime.thin",
             "swarmline.runtime.deepagents",
         }
-        for filename in ["agent.py", "conversation.py", "runtime_dispatch.py", "runtime_wiring.py", "config.py"]:
+        for filename in [
+            "agent.py",
+            "conversation.py",
+            "runtime_dispatch.py",
+            "runtime_wiring.py",
+            "config.py",
+        ]:
             tree = ast.parse((base / filename).read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom) and node.module in forbidden:
                     raise AssertionError(f"{filename} imports {node.module} directly")
-                if isinstance(node, ast.Import) and any(alias.name in forbidden for alias in node.names):
-                    raise AssertionError(f"{filename} imports concrete runtime modules directly")
+                if isinstance(node, ast.Import) and any(
+                    alias.name in forbidden for alias in node.names
+                ):
+                    raise AssertionError(
+                        f"{filename} imports concrete runtime modules directly"
+                    )
 
     def test_agent_modules_do_not_import_concrete_runtime_factory(self) -> None:
         self._assert_no_concrete_runtime_factory_imports()
 
-    def test_agent_config_resolved_model_works_without_runtime_factory_module(self) -> None:
+    def test_agent_config_resolved_model_works_without_runtime_factory_module(
+        self,
+    ) -> None:
         with _block_packages("swarmline.runtime.factory"):
             for key in list(sys.modules):
                 if key.startswith("swarmline.agent"):
@@ -316,7 +347,9 @@ class TestAgentRuntimeFactoryBoundary:
                 cfg = AgentConfig(system_prompt="test", model="sonnet")
                 assert cfg.resolved_model.startswith("claude-sonnet")
 
-    def test_agent_accepts_injected_runtime_factory_without_concrete_module(self) -> None:
+    def test_agent_accepts_injected_runtime_factory_without_concrete_module(
+        self,
+    ) -> None:
         with _block_packages("swarmline.runtime.factory"):
             for key in list(sys.modules):
                 if key.startswith("swarmline.agent"):
@@ -342,7 +375,9 @@ class TestAgentRuntimeFactoryBoundary:
                     config: RuntimeConfig | None = None,
                     runtime_override: str | None = None,
                 ) -> RuntimeCapabilities:
-                    name = (runtime_override or (config.runtime_name if config else "fake"))
+                    name = runtime_override or (
+                        config.runtime_name if config else "fake"
+                    )
                     return RuntimeCapabilities(runtime_name=name, tier="light")
 
                 def validate_capabilities(
@@ -362,7 +397,10 @@ class TestAgentRuntimeFactoryBoundary:
                     return object()
 
             fake_factory = FakeFactory()
-            agent = Agent(AgentConfig(system_prompt="test", runtime="thin"), runtime_factory=fake_factory)
+            agent = Agent(
+                AgentConfig(system_prompt="test", runtime="thin"),
+                runtime_factory=fake_factory,
+            )
 
             assert fake_factory.validated == ["thin"]
             assert agent.runtime_factory is fake_factory

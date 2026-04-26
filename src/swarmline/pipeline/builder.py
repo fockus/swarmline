@@ -74,14 +74,16 @@ class PipelineBuilder:
         timeout_seconds: float | None = None,
     ) -> PipelineBuilder:
         """Add a phase to the pipeline (in order of addition)."""
-        self._phases.append(PipelinePhase(
-            id=id,
-            name=name,
-            goal=goal,
-            agent_filter=agent_filter,
-            order=len(self._phases),
-            timeout_seconds=timeout_seconds,
-        ))
+        self._phases.append(
+            PipelinePhase(
+                id=id,
+                name=name,
+                goal=goal,
+                agent_filter=agent_filter,
+                order=len(self._phases),
+                timeout_seconds=timeout_seconds,
+            )
+        )
         return self
 
     # --- Gates ---
@@ -111,7 +113,8 @@ class PipelineBuilder:
     # --- Runner ---
 
     def with_runner(
-        self, runner: Callable[..., Awaitable[str]],
+        self,
+        runner: Callable[..., Awaitable[str]],
     ) -> PipelineBuilder:
         """Set the agent runner callback."""
         self._runner = runner
@@ -130,11 +133,14 @@ class PipelineBuilder:
         return self
 
     def with_circuit_breaker(
-        self, threshold: int = 3, cooldown: float = 30.0,
+        self,
+        threshold: int = 3,
+        cooldown: float = 30.0,
     ) -> PipelineBuilder:
         """Enable circuit breaker per agent (wraps runner)."""
         self._circuit_breaker_config = {
-            "threshold": threshold, "cooldown": cooldown,
+            "threshold": threshold,
+            "cooldown": cooldown,
         }
         return self
 
@@ -167,18 +173,23 @@ class PipelineBuilder:
         task_board = self._task_board
         if task_board is None:
             from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
+
             task_board = InMemoryGraphTaskBoard()
 
         # 3. Communication
         communication = self._communication
         if communication is None:
-            from swarmline.multi_agent.graph_communication import InMemoryGraphCommunication
+            from swarmline.multi_agent.graph_communication import (
+                InMemoryGraphCommunication,
+            )
+
             communication = InMemoryGraphCommunication(graph_query=graph)
 
         # 4. Event bus
         event_bus = self._event_bus
         if event_bus is None:
             from swarmline.observability.event_bus import InMemoryEventBus
+
             event_bus = InMemoryEventBus()
 
         # 5. Budget tracker
@@ -196,6 +207,7 @@ class PipelineBuilder:
 
         # 7. Orchestrator
         from swarmline.multi_agent.graph_orchestrator import DefaultGraphOrchestrator
+
         orchestrator = DefaultGraphOrchestrator(
             graph=graph,
             task_board=task_board,
@@ -221,19 +233,23 @@ class PipelineBuilder:
             return self._graph_store
 
         from swarmline.multi_agent.graph_store import InMemoryAgentGraph
+
         store = InMemoryAgentGraph()
 
         if self._graph_config is not None:
             from swarmline.multi_agent.graph_builder import GraphBuilder
+
             await GraphBuilder.from_dict(self._graph_config, store)
         elif self._graph_yaml is not None:
             from swarmline.multi_agent.graph_builder import GraphBuilder
+
             await GraphBuilder.from_yaml(self._graph_yaml, store)
 
         return store
 
     def _wrap_with_circuit_breaker(
-        self, runner: Callable[..., Awaitable[str]],
+        self,
+        runner: Callable[..., Awaitable[str]],
     ) -> Callable[..., Awaitable[str]]:
         """Wrap runner with per-agent circuit breakers."""
         from swarmline.resilience.circuit_breaker import CircuitBreakerRegistry
@@ -245,7 +261,10 @@ class PipelineBuilder:
         )
 
         async def wrapped(
-            agent_id: str, task_id: str, goal: str, system_prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            system_prompt: str,
         ) -> str:
             breaker = registry.get(agent_id)
             if not breaker.allow_request():

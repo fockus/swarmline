@@ -10,14 +10,20 @@ from typing import Any
 
 import pytest
 
-from swarmline.commands import CommandRegistry, auto_discover_commands, load_commands_from_yaml
+from swarmline.commands import (
+    CommandRegistry,
+    auto_discover_commands,
+    load_commands_from_yaml,
+)
 
 
 class TestCommandRegistryYamlDiscoveryExecute:
     """CommandRegistry + YamlCommandLoader: real YAML, real validation, real execution."""
 
     @pytest.mark.asyncio
-    async def test_command_registry_yaml_discovery_execute(self, tmp_path: Path) -> None:
+    async def test_command_registry_yaml_discovery_execute(
+        self, tmp_path: Path
+    ) -> None:
         """Load YAML -> register -> discover -> execute_validated."""
         # Create YAML file with multi-command formatom
         yaml_content = """\

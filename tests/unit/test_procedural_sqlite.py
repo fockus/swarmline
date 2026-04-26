@@ -14,10 +14,13 @@ def memory():
 
 
 class TestCrud:
-
     async def test_store_and_get(self, memory) -> None:
-        proc = Procedure(id="p1", name="Deploy", description="Deploy to staging",
-                         trigger="deploy staging")
+        proc = Procedure(
+            id="p1",
+            name="Deploy",
+            description="Deploy to staging",
+            trigger="deploy staging",
+        )
         await memory.store(proc)
         result = await memory.get("p1")
         assert result is not None
@@ -33,11 +36,16 @@ class TestCrud:
 
     async def test_store_with_steps(self, memory) -> None:
         proc = Procedure(
-            id="p1", name="Deploy", description="Full deploy",
-            trigger="deploy", tags=("ci", "deploy"),
+            id="p1",
+            name="Deploy",
+            description="Full deploy",
+            trigger="deploy",
+            tags=("ci", "deploy"),
             steps=(
                 ProcedureStep(tool_name="run_tests", expected_outcome="pass"),
-                ProcedureStep(tool_name="build_docker", args_template={"tag": "latest"}),
+                ProcedureStep(
+                    tool_name="build_docker", args_template={"tag": "latest"}
+                ),
             ),
         )
         await memory.store(proc)
@@ -47,12 +55,23 @@ class TestCrud:
 
 
 class TestSuggest:
-
     async def test_suggest_by_keyword(self, memory) -> None:
-        await memory.store(Procedure(id="p1", name="Deploy staging",
-                                     description="Deploy app", trigger="deploy staging"))
-        await memory.store(Procedure(id="p2", name="Run tests",
-                                     description="Execute test suite", trigger="run tests"))
+        await memory.store(
+            Procedure(
+                id="p1",
+                name="Deploy staging",
+                description="Deploy app",
+                trigger="deploy staging",
+            )
+        )
+        await memory.store(
+            Procedure(
+                id="p2",
+                name="Run tests",
+                description="Execute test suite",
+                trigger="run tests",
+            )
+        )
         results = await memory.suggest("deploy")
         assert any(p.id == "p1" for p in results)
 
@@ -61,19 +80,32 @@ class TestSuggest:
         assert results == []
 
     async def test_suggest_ranks_by_success(self, memory) -> None:
-        await memory.store(Procedure(id="p1", name="Deploy fast",
-                                     description="Quick deploy", trigger="deploy",
-                                     success_count=10, failure_count=0))
-        await memory.store(Procedure(id="p2", name="Deploy slow",
-                                     description="Slow deploy", trigger="deploy",
-                                     success_count=1, failure_count=9))
+        await memory.store(
+            Procedure(
+                id="p1",
+                name="Deploy fast",
+                description="Quick deploy",
+                trigger="deploy",
+                success_count=10,
+                failure_count=0,
+            )
+        )
+        await memory.store(
+            Procedure(
+                id="p2",
+                name="Deploy slow",
+                description="Slow deploy",
+                trigger="deploy",
+                success_count=1,
+                failure_count=9,
+            )
+        )
         results = await memory.suggest("deploy")
         if len(results) >= 2:
             assert results[0].id == "p1"  # higher success rate
 
 
 class TestOutcome:
-
     async def test_record_success(self, memory) -> None:
         await memory.store(Procedure(id="p1", name="A", description="", trigger="a"))
         await memory.record_outcome("p1", success=True)

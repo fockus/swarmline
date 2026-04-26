@@ -67,9 +67,7 @@ class TestTaskPriority:
             (TaskPriority.CRITICAL, "critical"),
         ],
     )
-    def test_task_priority_values(
-        self, member: TaskPriority, value: str
-    ) -> None:
+    def test_task_priority_values(self, member: TaskPriority, value: str) -> None:
         assert member.value == value
 
     def test_task_priority_is_str_enum(self) -> None:

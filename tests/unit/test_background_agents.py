@@ -52,9 +52,7 @@ class TestRuntimeEventBackgroundComplete:
         assert "background_complete" in RUNTIME_EVENT_TYPES
 
     def test_background_complete_factory_with_result(self) -> None:
-        event = RuntimeEvent.background_complete(
-            agent_id="agent-1", result="done"
-        )
+        event = RuntimeEvent.background_complete(agent_id="agent-1", result="done")
         assert event.type == "background_complete"
         assert event.data["agent_id"] == "agent-1"
         assert event.data["result"] == "done"
@@ -213,9 +211,7 @@ class TestForegroundUnaffected:
         assert result.output == "bg result"
         assert result.status.state == "completed"
 
-    async def test_no_callback_no_crash(
-        self, mock_runtime: AsyncMock
-    ) -> None:
+    async def test_no_callback_no_crash(self, mock_runtime: AsyncMock) -> None:
         """Background agent without on_background_complete callback runs fine."""
         orch = _make_orchestrator(mock_runtime)  # no callback
         spec = SubagentSpec(name="w", system_prompt="p", run_in_background=True)

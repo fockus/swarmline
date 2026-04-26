@@ -29,7 +29,10 @@ class TestBuildPortableRuntimePlan:
         plan = build_portable_runtime_plan(config, "thin")
 
         assert plan.config.runtime_name == "thin"
-        assert plan.create_kwargs["tool_executors"]["calc"] is calc.__tool_definition__.handler
+        assert (
+            plan.create_kwargs["tool_executors"]["calc"]
+            is calc.__tool_definition__.handler
+        )
         assert [spec.name for spec in plan.active_tools] == ["calc"]
 
     def test_includes_mcp_servers_only_for_portable_runtimes(self) -> None:
@@ -48,7 +51,9 @@ class TestBuildPortableRuntimePlan:
     def test_injects_thread_id_for_deepagents_sessions(self) -> None:
         from swarmline.agent.runtime_wiring import build_portable_runtime_plan
 
-        config = _make_config(runtime="deepagents", native_config={"checkpointer": object()})
+        config = _make_config(
+            runtime="deepagents", native_config={"checkpointer": object()}
+        )
 
         plan = build_portable_runtime_plan(
             config,
@@ -56,7 +61,10 @@ class TestBuildPortableRuntimePlan:
             session_id="conv-thread-1",
         )
 
-        assert plan.config.native_config["checkpointer"] is config.native_config["checkpointer"]
+        assert (
+            plan.config.native_config["checkpointer"]
+            is config.native_config["checkpointer"]
+        )
         assert plan.config.native_config["thread_id"] == "conv-thread-1"
 
     def test_preserves_dict_style_mcp_servers_for_portable_runtime(self) -> None:

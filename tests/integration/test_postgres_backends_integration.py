@@ -14,14 +14,20 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from swarmline.multi_agent.graph_store_postgres import POSTGRES_GRAPH_SCHEMA, PostgresAgentGraph
+from swarmline.multi_agent.graph_store_postgres import (
+    POSTGRES_GRAPH_SCHEMA,
+    PostgresAgentGraph,
+)
 from swarmline.multi_agent.graph_task_board_postgres import (
     POSTGRES_GRAPH_TASK_SCHEMA,
     PostgresGraphTaskBoard,
 )
 from swarmline.multi_agent.graph_task_types import GraphTaskItem
 from swarmline.multi_agent.graph_types import AgentNode
-from swarmline.session.backends_postgres import POSTGRES_SESSION_SCHEMA, PostgresSessionBackend
+from swarmline.session.backends_postgres import (
+    POSTGRES_SESSION_SCHEMA,
+    PostgresSessionBackend,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -30,15 +36,23 @@ pytestmark = pytest.mark.integration
 def postgres_dsn() -> str:
     dsn = os.getenv("SWARMLINE_TEST_POSTGRES_DSN") or os.getenv("TEST_POSTGRES_DSN")
     if not dsn:
-        pytest.skip("Set SWARMLINE_TEST_POSTGRES_DSN or TEST_POSTGRES_DSN for Postgres integration")
+        pytest.skip(
+            "Set SWARMLINE_TEST_POSTGRES_DSN or TEST_POSTGRES_DSN for Postgres integration"
+        )
     return dsn
 
 
 @pytest.fixture
-async def session_factory(postgres_dsn: str) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
+async def session_factory(
+    postgres_dsn: str,
+) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     engine = create_async_engine(postgres_dsn, future=True)
     async with engine.begin() as conn:
-        for schema in [POSTGRES_GRAPH_SCHEMA, POSTGRES_GRAPH_TASK_SCHEMA, POSTGRES_SESSION_SCHEMA]:
+        for schema in [
+            POSTGRES_GRAPH_SCHEMA,
+            POSTGRES_GRAPH_TASK_SCHEMA,
+            POSTGRES_SESSION_SCHEMA,
+        ]:
             for statement in schema.split(";"):
                 if statement.strip():
                     await conn.execute(text(statement))
@@ -49,11 +63,19 @@ async def session_factory(postgres_dsn: str) -> AsyncIterator[async_sessionmaker
 
 
 @pytest.fixture(autouse=True)
-async def reset_tables(session_factory: async_sessionmaker[AsyncSession]) -> AsyncIterator[None]:
+async def reset_tables(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncIterator[None]:
     async with session_factory() as session:
-        await session.execute(text("TRUNCATE TABLE graph_task_comments, graph_tasks RESTART IDENTITY CASCADE"))
+        await session.execute(
+            text(
+                "TRUNCATE TABLE graph_task_comments, graph_tasks RESTART IDENTITY CASCADE"
+            )
+        )
         await session.execute(text("TRUNCATE TABLE sessions RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE TABLE agent_nodes RESTART IDENTITY CASCADE"))
+        await session.execute(
+            text("TRUNCATE TABLE agent_nodes RESTART IDENTITY CASCADE")
+        )
         await session.commit()
     yield
 
@@ -108,7 +130,9 @@ class TestPostgresAgentGraphIntegration:
         graph = PostgresAgentGraph(session_factory)
 
         await graph.add_node(AgentNode(id="root", name="Root", role="ceo"))
-        await graph.add_node(AgentNode(id="child", name="Child", role="cto", parent_id="root"))
+        await graph.add_node(
+            AgentNode(id="child", name="Child", role="cto", parent_id="root")
+        )
 
         root = await graph.get_root()
         assert root is not None

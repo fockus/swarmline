@@ -24,7 +24,7 @@ class TestCommandYamlToExecutionE2E:
 
     @pytest.mark.asyncio
     async def test_command_yaml_load_validate_execute(self) -> None:
-        """Write YAML to tmpfile -> load_commands_from_yaml -> register -> execute_validated. Full E2E: ot filea do vypolnotniya with validatsiey parameterov. """
+        """Write YAML to tmpfile -> load_commands_from_yaml -> register -> execute_validated. Full E2E: ot filea do vypolnotniya with validatsiey parameterov."""
         yaml_content = """\
 commands:
   - name: topic.new
@@ -106,11 +106,15 @@ commands:
             assert execution_log[-1] == "created:Deep Learning:1"
 
             # Step 4: Execute via alias
-            result_alias = await registry.execute("tn", args=[], name="NLP Research", priority=2)
+            result_alias = await registry.execute(
+                "tn", args=[], name="NLP Research", priority=2
+            )
             assert "NLP Research" in result_alias
 
             # Step 5: Validation error — missing required param
-            error_result = await registry.execute_validated("topic.new", {"priority": 5})
+            error_result = await registry.execute_validated(
+                "topic.new", {"priority": 5}
+            )
             assert "Error" in error_result
             assert "name" in error_result
 

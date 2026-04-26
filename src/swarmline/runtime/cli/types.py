@@ -7,7 +7,20 @@ from enum import StrEnum
 from typing import Literal
 
 DEFAULT_ENV_ALLOWLIST = frozenset(
-    {"PATH", "HOME", "USER", "LOGNAME", "SHELL", "TERM", "TMPDIR", "TEMP", "TMP", "LANG", "LC_ALL", "LC_CTYPE"}
+    {
+        "PATH",
+        "HOME",
+        "USER",
+        "LOGNAME",
+        "SHELL",
+        "TERM",
+        "TMPDIR",
+        "TEMP",
+        "TMP",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+    }
 )
 
 
@@ -25,11 +38,13 @@ CliInputFormat = Literal["plain", "pi-rpc"]
 class CliConfig:
     """Configuration for CLI-based agent runtime.
 
-  Describes how to invoke an external CLI agent process
-  and how to interpret its output.
-  """
+    Describes how to invoke an external CLI agent process
+    and how to interpret its output.
+    """
 
-    command: list[str]  # e.g. ["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]
+    command: list[
+        str
+    ]  # e.g. ["claude", "--print", "--verbose", "--output-format", "stream-json", "-"]
     output_format: str = "stream-json"
     input_format: CliInputFormat = "plain"
     preset: CliPreset | None = None

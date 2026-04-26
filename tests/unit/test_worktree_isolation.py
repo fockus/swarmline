@@ -207,7 +207,9 @@ class TestWorktreeLifecycle:
         async def _collect(_stream: object, **_kwargs: object) -> str:
             return "result"
 
-        monkeypatch.setattr(thin_subagent_module, "ThinRuntime", lambda **_kwargs: _FakeRuntime())
+        monkeypatch.setattr(
+            thin_subagent_module, "ThinRuntime", lambda **_kwargs: _FakeRuntime()
+        )
         monkeypatch.setattr(thin_subagent_module, "collect_runtime_output", _collect)
 
         def _forbid_chdir(path: str) -> None:

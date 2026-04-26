@@ -9,7 +9,9 @@ from swarmline.runtime.provider_resolver import resolve_provider
 from swarmline.runtime.structured_output import normalize_output_schema
 from swarmline.runtime.types import ModelRequestOptions, RuntimeConfig
 
-StructuredRequestMode = Literal["none", "prompt", "native_json_schema", "native_json_object"]
+StructuredRequestMode = Literal[
+    "none", "prompt", "native_json_schema", "native_json_object"
+]
 
 
 @dataclass(frozen=True)
@@ -59,12 +61,16 @@ _PROVIDER_CAPABILITIES: dict[str, ProviderStructuredCapabilities] = {
 }
 
 
-def get_provider_structured_capabilities(provider: str) -> ProviderStructuredCapabilities:
+def get_provider_structured_capabilities(
+    provider: str,
+) -> ProviderStructuredCapabilities:
     """Return structured-output capabilities for a provider."""
     return _PROVIDER_CAPABILITIES.get(provider, ProviderStructuredCapabilities())
 
 
-def resolve_structured_request_strategy(config: RuntimeConfig) -> StructuredRequestStrategy:
+def resolve_structured_request_strategy(
+    config: RuntimeConfig,
+) -> StructuredRequestStrategy:
     """Resolve structured-output strategy for the current provider/model."""
     if config.output_format is None and config.output_type is None:
         return StructuredRequestStrategy("none", "", str(config.model))
@@ -74,9 +80,13 @@ def resolve_structured_request_strategy(config: RuntimeConfig) -> StructuredRequ
     resolved = resolve_provider(config.model, base_url=config.base_url)
     capabilities = get_provider_structured_capabilities(resolved.provider)
     if capabilities.json_schema:
-        return StructuredRequestStrategy("native_json_schema", resolved.provider, resolved.model_id)
+        return StructuredRequestStrategy(
+            "native_json_schema", resolved.provider, resolved.model_id
+        )
     if capabilities.json_object:
-        return StructuredRequestStrategy("native_json_object", resolved.provider, resolved.model_id)
+        return StructuredRequestStrategy(
+            "native_json_object", resolved.provider, resolved.model_id
+        )
     if config.structured_mode == "auto":
         return StructuredRequestStrategy("prompt", resolved.provider, resolved.model_id)
 
@@ -93,7 +103,9 @@ def build_llm_call_kwargs(config: RuntimeConfig) -> dict[str, Any]:
     strategy = resolve_structured_request_strategy(config)
 
     if strategy.mode == "native_json_schema" and "response_format" not in kwargs:
-        kwargs["response_format"] = _build_json_schema_response_format(config, strategy.provider)
+        kwargs["response_format"] = _build_json_schema_response_format(
+            config, strategy.provider
+        )
     elif strategy.mode == "native_json_object" and "response_format" not in kwargs:
         kwargs["response_format"] = {"type": "json_object"}
 
@@ -142,7 +154,9 @@ def _request_options_to_kwargs(options: ModelRequestOptions | None) -> dict[str,
     return kwargs
 
 
-def _build_json_schema_response_format(config: RuntimeConfig, provider: str) -> dict[str, Any]:
+def _build_json_schema_response_format(
+    config: RuntimeConfig, provider: str
+) -> dict[str, Any]:
     schema = normalize_output_schema(config.output_format)
     if schema is None:
         schema = {}

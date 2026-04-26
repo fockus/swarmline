@@ -81,7 +81,11 @@ def create_plan_tools(
                         "goal": plan.goal,
                         "status": plan.status,
                         "steps": [
-                            {"id": s.id, "description": s.description, "status": s.status}
+                            {
+                                "id": s.id,
+                                "description": s.description,
+                                "status": s.status,
+                            }
                             for s in plan.steps
                         ],
                     },
@@ -103,7 +107,9 @@ def create_plan_tools(
                             "goal": p.goal,
                             "status": p.status,
                             "steps_total": len(p.steps),
-                            "steps_completed": sum(1 for s in p.steps if s.status == "completed"),
+                            "steps_completed": sum(
+                                1 for s in p.steps if s.status == "completed"
+                            ),
                         }
                         for p in plans
                     ],

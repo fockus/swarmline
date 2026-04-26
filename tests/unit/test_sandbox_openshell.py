@@ -227,10 +227,12 @@ class TestListAndGlob:
         assert entries == []
 
     async def test_glob_files_success(self, tmp_path) -> None:
-        session = _mock_session(FakeExecResult(
-            stdout="/workspace/src/main.py\n/workspace/src/util.py",
-            exit_code=0,
-        ))
+        session = _mock_session(
+            FakeExecResult(
+                stdout="/workspace/src/main.py\n/workspace/src/util.py",
+                exit_code=0,
+            )
+        )
         provider = OpenShellSandboxProvider(_config(tmp_path), _session=session)
 
         files = await provider.glob_files("src/*.py")
@@ -260,9 +262,7 @@ class TestLifecycle:
         session = _mock_session(FakeExecResult(stdout="ok", exit_code=0))
         factory = MagicMock(return_value=session)
 
-        provider = OpenShellSandboxProvider(
-            _config(tmp_path), session_factory=factory
-        )
+        provider = OpenShellSandboxProvider(_config(tmp_path), session_factory=factory)
         factory.assert_not_called()
 
         await provider.read_file("test.txt")

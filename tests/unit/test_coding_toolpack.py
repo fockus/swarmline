@@ -29,8 +29,16 @@ class TestCodingToolPackContract:
         """Canonical set = 8 sandbox + 2 todo tools."""
         assert len(CODING_TOOL_NAMES) == 10
         expected = {
-            "read", "write", "edit", "multi_edit", "bash", "ls", "glob", "grep",
-            "todo_read", "todo_write",
+            "read",
+            "write",
+            "edit",
+            "multi_edit",
+            "bash",
+            "ls",
+            "glob",
+            "grep",
+            "todo_read",
+            "todo_write",
         }
         assert CODING_TOOL_NAMES == expected
 
@@ -138,14 +146,17 @@ class TestBuildCodingToolpack:
                 build_coding_toolpack("fake_sandbox")
 
     def test_specs_and_executors_immutable_after_construction(
-        self, coding_sandbox,
+        self,
+        coding_sandbox,
     ) -> None:
         """CodingToolPack specs/executors are read-only MappingProxy."""
         pack = build_coding_toolpack(coding_sandbox)
 
         with pytest.raises(TypeError):
             pack.specs["injected"] = ToolSpec(  # type: ignore[index]
-                name="injected", description="x", parameters={},
+                name="injected",
+                description="x",
+                parameters={},
             )
 
         with pytest.raises(TypeError):

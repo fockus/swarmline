@@ -292,8 +292,12 @@ class TestQueryStructuredConfigPropagation:
             )
 
         with patch.object(agent, "_query_with_config", side_effect=_spy_query):
-            simple_task = asyncio.create_task(agent.query_structured("simple", SimpleModel))
-            other_task = asyncio.create_task(agent.query_structured("other", OtherModel))
+            simple_task = asyncio.create_task(
+                agent.query_structured("simple", SimpleModel)
+            )
+            other_task = asyncio.create_task(
+                agent.query_structured("other", OtherModel)
+            )
             simple_result, other_result = await asyncio.gather(simple_task, other_task)
 
         assert set(seen_output_types) == {SimpleModel, OtherModel}

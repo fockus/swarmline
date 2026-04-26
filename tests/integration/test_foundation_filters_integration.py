@@ -125,7 +125,9 @@ class TestProjectInstructionFilterPipeline:
 
         config = RuntimeConfig(
             runtime_name="thin",
-            input_filters=[ProjectInstructionFilter(cwd=tmp_path, home=tmp_path / "nohome")],
+            input_filters=[
+                ProjectInstructionFilter(cwd=tmp_path, home=tmp_path / "nohome")
+            ],
         )
         runtime = ThinRuntime(config=config, llm_call=_make_llm_call(captured))
 
@@ -137,7 +139,12 @@ class TestProjectInstructionFilterPipeline:
         )
 
         prompt = captured["system_prompt"]
-        assert prompt.index("A") < prompt.index("R") < prompt.index("C") < prompt.index("BASE")
+        assert (
+            prompt.index("A")
+            < prompt.index("R")
+            < prompt.index("C")
+            < prompt.index("BASE")
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -266,9 +273,7 @@ class TestCombinedFiltersPipeline:
             input_filters=[
                 ProjectInstructionFilter(cwd=tmp_path, home=tmp_path / "nohome"),
                 SystemReminderFilter(
-                    reminders=[
-                        SystemReminder(id="r1", content="ctx", token_estimate=5)
-                    ]
+                    reminders=[SystemReminder(id="r1", content="ctx", token_estimate=5)]
                 ),
             ],
         )
@@ -427,9 +432,7 @@ class TestProtocolCompliance:
             ),
             pytest.param(
                 lambda tmp: SystemReminderFilter(
-                    reminders=[
-                        SystemReminder(id="t", content="test", token_estimate=1)
-                    ]
+                    reminders=[SystemReminder(id="t", content="test", token_estimate=1)]
                 ),
                 id="system_reminder_filter",
             ),

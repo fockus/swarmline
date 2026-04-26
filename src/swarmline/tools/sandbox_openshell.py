@@ -128,13 +128,17 @@ class OpenShellSandboxProvider:
         """Check that the command is not in denied list."""
         cmd_name = os.path.basename(argv[0])
         if cmd_name in _DENYLIST_WRAPPERS:
-            raise SandboxViolation(f"Shell wrapper '{cmd_name}' is denied", path=raw_command)
+            raise SandboxViolation(
+                f"Shell wrapper '{cmd_name}' is denied", path=raw_command
+            )
 
         denied = self._config.denied_commands or frozenset()
         for word in argv:
             cmd_name = os.path.basename(word)
             if cmd_name in denied:
-                raise SandboxViolation(f"Command '{cmd_name}' is denied", path=raw_command)
+                raise SandboxViolation(
+                    f"Command '{cmd_name}' is denied", path=raw_command
+                )
 
     @staticmethod
     def _validate_glob_pattern(pattern: str) -> None:
@@ -258,7 +262,14 @@ class OpenShellSandboxProvider:
 
         result = await asyncio.to_thread(
             session.exec,
-            ["find", self._workspace, "-path", f"{self._workspace}/{pattern}", "-type", "f"],
+            [
+                "find",
+                self._workspace,
+                "-path",
+                f"{self._workspace}/{pattern}",
+                "-type",
+                "f",
+            ],
             workdir=self._workspace,
             timeout_seconds=self._config.timeout_seconds,
         )
@@ -271,7 +282,7 @@ class OpenShellSandboxProvider:
         for line in result.stdout.strip().split("\n"):
             line = line.strip()
             if line and line.startswith(workspace_prefix):
-                paths.append(line[len(workspace_prefix):])
+                paths.append(line[len(workspace_prefix) :])
 
         return sorted(paths)
 

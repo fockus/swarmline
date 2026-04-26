@@ -154,7 +154,9 @@ class SwarmlineStack:
         )
 
         if memory_bank_prompt is None and memory_bank_provider is not None:
-            default_prompt_path = files("swarmline.memory_bank").joinpath("default_prompt.md")
+            default_prompt_path = files("swarmline.memory_bank").joinpath(
+                "default_prompt.md"
+            )
             try:
                 memory_bank_prompt = default_prompt_path.read_text(encoding="utf-8")
             except OSError:

@@ -92,7 +92,9 @@ class TestCodingToolPackIntegration:
         sandbox = _make_sandbox(tmp_path)
         pack = build_coding_toolpack(sandbox)
 
-        result = await pack.executors["write"]({"path": "out.txt", "content": "written"})
+        result = await pack.executors["write"](
+            {"path": "out.txt", "content": "written"}
+        )
         parsed = json.loads(result)
         assert parsed["status"] == "ok"
 
@@ -128,9 +130,7 @@ class TestCodingPolicyScopeIntegration:
         policy = plan.create_kwargs["tool_policy"]
 
         result = policy.can_use_tool(tool_name, {}, _make_state())
-        assert isinstance(result, PermissionAllow), (
-            f"{tool_name} should be allowed"
-        )
+        assert isinstance(result, PermissionAllow), f"{tool_name} should be allowed"
 
     @pytest.mark.parametrize(
         "tool_name",
@@ -281,7 +281,8 @@ class TestCodingProfileEndToEnd:
 
     @pytest.mark.parametrize("tool_name", sorted(CODING_TOOL_NAMES))
     def test_coding_profile_merged_policy_allows_coding_tool(
-        self, tool_name: str,
+        self,
+        tool_name: str,
     ) -> None:
         """Explicit tool_policy + coding profile = merged policy allows coding tool."""
         explicit_policy = DefaultToolPolicy(
@@ -302,7 +303,8 @@ class TestCodingProfileEndToEnd:
 
     @pytest.mark.parametrize("tool_name", ["web_fetch", "web_search"])
     def test_coding_profile_merged_policy_preserves_explicit_tools(
-        self, tool_name: str,
+        self,
+        tool_name: str,
     ) -> None:
         """Explicit tool_policy tools still allowed after merge with coding profile."""
         explicit_policy = DefaultToolPolicy(

@@ -85,7 +85,10 @@ class TestNativeToolCallResult:
         assert result.stop_reason == "end_turn"
 
     def test_native_tool_call_result_with_tool_calls(self) -> None:
-        from swarmline.runtime.thin.native_tools import NativeToolCall, NativeToolCallResult
+        from swarmline.runtime.thin.native_tools import (
+            NativeToolCall,
+            NativeToolCallResult,
+        )
 
         tc = NativeToolCall(id="tc1", name="calculator", args={"expr": "2+2"})
         result = NativeToolCallResult(text="let me calculate", tool_calls=(tc,))
@@ -257,7 +260,9 @@ class TestAnthropicAdapterCallWithTools:
             result = await adapter.call_with_tools(
                 messages=[{"role": "user", "content": "calc 2+2"}],
                 system_prompt="test",
-                tools=[{"name": "calculator", "description": "calc", "input_schema": {}}],
+                tools=[
+                    {"name": "calculator", "description": "calc", "input_schema": {}}
+                ],
             )
 
         assert isinstance(result, NativeToolCallResult)
@@ -348,7 +353,12 @@ class TestOpenAIAdapterCallWithTools:
             result = await adapter.call_with_tools(
                 messages=[{"role": "user", "content": "calc 2+2"}],
                 system_prompt="test",
-                tools=[{"type": "function", "function": {"name": "calculator", "parameters": {}}}],
+                tools=[
+                    {
+                        "type": "function",
+                        "function": {"name": "calculator", "parameters": {}},
+                    }
+                ],
             )
 
         assert isinstance(result, NativeToolCallResult)
@@ -390,7 +400,9 @@ class TestGoogleAdapterCallWithTools:
         mock_client.aio.models = MagicMock()
         mock_client.aio.models.generate_content = mock_generate
 
-        with patch.dict("sys.modules", {"google": MagicMock(), "google.genai": mock_genai}):
+        with patch.dict(
+            "sys.modules", {"google": MagicMock(), "google.genai": mock_genai}
+        ):
             from swarmline.runtime.thin.llm_providers import GoogleAdapter
 
             adapter = GoogleAdapter.__new__(GoogleAdapter)
@@ -442,7 +454,9 @@ class TestGoogleAdapterCallWithTools:
         mock_client.aio.models = MagicMock()
         mock_client.aio.models.generate_content = mock_generate
 
-        with patch.dict("sys.modules", {"google": MagicMock(), "google.genai": mock_genai}):
+        with patch.dict(
+            "sys.modules", {"google": MagicMock(), "google.genai": mock_genai}
+        ):
             from swarmline.runtime.thin.llm_providers import GoogleAdapter
 
             adapter = GoogleAdapter.__new__(GoogleAdapter)

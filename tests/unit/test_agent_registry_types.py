@@ -128,9 +128,7 @@ class TestAgentRegistryProtocol:
             ) -> list[AgentRecord]:
                 return []
 
-            async def update_status(
-                self, agent_id: str, status: AgentStatus
-            ) -> bool:
+            async def update_status(self, agent_id: str, status: AgentStatus) -> bool:
                 return False
 
             async def remove(self, agent_id: str) -> bool:

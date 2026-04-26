@@ -39,10 +39,30 @@ AGENTS = [
 
 # Map task IDs to plan step indices for traceability
 TASK_DEFS = [
-    ("task-ui-design", "Design login UI components", "Create form, validation, error states", "HIGH"),
-    ("task-jwt", "Implement JWT token service", "Token generation, refresh, validation", "CRITICAL"),
-    ("task-api", "Create login API endpoint", "POST /auth/login with rate limiting", "HIGH"),
-    ("task-wire", "Wire frontend to backend auth", "Auth context, interceptors, redirect", "MEDIUM"),
+    (
+        "task-ui-design",
+        "Design login UI components",
+        "Create form, validation, error states",
+        "HIGH",
+    ),
+    (
+        "task-jwt",
+        "Implement JWT token service",
+        "Token generation, refresh, validation",
+        "CRITICAL",
+    ),
+    (
+        "task-api",
+        "Create login API endpoint",
+        "POST /auth/login with rate limiting",
+        "HIGH",
+    ),
+    (
+        "task-wire",
+        "Wire frontend to backend auth",
+        "Auth context, interceptors, redirect",
+        "MEDIUM",
+    ),
 ]
 
 
@@ -63,7 +83,11 @@ async def test_cross_tool_plan_drives_tasks(session: StatefulSession):
 
     for tid, title, desc, prio in TASK_DEFS:
         task_res = await team_create_task(
-            session, id=tid, title=title, description=desc, priority=prio,
+            session,
+            id=tid,
+            title=title,
+            description=desc,
+            priority=prio,
         )
         assert task_res["ok"] is True
 
@@ -78,10 +102,16 @@ async def test_cross_tool_agents_share_memory(session: StatefulSession):
 
     # Frontend stores UI decisions
     await memory_upsert_fact(
-        session, user_id=namespace, key="ui-framework", value="React Hook Form for login",
+        session,
+        user_id=namespace,
+        key="ui-framework",
+        value="React Hook Form for login",
     )
     await memory_upsert_fact(
-        session, user_id=namespace, key="ui-state", value="Zustand auth store",
+        session,
+        user_id=namespace,
+        key="ui-state",
+        value="Zustand auth store",
     )
 
     # Backend reads and adds its own findings
@@ -90,10 +120,16 @@ async def test_cross_tool_agents_share_memory(session: StatefulSession):
     assert len(facts["data"]) == 2
 
     await memory_upsert_fact(
-        session, user_id=namespace, key="jwt-algo", value="RS256 with 15min expiry",
+        session,
+        user_id=namespace,
+        key="jwt-algo",
+        value="RS256 with 15min expiry",
     )
     await memory_upsert_fact(
-        session, user_id=namespace, key="api-rate-limit", value="5 attempts per minute per IP",
+        session,
+        user_id=namespace,
+        key="api-rate-limit",
+        value="5 attempts per minute per IP",
     )
 
     # All 4 findings visible
@@ -120,7 +156,9 @@ async def test_cross_tool_full_workflow(session: StatefulSession):
     # 3. Create tasks (map to plan steps by index)
     step_to_task: dict[int, str] = {}
     for i, (tid, title, desc, prio) in enumerate(TASK_DEFS):
-        await team_create_task(session, id=tid, title=title, description=desc, priority=prio)
+        await team_create_task(
+            session, id=tid, title=title, description=desc, priority=prio
+        )
         step_to_task[i] = tid
 
     # 4. Claim and process all tasks
@@ -145,7 +183,11 @@ async def test_cross_tool_full_workflow(session: StatefulSession):
     for i, step_id in enumerate(step_ids):
         result_text = f"Task {step_to_task[i]} completed"
         res = await plan_update_step(
-            session, plan_id=plan_id, step_id=step_id, status="completed", result=result_text,
+            session,
+            plan_id=plan_id,
+            step_id=step_id,
+            status="completed",
+            result=result_text,
         )
         assert res["ok"] is True
 

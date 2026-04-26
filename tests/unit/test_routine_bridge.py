@@ -261,7 +261,5 @@ class TestGetRuns:
 
 
 class TestProtocol:
-    def test_protocol_shape(
-        self, bridge: RoutineBridge
-    ) -> None:
+    def test_protocol_shape(self, bridge: RoutineBridge) -> None:
         assert isinstance(bridge, RoutineManager)

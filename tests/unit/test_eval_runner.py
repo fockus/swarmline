@@ -47,13 +47,14 @@ def _cases() -> list[EvalCase]:
 
 
 class TestEvalRunner:
-
     async def test_runs_all_cases(self) -> None:
-        agent = _mock_agent({
-            "capital of France": "Paris",
-            "2+2": "4",
-            "color of sky": "The sky is blue",
-        })
+        agent = _mock_agent(
+            {
+                "capital of France": "Paris",
+                "2+2": "4",
+                "color of sky": "The sky is blue",
+            }
+        )
         runner = EvalRunner()
         report = await runner.run(
             agent=agent,
@@ -101,10 +102,12 @@ class TestEvalRunner:
         assert report.results[0].latency_ms >= 0
 
     async def test_pass_rate(self) -> None:
-        agent = _mock_agent({
-            "capital of France": "Paris",
-            "2+2": "wrong answer",
-        })
+        agent = _mock_agent(
+            {
+                "capital of France": "Paris",
+                "2+2": "wrong answer",
+            }
+        )
         runner = EvalRunner()
         report = await runner.run(
             agent=agent,
@@ -141,7 +144,6 @@ class TestEvalRunner:
 
 
 class TestConsoleReporter:
-
     def test_format_report(self) -> None:
         from swarmline.eval.types import EvalResult
 
@@ -165,7 +167,6 @@ class TestConsoleReporter:
 
 
 class TestJsonReporter:
-
     def test_format_returns_valid_json(self) -> None:
         from swarmline.eval.types import EvalResult
 

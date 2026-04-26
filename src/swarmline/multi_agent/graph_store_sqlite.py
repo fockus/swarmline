@@ -10,7 +10,14 @@ import threading
 from dataclasses import replace
 from typing import Any
 
-from swarmline.multi_agent.graph_types import AgentCapabilities, AgentNode, EdgeType, GraphEdge, GraphSnapshot, LifecycleMode
+from swarmline.multi_agent.graph_types import (
+    AgentCapabilities,
+    AgentNode,
+    EdgeType,
+    GraphEdge,
+    GraphSnapshot,
+    LifecycleMode,
+)
 from swarmline.multi_agent.registry_types import AgentStatus
 
 
@@ -39,49 +46,55 @@ class SqliteAgentGraph:
 
     def _serialize(self, node: AgentNode) -> str:
         caps = node.capabilities
-        return json.dumps({
-            "id": node.id,
-            "name": node.name,
-            "role": node.role,
-            "system_prompt": node.system_prompt,
-            "parent_id": node.parent_id,
-            "allowed_tools": list(node.allowed_tools),
-            "skills": list(node.skills),
-            "mcp_servers": list(node.mcp_servers),
-            "capabilities": {
-                "can_hire": caps.can_hire,
-                "can_delegate": caps.can_delegate,
-                "max_children": caps.max_children,
-                "max_depth": caps.max_depth,
-                "can_delegate_authority": caps.can_delegate_authority,
-                "can_use_subagents": caps.can_use_subagents,
-                "allowed_subagent_ids": list(caps.allowed_subagent_ids),
-                "can_use_team_mode": caps.can_use_team_mode,
-            },
-            "runtime_config": node.runtime_config,
-            "model": node.model,
-            "runtime": node.runtime,
-            "api_key_env": node.api_key_env,
-            "budget_limit_usd": node.budget_limit_usd,
-            "lifecycle": node.lifecycle.value,
-            "hooks": list(node.hooks),
-            "status": node.status.value,
-            "metadata": node.metadata,
-        })
+        return json.dumps(
+            {
+                "id": node.id,
+                "name": node.name,
+                "role": node.role,
+                "system_prompt": node.system_prompt,
+                "parent_id": node.parent_id,
+                "allowed_tools": list(node.allowed_tools),
+                "skills": list(node.skills),
+                "mcp_servers": list(node.mcp_servers),
+                "capabilities": {
+                    "can_hire": caps.can_hire,
+                    "can_delegate": caps.can_delegate,
+                    "max_children": caps.max_children,
+                    "max_depth": caps.max_depth,
+                    "can_delegate_authority": caps.can_delegate_authority,
+                    "can_use_subagents": caps.can_use_subagents,
+                    "allowed_subagent_ids": list(caps.allowed_subagent_ids),
+                    "can_use_team_mode": caps.can_use_team_mode,
+                },
+                "runtime_config": node.runtime_config,
+                "model": node.model,
+                "runtime": node.runtime,
+                "api_key_env": node.api_key_env,
+                "budget_limit_usd": node.budget_limit_usd,
+                "lifecycle": node.lifecycle.value,
+                "hooks": list(node.hooks),
+                "status": node.status.value,
+                "metadata": node.metadata,
+            }
+        )
 
     def _deserialize(self, data: str) -> AgentNode:
         d = json.loads(data)
         caps_data = d.get("capabilities", {})
-        capabilities = AgentCapabilities(
-            can_hire=caps_data.get("can_hire", False),
-            can_delegate=caps_data.get("can_delegate", True),
-            max_children=caps_data.get("max_children"),
-            max_depth=caps_data.get("max_depth"),
-            can_delegate_authority=caps_data.get("can_delegate_authority", False),
-            can_use_subagents=caps_data.get("can_use_subagents", False),
-            allowed_subagent_ids=tuple(caps_data.get("allowed_subagent_ids", ())),
-            can_use_team_mode=caps_data.get("can_use_team_mode", False),
-        ) if caps_data else AgentCapabilities()
+        capabilities = (
+            AgentCapabilities(
+                can_hire=caps_data.get("can_hire", False),
+                can_delegate=caps_data.get("can_delegate", True),
+                max_children=caps_data.get("max_children"),
+                max_depth=caps_data.get("max_depth"),
+                can_delegate_authority=caps_data.get("can_delegate_authority", False),
+                can_use_subagents=caps_data.get("can_use_subagents", False),
+                allowed_subagent_ids=tuple(caps_data.get("allowed_subagent_ids", ())),
+                can_use_team_mode=caps_data.get("can_use_team_mode", False),
+            )
+            if caps_data
+            else AgentCapabilities()
+        )
         lifecycle_str = d.get("lifecycle", "ephemeral")
         return AgentNode(
             id=d["id"],
@@ -112,7 +125,9 @@ class SqliteAgentGraph:
             if cur.fetchone():
                 raise ValueError(f"Node '{node.id}' already exists")
             if node.parent_id is not None:
-                cur2 = self._conn.execute("SELECT 1 FROM agent_nodes WHERE id=?", (node.parent_id,))
+                cur2 = self._conn.execute(
+                    "SELECT 1 FROM agent_nodes WHERE id=?", (node.parent_id,)
+                )
                 if not cur2.fetchone():
                     raise ValueError(
                         f"Parent '{node.parent_id}' does not exist — add parent before child"
@@ -139,7 +154,9 @@ class SqliteAgentGraph:
 
     def _get_sync(self, node_id: str) -> AgentNode | None:
         with self._lock:
-            cur = self._conn.execute("SELECT data FROM agent_nodes WHERE id=?", (node_id,))
+            cur = self._conn.execute(
+                "SELECT data FROM agent_nodes WHERE id=?", (node_id,)
+            )
             row = cur.fetchone()
             return self._deserialize(row[0]) if row else None
 
@@ -155,7 +172,9 @@ class SqliteAgentGraph:
             cur = self._conn.execute("SELECT data FROM agent_nodes")
             nodes = tuple(self._deserialize(r[0]) for r in cur.fetchall())
         edges = tuple(
-            GraphEdge(source_id=n.id, target_id=n.parent_id, edge_type=EdgeType.REPORTS_TO)
+            GraphEdge(
+                source_id=n.id, target_id=n.parent_id, edge_type=EdgeType.REPORTS_TO
+            )
             for n in nodes
             if n.parent_id is not None
         )
@@ -227,7 +246,9 @@ class SqliteAgentGraph:
 
     def _update_sync(self, node_id: str, **updates: Any) -> AgentNode | None:
         with self._lock:
-            cur = self._conn.execute("SELECT data FROM agent_nodes WHERE id=?", (node_id,))
+            cur = self._conn.execute(
+                "SELECT data FROM agent_nodes WHERE id=?", (node_id,)
+            )
             row = cur.fetchone()
             if not row:
                 return None
@@ -235,7 +256,9 @@ class SqliteAgentGraph:
             new_parent = updates.get("parent_id", node.parent_id)
             if new_parent != node.parent_id:
                 if new_parent is not None:
-                    p_cur = self._conn.execute("SELECT 1 FROM agent_nodes WHERE id=?", (new_parent,))
+                    p_cur = self._conn.execute(
+                        "SELECT 1 FROM agent_nodes WHERE id=?", (new_parent,)
+                    )
                     if not p_cur.fetchone():
                         raise ValueError(f"Parent '{new_parent}' does not exist")
                     subtree_ids = set(self._subtree_ids_sync(node_id))

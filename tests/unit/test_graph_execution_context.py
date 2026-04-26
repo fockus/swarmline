@@ -8,7 +8,6 @@ from swarmline.multi_agent.graph_execution_context import AgentExecutionContext
 
 
 class TestDefaultConstruction:
-
     def test_default_construction_minimal_fields(self) -> None:
         ctx = AgentExecutionContext(
             agent_id="a1",
@@ -29,24 +28,28 @@ class TestDefaultConstruction:
 
 
 class TestFrozen:
-
     def test_frozen_cannot_mutate_agent_id(self) -> None:
         ctx = AgentExecutionContext(
-            agent_id="a1", task_id="t1", goal="g", system_prompt="s",
+            agent_id="a1",
+            task_id="t1",
+            goal="g",
+            system_prompt="s",
         )
         with pytest.raises(AttributeError):
             ctx.agent_id = "a2"  # type: ignore[misc]
 
     def test_frozen_cannot_mutate_tools(self) -> None:
         ctx = AgentExecutionContext(
-            agent_id="a1", task_id="t1", goal="g", system_prompt="s",
+            agent_id="a1",
+            task_id="t1",
+            goal="g",
+            system_prompt="s",
         )
         with pytest.raises(AttributeError):
             ctx.tools = ("new_tool",)  # type: ignore[misc]
 
 
 class TestFullConstruction:
-
     def test_full_construction_all_fields(self) -> None:
         ctx = AgentExecutionContext(
             agent_id="agent-007",
@@ -73,7 +76,6 @@ class TestFullConstruction:
 
 
 class TestBackwardCompatFields:
-
     def test_backward_compat_core_fields_accessible(self) -> None:
         """The four core fields (agent_id, task_id, goal, system_prompt)
         must be accessible as plain attributes — matching the old tuple contract."""

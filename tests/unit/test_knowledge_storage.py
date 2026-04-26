@@ -184,13 +184,26 @@ class TestDefaultKnowledgeSearcher:
     async def _setup_entries(self, provider):
         store = DefaultKnowledgeStore(provider)
         await store.save(
-            _sample_entry("notes/ml.md", tags=("ml", "research"), content="Machine learning experiments")
+            _sample_entry(
+                "notes/ml.md",
+                tags=("ml", "research"),
+                content="Machine learning experiments",
+            )
         )
         await store.save(
-            _sample_entry("notes/arch.md", tags=("architecture",), content="System architecture overview")
+            _sample_entry(
+                "notes/arch.md",
+                tags=("architecture",),
+                content="System architecture overview",
+            )
         )
         await store.save(
-            _sample_entry("plans/roadmap.md", kind="plan", tags=("roadmap",), content="Q1 roadmap plan")
+            _sample_entry(
+                "plans/roadmap.md",
+                kind="plan",
+                tags=("roadmap",),
+                content="Q1 roadmap plan",
+            )
         )
 
     async def test_search_by_text_finds_matching(self, provider):

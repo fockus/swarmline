@@ -29,7 +29,6 @@ def _fake_ep(name: str, value: str, group: str = "swarmline.plugins") -> MagicMo
 
 
 class TestPluginInfo:
-
     def test_creation(self) -> None:
         info = PluginInfo(name="my-runtime", module_path="my_pkg:MyRuntime")
         assert info.name == "my-runtime"
@@ -55,7 +54,6 @@ class TestPluginInfo:
 
 
 class TestPluginType:
-
     def test_values(self) -> None:
         assert PluginType.RUNTIME.value == "runtime"
         assert PluginType.MEMORY.value == "memory"
@@ -69,7 +67,6 @@ class TestPluginType:
 
 
 class TestDiscover:
-
     @patch("swarmline.plugins.registry._entry_points")
     def test_discovers_from_entry_points(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = [
@@ -100,7 +97,6 @@ class TestDiscover:
 
 
 class TestLoad:
-
     @patch("swarmline.plugins.registry._entry_points")
     def test_load_missing_raises(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = []
@@ -114,7 +110,6 @@ class TestLoad:
 
 
 class TestGetInfo:
-
     @patch("swarmline.plugins.registry._entry_points")
     def test_get_info_returns_none_for_missing(self, mock_eps: MagicMock) -> None:
         mock_eps.return_value = []

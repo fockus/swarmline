@@ -71,7 +71,9 @@ class NatsEventBus:
         """Register a local callback. Also subscribes to NATS subject."""
         sub_id = f"nsub_{self._counter}"
         self._counter += 1
-        is_first = event_type not in self._subscribers or not self._subscribers[event_type]
+        is_first = (
+            event_type not in self._subscribers or not self._subscribers[event_type]
+        )
         self._subscribers.setdefault(event_type, {})[sub_id] = callback
 
         if is_first and self._nc is not None:
@@ -94,9 +96,13 @@ class NatsEventBus:
 
         if self._nc is not None and not self._nc.is_closed:
             subject = f"{self._prefix}.{event_type}"
-            payload = json.dumps({
-                "type": event_type, "data": data, "_origin": self._origin_id,
-            }).encode()
+            payload = json.dumps(
+                {
+                    "type": event_type,
+                    "data": data,
+                    "_origin": self._origin_id,
+                }
+            ).encode()
             await self._nc.publish(subject, payload)
 
     async def _dispatch_local(self, event_type: str, data: dict[str, Any]) -> None:

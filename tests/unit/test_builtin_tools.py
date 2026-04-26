@@ -1,5 +1,4 @@
-"""Tests Builtin Tools - sandbox and web tooly. TDD: RED -> GREEN -> REFACTOR.
-"""
+"""Tests Builtin Tools - sandbox and web tooly. TDD: RED -> GREEN -> REFACTOR."""
 
 from __future__ import annotations
 
@@ -197,7 +196,9 @@ class TestGrepExecutor:
     """grep tool - poisk teksta."""
 
     async def test_grep_finds_pattern(self, sandbox, sandbox_tools) -> None:
-        await sandbox.write_file("code.py", "def hello():\n    pass\ndef world():\n    pass")
+        await sandbox.write_file(
+            "code.py", "def hello():\n    pass\ndef world():\n    pass"
+        )
         _, executors = sandbox_tools
 
         result = await executors["grep"]({"pattern": "def \\w+", "path": "code.py"})
@@ -250,7 +251,9 @@ class TestWebTools:
                 return ""
 
             async def search(self, query: str, max_results: int = 5) -> list:
-                return [SearchResult(title="Test", url="http://test.com", snippet="snip")]
+                return [
+                    SearchResult(title="Test", url="http://test.com", snippet="snip")
+                ]
 
         _specs, executors = create_web_tools(MockWeb())
         result = await executors["web_search"]({"query": "test"})

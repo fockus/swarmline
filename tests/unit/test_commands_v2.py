@@ -1,5 +1,4 @@
-"""TDD RED: CommandRegistry v2 - typed params, YAML discovery, LLM tool generation. CRP-5.1: Rasshirenie CommandRegistry with sohranotniem backward compatibility.
-"""
+"""TDD RED: CommandRegistry v2 - typed params, YAML discovery, LLM tool generation. CRP-5.1: Rasshirenie CommandRegistry with sohranotniem backward compatibility."""
 
 from __future__ import annotations
 

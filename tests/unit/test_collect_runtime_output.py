@@ -58,7 +58,9 @@ class TestCollectRuntimeOutput:
 
         events = [
             RuntimeEvent.error(
-                RuntimeErrorData(kind="test_error", message="Something broke", recoverable=False)
+                RuntimeErrorData(
+                    kind="test_error", message="Something broke", recoverable=False
+                )
             ),
         ]
         with pytest.raises(RuntimeError, match="Something broke"):

@@ -76,7 +76,10 @@ class GoalQueue:
         if entry is None:
             raise KeyError(f"Goal '{goal_id}' not found")
         self._goals[goal_id] = replace(
-            entry, status=GoalStatus.COMPLETED, completed_at=time.time(), run_id=run_id,
+            entry,
+            status=GoalStatus.COMPLETED,
+            completed_at=time.time(),
+            run_id=run_id,
         )
 
     def mark_failed(self, goal_id: str, run_id: str | None = None) -> None:
@@ -85,7 +88,10 @@ class GoalQueue:
         if entry is None:
             raise KeyError(f"Goal '{goal_id}' not found")
         self._goals[goal_id] = replace(
-            entry, status=GoalStatus.FAILED, completed_at=time.time(), run_id=run_id,
+            entry,
+            status=GoalStatus.FAILED,
+            completed_at=time.time(),
+            run_id=run_id,
         )
 
     def list_all(self) -> list[GoalEntry]:

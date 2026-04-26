@@ -30,12 +30,18 @@ class TestWorkflowGraphWithThinRuntimeNodes:
             if "research" in system_prompt.lower():
                 call_log.append("research")
                 return json.dumps(
-                    {"type": "final", "final_message": "Research: market is growing 15% YoY"}
+                    {
+                        "type": "final",
+                        "final_message": "Research: market is growing 15% YoY",
+                    }
                 )
             if "analy" in system_prompt.lower():
                 call_log.append("analyze")
                 return json.dumps(
-                    {"type": "final", "final_message": "Analysis: strong growth trajectory"}
+                    {
+                        "type": "final",
+                        "final_message": "Analysis: strong growth trajectory",
+                    }
                 )
             call_log.append("report")
             return json.dumps(

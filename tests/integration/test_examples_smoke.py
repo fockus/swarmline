@@ -89,7 +89,10 @@ def test_example_19_cli_runtime_uses_stream_json_command() -> None:
     proc = _run_example("19_cli_runtime.py")
 
     assert proc.returncode == 0, proc.stderr
-    assert "['claude', '--print', '--verbose', '--output-format', 'stream-json', '-']" in proc.stdout
+    assert (
+        "['claude', '--print', '--verbose', '--output-format', 'stream-json', '-']"
+        in proc.stdout
+    )
 
 
 def test_example_24_deep_research_live_requires_api_key_and_fails_fast() -> None:
@@ -100,7 +103,10 @@ def test_example_24_deep_research_live_requires_api_key_and_fails_fast() -> None
     )
 
     assert proc.returncode == 1
-    assert "Either ANTHROPIC_API_KEY or OPENROUTER_API_KEY is required for --live mode" in proc.stderr
+    assert (
+        "Either ANTHROPIC_API_KEY or OPENROUTER_API_KEY is required for --live mode"
+        in proc.stderr
+    )
     assert "Mock Pipeline" not in proc.stdout
 
 
@@ -112,7 +118,10 @@ def test_example_27_nano_claw_live_requires_api_key_and_fails_fast() -> None:
     )
 
     assert proc.returncode == 1
-    assert "Either ANTHROPIC_API_KEY or OPENROUTER_API_KEY is required for --live mode" in proc.stderr
+    assert (
+        "Either ANTHROPIC_API_KEY or OPENROUTER_API_KEY is required for --live mode"
+        in proc.stderr
+    )
 
 
 def test_example_24_deep_research_live_accepts_openrouter_key(
@@ -196,7 +205,9 @@ async def test_example_27_nano_claw_streaming_turn_uses_final_text_for_json_enve
     agent = module.NanoClaw(runtime="mock")
 
     async def fake_stream(_prompt: str):
-        yield SimpleNamespace(type="text_delta", text='{"type":"final","final_message":"')
+        yield SimpleNamespace(
+            type="text_delta", text='{"type":"final","final_message":"'
+        )
         yield SimpleNamespace(type="text_delta", text='Files in /project"}')
         yield SimpleNamespace(
             type="done",

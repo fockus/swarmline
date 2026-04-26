@@ -27,7 +27,9 @@ class SharedAgentRegistry:
         self._agents: dict[str, AgentNode] = {}
         self._roles: dict[str, set[str]] = {}  # role -> set of agent_ids
 
-    def register(self, agent: AgentNode, shared_roles: tuple[str, ...] | None = None) -> None:
+    def register(
+        self, agent: AgentNode, shared_roles: tuple[str, ...] | None = None
+    ) -> None:
         """Register an agent as shared. Uses agent.role if shared_roles not provided."""
         self._agents[agent.id] = agent
         roles = shared_roles if shared_roles is not None else (agent.role,)

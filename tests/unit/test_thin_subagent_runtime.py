@@ -137,21 +137,27 @@ class TestThinSubagentToolsInherited:
         # LLM vyzyvaet tool (ActionEnvelope format), potom finaliziruet
         call_count = 0
 
-        async def tool_calling_llm(messages: list[dict], system_prompt: str, **kwargs) -> str:
+        async def tool_calling_llm(
+            messages: list[dict], system_prompt: str, **kwargs
+        ) -> str:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return json.dumps({
-                    "type": "tool_call",
-                    "tool": {
-                        "name": tool_name,
-                        "args": {"query": "test query"},
-                    },
-                })
-            return json.dumps({
-                "type": "final",
-                "final_message": "Search completed",
-            })
+                return json.dumps(
+                    {
+                        "type": "tool_call",
+                        "tool": {
+                            "name": tool_name,
+                            "args": {"query": "test query"},
+                        },
+                    }
+                )
+            return json.dumps(
+                {
+                    "type": "final",
+                    "final_message": "Search completed",
+                }
+            )
 
         orch = ThinSubagentOrchestrator(
             max_concurrent=2,

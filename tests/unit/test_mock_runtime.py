@@ -10,9 +10,7 @@ from swarmline.testing import MockRuntime
 
 async def _collect(rt: MockRuntime, messages: list[Message]) -> tuple[str, list]:
     events = []
-    async for event in rt.run(
-        messages=messages, system_prompt="", active_tools=[]
-    ):
+    async for event in rt.run(messages=messages, system_prompt="", active_tools=[]):
         events.append(event)
     final = events[-1]
     return final.text, events
@@ -20,7 +18,9 @@ async def _collect(rt: MockRuntime, messages: list[Message]) -> tuple[str, list]
 
 async def test_mock_runtime_default_reply_for_capital_of_france() -> None:
     rt = MockRuntime()
-    text, _ = await _collect(rt, [Message(role="user", content="What is the capital of France?")])
+    text, _ = await _collect(
+        rt, [Message(role="user", content="What is the capital of France?")]
+    )
     assert "Paris" in text
 
 
@@ -56,9 +56,7 @@ async def test_mock_runtime_remembers_name_in_conversation() -> None:
 
 async def test_mock_runtime_custom_replies_take_precedence() -> None:
     rt = MockRuntime(replies={"weather": "Sunny and 25°C."})
-    text, _ = await _collect(
-        rt, [Message(role="user", content="How is the weather?")]
-    )
+    text, _ = await _collect(rt, [Message(role="user", content="How is the weather?")])
     assert "Sunny" in text
 
 

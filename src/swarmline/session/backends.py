@@ -100,9 +100,7 @@ class SqliteSessionBackend:
 
     def _delete_sync(self, key: str) -> bool:
         with self._lock:
-            cursor = self._conn.execute(
-                "DELETE FROM sessions WHERE key = ?", (key,)
-            )
+            cursor = self._conn.execute("DELETE FROM sessions WHERE key = ?", (key,))
             self._conn.commit()
         return cursor.rowcount > 0
 

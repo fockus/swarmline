@@ -114,7 +114,10 @@ class TestCrossTenantIsolation:
         store.set_namespace("bob", "t1")
         await store.save(
             Plan(
-                id="p2", goal="bob-plan", steps=[PlanStep(id="s1", description="y")], created_at=now
+                id="p2",
+                goal="bob-plan",
+                steps=[PlanStep(id="s1", description="y")],
+                created_at=now,
             )
         )
 
@@ -159,7 +162,10 @@ class TestPolicyCaseSensitivity:
 
         policy = DefaultToolPolicy(allowed_system_tools={"Bash", "bash"})
         state = ToolPolicyInput(
-            tool_name="", input_data={}, active_skill_ids=[], allowed_local_tools={"Bash", "bash"}
+            tool_name="",
+            input_data={},
+            active_skill_ids=[],
+            allowed_local_tools={"Bash", "bash"},
         )
         assert isinstance(policy.can_use_tool("Bash", {}, state), PermissionAllow)
         assert isinstance(policy.can_use_tool("bash", {}, state), PermissionAllow)

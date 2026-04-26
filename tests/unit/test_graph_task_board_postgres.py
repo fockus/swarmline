@@ -39,7 +39,6 @@ def _result(*, fetchone=None, fetchall=None) -> MagicMock:
 
 
 class TestCreationValidation:
-
     @pytest.mark.asyncio
     async def test_create_task_rejects_self_parent(self) -> None:
         session = AsyncMock()
@@ -53,9 +52,11 @@ class TestCreationValidation:
         session = AsyncMock()
         session.execute = AsyncMock(
             return_value=_result(
-                fetchone=(PostgresGraphTaskBoard._serialize_task(
-                    _task("a", parent_task_id="b")
-                ),)
+                fetchone=(
+                    PostgresGraphTaskBoard._serialize_task(
+                        _task("a", parent_task_id="b")
+                    ),
+                )
             )
         )
         board = PostgresGraphTaskBoard(_session_factory(session))
@@ -65,7 +66,6 @@ class TestCreationValidation:
 
 
 class TestCompletionStatus:
-
     @pytest.mark.asyncio
     async def test_complete_task_requires_in_progress(self) -> None:
         session = AsyncMock()
@@ -83,7 +83,6 @@ class TestCompletionStatus:
 
 
 class TestNamespaceQueries:
-
     @pytest.mark.asyncio
     async def test_get_comments_filters_namespace(self) -> None:
         session = AsyncMock()
@@ -141,18 +140,21 @@ class TestNamespaceQueries:
 
 
 class TestPropagationIsolation:
-
     @pytest.mark.asyncio
     async def test_complete_task_keeps_parent_namespace_isolated(self) -> None:
         session = AsyncMock()
         child = _task("child", parent_task_id="root", status=TaskStatus.IN_PROGRESS)
-        done_child = replace(child, status=TaskStatus.DONE, completed_at=1.0, progress=1.0)
+        done_child = replace(
+            child, status=TaskStatus.DONE, completed_at=1.0, progress=1.0
+        )
         parent = _task("root")
         session.execute = AsyncMock(
             side_effect=[
                 _result(fetchone=(PostgresGraphTaskBoard._serialize_task(child),)),
                 _result(),
-                _result(fetchall=[(PostgresGraphTaskBoard._serialize_task(done_child),)]),
+                _result(
+                    fetchall=[(PostgresGraphTaskBoard._serialize_task(done_child),)]
+                ),
                 _result(fetchone=(PostgresGraphTaskBoard._serialize_task(parent),)),
                 _result(),
             ]

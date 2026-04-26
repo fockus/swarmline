@@ -44,10 +44,15 @@ class WorktreeOrchestrator:
         context: str = "",
     ) -> WorkspaceHandle:
         """Create an isolated workspace according to *policy*."""
-        spec = policy.to_workspace_spec(agent_id=agent_id, task_id=task_id, context=context)
+        spec = policy.to_workspace_spec(
+            agent_id=agent_id, task_id=task_id, context=context
+        )
         handle = await self._workspace.create(spec, agent_id, task_id)
         self._active[handle.workspace_id] = handle
-        await self._emit("worktree:created", {"workspace_id": handle.workspace_id, "agent_id": agent_id})
+        await self._emit(
+            "worktree:created",
+            {"workspace_id": handle.workspace_id, "agent_id": agent_id},
+        )
         return handle
 
     async def merge_workspace(
@@ -70,14 +75,21 @@ class WorktreeOrchestrator:
                 error="Not a git worktree",
             )
 
-        await self._emit("worktree:merge_started", {
-            "workspace_id": handle.workspace_id,
-            "source_branch": handle.branch_name or "",
-            "target_branch": target_branch,
-        })
+        await self._emit(
+            "worktree:merge_started",
+            {
+                "workspace_id": handle.workspace_id,
+                "source_branch": handle.branch_name or "",
+                "target_branch": target_branch,
+            },
+        )
 
         proc = await asyncio.create_subprocess_exec(
-            "git", "-C", handle.path, "merge", target_branch,
+            "git",
+            "-C",
+            handle.path,
+            "merge",
+            target_branch,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -89,9 +101,12 @@ class WorktreeOrchestrator:
                 source_branch=handle.branch_name or "",
                 target_branch=target_branch,
             )
-            await self._emit("worktree:merge_completed", {
-                "workspace_id": handle.workspace_id,
-            })
+            await self._emit(
+                "worktree:merge_completed",
+                {
+                    "workspace_id": handle.workspace_id,
+                },
+            )
             return result
 
         stderr_text = stderr.decode()
@@ -103,10 +118,13 @@ class WorktreeOrchestrator:
             error=stderr_text.strip() or "merge failed",
             conflicts=conflicts,
         )
-        await self._emit("worktree:merge_failed", {
-            "workspace_id": handle.workspace_id,
-            "error": result.error,
-        })
+        await self._emit(
+            "worktree:merge_failed",
+            {
+                "workspace_id": handle.workspace_id,
+                "error": result.error,
+            },
+        )
         return result
 
     async def cleanup_workspace(self, handle: WorkspaceHandle) -> bool:
@@ -119,7 +137,12 @@ class WorktreeOrchestrator:
     async def scan_orphans(self, base_path: str) -> list[str]:
         """Find worktrees not tracked in active handles."""
         proc = await asyncio.create_subprocess_exec(
-            "git", "-C", base_path, "worktree", "list", "--porcelain",
+            "git",
+            "-C",
+            base_path,
+            "worktree",
+            "list",
+            "--porcelain",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -130,7 +153,7 @@ class WorktreeOrchestrator:
 
         for line in stdout.decode().splitlines():
             if line.startswith("worktree "):
-                path = line[len("worktree "):]
+                path = line[len("worktree ") :]
                 if path == base_path:
                     continue  # main worktree is never an orphan
                 if path not in active_paths:
@@ -144,7 +167,13 @@ class WorktreeOrchestrator:
         removed = 0
         for path in orphans:
             proc = await asyncio.create_subprocess_exec(
-                "git", "-C", base_path, "worktree", "remove", path, "--force",
+                "git",
+                "-C",
+                base_path,
+                "worktree",
+                "remove",
+                path,
+                "--force",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

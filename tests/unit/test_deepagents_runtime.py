@@ -56,7 +56,12 @@ class TestBuiltinToolsFiltering:
             ToolSpec(name="Bash", description="shell", parameters={}),
             ToolSpec(name="read_file", description="read file", parameters={}),
             ToolSpec(name="mcp__iss__get_bonds", description="bonds", parameters={}),
-            ToolSpec(name="calculate_goal_plan", description="calc", parameters={}, is_local=True),
+            ToolSpec(
+                name="calculate_goal_plan",
+                description="calc",
+                parameters={},
+                is_local=True,
+            ),
         ]
         filtered = DeepAgentsRuntime.filter_builtin_tools(tools)
         names = [t.name for t in filtered]
@@ -69,7 +74,12 @@ class TestBuiltinToolsFiltering:
         """filter_builtin_tools saves safe tools."""
         tools = [
             ToolSpec(name="mcp__finuslugi__deposits", description="d", parameters={}),
-            ToolSpec(name="assess_health_score", description="h", parameters={}, is_local=True),
+            ToolSpec(
+                name="assess_health_score",
+                description="h",
+                parameters={},
+                is_local=True,
+            ),
         ]
         filtered = DeepAgentsRuntime.filter_builtin_tools(tools)
         assert len(filtered) == 2
@@ -163,7 +173,9 @@ class TestDeepAgentsRuntimeRun:
         from swarmline.runtime.types import RuntimeErrorData
 
         runtime = DeepAgentsRuntime()
-        fake_error = RuntimeErrorData(kind="dependency_missing", message="not installed")
+        fake_error = RuntimeErrorData(
+            kind="dependency_missing", message="not installed"
+        )
         with patch(
             "swarmline.runtime.deepagents._check_langchain_available",
             return_value=fake_error,
@@ -189,7 +201,10 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Привет, мир!")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -216,7 +231,10 @@ class TestDeepAgentsRuntimeRun:
             yield  # async generator
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -241,7 +259,10 @@ class TestDeepAgentsRuntimeRun:
             yield  # async generator
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_failing_stream),
         ):
             events = []
@@ -270,8 +291,13 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("ok")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch.object(runtime, "_stream_langchain", side_effect=_fake_stream) as mock_stream,
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(
+                runtime, "_stream_langchain", side_effect=_fake_stream
+            ) as mock_stream,
         ):
             events = []
             async for ev in runtime.run(
@@ -303,7 +329,10 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta('{"name":"Alice"}')
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -333,8 +362,13 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("native")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch.object(runtime, "_stream_native", side_effect=_fake_native) as mock_native,
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(
+                runtime, "_stream_native", side_effect=_fake_native
+            ) as mock_native,
             patch.object(
                 runtime,
                 "_stream_langchain",
@@ -364,8 +398,13 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("compat")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch.object(runtime, "_stream_langchain", side_effect=_fake_compat) as mock_compat,
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(
+                runtime, "_stream_langchain", side_effect=_fake_compat
+            ) as mock_compat,
             patch.object(
                 runtime,
                 "_stream_native",
@@ -392,7 +431,10 @@ class TestDeepAgentsRuntimeRun:
         )
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.dict("sys.modules", {"langchain_openai": None}),
         ):
             events = []
@@ -414,15 +456,22 @@ class TestDeepAgentsRuntimeRun:
         runtime = DeepAgentsRuntime()
 
         async def _fake_stream_with_tools(**kwargs):
-            yield RuntimeEvent.tool_call_started(name="calc", args={"x": 1}, correlation_id="cid-1")
+            yield RuntimeEvent.tool_call_started(
+                name="calc", args={"x": 1}, correlation_id="cid-1"
+            )
             yield RuntimeEvent.tool_call_finished(
                 name="calc", correlation_id="cid-1", result_summary="42"
             )
             yield RuntimeEvent.assistant_delta("Результат: 42")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch.object(runtime, "_stream_langchain", side_effect=_fake_stream_with_tools),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(
+                runtime, "_stream_langchain", side_effect=_fake_stream_with_tools
+            ),
         ):
             events = []
             async for ev in runtime.run(
@@ -458,7 +507,10 @@ class TestDeepAgentsRuntimeRun:
         ]
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_capturing_stream),
         ):
             events = []
@@ -502,7 +554,10 @@ class TestDeepAgentsRuntimeRun:
         ]
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_native", side_effect=_capturing_stream),
         ):
             events = []
@@ -519,7 +574,9 @@ class TestDeepAgentsRuntimeRun:
         assert "task" in events[0].data["text"]
 
     @pytest.mark.asyncio
-    async def test_run_native_first_prefers_upstream_builtin_over_local_collision(self) -> None:
+    async def test_run_native_first_prefers_upstream_builtin_over_local_collision(
+        self,
+    ) -> None:
         """native_first does not forward colliding local tool named native built-in."""
         cfg = RuntimeConfig(
             runtime_name="deepagents",
@@ -535,12 +592,17 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("ok")
 
         tools = [
-            ToolSpec(name="execute", description="local shell", parameters={}, is_local=True),
+            ToolSpec(
+                name="execute", description="local shell", parameters={}, is_local=True
+            ),
             ToolSpec(name="calc", description="calc", parameters={}, is_local=True),
         ]
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_native", side_effect=_capturing_stream),
         ):
             events = []
@@ -564,11 +626,15 @@ class TestDeepAgentsRuntimeRun:
         )
 
         events = []
-        with patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None):
+        with patch(
+            "swarmline.runtime.deepagents._check_langchain_available", return_value=None
+        ):
             async for event in runtime.run(
                 messages=[Message(role="user", content="hi")],
                 system_prompt="test",
-                active_tools=[ToolSpec(name="Bash", description="shell", parameters={})],
+                active_tools=[
+                    ToolSpec(name="Bash", description="shell", parameters={})
+                ],
             ):
                 events.append(event)
 
@@ -586,7 +652,10 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Ответ модели")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -628,7 +697,10 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("Ответ модели")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_fake_stream),
         ):
             events = []
@@ -678,15 +750,24 @@ class TestDeepAgentsRuntimeRun:
 
         async def _multi_tools(**kwargs):
             yield RuntimeEvent.tool_call_started(name="a", args={})
-            yield RuntimeEvent.tool_call_finished(name="a", correlation_id="1", result_summary="r1")
+            yield RuntimeEvent.tool_call_finished(
+                name="a", correlation_id="1", result_summary="r1"
+            )
             yield RuntimeEvent.tool_call_started(name="b", args={})
-            yield RuntimeEvent.tool_call_finished(name="b", correlation_id="2", result_summary="r2")
+            yield RuntimeEvent.tool_call_finished(
+                name="b", correlation_id="2", result_summary="r2"
+            )
             yield RuntimeEvent.tool_call_started(name="c", args={})
-            yield RuntimeEvent.tool_call_finished(name="c", correlation_id="3", result_summary="r3")
+            yield RuntimeEvent.tool_call_finished(
+                name="c", correlation_id="3", result_summary="r3"
+            )
             yield RuntimeEvent.assistant_delta("done")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
             patch.object(runtime, "_stream_langchain", side_effect=_multi_tools),
         ):
             events = []
@@ -711,8 +792,13 @@ class TestDeepAgentsRuntimeRun:
             yield RuntimeEvent.assistant_delta("ok")
 
         with (
-            patch("swarmline.runtime.deepagents._check_langchain_available", return_value=None),
-            patch.object(runtime, "_stream_langchain", side_effect=_fake_stream) as mock_stream,
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(
+                runtime, "_stream_langchain", side_effect=_fake_stream
+            ) as mock_stream,
         ):
             async for _ in runtime.run(
                 messages=[Message(role="user", content="hi")],
@@ -891,7 +977,9 @@ class TestBuildLlm:
             llm = runtime._build_llm("openai:gpt-4o", base_url="https://proxy.test")
 
         assert llm is sentinel
-        mock_build.assert_called_once_with("openai:gpt-4o", base_url="https://proxy.test")
+        mock_build.assert_called_once_with(
+            "openai:gpt-4o", base_url="https://proxy.test"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -988,8 +1076,18 @@ class TestStreamLangchain:
         mock_runnable = AsyncMock()
 
         async def fake_astream_events(*args, **kwargs):
-            yield {"event": "on_tool_start", "name": "t", "data": {"input": {}}, "run_id": "r1"}
-            yield {"event": "on_tool_end", "name": "t", "data": {"output": "ok"}, "run_id": "r1"}
+            yield {
+                "event": "on_tool_start",
+                "name": "t",
+                "data": {"input": {}},
+                "run_id": "r1",
+            }
+            yield {
+                "event": "on_tool_end",
+                "name": "t",
+                "data": {"output": "ok"},
+                "run_id": "r1",
+            }
 
         mock_runnable.astream_events = fake_astream_events
 
@@ -1090,7 +1188,10 @@ class TestStreamLangchain:
         with (
             patch.object(runtime, "_build_lc_messages", return_value=[]),
             patch.object(runtime, "_build_llm", return_value=mock_llm),
-            patch("swarmline.runtime.deepagents.create_langchain_tool", return_value=MagicMock()),
+            patch(
+                "swarmline.runtime.deepagents.create_langchain_tool",
+                return_value=MagicMock(),
+            ),
         ):
             async for _ in runtime._stream_langchain(
                 messages=[],
@@ -1149,7 +1250,9 @@ class TestCreateLangchainTool:
 
     def test_create_tool_with_executor(self) -> None:
         """create_langchain_tool with custom executor."""
-        spec = ToolSpec(name="calc", description="calculator", parameters={}, is_local=True)
+        spec = ToolSpec(
+            name="calc", description="calculator", parameters={}, is_local=True
+        )
 
         async def my_executor(**kwargs):
             return "42"

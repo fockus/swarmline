@@ -6,7 +6,10 @@ from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from swarmline.runtime.structured_output import append_structured_output_instruction
-from swarmline.runtime.structured_requests import build_llm_call_kwargs, structured_mode_uses_native
+from swarmline.runtime.structured_requests import (
+    build_llm_call_kwargs,
+    structured_mode_uses_native,
+)
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.finalization import CheckpointFn, finalize_with_validation
 from swarmline.runtime.thin.helpers import (
@@ -134,7 +137,11 @@ async def run_conversational(
             )
             return
 
-        text = envelope.final_message if envelope.type == "final" and envelope.final_message else raw
+        text = (
+            envelope.final_message
+            if envelope.type == "final" and envelope.final_message
+            else raw
+        )
         async for event in finalize_with_validation(
             text,
             config,
@@ -147,7 +154,6 @@ async def run_conversational(
         ):
             yield event
         return
-
 
     try:
         checkpoint_event = await _run_checkpoint(checkpoint)
@@ -190,7 +196,6 @@ async def run_conversational(
         for chunk in chunks:
             yield RuntimeEvent.assistant_delta(chunk)
 
-
         envelope = parse_envelope(raw)
         if envelope is not None and envelope.type == "final" and envelope.final_message:
             text = envelope.final_message
@@ -206,7 +211,6 @@ async def run_conversational(
             ):
                 yield event
             return
-
 
         try:
             checkpoint_event = await _run_checkpoint(checkpoint)

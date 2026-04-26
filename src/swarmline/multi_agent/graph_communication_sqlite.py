@@ -56,9 +56,16 @@ class SqliteGraphCommunication:
                 "INSERT INTO graph_messages "
                 "(id, from_agent_id, to_agent_id, channel, content, task_id, created_at, metadata) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (msg.id, msg.from_agent_id, msg.to_agent_id,
-                 msg.channel.value, msg.content, msg.task_id,
-                 msg.created_at, json.dumps(msg.metadata)),
+                (
+                    msg.id,
+                    msg.from_agent_id,
+                    msg.to_agent_id,
+                    msg.channel.value,
+                    msg.content,
+                    msg.task_id,
+                    msg.created_at,
+                    json.dumps(msg.metadata),
+                ),
             )
             self._conn.commit()
 
@@ -83,9 +90,14 @@ class SqliteGraphCommunication:
     @staticmethod
     def _row_to_msg(r: tuple) -> GraphMessage:
         return GraphMessage(
-            id=r[0], from_agent_id=r[1], to_agent_id=r[2],
-            channel=ChannelType(r[3]), content=r[4], task_id=r[5],
-            created_at=r[6], metadata=json.loads(r[7]) if r[7] else {},
+            id=r[0],
+            from_agent_id=r[1],
+            to_agent_id=r[2],
+            channel=ChannelType(r[3]),
+            content=r[4],
+            task_id=r[5],
+            created_at=r[6],
+            metadata=json.loads(r[7]) if r[7] else {},
         )
 
     # --- async API ---
@@ -95,7 +107,11 @@ class SqliteGraphCommunication:
         await self._emit("graph.message.direct", msg)
 
     async def broadcast_subtree(
-        self, from_id: str, content: str, *, task_id: str | None = None,
+        self,
+        from_id: str,
+        content: str,
+        *,
+        task_id: str | None = None,
     ) -> None:
         descendants = await self._graph.get_subtree(from_id)
         for node in descendants:
@@ -103,23 +119,31 @@ class SqliteGraphCommunication:
                 continue
             msg = GraphMessage(
                 id=uuid.uuid4().hex,
-                from_agent_id=from_id, to_agent_id=node.id,
+                from_agent_id=from_id,
+                to_agent_id=node.id,
                 channel=ChannelType.BROADCAST,
-                content=content, task_id=task_id,
+                content=content,
+                task_id=task_id,
             )
             await asyncio.to_thread(self._store_sync, msg)
             await self._emit("graph.message.broadcast", msg)
 
     async def escalate(
-        self, from_id: str, content: str, *, task_id: str | None = None,
+        self,
+        from_id: str,
+        content: str,
+        *,
+        task_id: str | None = None,
     ) -> None:
         chain = await self._graph.get_chain_of_command(from_id)
         for node in chain[1:]:
             msg = GraphMessage(
                 id=uuid.uuid4().hex,
-                from_agent_id=from_id, to_agent_id=node.id,
+                from_agent_id=from_id,
+                to_agent_id=node.id,
                 channel=ChannelType.ESCALATION,
-                content=content, task_id=task_id,
+                content=content,
+                task_id=task_id,
             )
             await asyncio.to_thread(self._store_sync, msg)
             await self._emit("graph.message.escalation", msg)
@@ -132,8 +156,13 @@ class SqliteGraphCommunication:
 
     async def _emit(self, topic: str, msg: GraphMessage) -> None:
         if self._bus is not None:
-            await self._bus.emit(topic, {
-                "id": msg.id, "from": msg.from_agent_id,
-                "to": msg.to_agent_id, "channel": msg.channel.value,
-                "task_id": msg.task_id,
-            })
+            await self._bus.emit(
+                topic,
+                {
+                    "id": msg.id,
+                    "from": msg.from_agent_id,
+                    "to": msg.to_agent_id,
+                    "channel": msg.channel.value,
+                    "task_id": msg.task_id,
+                },
+            )

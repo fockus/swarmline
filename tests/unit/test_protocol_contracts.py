@@ -133,7 +133,11 @@ class TestRoleSkillsProviderContract:
 
     def test_method_count_is_2(self) -> None:
         """RoleSkillsProvider has exactly 2 methods (ISP)."""
-        methods = [n for n in dir(RoleSkillsProvider) if not n.startswith("_") and n != "register"]
+        methods = [
+            n
+            for n in dir(RoleSkillsProvider)
+            if not n.startswith("_") and n != "register"
+        ]
         assert len(methods) == 2
 
     def test_dummy_implementation_satisfies_protocol(self) -> None:

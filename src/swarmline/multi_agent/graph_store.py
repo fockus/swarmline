@@ -7,7 +7,12 @@ from collections import deque
 from dataclasses import replace
 from typing import Any
 
-from swarmline.multi_agent.graph_types import AgentNode, EdgeType, GraphEdge, GraphSnapshot
+from swarmline.multi_agent.graph_types import (
+    AgentNode,
+    EdgeType,
+    GraphEdge,
+    GraphSnapshot,
+)
 
 
 class InMemoryAgentGraph:
@@ -55,9 +60,7 @@ class InMemoryAgentGraph:
             new_parent = updates.get("parent_id", node.parent_id)
             if new_parent != node.parent_id:
                 if new_parent is not None and new_parent not in self._nodes:
-                    raise ValueError(
-                        f"Parent '{new_parent}' does not exist"
-                    )
+                    raise ValueError(f"Parent '{new_parent}' does not exist")
                 # Cycle check: new parent must not be in this node's subtree
                 if new_parent is not None:
                     subtree_ids = {n for n in self._collect_subtree_ids(node_id)}
@@ -72,7 +75,9 @@ class InMemoryAgentGraph:
     async def snapshot(self) -> GraphSnapshot:
         nodes = tuple(self._nodes.values())
         edges = tuple(
-            GraphEdge(source_id=n.id, target_id=n.parent_id, edge_type=EdgeType.REPORTS_TO)
+            GraphEdge(
+                source_id=n.id, target_id=n.parent_id, edge_type=EdgeType.REPORTS_TO
+            )
             for n in nodes
             if n.parent_id is not None
         )

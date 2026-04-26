@@ -81,7 +81,9 @@ class TestDepositAdvisorWorkflow:
 class TestBudgetIntegration:
     """ToolBudget + ToolPolicy: byudzhet ogranichivaet calls."""
 
-    def test_budget_tracks_mcp_calls(self, policy: DefaultToolPolicy, budget: ToolBudget) -> None:
+    def test_budget_tracks_mcp_calls(
+        self, policy: DefaultToolPolicy, budget: ToolBudget
+    ) -> None:
         """Byudzhet schitaet MCP-calls otdelno."""
         state = _state(skills=["iss"])
 

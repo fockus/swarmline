@@ -40,7 +40,10 @@ class TestLlmSummaryGeneratorAsync:
 
         async def fake_llm(prompt: str, dialog: str) -> str:
             call_log.append((prompt, dialog))
-            return "Пользователь обсудил финансовый план. Доход 100к, цель 1.5м за 2 года." * 5
+            return (
+                "Пользователь обсудил финансовый план. Доход 100к, цель 1.5м за 2 года."
+                * 5
+            )
 
         gen = LlmSummaryGenerator(llm_call=fake_llm)
         result = await gen.asummarize(_make_messages(5))

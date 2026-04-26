@@ -61,7 +61,9 @@ class ToolSelector:
     If group_limits is set, limits each group.
     """
 
-    def __init__(self, config: ToolBudgetConfig | None = None, *, max_tools: int = 30) -> None:
+    def __init__(
+        self, config: ToolBudgetConfig | None = None, *, max_tools: int = 30
+    ) -> None:
         if config is not None:
             self._config = config
         else:

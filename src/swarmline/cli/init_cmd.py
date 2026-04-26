@@ -394,7 +394,9 @@ def _scaffold_project(
     if full:
         (project_dir / "config.yaml").write_text(_render(_CONFIG_YAML_FULL, **tpl_vars))
     else:
-        (project_dir / "config.yaml").write_text(_render(_CONFIG_YAML_MINIMAL, **tpl_vars))
+        (project_dir / "config.yaml").write_text(
+            _render(_CONFIG_YAML_MINIMAL, **tpl_vars)
+        )
 
     (project_dir / ".env.example").write_text(_render(_ENV_EXAMPLE, **tpl_vars))
     (project_dir / "pyproject.toml").write_text(_render(_PYPROJECT_TOML, **tpl_vars))
@@ -482,8 +484,7 @@ def init_command(
     if project_dir.exists():
         if not force:
             raise click.ClickException(
-                f"Directory '{project_dir}' already exists. "
-                "Use --force to overwrite."
+                f"Directory '{project_dir}' already exists. Use --force to overwrite."
             )
         shutil.rmtree(project_dir)
 
@@ -497,7 +498,9 @@ def init_command(
     )
 
     # Summary
-    click.echo(click.style(f"\n✓ Project '{name}' created at {project_dir}", fg="green"))
+    click.echo(
+        click.style(f"\n✓ Project '{name}' created at {project_dir}", fg="green")
+    )
     click.echo("\nNext steps:")
     click.echo(f"  cd {name}")
     click.echo("  cp .env.example .env  # add your API key")

@@ -40,7 +40,10 @@ _SIMPLE_GRAPH = {
 
 
 async def _mock_runner(
-    agent_id: str, task_id: str, goal: str, prompt: str,
+    agent_id: str,
+    task_id: str,
+    goal: str,
+    prompt: str,
 ) -> str:
     return f"Result from {agent_id}: {goal}"
 
@@ -51,7 +54,6 @@ async def _mock_runner(
 
 
 class TestPipelineBuilder:
-
     async def test_minimal_build(self) -> None:
         pipeline = await (
             PipelineBuilder()
@@ -110,8 +112,7 @@ class TestPipelineBuilder:
     async def test_fluent_chain_returns_self(self) -> None:
         builder = PipelineBuilder()
         result = (
-            builder
-            .with_runner(_mock_runner)
+            builder.with_runner(_mock_runner)
             .add_phase("p1", "Phase 1", "goal")
             .with_budget(BudgetPolicy())
             .with_max_concurrent(3)
@@ -139,7 +140,6 @@ class TestPipelineBuilder:
 
 
 class TestPipelineRun:
-
     async def test_run_single_phase(self) -> None:
         pipeline = await (
             PipelineBuilder()
@@ -229,6 +229,7 @@ class TestPipelineRun:
         )
         # Manually exhaust budget
         from swarmline.pipeline.types import CostRecord
+
         pipeline._budget.record(CostRecord(agent_id="a1", task_id="t0", cost_usd=1.0))
 
         result = await pipeline.run("Test goal")
@@ -242,7 +243,6 @@ class TestPipelineRun:
 
 
 class TestPipelineRunner:
-
     async def test_runner_run_all(self) -> None:
         pipeline = await (
             PipelineBuilder()

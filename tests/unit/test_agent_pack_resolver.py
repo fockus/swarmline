@@ -17,7 +17,9 @@ def _write_pack(root: Path) -> Path:
     (root / "prompts" / "identity.md").write_text("Identity", encoding="utf-8")
     (root / "prompts" / "guardrails.md").write_text("Guardrails", encoding="utf-8")
     (root / "prompts" / "roles" / "analyst.md").write_text("Role", encoding="utf-8")
-    (root / "skills" / "analysis" / "INSTRUCTION.md").write_text("Skill", encoding="utf-8")
+    (root / "skills" / "analysis" / "INSTRUCTION.md").write_text(
+        "Skill", encoding="utf-8"
+    )
     (root / "resources" / "rubric.md").write_text("Rubric", encoding="utf-8")
     (root / "prompts" / "service.md").write_text("Service", encoding="utf-8")
 
@@ -42,7 +44,9 @@ def _write_pack(root: Path) -> Path:
 
 
 class TestAgentPackResolver:
-    def test_resolves_legacy_manifest_layers_services_and_resources(self, tmp_path: Path) -> None:
+    def test_resolves_legacy_manifest_layers_services_and_resources(
+        self, tmp_path: Path
+    ) -> None:
         manifest_path = _write_pack(tmp_path)
 
         pack = AgentPackResolver(tmp_path).load(manifest_path)
@@ -55,13 +59,21 @@ class TestAgentPackResolver:
         assert pack.services["healing"].content == "Service"
         assert pack.resources["rubric"].content == "Rubric"
 
-    def test_render_prompt_preserves_layer_order_and_adds_service(self, tmp_path: Path) -> None:
+    def test_render_prompt_preserves_layer_order_and_adds_service(
+        self, tmp_path: Path
+    ) -> None:
         manifest_path = _write_pack(tmp_path)
         pack = AgentPackResolver(tmp_path).load(manifest_path)
 
         prompt = pack.render_prompt(service="healing")
 
-        assert prompt.split("\n\n") == ["Identity", "Guardrails", "Role", "Skill", "Service"]
+        assert prompt.split("\n\n") == [
+            "Identity",
+            "Guardrails",
+            "Role",
+            "Skill",
+            "Service",
+        ]
 
     def test_generic_layers_manifest_is_supported(self, tmp_path: Path) -> None:
         (tmp_path / "layers").mkdir()

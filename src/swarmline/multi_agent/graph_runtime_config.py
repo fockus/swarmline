@@ -12,7 +12,9 @@ class GraphRuntimeResolver:
     Falls back to default config if no ancestor has a config.
     """
 
-    def __init__(self, graph_query: Any, default_config: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, graph_query: Any, default_config: dict[str, Any] | None = None
+    ) -> None:
         self._graph = graph_query
         self._default = default_config or {}
 

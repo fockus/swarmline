@@ -29,11 +29,11 @@ def resolve_mcp_server_url(
 ) -> str | None:
     """Resolve server_id to URL string from a servers mapping.
 
-  Supports:
-  - str values (used as-is)
-  - Objects with a `URL` attribute (MCPServerSpec-like)
-  - None / missing -> None
-  """
+    Supports:
+    - str values (used as-is)
+    - Objects with a `URL` attribute (MCPServerSpec-like)
+    - None / missing -> None
+    """
     server = servers.get(server_id)
     if server is None:
         return None
@@ -76,9 +76,9 @@ def _validated_server_url(
 def parse_mcp_tool_name(tool_name: str) -> tuple[str, str] | None:
     """Parse 'MCP__server__tool' into (server_id, remote_tool_name).
 
-  Returns None if the format is invalid.
-  Format: MCP__{server_id}__{tool_name} where both parts are non-empty.
-  """
+    Returns None if the format is invalid.
+    Format: MCP__{server_id}__{tool_name} where both parts are non-empty.
+    """
     parts = tool_name.split("__", 2)
     if len(parts) != 3 or parts[0] != "mcp" or not parts[1] or not parts[2]:
         return None
@@ -152,7 +152,11 @@ class McpClient:
         """List tools."""
         now = time.monotonic()
         cached = self._tools_cache.get(server_url)
-        if not force_refresh and cached is not None and (now - cached[0]) < self._tools_cache_ttl:
+        if (
+            not force_refresh
+            and cached is not None
+            and (now - cached[0]) < self._tools_cache_ttl
+        ):
             return cached[1]
 
         payload = {
@@ -162,7 +166,9 @@ class McpClient:
             "params": {},
         }
 
-        timeout_value = request_timeout if request_timeout is not None else self._timeout
+        timeout_value = (
+            request_timeout if request_timeout is not None else self._timeout
+        )
 
         try:
             async with httpx.AsyncClient(timeout=timeout_value) as client:
@@ -208,9 +214,13 @@ class McpClient:
             name = str(item.get("name", "")).strip()
             if not name:
                 continue
-            description = str(item.get("description", "")).strip() or f"MCP tool: {name}"
+            description = (
+                str(item.get("description", "")).strip() or f"MCP tool: {name}"
+            )
             parameters = (
-                item.get("input_schema") or item.get("inputSchema") or item.get("parameters")
+                item.get("input_schema")
+                or item.get("inputSchema")
+                or item.get("parameters")
             )
             if not isinstance(parameters, dict):
                 parameters = {"type": "object"}

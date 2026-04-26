@@ -53,7 +53,17 @@ async def exec_code(
         }
 
     # Restricted environment — inherit PATH (for pyenv etc.) but strip secrets
-    _secret_prefixes = ("AWS_", "AZURE_", "GCP_", "OPENAI_", "ANTHROPIC_", "API_KEY", "SECRET", "TOKEN", "PASSWORD")
+    _secret_prefixes = (
+        "AWS_",
+        "AZURE_",
+        "GCP_",
+        "OPENAI_",
+        "ANTHROPIC_",
+        "API_KEY",
+        "SECRET",
+        "TOKEN",
+        "PASSWORD",
+    )
     safe_env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/local/bin"),
         "HOME": tempfile.gettempdir(),

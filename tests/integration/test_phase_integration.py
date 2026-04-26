@@ -62,6 +62,7 @@ class TestCrossFeatureIntegration:
 
     async def test_hooks_and_commands_interact(self) -> None:
         """UserPromptSubmit hook transforms text, then command intercept handles it."""
+
         # Hook: transform "greet" -> "/help"
         async def transform(**kwargs: Any) -> str:
             prompt = kwargs.get("prompt", "")
@@ -81,7 +82,9 @@ class TestCrossFeatureIntegration:
 
         llm = MockLLM([])
         runtime = ThinRuntime(
-            llm_call=llm, hook_registry=hook_reg, command_registry=cmd_reg,
+            llm_call=llm,
+            hook_registry=hook_reg,
+            command_registry=cmd_reg,
         )
 
         events = await _collect(runtime, "greet")
@@ -147,7 +150,9 @@ class TestCrossFeatureIntegration:
 
         llm = MockLLM([_final_text("LLM handled /unknown")])
         runtime = ThinRuntime(
-            llm_call=llm, hook_registry=hook_reg, command_registry=cmd_reg,
+            llm_call=llm,
+            hook_registry=hook_reg,
+            command_registry=cmd_reg,
         )
 
         events = await _collect(runtime, "/unknown_cmd")

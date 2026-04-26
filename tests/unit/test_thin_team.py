@@ -9,7 +9,10 @@ import json
 from datetime import UTC, datetime
 
 from swarmline.orchestration.subagent_types import SubagentSpec
-from swarmline.orchestration.team_protocol import ResumableTeamOrchestrator, TeamOrchestrator
+from swarmline.orchestration.team_protocol import (
+    ResumableTeamOrchestrator,
+    TeamOrchestrator,
+)
 from swarmline.orchestration.team_types import TeamConfig, TeamMessage
 
 
@@ -89,7 +92,8 @@ class TestThinTeamStatusAggregated:
         assert status.team_id == team_id
         # Vse workers completed -> team completed
         all_done = all(
-            w.state in ("completed", "failed", "cancelled") for w in status.workers.values()
+            w.state in ("completed", "failed", "cancelled")
+            for w in status.workers.values()
         )
         if all_done:
             assert status.state == "completed"
@@ -161,7 +165,9 @@ class TestThinTeamLeadPromptComposed:
 
         captured_prompts: list[str] = []
 
-        async def capturing_llm(messages: list[dict], system_prompt: str, **kwargs) -> str:
+        async def capturing_llm(
+            messages: list[dict], system_prompt: str, **kwargs
+        ) -> str:
             captured_prompts.append(system_prompt)
             return json.dumps({"type": "final", "final_message": "done"})
 

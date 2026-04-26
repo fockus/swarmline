@@ -59,7 +59,9 @@ def load_mcp_from_settings(project_root: Path) -> dict[str, McpServerSpec]:
                     allow_insecure_http=cfg.get("allow_insecure_http", False),
                 )
         except (json.JSONDecodeError, OSError) as exc:
-            _log.warning("settings_parse_error", path=str(settings_path), error=str(exc))
+            _log.warning(
+                "settings_parse_error", path=str(settings_path), error=str(exc)
+            )
             continue
 
     return servers
@@ -279,7 +281,9 @@ class YamlSkillLoader:
 
             # Markdown body = instruction_md
         """
-        safe_skill_md = self._resolve_project_file(skill_md_file, event="skill_md_unsafe")
+        safe_skill_md = self._resolve_project_file(
+            skill_md_file, event="skill_md_unsafe"
+        )
         if safe_skill_md is None:
             return None
 

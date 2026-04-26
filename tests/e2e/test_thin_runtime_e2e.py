@@ -75,7 +75,9 @@ class MockSandbox:
 
     async def execute(self, command: str) -> ExecutionResult:
         self._commands.append(command)
-        return ExecutionResult(stdout=f"executed: {command}", stderr="", exit_code=0, timed_out=False)
+        return ExecutionResult(
+            stdout=f"executed: {command}", stderr="", exit_code=0, timed_out=False
+        )
 
     async def list_dir(self, path: str = ".") -> list[str]:
         return list(self._files.keys())
@@ -84,7 +86,9 @@ class MockSandbox:
         return [p for p in self._files.keys() if p.endswith(pattern.replace("*", ""))]
 
 
-async def _collect_events(runtime: ThinRuntime, **run_kwargs: Any) -> list[RuntimeEvent]:
+async def _collect_events(
+    runtime: ThinRuntime, **run_kwargs: Any
+) -> list[RuntimeEvent]:
     """Collect vse RuntimeEvent from stream."""
     events: list[RuntimeEvent] = []
     async for event in runtime.run(**run_kwargs):
@@ -104,8 +108,8 @@ class TestThinConversationalE2E:
     async def test_thin_conversational_full_cycle(self) -> None:
         """Agent(runtime="thin") -> query("What is 2+2?") -> result.text contains answer.
 
-    Fake LLM returns JSON envelope {"type": "final", "final_message": "4"}.
-    """
+        Fake LLM returns JSON envelope {"type": "final", "final_message": "4"}.
+        """
         call_count = 0
 
         async def fake_llm(
@@ -148,7 +152,7 @@ class TestThinReactE2E:
 
     @pytest.mark.asyncio
     async def test_thin_react_with_tool_call_cycle(self) -> None:
-        """Agent + calculate tool -> LLM vyzyvaet tool -> tool executes -> final. Verify full tsikl: tool_call_started, tool_call_finished, final. """
+        """Agent + calculate tool -> LLM vyzyvaet tool -> tool executes -> final. Verify full tsikl: tool_call_started, tool_call_finished, final."""
         tool_called = False
         call_sequence: list[str] = []
 
@@ -182,7 +186,10 @@ class TestThinReactE2E:
         calc_spec = ToolSpec(
             name="calculate",
             description="Multiply two numbers",
-            parameters={"type": "object", "properties": {"a": {"type": "number"}, "b": {"type": "number"}}},
+            parameters={
+                "type": "object",
+                "properties": {"a": {"type": "number"}, "b": {"type": "number"}},
+            },
             is_local=True,
         )
 
@@ -229,7 +236,7 @@ class TestThinPlannerE2E:
 
     @pytest.mark.asyncio
     async def test_thin_planner_multi_step_cycle(self) -> None:
-        """LLM returns PlanSchema with 2 stepami -> executes each -> assembly. Verify: result.text contains results oboih stepov. """
+        """LLM returns PlanSchema with 2 stepami -> executes each -> assembly. Verify: result.text contains results oboih stepov."""
         llm_call_count = 0
 
         async def fake_llm(
@@ -265,7 +272,9 @@ class TestThinPlannerE2E:
 
             # Vyzov 2: step 1 (conversational) -> result
             if llm_call_count == 2:
-                return _final_envelope("AI research findings: transformers are powerful")
+                return _final_envelope(
+                    "AI research findings: transformers are powerful"
+                )
 
             # Vyzov 3: step 2 (conversational) -> result
             if llm_call_count == 3:
@@ -298,7 +307,9 @@ class TestThinPlannerE2E:
 
         # Finalnyy tekst contains oba resulta
         final = next(e for e in events if e.type == "final")
-        assert "transformer" in final.data["text"].lower(), "Финал содержит результаты шагов"
+        assert "transformer" in final.data["text"].lower(), (
+            "Финал содержит результаты шагов"
+        )
 
         # LLM byla vyzvana minimum 4 raza (plan + 2 stepa + assembly)
         assert llm_call_count >= 4
@@ -370,7 +381,7 @@ class TestThinStreamingE2E:
 
     @pytest.mark.asyncio
     async def test_thin_streaming_token_level(self) -> None:
-        """Agent.stream() -> collect events -> multiple assistant_delta events. Fake LLM supports streaming (returns AsyncIterator). """
+        """Agent.stream() -> collect events -> multiple assistant_delta events. Fake LLM supports streaming (returns AsyncIterator)."""
 
         async def fake_llm_streaming(
             messages: list[dict[str, str]], system_prompt: str, **kwargs: Any

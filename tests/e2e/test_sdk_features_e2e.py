@@ -113,7 +113,7 @@ class TestE2EHookSecurityGuard:
 
     @pytest.mark.asyncio
     async def test_hook_blocks_dangerous_command_end_to_end(self) -> None:
-        """Full tsikl: hook registration -> bridge -> options -> callback execution. Scenario: 1. User registers PreToolUse hook cherez HookRegistry 2. Bridge converts in SDK format 3. Options are assembled with hooks 4. Pri vyzove Bash with 'rm -rf' hook returns block """
+        """Full tsikl: hook registration -> bridge -> options -> callback execution. Scenario: 1. User registers PreToolUse hook cherez HookRegistry 2. Bridge converts in SDK format 3. Options are assembled with hooks 4. Pri vyzove Bash with 'rm -rf' hook returns block"""
         # Step 1: Register hook
         registry = HookRegistry()
         blocked_commands: list[str] = []
@@ -190,10 +190,12 @@ class TestE2EMcpToolFlow:
     """Scenario: create MCP tool -> collect options -> runtime strimit tool usage."""
 
     def test_mcp_tool_to_options_to_runtime_setup(self) -> None:
-        """Full tsikl: @mcp_tool -> create_mcp_server -> options. Verifies chto in-process MCP tool pofails in options and mozhet byt ispolzovan runtime'om. """
+        """Full tsikl: @mcp_tool -> create_mcp_server -> options. Verifies chto in-process MCP tool pofails in options and mozhet byt ispolzovan runtime'om."""
 
         @mcp_tool(
-            "calculate_goal", "Calculate financial goal plan", {"target": float, "years": int}
+            "calculate_goal",
+            "Calculate financial goal plan",
+            {"target": float, "years": int},
         )
         async def calculate_goal(args: dict[str, Any]) -> dict[str, Any]:
             target = args["target"]
@@ -226,7 +228,11 @@ class TestE2EMcpToolFlow:
     async def test_mcp_tool_handler_execution(self) -> None:
         """MCP tool handler vyzyvaetsya and returns correct result."""
 
-        @mcp_tool("assess_health", "Assess financial health", {"income": float, "expenses": float})
+        @mcp_tool(
+            "assess_health",
+            "Assess financial health",
+            {"income": float, "expenses": float},
+        )
         async def assess_health(args: dict[str, Any]) -> dict[str, Any]:
             ratio = args["expenses"] / args["income"] if args["income"] > 0 else 1.0
             score = max(0, int((1 - ratio) * 100))
@@ -249,7 +255,11 @@ class TestE2EStructuredOutput:
     @pytest.mark.asyncio
     async def test_structured_output_end_to_end(self) -> None:
         """Full tsikl: output_format in options -> ResultMessage.structured_output -> QueryResult."""
-        structured_data = {"diagnosis": "healthy", "score": 85, "recommendations": ["save more"]}
+        structured_data = {
+            "diagnosis": "healthy",
+            "score": 85,
+            "recommendations": ["save more"],
+        }
 
         async def fake_query(**kwargs):
             yield _mock_assistant_msg([_mock_text_block("Analysis complete")])
@@ -267,7 +277,10 @@ class TestE2EStructuredOutput:
                         "properties": {
                             "diagnosis": {"type": "string"},
                             "score": {"type": "number"},
-                            "recommendations": {"type": "array", "items": {"type": "string"}},
+                            "recommendations": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
                         },
                     },
                 },
@@ -348,7 +361,7 @@ class TestE2EMultiTurnWithMetrics:
 
     @pytest.mark.asyncio
     async def test_full_turn_with_thinking_tools_and_metrics(self) -> None:
-        """Turn: thinking -> tool call -> tool result -> text -> metrics. Verifies ves pipeline cherez ClaudeCodeRuntime: 1. ThinkingBlock - logiruetsya, not strimitsya 2. ToolUseBlock -> tool_call_started event 3. ToolResultBlock -> tool_call_finished event 4. TextBlock -> assistant_delta event 5. ResultMessage -> metrics in final event """
+        """Turn: thinking -> tool call -> tool result -> text -> metrics. Verifies ves pipeline cherez ClaudeCodeRuntime: 1. ThinkingBlock - logiruetsya, not strimitsya 2. ToolUseBlock -> tool_call_started event 3. ToolResultBlock -> tool_call_finished event 4. TextBlock -> assistant_delta event 5. ResultMessage -> metrics in final event"""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -356,7 +369,9 @@ class TestE2EMultiTurnWithMetrics:
             yield _mock_assistant_msg(
                 [
                     _mock_thinking_block("Let me analyze the deposits..."),
-                    _mock_tool_use_block("mcp__finuslugi__get_deposits", {"min_rate": 15}),
+                    _mock_tool_use_block(
+                        "mcp__finuslugi__get_deposits", {"min_rate": 15}
+                    ),
                     _mock_tool_result_block("Found 5 deposits with rate >= 15%"),
                     _mock_text_block("Я нашёл 5 вкладов с доходностью от 15%."),
                 ]

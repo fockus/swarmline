@@ -19,7 +19,13 @@ from swarmline.memory._shared import (
     json_load_value,
     merge_scoped_facts,
 )
-from swarmline.memory.types import GoalState, MemoryMessage, PhaseState, ToolEvent, UserProfile
+from swarmline.memory.types import (
+    GoalState,
+    MemoryMessage,
+    PhaseState,
+    ToolEvent,
+    UserProfile,
+)
 
 _USER_ID_SUB = "(SELECT id FROM users WHERE external_id = :user_id)"
 _SQLITE_EXISTING_SOURCE_PRIORITY = (
@@ -106,7 +112,9 @@ class SQLiteMemoryProvider:
             )
             try:
                 await session.execute(rich_insert, rich_params)
-            except Exception as exc:  # pragma: no cover - defensive DB compatibility path
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - defensive DB compatibility path
                 if not _is_missing_message_column_error(exc):
                     raise
                 await session.rollback()
@@ -132,7 +140,9 @@ class SQLiteMemoryProvider:
             )
             try:
                 result = await session.execute(rich_select, params)
-            except Exception as exc:  # pragma: no cover - defensive DB compatibility path
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - defensive DB compatibility path
                 if not _is_missing_message_column_error(exc):
                     raise
                 result = await session.execute(
@@ -155,7 +165,9 @@ class SQLiteMemoryProvider:
                 name=_optional_text(getattr(row, "name", None)),
                 tool_calls=_load_json_or_none(row.tool_calls),
                 metadata=_load_json_dict_or_none(getattr(row, "metadata", None)),
-                content_blocks=_load_json_list_of_dicts_or_none(getattr(row, "content_blocks", None)),
+                content_blocks=_load_json_list_of_dicts_or_none(
+                    getattr(row, "content_blocks", None)
+                ),
             )
             for row in reversed(rows)
         ]
@@ -177,7 +189,9 @@ class SQLiteMemoryProvider:
                 return 0
             return int(row.cnt)
 
-    async def delete_messages_before(self, user_id: str, topic_id: str, keep_last: int = 10) -> int:
+    async def delete_messages_before(
+        self, user_id: str, topic_id: str, keep_last: int = 10
+    ) -> int:
         async with self._session(commit=True) as session:
             result = await session.execute(
                 text(
@@ -262,7 +276,9 @@ class SQLiteMemoryProvider:
                     },
                 )
 
-    async def get_facts(self, user_id: str, topic_id: str | None = None) -> dict[str, Any]:
+    async def get_facts(
+        self, user_id: str, topic_id: str | None = None
+    ) -> dict[str, Any]:
         async with self._session() as session:
             if topic_id:
                 result = await session.execute(
@@ -468,7 +484,9 @@ class SQLiteMemoryProvider:
                 },
             )
 
-    async def get_session_state(self, user_id: str, topic_id: str) -> dict[str, Any] | None:
+    async def get_session_state(
+        self, user_id: str, topic_id: str
+    ) -> dict[str, Any] | None:
         async with self._session() as session:
             result = await session.execute(
                 text(
@@ -610,20 +628,19 @@ def _load_json_list_of_dicts_or_none(raw: Any) -> list[dict[str, Any]] | None:
 def _is_missing_message_column_error(exc: Exception) -> bool:
     messages = [str(exc), str(getattr(exc, "orig", ""))]
     normalized = " ".join(messages).lower()
-    return (
-        "messages" in normalized
-        and (
-            "no such column" in normalized
-            or "has no column named" in normalized
-            or "column does not exist" in normalized
-        )
+    return "messages" in normalized and (
+        "no such column" in normalized
+        or "has no column named" in normalized
+        or "column does not exist" in normalized
     )
 
 
 async def _migrate_sqlite_messages_columns(session: AsyncSession) -> None:
     for column, sql_type in _SQLITE_RICH_MESSAGE_COLUMNS:
         try:
-            await session.execute(text(f"ALTER TABLE messages ADD COLUMN {column} {sql_type}"))
+            await session.execute(
+                text(f"ALTER TABLE messages ADD COLUMN {column} {sql_type}")
+            )
         except Exception as exc:  # pragma: no cover - depends on existing schema state
             normalized = f"{exc} {getattr(exc, 'orig', '')}".lower()
             if "duplicate column name" in normalized:
