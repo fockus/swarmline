@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
-    from swarmline.runtime.types import ModelRequestOptions, StructuredMode
+    from swarmline.runtime.types import ModelRequestOptions, StructuredMode, ThinkingConfig
     from swarmline.runtime.thin.coding_profile import CodingProfileConfig
     from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
 
@@ -75,9 +75,13 @@ class AgentConfig:
     # SDK-specific (claude_sdk runtime only)
     betas: tuple[str, ...] = ()
     sandbox: dict[str, Any] | None = None
-    thinking: dict[str, Any] | None = (
-        None  # {"type": "enabled", "budget_tokens": N} | {"type": "adaptive"} | {"type": "disabled"}
-    )
+    # Extended thinking. Accepts either:
+    #   - a typed dataclass: ThinkingConfigEnabled / ThinkingConfigAdaptive / ThinkingConfigDisabled
+    #   - a dict (deprecated, auto-converted in __post_init__):
+    #       {"type": "enabled", "budget_tokens": N}
+    #       {"type": "adaptive"}
+    #       {"type": "disabled"}
+    thinking: dict[str, Any] | ThinkingConfig | None = None
     max_thinking_tokens: int | None = None  # Deprecated: use thinking instead
     fallback_model: str | None = None
     permission_mode: str = "bypassPermissions"
@@ -105,6 +109,26 @@ class AgentConfig:
     def __post_init__(self) -> None:
         if not self.system_prompt or not self.system_prompt.strip():
             raise ValueError("system_prompt must not be empty")
+
+        # Accept both dict (deprecated) and the typed ThinkingConfig dataclass.
+        # Internally we always store the dict form, which downstream consumers
+        # (claude_sdk adapter, options_builder, ThinRuntime) already handle.
+        from swarmline.runtime.types import ThinkingConfig as _ThinkingConfig
+
+        if isinstance(self.thinking, _ThinkingConfig):
+            object.__setattr__(
+                self,
+                "thinking",
+                {"type": "enabled", "budget_tokens": self.thinking.budget_tokens},
+            )
+        elif isinstance(self.thinking, dict):
+            warnings.warn(
+                "AgentConfig(thinking=<dict>) is deprecated; pass the typed "
+                "swarmline.runtime.types.ThinkingConfig dataclass instead. "
+                "The dict form will be removed in a future release.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     @property
     def resolved_model(self) -> str:

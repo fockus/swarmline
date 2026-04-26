@@ -7,7 +7,10 @@ from collections.abc import AsyncIterator
 from typing import Any, Callable, cast
 
 from swarmline.agent.config import AgentConfig
-from swarmline.agent.runtime_factory_port import RuntimeFactoryPort, build_runtime_factory
+from swarmline.agent.runtime_factory_port import (
+    RuntimeFactoryPort,
+    build_runtime_factory,
+)
 from swarmline.runtime.types import Message
 
 logger = logging.getLogger(__name__)
@@ -160,12 +163,16 @@ async def create_claude_conversation_adapter(
         ),
         betas=cast(Any, list(config.betas) if config.betas else None),
         max_budget_usd=config.max_budget_usd,
-        thinking=config.thinking,
+        # AgentConfig.__post_init__ normalises ThinkingConfig dataclass → dict,
+        # so by the time we read this it's always dict[str, Any] | None.
+        thinking=cast("dict[str, Any] | None", config.thinking),
         max_thinking_tokens=config.max_thinking_tokens,
         fallback_model=config.fallback_model,
         sandbox=cast(Any, config.sandbox),
         env=dict(config.env) if config.env else None,
-        include_partial_messages=bool(config.native_config.get("include_partial_messages")),
+        include_partial_messages=bool(
+            config.native_config.get("include_partial_messages")
+        ),
     )
 
     adapter = RuntimeAdapter(opts)
@@ -217,6 +224,7 @@ async def run_portable_runtime(
 
 def _adapt_handler(handler: Any) -> Any:
     """Adapt a user handler to the SDK MCP handler contract."""
+
     async def adapted(args: dict[str, Any]) -> dict[str, Any]:
         try:
             result = await handler(**args)

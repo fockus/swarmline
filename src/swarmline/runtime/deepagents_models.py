@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
+from swarmline.errors import SwarmlineError
 from swarmline.runtime.model_registry import get_registry
 from swarmline.runtime.types import RuntimeErrorData, resolve_model_name
 
@@ -38,7 +39,7 @@ class DeepAgentsResolvedModel:
     provider: str
 
 
-class DeepAgentsModelError(RuntimeError):
+class DeepAgentsModelError(SwarmlineError, RuntimeError):
     """Typed error for provider/model resolution."""
 
     def __init__(self, error: RuntimeErrorData) -> None:
@@ -60,7 +61,8 @@ def _parse_prefixed_model(raw_model: str | None) -> tuple[str | None, str | None
             RuntimeErrorData(
                 kind="capability_unsupported",
                 message=(
-                    "DeepAgents runtime не поддерживает provider " f"'{raw_provider.strip()}'."
+                    "DeepAgents runtime не поддерживает provider "
+                    f"'{raw_provider.strip()}'."
                 ),
                 recoverable=False,
                 details={"provider": raw_provider.strip().lower()},
@@ -151,10 +153,14 @@ def build_deepagents_chat_model(
                 RuntimeErrorData(
                     kind="capability_unsupported",
                     message=(
-                        "DeepAgents google provider path не поддерживает " "base_url override."
+                        "DeepAgents google provider path не поддерживает "
+                        "base_url override."
                     ),
                     recoverable=False,
-                    details={"provider": resolved.provider, "model": resolved.model_name},
+                    details={
+                        "provider": resolved.provider,
+                        "model": resolved.model_name,
+                    },
                 )
             )
     model_class = _load_provider_class(resolved.provider)

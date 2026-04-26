@@ -14,6 +14,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
+from swarmline.errors import SwarmlineError
 from swarmline.a2a.types import (
     AgentCard,
     Message,
@@ -175,7 +176,7 @@ class A2AClient:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
-                        data_str = line[len("data: "):]
+                        data_str = line[len("data: ") :]
                         try:
                             data = json.loads(data_str)
                             yield TaskStatusUpdateEvent(**data)
@@ -253,5 +254,5 @@ class A2AClient:
         return Task(**body.get("result", {}))
 
 
-class A2AClientError(Exception):
+class A2AClientError(SwarmlineError):
     """Error from an A2A remote agent."""

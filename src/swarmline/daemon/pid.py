@@ -6,8 +6,10 @@ import fcntl
 import os
 import tempfile
 
+from swarmline.errors import SwarmlineError
 
-class DaemonAlreadyRunningError(RuntimeError):
+
+class DaemonAlreadyRunningError(SwarmlineError, RuntimeError):
     """Raised when PID file indicates daemon is already running."""
 
     def __init__(self, pid: int) -> None:

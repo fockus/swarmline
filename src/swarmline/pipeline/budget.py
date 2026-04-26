@@ -5,10 +5,11 @@ from __future__ import annotations
 import time
 from typing import Any, Awaitable, Callable
 
+from swarmline.errors import SwarmlineError
 from swarmline.pipeline.types import BudgetPolicy, CostRecord
 
 
-class BudgetExceededError(RuntimeError):
+class BudgetExceededError(SwarmlineError, RuntimeError):
     """Raised when execution exceeds the configured budget."""
 
     def __init__(self, current: float, limit: float) -> None:
@@ -115,11 +116,15 @@ class BudgetTracker:
         tracker = self
 
         async def wrapped(
-            agent_id: str, task_id: str, goal: str, system_prompt: str,
+            agent_id: str,
+            task_id: str,
+            goal: str,
+            system_prompt: str,
         ) -> str:
             if tracker.is_exceeded():
                 raise BudgetExceededError(
-                    tracker.total_cost(), tracker._policy.max_total_usd or 0.0,
+                    tracker.total_cost(),
+                    tracker._policy.max_total_usd or 0.0,
                 )
             if tracker.is_agent_exceeded(agent_id):
                 raise BudgetExceededError(
@@ -132,13 +137,15 @@ class BudgetTracker:
             duration = time.monotonic() - start
 
             cost_usd = cost_extractor(result) if cost_extractor else 0.0
-            tracker.record(CostRecord(
-                agent_id=agent_id,
-                task_id=task_id,
-                phase_id=phase_id,
-                duration_seconds=duration,
-                cost_usd=cost_usd,
-            ))
+            tracker.record(
+                CostRecord(
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    phase_id=phase_id,
+                    duration_seconds=duration,
+                    cost_usd=cost_usd,
+                )
+            )
             return result
 
         return wrapped
@@ -155,12 +162,18 @@ class BudgetTracker:
             self._warned = True
             # Fire-and-forget — don't block on event bus
             import asyncio
+
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._bus.emit("pipeline.budget.warning", {
-                    "current_usd": self.total_cost(),
-                    "limit_usd": p.max_total_usd,
-                    "percent": pct,
-                }))
+                loop.create_task(
+                    self._bus.emit(
+                        "pipeline.budget.warning",
+                        {
+                            "current_usd": self.total_cost(),
+                            "limit_usd": p.max_total_usd,
+                            "percent": pct,
+                        },
+                    )
+                )
             except RuntimeError:
                 pass  # no running loop — skip warning event

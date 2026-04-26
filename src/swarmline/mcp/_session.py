@@ -12,13 +12,15 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import structlog
 
+from swarmline.errors import SwarmlineError
+
 if TYPE_CHECKING:
     from swarmline.agent import Agent, Result
 
 logger = structlog.get_logger(__name__)
 
 
-class HeadlessModeError(Exception):
+class HeadlessModeError(SwarmlineError):
     """Raised when a full-mode operation is attempted in headless mode."""
 
 

@@ -6,6 +6,7 @@ import json
 import re
 from typing import TYPE_CHECKING, Any
 
+from swarmline.errors import SwarmlineError
 from swarmline.hooks.registry import HookRegistry
 
 if TYPE_CHECKING:
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
     from swarmline.agent.result import Result
 
 
-class BudgetExceededError(RuntimeError):
+class BudgetExceededError(SwarmlineError, RuntimeError):
     """Budget exceeded (max_budget_usd)."""
 
 
@@ -104,7 +105,10 @@ class ToolOutputCompressor(Middleware):
 
     async def _compress_output(self, **kwargs: Any) -> dict[str, Any]:
         tool_result = kwargs.get("tool_result")
-        if not isinstance(tool_result, str) or len(tool_result) <= self.max_result_chars:
+        if (
+            not isinstance(tool_result, str)
+            or len(tool_result) <= self.max_result_chars
+        ):
             return {"continue_": True}
         compressed = self.compress(tool_result)
         return {"tool_result": compressed}

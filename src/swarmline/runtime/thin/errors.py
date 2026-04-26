@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from swarmline.errors import SwarmlineError
 from swarmline.runtime.types import RuntimeErrorData
 
 
-class ThinLlmError(RuntimeError):
+class ThinLlmError(SwarmlineError, RuntimeError):
     """Typed exception carrying RuntimeErrorData for ThinRuntime."""
 
     def __init__(self, error: RuntimeErrorData) -> None:

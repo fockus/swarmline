@@ -18,8 +18,10 @@ Usage::
 
 from __future__ import annotations
 
+from swarmline.errors import SwarmlineError
 
-class StructuredOutputError(Exception):
+
+class StructuredOutputError(SwarmlineError):
     """Raised when structured output validation fails after all retries.
 
     Attributes
@@ -30,7 +32,9 @@ class StructuredOutputError(Exception):
         Name of the expected Pydantic model type.
     """
 
-    def __init__(self, message: str, *, raw_text: str = "", output_type_name: str = "") -> None:
+    def __init__(
+        self, message: str, *, raw_text: str = "", output_type_name: str = ""
+    ) -> None:
         super().__init__(message)
         self.raw_text = raw_text
         self.output_type_name = output_type_name

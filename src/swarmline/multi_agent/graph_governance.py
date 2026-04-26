@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from swarmline.errors import SwarmlineError
 from swarmline.multi_agent.graph_types import AgentCapabilities
 
 
@@ -19,7 +20,7 @@ class GraphGovernanceConfig:
     allow_dynamic_delegation: bool = True
 
 
-class GovernanceError(Exception):
+class GovernanceError(SwarmlineError):
     """Raised when a governance check fails."""
 
     def __init__(self, message: str, *, action: str = "", agent_id: str = "") -> None:
@@ -119,13 +120,19 @@ def validate_capability_delegation(
     Empty parent tuple = all allowed (no restriction).
     Returns error message string if invalid, or None if valid.
     """
-    if parent.allowed_tools and not set(child_tools).issubset(set(parent.allowed_tools)):
+    if parent.allowed_tools and not set(child_tools).issubset(
+        set(parent.allowed_tools)
+    ):
         extra = set(child_tools) - set(parent.allowed_tools)
         return f"Child tools {extra} not in parent's allowed_tools"
     if parent.skills and not set(child_skills).issubset(set(parent.skills)):
         extra = set(child_skills) - set(parent.skills)
         return f"Child skills {extra} not in parent's skills"
-    if hasattr(parent, "hooks") and parent.hooks and not set(child_hooks).issubset(set(parent.hooks)):
+    if (
+        hasattr(parent, "hooks")
+        and parent.hooks
+        and not set(child_hooks).issubset(set(parent.hooks))
+    ):
         extra = set(child_hooks) - set(parent.hooks)
         return f"Child hooks {extra} not in parent's hooks"
     return None

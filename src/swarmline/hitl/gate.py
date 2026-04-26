@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from swarmline.errors import SwarmlineError
 from swarmline.hitl.types import ApprovalRequest, ApprovalResponse
 
 
-class ApprovalDeniedError(Exception):
+class ApprovalDeniedError(SwarmlineError):
     """Raised when a human denies an action."""
 
     def __init__(self, request: ApprovalRequest, response: ApprovalResponse) -> None:
