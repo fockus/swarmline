@@ -9,33 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (none yet)
 
-## [1.5.1] - 2026-04-27
+## [1.5.0] - 2026-04-25
 
-Security release closing six findings from the 2026-04-27 audit (2× P1, 4× P2). All fixes are TDD-first, atomic per stage, and gated through the full offline pytest suite (5532 passed) plus `ty check` (0 diagnostics) and `ruff check` (clean).
+This is a substantial release that brings ThinRuntime to feature parity with Claude Code's
+agent loop and adds two new runtime adapters, multimodal input, parallel agents, session
+resume, conversation compaction, and a typed thinking-events surface.
 
-### Security
+> **Pre-public-release security audit (added 2026-04-27).** Before the public sync to PyPI, a security review surfaced 6 findings (2× P1, 4× P2) which have been folded into v1.5.0. The full pytest gate is now **5532 passed** (was 5452 at initial tag), `ty check` 0 diagnostics, `ruff check` clean. See **Security audit closure** below for details.
+
+### Security audit closure (added 2026-04-27, pre-public-release)
 
 - **P1 — `path_safety` rejects `"."` and `".."` namespace segments.** Previously `SandboxConfig(user_id=".", topic_id="alice")` and `("alice", ".")` resolved to the same workspace path, breaking tenant isolation. Now both raise `ValueError`. Affects `tools/types.SandboxConfig`, `todo/fs_provider`, `memory_bank/fs_provider`.
 - **P1 — `pi_sdk` runtime applies an env allowlist (parity with CLI runtime).** The Node bridge previously inherited the full host environment (`OPENAI_API_KEY`, `AWS_*`, CI tokens). It now uses `DEFAULT_PI_SDK_ENV_ALLOWLIST` (`PATH`/`HOME`/Node + provider keys). Legacy behavior available via `PiSdkOptions(inherit_host_env=True)`. New `PiSdkOptions` fields: `inherit_host_env`, `env_allowlist`, `env`. Shared `runtime/_subprocess_env.build_subprocess_env()` helper used by both CLI and pi_sdk runtimes (DRY).
 - **P2 — `web_fetch` rejects non-HTTP schemes.** `file://`, `ftp://`, `data:`, `javascript:`, `gopher://`, `ssh://`, `smb://`, `ws[s]://` URLs previously passed `HttpxWebProvider._validate_url` and could reach delegated browser-capable fetch providers (Crawl4AI, Jina). Now blocked at validator entry; only `http`/`https` (case-insensitive) proceed.
 - **P2 — E2B sandbox resolves shell-wrapper denylist bypass.** `sh -c 'rm -rf /workspace'` previously bypassed `denied_commands={"rm"}` because the `rm` token sat inside a quoted argument. The provider now detects shell wrappers (`sh`/`bash`/`zsh`/`dash`/`ksh`/`fish`) and recursively re-parses the `-c` payload through the same denylist. Brings E2B to parity with Local/Docker/OpenShell. No behavioral change without an explicit denylist.
 - **P2 — Secret redaction for runtime/CLI/serve error messages.** Provider exceptions, CLI subprocess stderr, and HTTP 500 responses could include `Bearer` tokens, `sk-*` API keys (OpenAI, Anthropic), GitHub tokens (`ghp_`/`gho_`/`ghu_`/`ghs_`/`ghr_`), URL userinfo, and `KEY=value` env strings. New `observability/redaction.py` exposes `redact_secrets(text)` and `DEFAULT_SECRET_PATTERNS`; applied at `provider_runtime_crash`, CLI runtime stderr decode, and `/v1/query` 500 path. `JsonlTelemetrySink` now sources the same pattern set (DRY — single source of truth instead of two near-duplicate regex tuples).
-
-### Breaking
-
-- **`serve.create_app(allow_unauthenticated_query=True)` now requires an explicit `host=` argument.** v1.5.0 logged a deprecation warning when `host=None` and silently accepted the call; combined with `uvicorn --host 0.0.0.0` an operator could expose unauthenticated `/v1/query` publicly (audit P2 #5). v1.5.1 raises `ValueError` instead.
-  - **Migration:** `create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1")` for local-only mode, or pass `auth_token=` for production. Empty-string host is treated as missing (also raises).
-
-### Internal
-
-- TDD-first execution: 76 new tests across 6 atomic stages (path_safety 14, pi_sdk env 8, web schemes 19, E2B wrappers 11, redaction 27, serve loopback +2/-1 net). No regressions in 5452 v1.5.0 baseline.
-- Plan: [`.memory-bank/plans/2026-04-27_fix_security-audit.md`](.memory-bank/plans/2026-04-27_fix_security-audit.md).
-
-## [1.5.0] - 2026-04-25
-
-This is a substantial release that brings ThinRuntime to feature parity with Claude Code's
-agent loop and adds two new runtime adapters, multimodal input, parallel agents, session
-resume, conversation compaction, and a typed thinking-events surface.
+- **P2 — `serve.create_app(allow_unauthenticated_query=True)` now requires an explicit `host=` argument.** The earlier v1.5.0 path (logged a deprecation warning when `host=None` and silently accepted the call) could combine with `uvicorn --host 0.0.0.0` to expose unauthenticated `/v1/query` publicly. The host argument is now mandatory; passing `host=None` or `host=""` raises `ValueError`. **Migration:** `create_app(agent, allow_unauthenticated_query=True, host="127.0.0.1")` for local-only mode, or pass `auth_token=` for production.
+- **Test additions:** 80 new tests across 6 atomic stages (path_safety 14, pi_sdk env 8, web schemes 19, E2B wrappers 11, redaction 27, serve loopback +2/-1 net). Plan: [`.memory-bank/plans/2026-04-27_fix_security-audit.md`](.memory-bank/plans/2026-04-27_fix_security-audit.md).
 
 ### Added
 
