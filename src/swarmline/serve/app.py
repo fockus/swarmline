@@ -15,7 +15,7 @@ from starlette.routing import Route
 from swarmline.network_safety import is_loopback_host
 from swarmline.observability.security import log_security_decision
 
-_VERSION = "1.4.0"
+_VERSION = "1.5.0"
 _log = structlog.get_logger(component="serve")
 
 
