@@ -384,3 +384,87 @@
 ⬜ S6: task tracking при shutdown
 ⬜ S12: dataclasses.replace() вместо manual construction
 ⬜ S15: [nats]/[redis] extras в pyproject.toml
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 1: CI lint cleanup — `ruff check --fix && ruff format`
+- ⬜ CI lint cleanup — `ruff check --fix && ruff format`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 2: Default runtime fix — `claude_sdk` → `thin`
+- ⬜ Default runtime fix — `claude_sdk` → `thin`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 3: Russian error string fix
+- ⬜ Russian error string fix
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 4: Docs lie fix — `agent-facade.md:36`
+- ⬜ Docs lie fix — `agent-facade.md:36`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 5: Test isolation fix — drop `force=True`, route stdlib logging to stderr
+- ⬜ Test isolation fix — drop `force=True`, route stdlib logging to stderr
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 6: JsonlTelemetrySink async fix — wrap I/O in `asyncio.to_thread()` + add lock
+- ⬜ JsonlTelemetrySink async fix — wrap I/O in `asyncio.to_thread()` + add lock
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 7: Drop Python 3.10 from `publish.yml` matrix
+- ⬜ Drop Python 3.10 from `publish.yml` matrix
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 8: Update CLAUDE.md / AGENTS.md to Python 3.11+
+- ⬜ Update CLAUDE.md / AGENTS.md to Python 3.11+
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 9: Bump version to 1.5.0
+- ⬜ Bump version to 1.5.0
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 10: CHANGELOG.md `[1.5.0]` entry
+- ⬜ CHANGELOG.md `[1.5.0]` entry
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 11: Migration guide v1.4 → v1.5
+- ⬜ Migration guide v1.4 → v1.5
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 12: Feature docs for new v1.5.0 features
+- ⬜ Feature docs for new v1.5.0 features
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 13: Add `examples/00_hello_world.py` — 10-line minimal example
+- ⬜ Add `examples/00_hello_world.py` — 10-line minimal example
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 14: Trim `swarmline/__init__.py __all__`
+- ⬜ Trim `swarmline/__init__.py __all__`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 15: Add `SwarmlineError` base exception class
+- ⬜ Add `SwarmlineError` base exception class
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 16: Move `_MockBasicsRuntime` to `swarmline.testing.MockRuntime`
+- ⬜ Move `_MockBasicsRuntime` to `swarmline.testing.MockRuntime`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 17: Promote `AgentConfig.thinking: dict` → `ThinkingConfig` typed
+- ⬜ Promote `AgentConfig.thinking: dict` → `ThinkingConfig` typed
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 18: Remove deprecated `max_thinking_tokens`
+- ⬜ Remove deprecated `max_thinking_tokens`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 19: M-1 fix — enforce loopback host in `serve.create_app(allow_unauthenticated_query=True)`
+- ⬜ M-1 fix — enforce loopback host in `serve.create_app(allow_unauthenticated_query=True)`
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 20: M-3 fix — extend `JsonlTelemetrySink` redaction (key + value-level regex)
+- ⬜ M-3 fix — extend `JsonlTelemetrySink` redaction (key + value-level regex)
+
+<!-- mb-plan:2026-04-25_fix_v150-release-blockers.md -->
+## Stage 21: Add `pip-audit` to CI
+- ⬜ Add `pip-audit` to CI

@@ -145,6 +145,7 @@
 
 <!-- mb-active-plans -->
 _No active plans — Sprint 1B (Phase 01b) closed 2026-04-25, baseline=0 locked. Next: v1.5.0 release branch._
+- [2026-04-25] [plans/2026-04-25_fix_v150-release-blockers.md](plans/2026-04-25_fix_v150-release-blockers.md) — fix — v1.5.0 release-blockers
 <!-- /mb-active-plans -->
 
 ## Recently done plans

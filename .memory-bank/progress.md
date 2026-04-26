@@ -772,3 +772,9 @@
 
 **Next step:** v1.5.0 release branch. `release/v1.5.0` → bump `pyproject.toml` → finalize CHANGELOG → merge to main → tag v1.5.0 → `./scripts/sync-public.sh --tags` → public PyPI via OIDC Trusted Publishing.
 
+
+## 2026-04-25
+
+### Auto-capture 2026-04-25 (session 88291e92)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)

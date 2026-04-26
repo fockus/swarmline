@@ -10,6 +10,7 @@
 <!-- mb-active-plans -->
 - [2026-04-25] [plans/2026-04-25_feature_production-v2-roadmap.md](plans/2026-04-25_feature_production-v2-roadmap.md) — Production v2.0 Full Framework Roadmap (24 phases)
 - [2026-04-25] [plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md](plans/2026-04-25_feature_production-v2-phase-01a-ty-strict-foundation.md) — feature — production-v2-phase-01a-ty-strict-foundation
+- [2026-04-25] [plans/2026-04-25_fix_v150-release-blockers.md](plans/2026-04-25_fix_v150-release-blockers.md) — fix — v1.5.0 release-blockers
 <!-- /mb-active-plans -->
 
 ## Завершено: ThinRuntime Claude Code Parity v2
