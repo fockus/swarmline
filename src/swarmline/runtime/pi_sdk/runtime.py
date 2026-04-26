@@ -13,6 +13,7 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from typing import Any
 
+from swarmline.runtime._subprocess_env import build_subprocess_env
 from swarmline.runtime.pi_sdk.event_mapper import map_pi_bridge_event
 from swarmline.runtime.pi_sdk.types import PiSdkOptions
 from swarmline.runtime.types import (
@@ -70,6 +71,11 @@ class PiSdkRuntime:
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=build_subprocess_env(
+                    inherit_host_env=self._pi_options.inherit_host_env,
+                    env_allowlist=self._pi_options.env_allowlist,
+                    overrides=self._pi_options.env,
+                ),
             )
         except FileNotFoundError:
             yield RuntimeEvent.error(

@@ -13,6 +13,7 @@ import os
 from collections.abc import AsyncIterator
 from typing import Any
 
+from swarmline.runtime._subprocess_env import build_subprocess_env
 from swarmline.runtime.cli.parser import (
     ClaudeNdjsonParser,
     GenericNdjsonParser,
@@ -32,17 +33,16 @@ logger = logging.getLogger(__name__)
 
 
 def _build_subprocess_env(cli_config: CliConfig) -> dict[str, str]:
-    """Build subprocess env from allowlisted host vars plus explicit overrides."""
-    if cli_config.inherit_host_env:
-        env = dict(os.environ)
-    else:
-        env = {
-            key: value
-            for key, value in os.environ.items()
-            if key in cli_config.env_allowlist
-        }
-    env.update(cli_config.env)
-    return env
+    """Build subprocess env via shared helper (Stage 2 of security audit DRY).
+
+    Thin wrapper retained for callers that still depend on the CliConfig-typed
+    signature. New code should call ``build_subprocess_env`` directly.
+    """
+    return build_subprocess_env(
+        inherit_host_env=cli_config.inherit_host_env,
+        env_allowlist=cli_config.env_allowlist,
+        overrides=cli_config.env,
+    )
 
 
 def _build_stdin_payload(messages: list[Message], system_prompt: str) -> str:

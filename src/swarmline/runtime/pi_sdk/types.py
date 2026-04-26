@@ -2,11 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
+
+from swarmline.runtime.cli.types import DEFAULT_ENV_ALLOWLIST
 
 PiToolset = Literal["none", "readonly", "coding"]
 PiSessionMode = Literal["memory", "persisted"]
+
+# Default env allowlist for the pi_sdk Node bridge. Extends the generic CLI
+# defaults with Node + provider auth keys that pi-coding-agent expects.
+# See plans/2026-04-27_fix_security-audit.md Stage 2.
+DEFAULT_PI_SDK_ENV_ALLOWLIST: frozenset[str] = DEFAULT_ENV_ALLOWLIST | {
+    "NODE_PATH",
+    "NODE_ENV",
+    "NODE_OPTIONS",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+}
 
 
 @dataclass(frozen=True)
@@ -25,6 +38,9 @@ class PiSdkOptions:
     model_id: str | None = None
     thinking_level: str | None = None
     timeout_seconds: float = 300.0
+    inherit_host_env: bool = False
+    env_allowlist: frozenset[str] = DEFAULT_PI_SDK_ENV_ALLOWLIST
+    env: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.toolset not in {"none", "readonly", "coding"}:

@@ -275,3 +275,198 @@ def _make_process(stdout_data: bytes, returncode: int) -> Any:
     process.terminate = MagicMock()
     process.kill = MagicMock()
     return process
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 of plans/2026-04-27_fix_security-audit.md — pi_sdk env allowlist
+# Closes audit finding P1 #2: Node bridge previously inherited full host env
+# (OPENAI_API_KEY, AWS_*, CI tokens) — now uses an allowlist by default.
+# ---------------------------------------------------------------------------
+
+
+class TestPiSdkOptionsEnvAllowlist:
+    """PiSdkOptions exposes secure-by-default env handling fields."""
+
+    def test_pi_sdk_options_has_inherit_host_env_default_false(self) -> None:
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        options = PiSdkOptions()
+        assert options.inherit_host_env is False
+
+    def test_pi_sdk_options_default_allowlist_contains_provider_keys(self) -> None:
+        from swarmline.runtime.pi_sdk.types import (
+            DEFAULT_PI_SDK_ENV_ALLOWLIST,
+            PiSdkOptions,
+        )
+
+        options = PiSdkOptions()
+        assert options.env_allowlist is DEFAULT_PI_SDK_ENV_ALLOWLIST
+        # Node + provider keys explicitly required for pi-coding-agent
+        assert "NODE_PATH" in DEFAULT_PI_SDK_ENV_ALLOWLIST
+        assert "OPENAI_API_KEY" in DEFAULT_PI_SDK_ENV_ALLOWLIST
+        assert "ANTHROPIC_API_KEY" in DEFAULT_PI_SDK_ENV_ALLOWLIST
+        # Generic CLI defaults still inherited
+        assert "PATH" in DEFAULT_PI_SDK_ENV_ALLOWLIST
+        assert "HOME" in DEFAULT_PI_SDK_ENV_ALLOWLIST
+        # Arbitrary secrets must NOT be in the default allowlist
+        assert "AWS_SECRET_ACCESS_KEY" not in DEFAULT_PI_SDK_ENV_ALLOWLIST
+
+    def test_pi_sdk_options_env_dict_default_empty(self) -> None:
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        options = PiSdkOptions()
+        assert options.env == {}
+
+
+class TestPiSdkSubprocessEnvIsolation:
+    """Verifies pi_sdk runtime passes env= to create_subprocess_exec."""
+
+    async def _drain_runtime(self, runtime: Any) -> None:
+        """Run a minimal final-only fake bridge so the test exits cleanly."""
+        async for _ in runtime.run(
+            messages=[Message(role="user", content="hi")],
+            system_prompt="sys",
+            active_tools=[],
+        ):
+            pass
+
+    async def test_pi_sdk_excludes_arbitrary_secret_by_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Default allowlist must NOT pass MY_LEAKY_SECRET to the subprocess."""
+        from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        monkeypatch.setenv("MY_LEAKY_SECRET", "value-must-not-leak")
+
+        runtime = PiSdkRuntime(
+            config=RuntimeConfig(runtime_name="pi_sdk"),
+            pi_options=PiSdkOptions(bridge_command=("fake-pi-bridge",)),
+        )
+        process = _make_process(
+            stdout_data=json.dumps({"type": "final", "text": ""}).encode() + b"\n",
+            returncode=0,
+        )
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=process,
+        ) as exec_mock:
+            await self._drain_runtime(runtime)
+
+        assert exec_mock.called
+        kwargs = exec_mock.call_args.kwargs
+        assert "env" in kwargs, "pi_sdk must pass env= to create_subprocess_exec"
+        env: dict[str, str] = kwargs["env"]
+        assert "MY_LEAKY_SECRET" not in env
+
+    async def test_pi_sdk_includes_openai_api_key_by_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """OPENAI_API_KEY is needed by pi-coding-agent and is in default allowlist."""
+        from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-from-host")
+        runtime = PiSdkRuntime(
+            config=RuntimeConfig(runtime_name="pi_sdk"),
+            pi_options=PiSdkOptions(bridge_command=("fake-pi-bridge",)),
+        )
+        process = _make_process(
+            stdout_data=json.dumps({"type": "final", "text": ""}).encode() + b"\n",
+            returncode=0,
+        )
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=process,
+        ) as exec_mock:
+            await self._drain_runtime(runtime)
+
+        env = exec_mock.call_args.kwargs["env"]
+        assert env.get("OPENAI_API_KEY") == "sk-test-from-host"
+
+    async def test_pi_sdk_inherits_full_env_when_inherit_host_env_true(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Explicit opt-in restores legacy behavior for downstream compatibility."""
+        from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        monkeypatch.setenv("MY_LEAKY_SECRET", "value-must-leak-now")
+        runtime = PiSdkRuntime(
+            config=RuntimeConfig(runtime_name="pi_sdk"),
+            pi_options=PiSdkOptions(
+                bridge_command=("fake-pi-bridge",),
+                inherit_host_env=True,
+            ),
+        )
+        process = _make_process(
+            stdout_data=json.dumps({"type": "final", "text": ""}).encode() + b"\n",
+            returncode=0,
+        )
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=process,
+        ) as exec_mock:
+            await self._drain_runtime(runtime)
+
+        env = exec_mock.call_args.kwargs["env"]
+        assert env.get("MY_LEAKY_SECRET") == "value-must-leak-now"
+
+    async def test_pi_sdk_explicit_overrides_take_precedence(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """PiSdkOptions.env wins over host os.environ for the same key."""
+        from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
+        from swarmline.runtime.pi_sdk.types import PiSdkOptions
+
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-from-host")
+        runtime = PiSdkRuntime(
+            config=RuntimeConfig(runtime_name="pi_sdk"),
+            pi_options=PiSdkOptions(
+                bridge_command=("fake-pi-bridge",),
+                env={"OPENAI_API_KEY": "sk-explicit-override"},
+            ),
+        )
+        process = _make_process(
+            stdout_data=json.dumps({"type": "final", "text": ""}).encode() + b"\n",
+            returncode=0,
+        )
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=process,
+        ) as exec_mock:
+            await self._drain_runtime(runtime)
+
+        env = exec_mock.call_args.kwargs["env"]
+        assert env.get("OPENAI_API_KEY") == "sk-explicit-override"
+
+    async def test_pi_sdk_custom_allowlist_passes_extra_var(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Custom env_allowlist allows operator-controlled extras through."""
+        from swarmline.runtime.pi_sdk.runtime import PiSdkRuntime
+        from swarmline.runtime.pi_sdk.types import (
+            DEFAULT_PI_SDK_ENV_ALLOWLIST,
+            PiSdkOptions,
+        )
+
+        monkeypatch.setenv("MY_BUSINESS_VAR", "operator-approved")
+        runtime = PiSdkRuntime(
+            config=RuntimeConfig(runtime_name="pi_sdk"),
+            pi_options=PiSdkOptions(
+                bridge_command=("fake-pi-bridge",),
+                env_allowlist=DEFAULT_PI_SDK_ENV_ALLOWLIST | {"MY_BUSINESS_VAR"},
+            ),
+        )
+        process = _make_process(
+            stdout_data=json.dumps({"type": "final", "text": ""}).encode() + b"\n",
+            returncode=0,
+        )
+        with patch(
+            "asyncio.create_subprocess_exec",
+            return_value=process,
+        ) as exec_mock:
+            await self._drain_runtime(runtime)
+
+        env = exec_mock.call_args.kwargs["env"]
+        assert env.get("MY_BUSINESS_VAR") == "operator-approved"

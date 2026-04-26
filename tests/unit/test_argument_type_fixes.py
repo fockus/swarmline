@@ -93,7 +93,7 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/runtime/pi_sdk/runtime.py",
-        253,
+        259,
         "# ty: ignore[invalid-argument-type]",
         "isinstance",
         "args narrowed by isinstance dict check above",
