@@ -74,12 +74,34 @@ class E2BSandboxProvider:
         if any(part == ".." for part in parts):
             raise SandboxViolation(f"Path traversal запрещён: {pattern}", path=pattern)
 
+    _SHELL_WRAPPERS = frozenset({"sh", "bash", "zsh", "dash", "ksh", "fish"})
+
     def _check_denied_command(self, command: str) -> None:
+        """Reject commands containing denied tokens, including ``sh -c`` payloads.
+
+        Without recursion ``sh -c 'rm -rf /workspace'`` would bypass a denylist
+        of ``{"rm"}`` because rm sits inside a quoted argument (audit P2 #3).
+        Now we detect known shell wrappers (``sh``/``bash``/``zsh``/``dash``/
+        ``ksh``/``fish``) and re-parse the ``-c`` payload through the same check
+        — recursively, so ``sh -c 'bash -c "rm /x"'`` is also caught.
+        """
         denied = self._config.denied_commands or frozenset()
+        if not denied:
+            return
         try:
             words = shlex.split(command)
         except ValueError:
             words = command.split()
+        if not words:
+            return
+
+        # Recurse into shell wrapper -c <payload>
+        if os.path.basename(words[0]) in self._SHELL_WRAPPERS:
+            for i, word in enumerate(words[1:], start=1):
+                if word == "-c" and i + 1 < len(words):
+                    self._check_denied_command(words[i + 1])
+                    return
+
         for word in words:
             if os.path.basename(word) in denied:
                 raise SandboxViolation(f"Command '{word}' is denied", path=command)

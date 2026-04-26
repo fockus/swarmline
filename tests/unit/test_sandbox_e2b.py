@@ -139,3 +139,101 @@ class TestE2BSandboxProvider:
         provider = E2BSandboxProvider(config, _sandbox=sandbox)
         await provider.close()
         assert sandbox.kill.called or sandbox.close.called
+
+
+# ---------------------------------------------------------------------------
+# Stage 3 of plans/2026-04-27_fix_security-audit.md — E2B shell wrapper denylist
+# Closes audit finding P2 #3: `sh -c 'rm -rf /workspace'` previously bypassed
+# denied_commands={"rm"} because rm sat inside a quoted argument. Now the
+# provider recursively parses sh/bash/zsh/dash/ksh/fish -c arguments.
+# ---------------------------------------------------------------------------
+
+
+class TestE2BShellWrapperDenylist:
+    """Recursive denylist enforcement for shell wrappers (`sh -c '...'`)."""
+
+    @pytest.mark.parametrize(
+        "wrapper",
+        ["sh", "bash", "zsh", "dash", "ksh", "fish"],
+    )
+    async def test_e2b_blocks_shell_wrapper_with_denied_command(
+        self, config, wrapper: str
+    ) -> None:
+        """Every common shell wrapper recursively triggers the denylist."""
+        from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+        from swarmline.tools.types import SandboxViolation
+
+        provider = E2BSandboxProvider(config, _sandbox=AsyncMock())
+        with pytest.raises(SandboxViolation):
+            await provider.execute(f"{wrapper} -c 'rm -rf /home/user/workspace'")
+
+    async def test_e2b_blocks_absolute_path_shell_wrapper(self, config) -> None:
+        """`/bin/sh -c 'rm ...'` must trigger via os.path.basename normalization."""
+        from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+        from swarmline.tools.types import SandboxViolation
+
+        provider = E2BSandboxProvider(config, _sandbox=AsyncMock())
+        with pytest.raises(SandboxViolation):
+            await provider.execute("/bin/bash -c 'rm /tmp/x'")
+
+    async def test_e2b_allows_sh_c_with_safe_command(self, config) -> None:
+        """`sh -c 'echo hello'` proceeds when denylist={'rm'}."""
+        from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+
+        mock_sandbox = AsyncMock()
+        mock_proc = MagicMock()
+        mock_proc.stdout = "hello"
+        mock_proc.stderr = ""
+        mock_proc.exit_code = 0
+        mock_sandbox.process.start.return_value = mock_proc
+
+        provider = E2BSandboxProvider(config, _sandbox=mock_sandbox)
+        result = await provider.execute("sh -c 'echo hello'")
+        assert result.exit_code == 0
+
+    async def test_e2b_blocks_nested_shell_wrapper(self, config) -> None:
+        """`sh -c 'bash -c \"rm /x\"'` recurses through both wrappers."""
+        from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+        from swarmline.tools.types import SandboxViolation
+
+        provider = E2BSandboxProvider(config, _sandbox=AsyncMock())
+        with pytest.raises(SandboxViolation):
+            await provider.execute("""sh -c 'bash -c "rm /tmp/x"'""")
+
+    async def test_e2b_no_denylist_skips_recursive_parse(self) -> None:
+        """No denylist → no recursion, no false positives — `sh -c '...'`
+        proceeds even if the inner argument mentions sensitive tokens."""
+        from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+
+        config = SandboxConfig(
+            root_path="/tmp",
+            user_id="u1",
+            topic_id="t1",
+            timeout_seconds=5,
+            denied_commands=None,
+        )
+        mock_sandbox = AsyncMock()
+        mock_proc = MagicMock()
+        mock_proc.stdout = ""
+        mock_proc.stderr = ""
+        mock_proc.exit_code = 0
+        mock_sandbox.process.start.return_value = mock_proc
+        provider = E2BSandboxProvider(config, _sandbox=mock_sandbox)
+        result = await provider.execute("sh -c 'echo rm not really called'")
+        assert result.exit_code == 0
+
+    async def test_e2b_shell_wrapper_without_dash_c_is_unchanged(
+        self, config
+    ) -> None:
+        """`sh script.sh` (no -c) proceeds — only -c form triggers recursion."""
+        from swarmline.tools.sandbox_e2b import E2BSandboxProvider
+
+        mock_sandbox = AsyncMock()
+        mock_proc = MagicMock()
+        mock_proc.stdout = ""
+        mock_proc.stderr = ""
+        mock_proc.exit_code = 0
+        mock_sandbox.process.start.return_value = mock_proc
+        provider = E2BSandboxProvider(config, _sandbox=mock_sandbox)
+        result = await provider.execute("sh script.sh")
+        assert result.exit_code == 0
