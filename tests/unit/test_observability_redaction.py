@@ -183,3 +183,89 @@ class TestServe500ResponseRedacts:
         body = json.loads(resp.text)
         assert resp.status_code == 500
         assert "leaky-token-here-1234567890abcdefghi" not in body["error"]
+
+
+# ---------------------------------------------------------------------------
+# Stage 1 of plans/2026-04-27_fix_post-review-polish.md — closes review C1
+# (HIGH security): URL-userinfo regex `(\w+://)([^:/@\s]+):([^@/\s]+)@` is
+# vulnerable to ReDoS — 50KB input → 3.4s, 100KB → ~15s catastrophic
+# backtracking. Reachable from every redacted error path: serve/app.py 500,
+# runtime/thin/errors.py provider_runtime_crash, runtime/cli/runtime.py stderr.
+# Fix: bounded-quantifier variant `[a-zA-Z][a-zA-Z0-9+.\-]{0,30}://...{1,256}:...{1,256}@`.
+# ---------------------------------------------------------------------------
+
+
+class TestRedactionReDoSResistance:
+    """Bounded-quantifier guarantees: pathological inputs do not stall."""
+
+    def test_redact_secrets_handles_100kb_userinfo_payload_under_100ms(self) -> None:
+        """C1 closure: 100KB attacker-shaped input must run in <100ms.
+
+        Pre-fix pattern `[^:/@\\s]+):([^@/\\s]+)@` exhibits catastrophic
+        backtracking on long alternating user/password strings. Bounded
+        `{1,256}` quantifiers eliminate the explosion.
+        """
+        import time
+
+        # Mimic worst-case: long userinfo + long password, no terminator hit.
+        # 50_000 + 50_000 = 100KB body, no @ at the end → forces full backtrack
+        # under the unbounded pattern.
+        payload = "https://" + ("a" * 50_000) + ":" + ("b" * 50_000) + "@host"
+        start = time.perf_counter()
+        result = redact_secrets(payload)
+        elapsed = time.perf_counter() - start
+        assert elapsed < 0.1, (
+            f"redact_secrets took {elapsed:.3f}s on 100KB payload — "
+            "expected <0.1s under bounded-quantifier pattern. ReDoS regression."
+        )
+        # Sanity: function still returned a string (no crash).
+        assert isinstance(result, str)
+
+    def test_redact_secrets_handles_legitimate_url_with_userinfo(self) -> None:
+        """Happy path: bounded regex still redacts normal URLs."""
+        result = redact_secrets("postgres://alice:secret123@db.example.com:5432/app")
+        assert "alice" not in result
+        assert "secret123" not in result
+        assert "[REDACTED]" in result
+        # Scheme + host preserved
+        assert "postgres://" in result
+        assert "db.example.com" in result
+
+    def test_redact_secrets_handles_short_userinfo_at_lower_boundary(self) -> None:
+        """1-char userinfo / password (boundary {1,256}) — still matches."""
+        result = redact_secrets("ftp://a:b@host.example.org")
+        assert "a:b@" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_secrets_handles_long_userinfo_at_boundary(self) -> None:
+        """256-char userinfo (boundary): still redacted. 300-char: no match
+        (acceptable — pathological case beyond real-world cap)."""
+        # At boundary: 256 chars exactly — within bounds → matches.
+        boundary = "https://" + ("u" * 256) + ":" + ("p" * 256) + "@host"
+        result_boundary = redact_secrets(boundary)
+        assert "[REDACTED]" in result_boundary
+
+        # Beyond boundary: 300 chars — outside bounds → does NOT match
+        # (acceptable trade-off — no real userinfo is 300+ chars).
+        beyond = "https://" + ("u" * 300) + ":" + ("p" * 300) + "@host"
+        result_beyond = redact_secrets(beyond)
+        # Original userinfo survives — this is the intentional bound.
+        assert ("u" * 300) in result_beyond
+
+    def test_redact_secrets_handles_unicode_in_userinfo(self) -> None:
+        """Non-ASCII userinfo: function does not crash regardless of match."""
+        text = "ldap://пользователь:пароль@example.com"
+        result = redact_secrets(text)
+        # Primary contract: no crash, returns a string.
+        assert isinstance(result, str)
+
+    def test_redact_secrets_handles_pathological_alternating_input(self) -> None:
+        """Alternating delimiters (`a:a:a:a:`) — common ReDoS amplifier."""
+        import time
+
+        payload = ("a:" * 5_000) + "@host"  # 10KB, alternating colons
+        start = time.perf_counter()
+        result = redact_secrets("https://" + payload)
+        elapsed = time.perf_counter() - start
+        assert elapsed < 0.1, f"alternating-delimiter ReDoS regression: {elapsed:.3f}s"
+        assert isinstance(result, str)

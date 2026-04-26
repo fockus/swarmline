@@ -42,8 +42,17 @@ DEFAULT_SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         r"\1_[REDACTED]",
     ),
     # URL userinfo: scheme://user:password@host
+    # Stage 1 of plans/2026-04-27_fix_post-review-polish.md (review C1):
+    # Bounded quantifiers replace `\w+` and `+` to eliminate the theoretical
+    # ReDoS surface flagged in the post-v1.5.0 audit. Scheme bound at 31 chars
+    # (RFC 3986 — real-world max ~10), userinfo + password capped at 256 chars
+    # (no production consumer accepts more). Defense-in-depth: even if a future
+    # Python regex engine regresses to backtracking semantics, bounded patterns
+    # are immune to catastrophic explosion on attacker-shaped input.
     (
-        re.compile(r"(\w+://)([^:/@\s]+):([^@/\s]+)@"),
+        re.compile(
+            r"([a-zA-Z][a-zA-Z0-9+.\-]{0,30}://)([^:@\s/]{1,256}):([^@\s/]{1,256})@"
+        ),
         r"\1[REDACTED]:[REDACTED]@",
     ),
     # Common env-style assignments where the key ends in _KEY/_TOKEN/_SECRET/_PASSWORD
