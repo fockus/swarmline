@@ -2,7 +2,7 @@
 
 **Дата:** 2026-04-25
 **Тип:** fix (release-blockers + DX paper-cuts + security hardening)
-**Статус:** Approved → ready for execution
+**Статус:** ✅ SHIPPED 2026-04-25 — tag `v1.5.0` on commit `3fae1b2`. All 21 stages merged on `main`. Pushed to private `origin` only; public sync to PyPI awaits user approval. Inner DoD `- [ ]` markers preserved as historical acceptance criteria — stage-level closure recorded in the rolled-up checklist below (lines 1833-1862) with commit attribution. Mirror in `.memory-bank/checklist.md` ("v1.5.0 release-blockers plan — ALL STAGES DONE").
 **Complexity:** L
 **Baseline commit:** 1c896cbbeb6582c18a3b5af4dedb6d78e2ad78ea
 
@@ -1833,33 +1833,33 @@ Plan complete когда **все** following are true:
 ### Checklist (для копирования в `.memory-bank/checklist.md`)
 
 #### Tier 1 (release blockers)
-- ⬜ Stage 1: ruff check --fix && ruff format
-- ⬜ Stage 2: AgentConfig.runtime default → "thin"
-- ⬜ Stage 3: Russian error string → English
-- ⬜ Stage 4: docs/agent-facade.md system_prompt fix
-- ⬜ Stage 5: observability/logger.py — drop force=True, route to stderr
-- ⬜ Stage 6: JsonlTelemetrySink async I/O via asyncio.to_thread
-- ⬜ Stage 7: drop Python 3.10 from publish.yml matrix
-- ⬜ Stage 8: CLAUDE.md / AGENTS.md → Python 3.11+
-- ⬜ Stage 9: bump pyproject.toml version → 1.5.0
+- ✅ Stage 1: ruff check --fix && ruff format — commit `0badf89` (Tier 1) + format pass `1511f65`
+- ✅ Stage 2: AgentConfig.runtime default → "thin" — commit `3bdd7ab` (C-8)
+- ✅ Stage 3: Russian error string → English — commit `0badf89` (Tier 1)
+- ✅ Stage 4: docs/agent-facade.md system_prompt fix — commit `0badf89` (Tier 1)
+- ✅ Stage 5: observability/logger.py — drop force=True, route to stderr — commit `5cbc326` (C-1, C-3)
+- ✅ Stage 6: JsonlTelemetrySink async I/O via asyncio.to_thread — commit `32fe1af` (C-2)
+- ✅ Stage 7: drop Python 3.10 from publish.yml matrix — commit `0badf89` (Tier 1)
+- ✅ Stage 8: CLAUDE.md / AGENTS.md → Python 3.11+ — commit `0badf89` (Tier 1)
+- ✅ Stage 9: bump pyproject.toml version → 1.5.0 — release commit `3fae1b2`
 
 #### Tier 2 (release packaging)
-- ⬜ Stage 10: CHANGELOG [1.5.0] entry
-- ⬜ Stage 11: docs/migration/v1.4-to-v1.5.md
-- ⬜ Stage 12: minimum-viable feature docs (≥5 files)
+- ✅ Stage 10: CHANGELOG [1.5.0] entry — commit `d541edb` (Tier 2)
+- ✅ Stage 11: docs/migration/v1.4-to-v1.5.md — commit `d541edb` (Tier 2)
+- ✅ Stage 12: minimum-viable feature docs (≥5 files) — commit `d541edb` (Tier 2)
 
 #### Tier 3 (DX paper-cuts)
-- ⬜ Stage 13: examples/00_hello_world.py
-- ⬜ Stage 14: trim swarmline/__init__.py __all__ → 12 names
-- ⬜ Stage 15: SwarmlineError base + 10 subclasses
-- ⬜ Stage 16: swarmline.testing.MockRuntime + refactor 01_agent_basics.py
-- ⬜ Stage 17: AgentConfig.thinking → ThinkingConfig typed
-- ⬜ Stage 18: remove max_thinking_tokens (deprecated)
+- ✅ Stage 13: examples/00_hello_world.py — commit `d7f2a55` (Tier 3)
+- ✅ Stage 14: trim swarmline/__init__.py __all__ → 12 names — commit `d7f2a55` (Tier 3)
+- ✅ Stage 15: SwarmlineError base + 10 subclasses — commit `d7f2a55` (Tier 3)
+- ✅ Stage 16: swarmline.testing.MockRuntime + refactor 01_agent_basics.py — commit `d7f2a55` (Tier 3)
+- ✅ Stage 17: AgentConfig.thinking → ThinkingConfig typed — commit `d7f2a55` (Tier 3)
+- ✅ Stage 18: remove max_thinking_tokens (deprecated) — commit `d7f2a55` (Tier 3)
 
 #### Tier 4 (security hardening)
-- ⬜ Stage 19: M-1 serve.create_app loopback enforcement
-- ⬜ Stage 20: M-3 JsonlTelemetrySink extended redaction
-- ⬜ Stage 21: pip-audit in CI
+- ✅ Stage 19: M-1 serve.create_app loopback enforcement — commit `913cb5c` (Tier 4)
+- ✅ Stage 20: M-3 JsonlTelemetrySink extended redaction — commit `913cb5c` (Tier 4)
+- ✅ Stage 21: pip-audit in CI — commit `913cb5c` (Tier 4)
 
 ---
 
