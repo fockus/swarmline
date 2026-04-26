@@ -211,7 +211,12 @@ class HttpxWebProvider:
     def _validate_url(url: str) -> str | None:
         """Return rejection reason if URL targets a private/reserved network, else None.
 
-        Checks:
+        Checks (in order — fail fast):
+        0. Scheme allowlist — only ``http`` and ``https`` (case-insensitive). Blocks
+           ``file://``, ``ftp://``, ``data:``, ``javascript:``, ``gopher://``, ``ssh://``,
+           ``smb://``, ``ws[s]://``, etc. Closes audit finding P2 #4 — without this,
+           non-HTTP schemes pass to delegated browser providers (Crawl4AI) which can
+           open local files or non-web targets.
         1. Cloud metadata endpoints (AWS, GCP, Azure)
         2. Literal localhost hostnames
         3. Direct IP addresses (private/loopback/link-local/reserved)
@@ -222,6 +227,11 @@ class HttpxWebProvider:
             hostname = parsed.hostname or ""
         except Exception:
             return "Invalid URL"
+
+        # Scheme allowlist — http/https only
+        scheme = (parsed.scheme or "").lower()
+        if scheme not in ("http", "https"):
+            return f"Scheme blocked: {parsed.scheme!r} (only http/https allowed)"
 
         # Block cloud metadata endpoints
         _BLOCKED_HOSTS = {
