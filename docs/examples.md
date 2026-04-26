@@ -20,10 +20,11 @@ Default behavior:
 
 ## Catalog
 
-### Getting Started (01-03)
+### Getting Started (00-03)
 
 | # | File | What it demonstrates |
 |---|------|----------------------|
+| 00 | `00_hello_world.py` | The smallest possible swarmline agent (~30 LOC) using `swarmline.testing.MockRuntime` |
 | 01 | `01_agent_basics.py` | Agent facade: `query()`, `stream()`, `conversation()` |
 | 02 | `02_tool_decorator.py` | `@tool` decorator and inferred JSON Schema |
 | 03 | `03_structured_output.py` | Structured output validation with Pydantic |
@@ -99,7 +100,8 @@ Default behavior:
 
 ## Picking a Starting Point
 
-- Start with `01`, `02`, `03` if you are new to the facade API.
+- Start with `00` for the smallest possible offline example.
+- Continue with `01`, `02`, `03` if you are new to the facade API.
 - Jump to `17`, `18`, `19` if you are evaluating runtime integration.
 - Use `20-23` for orchestration and multi-agent primitives.
 - Use `24-27` when you want end-to-end demo scenarios instead of isolated features.
