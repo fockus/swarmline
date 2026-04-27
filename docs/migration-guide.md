@@ -49,13 +49,24 @@ Treat `LocalSandboxProvider` as an isolated file and command surface. Only enabl
 
 ### Upgrade recipe 3: Open `/v1/query` intentionally
 
-If you need the HTTP query endpoint to accept unauthenticated traffic, make that a deliberate choice at the serve boundary:
+If you need the HTTP query endpoint to accept unauthenticated traffic, make that a deliberate choice at the serve boundary. **Since v1.5.0 (security audit closure, P2 #5), an explicit `host=` argument is mandatory** when `allow_unauthenticated_query=True` — the v1.4.x signature without `host=` is rejected at factory time:
 
 ```python
+# Local-only mode (v1.5.0+)
 app = create_app(
     ...,
     allow_unauthenticated_query=True,
+    host="127.0.0.1",  # MANDATORY — must be a loopback address
 )
+```
+
+Allowed loopback hosts: `127.0.0.1`, `localhost`, `::1`. Any non-loopback host raises `ValueError` to prevent accidental public exposure when combined with `uvicorn --host 0.0.0.0`.
+
+For production, prefer an `auth_token=...` instead — host enforcement is bypassed when authentication is in place:
+
+```python
+# Production mode — auth replaces the loopback gate
+app = create_app(..., auth_token="<server-token>")
 ```
 
 Prefer authenticated access whenever possible. If you intentionally open the route, keep it behind a network boundary, document the operator intent, and monitor access separately.
