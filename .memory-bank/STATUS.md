@@ -186,3 +186,9 @@ _No active plans — v1.5.0 shipped 2026-04-25. Next single deliverable: public 
 | CHANGELOG `[1.5.0]` entry | ✅ DONE | commit `d541edb` (Tier 2) |
 | Migration guide v1.4 → v1.5 | ✅ DONE | commit `d541edb` (Tier 2) |
 | Tier 4 security gates (M-1, M-3, pip-audit) | ✅ DONE | commit `913cb5c` |
+
+## Recently done
+
+<!-- mb-recent-done -->
+- 2026-04-27 — [plans/done/2026-04-27_fix_post-review-polish.md](plans/done/2026-04-27_fix_post-review-polish.md) — fix — post-review-polish (Stage 8)
+<!-- /mb-recent-done -->
