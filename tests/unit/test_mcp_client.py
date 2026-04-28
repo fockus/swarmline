@@ -161,3 +161,50 @@ class TestMcpClientListTools:
         assert len(first) == 1
         assert len(second) == 1
         assert calls["count"] == 1
+
+
+class TestMcpClientPooling:
+    @pytest.mark.asyncio
+    async def test_reuses_one_async_client_until_closed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        instances: list[object] = []
+
+        class _Response:
+            def __init__(self, data: dict) -> None:
+                self._data = data
+
+            def raise_for_status(self) -> None:
+                return None
+
+            def json(self) -> dict:
+                return self._data
+
+        class _Client:
+            def __init__(self, *args, **kwargs) -> None:
+                _ = (args, kwargs)
+                self.closed = False
+                instances.append(self)
+
+            async def post(self, *args, **kwargs):
+                _ = (kwargs,)
+                payload = args[1] if len(args) > 1 else kwargs.get("json", {})
+                method = payload.get("method") if isinstance(payload, dict) else None
+                if method == "tools/list":
+                    return _Response({"result": {"tools": [{"name": "a"}]}})
+                return _Response({"result": {"value": 42}})
+
+            async def aclose(self) -> None:
+                self.closed = True
+
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", _Client
+        )
+
+        client = McpClient(timeout_seconds=1.0)
+        await client.call_tool("https://example.test/mcp", "calc")
+        await client.list_tools("https://example.test/mcp", force_refresh=True)
+        await client.aclose()
+
+        assert len(instances) == 1
+        assert getattr(instances[0], "closed") is True

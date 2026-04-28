@@ -461,6 +461,47 @@ class TestJinaReaderFetchProvider:
         assert await provider.fetch("") == ""
         assert await provider.fetch("   ") == ""
 
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "file:///etc/passwd",
+            "http://127.0.0.1/admin",
+            "https://169.254.169.254/latest/meta-data",
+        ],
+    )
+    async def test_unsafe_url_returns_empty_without_network(self, url: str) -> None:
+        """Unsafe local/metadata/scheme URLs are denied before Jina request."""
+        provider = JinaReaderFetchProvider(api_key="test-key")
+
+        with patch("swarmline.tools.web_providers.jina.httpx.AsyncClient") as client:
+            result = await provider.fetch(url)
+
+        assert result == ""
+        client.assert_not_called()
+
+    async def test_https_url_passes_validation_and_fetches(self) -> None:
+        """Ordinary public HTTPS URLs still go through Jina Reader."""
+        mock_response = AsyncMock()
+        mock_response.text = "ok"
+        mock_response.raise_for_status = MagicMock()
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("swarmline.tools.web_providers.jina.httpx") as mock_httpx:
+            mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
+            import httpx as real_httpx
+
+            mock_httpx.HTTPError = real_httpx.HTTPError
+
+            provider = JinaReaderFetchProvider(api_key="test-key")
+            result = await provider.fetch("https://example.com")
+
+        assert result == "ok"
+        mock_client.get.assert_awaited_once()
+
 
 # ---------------------------------------------------------------------------
 # Crawl4AI fetch provider

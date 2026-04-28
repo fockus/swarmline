@@ -314,13 +314,18 @@ class TestLoaderEdgeCases:
         assert commands[0].name == "solo"
         assert commands[0].category == "test"
 
-    async def test_load_invalid_yaml_returns_empty(self, tmp_path: Any) -> None:
+    async def test_load_invalid_yaml_returns_empty_and_logs_warning(
+        self, tmp_path: Any, caplog: Any
+    ) -> None:
         from swarmline.commands.loader import load_commands_from_yaml
 
         f = tmp_path / "bad.yaml"
-        f.write_text(":::: not valid yaml {{{{")
+        f.write_text("name: [unterminated")
+        caplog.set_level("WARNING", logger="swarmline.commands.loader")
         commands = load_commands_from_yaml(str(f))
         assert commands == []
+        assert str(f) in caplog.text
+        assert "Failed to load command YAML" in caplog.text
 
     async def test_load_no_name_entries_skipped(self, tmp_path: Any) -> None:
         from swarmline.commands.loader import load_commands_from_yaml

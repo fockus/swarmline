@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import structlog
+import hmac
 import time
 from typing import Any
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
@@ -38,7 +40,7 @@ class _BearerAuthMiddleware:
         if scope["type"] == "http" and scope["path"] not in self.EXEMPT_PATHS:
             headers = dict(scope.get("headers", []))
             auth = headers.get(b"authorization", b"").decode()
-            if auth != f"Bearer {self.token}":
+            if not hmac.compare_digest(auth, f"Bearer {self.token}"):
                 log_security_decision(
                     _log,
                     component="serve",
@@ -195,6 +197,15 @@ def create_app(
     routes.insert(1, Route("/v1/info", _make_info_handler(endpoints), methods=["GET"]))
 
     middleware: list[Middleware] = []
+    if cors_origins is not None:
+        middleware.append(
+            Middleware(
+                CORSMiddleware,
+                allow_origins=cors_origins,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+        )
     if not query_enabled:
         middleware.append(Middleware(_QueryClosedMiddleware))
     if auth_token:

@@ -317,13 +317,14 @@ class TestThinRuntimeStreaming:
     @pytest.mark.asyncio
     async def test_thin_stream_emits_token_deltas(self) -> None:
         """Stream mode -> poluchaem N assistant_delta events (N > 1)."""
+        final_text = "Привет! Как дела? Всё хорошо."
         # Razbivaem final response on token chunks
-        final_json = _make_final_json("Привет! Как дела? Всё хорошо.")
+        final_json = _make_final_json(final_text)
         chunks = [final_json[i : i + 15] for i in range(0, len(final_json), 15)]
 
         llm = MockStreamingLLM(
             token_chunks=[chunks],
-            full_responses=[_make_final_json("Привет! Как дела? Всё хорошо.")],
+            full_responses=[_make_final_json(final_text)],
         )
 
         config = RuntimeConfig(runtime_name="thin")
@@ -336,6 +337,9 @@ class TestThinRuntimeStreaming:
         deltas = [e for e in events if e.type == "assistant_delta"]
         # V streaming mode should byt bolshe 1 delta event
         assert len(deltas) > 1, f"Ожидается >1 assistant_delta, получено {len(deltas)}"
+        assert "".join(str(e.data["text"]) for e in deltas) == final_text
+        assert all("final_message" not in str(e.data["text"]) for e in deltas)
+        assert all("{" not in str(e.data["text"]) for e in deltas)
 
         # Finalnyy event tozhe should byt
         finals = [e for e in events if e.type == "final"]
@@ -417,7 +421,8 @@ class TestThinRuntimeStreaming:
     @pytest.mark.asyncio
     async def test_thin_stream_react_emits_multiple_deltas_for_final(self) -> None:
         """React mode: final response strimitsya token-by-token (>1 delta)."""
-        final_json = _make_final_json("Ответ из react mode: 42 + extras")
+        final_text = "Ответ из react mode: 42 + extras"
+        final_json = _make_final_json(final_text)
         chunks = [final_json[i : i + 12] for i in range(0, len(final_json), 12)]
 
         llm = MockStreamingLLM(
@@ -433,6 +438,8 @@ class TestThinRuntimeStreaming:
             f"React mode должен стримить final response по chunk'ам, "
             f"получено {len(deltas)} delta events"
         )
+        assert "".join(str(e.data["text"]) for e in deltas) == final_text
+        assert all("final_message" not in str(e.data["text"]) for e in deltas)
 
         finals = [e for e in events if e.type == "final"]
         assert len(finals) == 1

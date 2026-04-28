@@ -29,14 +29,30 @@ class TestEventBusMethods:
     def test_redis_event_bus_methods(self) -> None:
         from swarmline.observability.event_bus_redis import RedisEventBus
 
-        required = {"subscribe", "unsubscribe", "emit", "connect", "close"}
+        required = {
+            "async_subscribe",
+            "async_unsubscribe",
+            "subscribe",
+            "unsubscribe",
+            "emit",
+            "connect",
+            "close",
+        }
         actual = {m for m in dir(RedisEventBus) if not m.startswith("_")}
         assert required <= actual, f"Missing: {required - actual}"
 
     def test_nats_event_bus_methods(self) -> None:
         from swarmline.observability.event_bus_nats import NatsEventBus
 
-        required = {"subscribe", "unsubscribe", "emit", "connect", "close"}
+        required = {
+            "async_subscribe",
+            "async_unsubscribe",
+            "subscribe",
+            "unsubscribe",
+            "emit",
+            "connect",
+            "close",
+        }
         actual = {m for m in dir(NatsEventBus) if not m.startswith("_")}
         assert required <= actual, f"Missing: {required - actual}"
 
@@ -49,6 +65,16 @@ class TestEventBusMethods:
         from swarmline.observability.event_bus_nats import NatsEventBus
 
         assert inspect.iscoroutinefunction(NatsEventBus.emit)
+
+    def test_redis_async_subscribe_is_async(self) -> None:
+        from swarmline.observability.event_bus_redis import RedisEventBus
+
+        assert inspect.iscoroutinefunction(RedisEventBus.async_subscribe)
+
+    def test_nats_async_subscribe_is_async(self) -> None:
+        from swarmline.observability.event_bus_nats import NatsEventBus
+
+        assert inspect.iscoroutinefunction(NatsEventBus.async_subscribe)
 
 
 class TestEventBusConstructors:
@@ -119,6 +145,62 @@ class TestLocalDispatchWithoutConnection:
         bus.unsubscribe(sub_id)
         await bus._dispatch_local("test.event", {"key": "val"})
         assert len(received) == 0
+
+    async def test_redis_async_subscribe_awaits_backend_subscribe(self) -> None:
+        from swarmline.observability.event_bus_redis import RedisEventBus
+
+        class _PubSub:
+            def __init__(self) -> None:
+                self.subscribed: list[str] = []
+                self.unsubscribed: list[str] = []
+
+            async def subscribe(self, channel: str) -> None:
+                self.subscribed.append(channel)
+
+            async def unsubscribe(self, channel: str) -> None:
+                self.unsubscribed.append(channel)
+
+        bus = RedisEventBus(redis_url="redis://test:6379/0")
+        pubsub = _PubSub()
+        bus._pubsub = pubsub
+
+        sub_id = await bus.async_subscribe("test.event", lambda _data: None)
+        await bus.async_unsubscribe(sub_id)
+
+        assert pubsub.subscribed == ["swarmline:test.event"]
+        assert pubsub.unsubscribed == ["swarmline:test.event"]
+
+    async def test_nats_async_subscribe_awaits_backend_subscribe(self) -> None:
+        from swarmline.observability.event_bus_nats import NatsEventBus
+
+        class _Sub:
+            def __init__(self) -> None:
+                self.unsubscribed = False
+
+            async def unsubscribe(self) -> None:
+                self.unsubscribed = True
+
+        class _Nats:
+            is_closed = False
+
+            def __init__(self) -> None:
+                self.subscribed: list[str] = []
+                self.sub = _Sub()
+
+            async def subscribe(self, subject: str, cb: object) -> _Sub:
+                _ = cb
+                self.subscribed.append(subject)
+                return self.sub
+
+        bus = NatsEventBus(nats_url="nats://test:4222")
+        nc = _Nats()
+        bus._nc = nc
+
+        sub_id = await bus.async_subscribe("test.event", lambda _data: None)
+        await bus.async_unsubscribe(sub_id)
+
+        assert nc.subscribed == ["swarmline.test.event"]
+        assert nc.sub.unsubscribed is True
 
 
 # ---------------------------------------------------------------------------

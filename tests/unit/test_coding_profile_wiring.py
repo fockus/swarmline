@@ -243,3 +243,29 @@ class TestCodingProfileWiring:
         assert plan.create_kwargs["coding_profile"] == cfg.coding_profile
         assert len(plan.config.input_filters) == 1
         assert type(plan.config.input_filters[0]).__name__ == "CodingContextInputFilter"
+
+    def test_wiring_does_not_mutate_shared_runtime_config(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Coding profile input filter is added through a copied RuntimeConfig."""
+        import swarmline.agent.runtime_wiring as runtime_wiring
+        from swarmline.runtime.types import RuntimeConfig
+
+        shared_config = RuntimeConfig(runtime_name="thin")
+
+        def _shared_runtime_config(**_kwargs: object) -> RuntimeConfig:
+            return shared_config
+
+        monkeypatch.setattr(runtime_wiring, "RuntimeConfig", _shared_runtime_config)
+        cfg = AgentConfig(
+            system_prompt="test",
+            runtime="thin",
+            coding_profile=CodingProfileConfig(enabled=True),
+            cwd="/tmp/test-coding",
+        )
+
+        plan = runtime_wiring.build_portable_runtime_plan(cfg, "thin")
+
+        assert shared_config.input_filters == []
+        assert plan.config is not shared_config
+        assert len(plan.config.input_filters) == 1

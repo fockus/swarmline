@@ -154,6 +154,34 @@ class TestProviderRuntimeCrashRedacts:
         wrapped = provider_runtime_crash("anthropic", exc)
         assert "anthropic" in wrapped.error.message
 
+    async def test_default_llm_call_logs_redacted_provider_exception(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from unittest.mock import AsyncMock
+        from unittest.mock import patch
+
+        from swarmline.runtime.thin.llm_client import default_llm_call
+        from swarmline.runtime.types import RuntimeConfig
+
+        secret = "sk-proj-leaky-provider-key-1234567890abcdef"
+        adapter = AsyncMock()
+        adapter.call = AsyncMock(side_effect=RuntimeError(f"provider failed: {secret}"))
+
+        caplog.set_level("ERROR", logger="swarmline.runtime.thin.llm_client")
+        with patch(
+            "swarmline.runtime.thin.llm_client.get_cached_adapter",
+            return_value=adapter,
+        ):
+            with pytest.raises(Exception):
+                await default_llm_call(
+                    RuntimeConfig(runtime_name="thin"),
+                    [{"role": "user", "content": "hi"}],
+                    "system",
+                )
+
+        assert secret not in caplog.text
+        assert "RuntimeError" in caplog.text
+
 
 class TestServe500ResponseRedacts:
     """serve/app.py /v1/query 500 path strips secrets from str(exc)."""

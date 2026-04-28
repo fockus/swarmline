@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import asyncio
+import io
+import json
 import logging
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.provider_resolver import resolve_provider
 from swarmline.runtime.thin.errors import ThinLlmError, provider_runtime_crash
 from swarmline.runtime.thin.llm_providers import get_cached_adapter
-from swarmline.runtime.types import RuntimeConfig, RuntimeErrorData
+from swarmline.runtime.types import RuntimeConfig, RuntimeErrorData, RuntimeEvent
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +37,158 @@ class BufferedLlmAttempt:
     thinking: str | None = None
 
 
-async def try_stream_llm_call(
+@dataclass(frozen=True)
+class StreamingLlmAttempt:
+    """Streaming LLM attempt with semantic deltas emitted during iteration."""
+
+    raw: str
+    used_stream: bool
+    emitted_text_delta: bool = False
+    thinking: str | None = None
+
+
+class FinalMessageDeltaExtractor:
+    """Incrementally extract text from a JSON ``final_message`` string value."""
+
+    def __init__(self) -> None:
+        self._in_string = False
+        self._capture_value = False
+        self._done = False
+        self._escape = False
+        self._unicode_digits: str | None = None
+        self._token_raw: list[str] = []
+        self._awaiting_colon = False
+        self._awaiting_value = False
+
+    def feed(self, chunk: str) -> list[str]:
+        deltas: list[str] = []
+        for char in chunk:
+            delta = self._feed_char(char)
+            if delta:
+                deltas.append(delta)
+        return deltas
+
+    def _feed_char(self, char: str) -> str:
+        if self._done:
+            return ""
+
+        if self._in_string:
+            return self._feed_string_char(char)
+
+        if self._awaiting_colon:
+            if char.isspace():
+                return ""
+            if char == ":":
+                self._awaiting_colon = False
+                self._awaiting_value = True
+            else:
+                self._awaiting_colon = False
+            return ""
+
+        if self._awaiting_value:
+            if char.isspace():
+                return ""
+            if char == '"':
+                self._start_string(capture_value=True)
+            else:
+                self._awaiting_value = False
+            return ""
+
+        if char == '"':
+            self._start_string(capture_value=False)
+        return ""
+
+    def _start_string(self, *, capture_value: bool) -> None:
+        self._in_string = True
+        self._capture_value = capture_value
+        self._escape = False
+        self._unicode_digits = None
+        self._token_raw = []
+        if capture_value:
+            self._awaiting_value = False
+
+    def _feed_string_char(self, char: str) -> str:
+        if self._unicode_digits is not None:
+            self._unicode_digits += char
+            if len(self._unicode_digits) == 4:
+                digits = self._unicode_digits
+                self._unicode_digits = None
+                self._escape = False
+                try:
+                    return chr(int(digits, 16)) if self._capture_value else ""
+                except ValueError:
+                    return ""
+            return ""
+
+        if self._escape:
+            self._escape = False
+            if char == "u":
+                self._unicode_digits = ""
+                return ""
+            if self._capture_value:
+                return {
+                    '"': '"',
+                    "\\": "\\",
+                    "/": "/",
+                    "b": "\b",
+                    "f": "\f",
+                    "n": "\n",
+                    "r": "\r",
+                    "t": "\t",
+                }.get(char, char)
+            self._token_raw.append("\\" + char)
+            return ""
+
+        if char == "\\":
+            self._escape = True
+            if not self._capture_value:
+                self._token_raw.append(char)
+            return ""
+
+        if char == '"':
+            self._finish_string()
+            return ""
+
+        if self._capture_value:
+            return char
+
+        self._token_raw.append(char)
+        return ""
+
+    def _finish_string(self) -> None:
+        was_capture = self._capture_value
+        self._in_string = False
+        self._capture_value = False
+        self._escape = False
+        self._unicode_digits = None
+
+        if was_capture:
+            self._done = True
+            return
+
+        raw = "".join(self._token_raw)
+        self._token_raw = []
+        try:
+            value = json.loads(f'"{raw}"')
+        except json.JSONDecodeError:
+            return
+        if value == "final_message":
+            self._awaiting_colon = True
+
+
+async def stream_llm_call(
     llm_call: Callable[..., Any],
     lm_messages: list[dict[str, str]],
     prompt: str,
+    *,
+    emit_final_message_delta: bool = True,
     **kwargs: Any,
-) -> tuple[list[str], str] | None:
-    """Try stream llm call."""
+) -> AsyncIterator[RuntimeEvent | StreamingLlmAttempt]:
+    """Try an LLM streaming call and yield semantic text deltas plus final raw JSON."""
     try:
         result = await llm_call(lm_messages, prompt, stream=True, **kwargs)
     except TypeError:
-        # LLM not supports stream kwarg
-        return None
+        return
 
     if isinstance(result, LlmCallResult):
         if result.thinking:
@@ -53,18 +196,56 @@ async def try_stream_llm_call(
                 "Thinking content in streaming path will not be emitted as event. "
                 "Ensure _should_buffer_postprocessing returns True when thinking is configured.",
             )
-        return [result.text], result.text
+        yield StreamingLlmAttempt(
+            raw=result.text,
+            used_stream=False,
+            emitted_text_delta=False,
+            thinking=result.thinking,
+        )
+        return
 
     if isinstance(result, str):
-        return [result], result
+        yield StreamingLlmAttempt(raw=result, used_stream=True, emitted_text_delta=False)
+        return
 
     if not hasattr(result, "__aiter__"):
-        return None
+        return
 
-    chunks: list[str] = []
+    raw_buffer = io.StringIO()
+    extractor = FinalMessageDeltaExtractor()
+    emitted = False
     async for chunk in result:
-        chunks.append(chunk)
-    return chunks, "".join(chunks)
+        raw_buffer.write(chunk)
+        if not emit_final_message_delta:
+            continue
+        for delta in extractor.feed(chunk):
+            emitted = True
+            yield RuntimeEvent.assistant_delta(delta)
+    yield StreamingLlmAttempt(
+        raw=raw_buffer.getvalue(),
+        used_stream=True,
+        emitted_text_delta=emitted,
+    )
+
+
+async def try_stream_llm_call(
+    llm_call: Callable[..., Any],
+    lm_messages: list[dict[str, str]],
+    prompt: str,
+    **kwargs: Any,
+) -> StreamingLlmAttempt | None:
+    """Try a streaming LLM call and return raw output without buffering chunks."""
+    attempt: StreamingLlmAttempt | None = None
+    async for item in stream_llm_call(
+        llm_call,
+        lm_messages,
+        prompt,
+        emit_final_message_delta=False,
+        **kwargs,
+    ):
+        if isinstance(item, StreamingLlmAttempt):
+            attempt = item
+    return attempt
 
 
 async def run_buffered_llm_call(
@@ -158,7 +339,13 @@ async def _stream_with_error_normalization(
     except ThinLlmError:
         raise
     except Exception as exc:
-        logger.error("LLM API error (%s)", provider, exc_info=True)
+        logger.error(
+            "LLM API error (%s, %s): %s",
+            provider,
+            type(exc).__name__,
+            redact_secrets(str(exc)),
+            extra={"provider": provider, "exc_type": type(exc).__name__},
+        )
         raise provider_runtime_crash(provider, exc) from exc
 
 
@@ -192,7 +379,11 @@ async def default_llm_call(
         raise
     except Exception as exc:
         logger.error(
-            "Ошибка инициализации LLM адаптера (%s)", resolved.provider, exc_info=True
+            "Ошибка инициализации LLM адаптера (%s, %s): %s",
+            resolved.provider,
+            type(exc).__name__,
+            redact_secrets(str(exc)),
+            extra={"provider": resolved.provider, "exc_type": type(exc).__name__},
         )
         raise provider_runtime_crash(resolved.provider, exc) from exc
 
@@ -212,7 +403,13 @@ async def default_llm_call(
     except ThinLlmError:
         raise
     except Exception as exc:
-        logger.error("LLM API error (%s)", resolved.provider, exc_info=True)
+        logger.error(
+            "LLM API error (%s, %s): %s",
+            resolved.provider,
+            type(exc).__name__,
+            redact_secrets(str(exc)),
+            extra={"provider": resolved.provider, "exc_type": type(exc).__name__},
+        )
         raise provider_runtime_crash(resolved.provider, exc) from exc
 
 

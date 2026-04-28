@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import types
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -225,3 +226,35 @@ class TestCall:
         fake_handle = PluginHandle(plugin_id="missing", name="x")
         with pytest.raises(KeyError, match="Unknown plugin"):
             await runner.call(fake_handle, "anything")
+
+
+class TestWorkerShimRpcAllowlist:
+    def test_worker_shim_allows_public_callable_without_all(self) -> None:
+        from swarmline.plugins._worker_shim import _is_rpc_method_allowed
+
+        module = types.SimpleNamespace(public=lambda: "ok", _private=lambda: "no")
+
+        assert _is_rpc_method_allowed(module, "public") is True
+
+    @pytest.mark.parametrize("method", ["_private", "__dunder__"])
+    def test_worker_shim_rejects_private_methods_without_all(self, method: str) -> None:
+        from swarmline.plugins._worker_shim import _is_rpc_method_allowed
+
+        module = types.SimpleNamespace(
+            _private=lambda: "no",
+            __dunder__=lambda: "no",
+        )
+
+        assert _is_rpc_method_allowed(module, method) is False
+
+    def test_worker_shim_respects_module_all(self) -> None:
+        from swarmline.plugins._worker_shim import _is_rpc_method_allowed
+
+        module = types.SimpleNamespace(
+            __all__=["exported"],
+            exported=lambda: "ok",
+            public_but_not_exported=lambda: "no",
+        )
+
+        assert _is_rpc_method_allowed(module, "exported") is True
+        assert _is_rpc_method_allowed(module, "public_but_not_exported") is False

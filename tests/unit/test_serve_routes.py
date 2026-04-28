@@ -183,6 +183,21 @@ class TestAuth:
             target="query",
         )
 
+    def test_auth_uses_constant_time_compare(self) -> None:
+        from starlette.testclient import TestClient
+
+        agent = _mock_agent()
+        tc = TestClient(create_app(agent, auth_token="secret-123"))
+        with patch("swarmline.serve.app.hmac.compare_digest", return_value=False) as compare:
+            resp = tc.post(
+                "/v1/query",
+                json={"prompt": "hi"},
+                headers={"Authorization": "Bearer wrong"},
+            )
+
+        assert resp.status_code == 401
+        compare.assert_called_once_with("Bearer wrong", "Bearer secret-123")
+
     def test_auth_accepts_valid_token(self) -> None:
         from starlette.testclient import TestClient
 
@@ -202,3 +217,30 @@ class TestAuth:
         tc = TestClient(create_app(agent, auth_token="secret-123"))
         resp = tc.get("/v1/health")
         assert resp.status_code == 200
+
+
+class TestCors:
+    def test_cors_preflight_returns_allowed_origin(self) -> None:
+        from starlette.testclient import TestClient
+
+        agent = _mock_agent()
+        tc = TestClient(
+            create_app(
+                agent,
+                auth_token="secret-123",
+                cors_origins=["https://app.example"],
+            )
+        )
+
+        resp = tc.options(
+            "/v1/query",
+            headers={
+                "Origin": "https://app.example",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "authorization,content-type",
+            },
+        )
+
+        assert resp.status_code == 200
+        assert resp.headers["access-control-allow-origin"] == "https://app.example"
+        assert "authorization" in resp.headers["access-control-allow-headers"].lower()
