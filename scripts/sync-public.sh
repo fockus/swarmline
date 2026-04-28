@@ -15,8 +15,12 @@
 #   4. Cleans up temporary branch
 #   5. Optionally pushes tags (--tags)
 #
-# Private files (excluded from public):
-#   - .memory-bank/       (project memory, plans, notes)
+# Private files/dirs (excluded from public — see PRIVATE_PATHS array below):
+#   - .memory-bank/        (project memory, plans, notes, reports)
+#   - .specs/              (internal spec drafts)
+#   - .planning/           (GSD planning artifacts)
+#   - .factory/            (factory pipeline configs)
+#   - .pipeline.yaml       (private build pipeline)
 #   - CLAUDE.md            (Claude Code instructions)
 #   - RULES.md             (development rules)
 #   - AGENTS.md            (replaced with AGENTS.public.md)

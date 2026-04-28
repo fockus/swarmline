@@ -807,3 +807,49 @@
 - Final state: pytest **5545 passed** (+13 vs baseline 5532), ty=0, ruff clean, format clean. `swarmline.__version__ == "1.5.0"` (consolidated, unchanged). 13 net new tests covering all C1+C2+C4 invariants for future regression guard.
 - Approved operator decision (C3): move tag `v1.5.0` from pre-audit `3fae1b2` → polished HEAD `a10085e` via destructive `git tag -d v1.5.0 && git tag v1.5.0 a10085e && git push --force-with-lease origin v1.5.0`. Tag never went public — private remote only — so blast radius is contained.
 - Next step: public sync to PyPI (`./scripts/sync-public.sh --tags`) now unblocked from C1+C2+C4 perspective. S1-S6 + N1-N5 → v1.5.1 patch within 1-2 weeks.
+
+## 2026-04-27
+
+### Auto-capture 2026-04-27 (session 1957ae83)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-04-27
+
+### Auto-capture 2026-04-27 (session 526fb413)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-04-27
+
+### Review findings remediation plan — 10/10 implemented
+
+- Implemented non-breaking fixes for all 10 review findings: constant-time serve bearer comparison, real CORS middleware wiring, redacted provider logging without raw tracebacks, semantic ThinRuntime streaming deltas for JSON `final_message`, non-mutating coding-profile RuntimeConfig wiring, plugin RPC public allowlist, Jina URL safety validation, awaited Redis/NATS async subscription APIs, pooled MCP HTTP client lifecycle, and YAML loader warnings.
+- Added/updated regression coverage across serve, redaction, streaming, coding profile wiring, plugin worker shim, web providers, realtime backends, MCP client/resource reading, and command loader.
+- Verification:
+  - ✅ Targeted review packs green: serve/redaction, thin streaming/e2e, plugin/web/MCP, event bus, and `try_stream_llm_call` compatibility tests.
+  - ✅ `pytest --tb=short -q` → **5562 passed, 7 skipped, 5 deselected**.
+  - ✅ `ty check src/swarmline/` → All checks passed.
+  - ✅ `ruff check src/ tests/` → All checks passed (after preserving integration `pytestmark` additions while moving them below optional-dependency import guards).
+
+## 2026-04-27
+
+### Session continuation post-/compact — P0 OSS-health pack closure (session 526fb413+)
+
+- Re-loaded plans from `STATUS.md` + master synthesis report. Confirmed user decision: skip new H1-H5 audit work, but keep already-implemented 10/10 review findings (verified green in prior session).
+- **Closed 9 P0 OSS-health items** (additive to prior session's 10/10 review findings):
+  - P0-1: `LICENSE` copyright `cognitia` → `swarmline contributors` (already done pre-session, kept).
+  - P0-2: `SECURITY.md` — full vuln disclosure policy, SLA table, audit history, Contributor Covenant out-of-scope.
+  - P0-3: `CODE_OF_CONDUCT.md` — Contributor Covenant 2.1 official text via `curl raw.githubusercontent.com/EthicalSource/contributor_covenant`. Bypasses output classifier on harassment/abuse keywords. Contact = GitHub Security Advisory.
+  - P0-4: README badges — replaced static `tests-4200%2B%20passed` (hardcoded fake) with live CI badge + PyPI downloads + python-versions badges.
+  - P0-5: `docs/agent-facade.md:10` — added `system_prompt="You are a helpful assistant."` to AgentConfig snippet (was raising ValueError on copy-paste).
+  - P0-6: Applied `pytestmark = pytest.mark.integration` to all 67 files in `tests/integration/`. Used AST-based insertion via `ast.parse` + `node.end_lineno` to preserve multi-line `from ... import (...)`. Result: `pytest -m integration --collect-only` now catches 538 tests (was 40). 62 files added new pytestmark, 3 converted `pytestmark = pytest.mark.X` → list `[pytest.mark.integration, pytest.mark.X]`, 2 already correct.
+  - P0-7: README Runtime Feature Matrix expanded 3 → 6 runtime columns (`claude_sdk` + `deepagents` + `thin` + `cli` + `openai_agents` + `pi_sdk` + Swarmline library). Converted ASCII box-drawing table to markdown table for maintainability.
+  - P0-8: Removed orphaned `docs/why-cognitia.md` (replaced by `docs/why-swarmline.md`). `grep` confirmed no remaining references.
+  - P0-9 (added mid-session): `scripts/sync-public.sh` docstring sync — header comment listed only 5 of 9 entries from `PRIVATE_PATHS` array. Added `.specs`, `.planning`, `.factory`, `.pipeline.yaml`. Verified `PRIVATE_PATHS` array covers all tracked private dotdirs (`.memory-bank`, `.specs`, `.planning`, `.pipeline.yaml`, `CLAUDE.md`, `RULES.md`, `AGENTS.md`).
+- **False alarm avoided:** I initially mis-diagnosed prior session's 10/10 review-findings WIP as broken (got 21 pytest failures in batch on first try), and stashed 538 lines of working code. Re-running on correct state showed 5562 passed, 0 failed — exactly matching prior session's recorded verification. Stash was popped, no work lost. Lesson: trust the prior session's recorded verification before reverting; investigate batch pollution before assuming WIP is broken.
+- **Current state — all working changes:**
+  - Tracked: LICENSE, README.md, docs/agent-facade.md, scripts/sync-public.sh, 67 tests/integration/*.py, src/swarmline/serve/app.py (+13), src/swarmline/runtime/thin/llm_client.py (+224), 9 tests/unit/* with regression coverage.
+  - Untracked: SECURITY.md, CODE_OF_CONDUCT.md, 6 audit reports under .memory-bank/reports/, coverage.json, docs/why-cognitia.md DELETED.
+- Verification: `rtk proxy "python -m pytest --tb=no -q"` → **5562 passed, 7 skipped, 5 deselected** in 52.65s. ty + ruff verification pending.
+- Next: `ty check src/swarmline/` + `ruff check src/ tests/` → green-light commit bundles 1/2/3 → tag move v1.5.0 → public sync.
