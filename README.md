@@ -3,9 +3,10 @@
 **Build AI agents in Python** — from a single assistant to hierarchical multi-agent systems.
 
 [![PyPI version](https://img.shields.io/pypi/v/swarmline.svg)](https://pypi.org/project/swarmline/)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/swarmline.svg)](https://pypi.org/project/swarmline/)
+[![Python versions](https://img.shields.io/pypi/pyversions/swarmline.svg)](https://pypi.org/project/swarmline/)
+[![CI](https://github.com/fockus/swarmline/actions/workflows/ci.yml/badge.svg)](https://github.com/fockus/swarmline/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-4200%2B%20passed-brightgreen.svg)](https://github.com/fockus/swarmline)
 [![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://swarmline.readthedocs.io/)
 
 > Provider-agnostic, pluggable runtimes (Anthropic, OpenAI, Google, DeepSeek), persistent memory, agent graphs with governance, knowledge banks, pipeline execution, and Clean Architecture.
@@ -400,36 +401,31 @@ export SWARMLINE_RUNTIME=thin
 
 Each runtime brings unique native strengths. Swarmline's library layer fills the gaps — so your code works the same regardless of which runtime is active.
 
-```
-┌──────────────────────────┬──────────┬───────────┬───────┬──────────────┐
-│ Feature                  │ claude   │ deep      │ thin  │ Swarmline    │
-│                          │ _sdk     │ agents    │       │ library      │
-├──────────────────────────┼──────────┼───────────┼───────┼──────────────┤
-│ MCP Servers              │ ✅ SDK   │ ❌        │ ✅    │ ✅ bridge    │
-│ Streaming (token-level)  │ ✅       │ ✅        │ ⚠️    │ ✅ portable  │
-│ Structured Output        │ ✅ SDK   │ ✅ both   │ ✅    │ ✅ portable  │
-│ Tool Masking             │ ✅ SDK   │ ✅ auto   │ ✅    │ ✅ config    │
-│ Hooks (PreToolUse etc)   │ ✅       │ ❌        │ ❌    │ ✅ middleware │
-│ Subagents                │ ✅       │ ✅        │ ✅    │ ✅ lib       │
-│ Team Mode                │ ✅ lead  │ ✅ super  │ ⚠️    │ ✅ lib       │
-│ Resume / Stateful        │ ✅ SDK   │ ✅ CP     │ ❌    │ ✅ lib       │
-│ HITL / Approvals         │ ✅ SDK   │ ✅ int    │ ❌    │ ✅ event     │
-│ Budget Enforcement       │ ✅ SDK   │ ❌        │ ✅    │ ✅ middleware │
-│ Provider Override        │ ❌       │ ✅        │ ✅    │ ✅ registry  │
-│ Built-in Planner Mode    │ ❌       │ ⚠️ LG     │ ✅    │ ✅ lib       │
-│ Native Built-in Tools    │ ✅ SDK   │ ✅ (9)    │ ❌    │ —            │
-│ State Persistence        │ ✅ SDK   │ ✅ CP     │ ❌    │ ✅ lib       │
-│ Graph Workflows          │ ❌       │ ✅ LG     │ ❌    │ —            │
-│ Multi-Provider           │ ❌       │ ✅        │ ✅    │ ✅ registry  │
-│ Memory Bank              │ —        │ —         │ —     │ ✅ FS/DB     │
-│ DoD Verification         │ —        │ —         │ —     │ ✅ lib       │
-│ Context Builder          │ —        │ —         │ —     │ ✅ budget    │
-│ Planning & Orchestration │ —        │ —         │ —     │ ✅ lib       │
-└──────────────────────────┴──────────┴───────────┴───────┴──────────────┘
+| Feature                  | `claude_sdk` | `deepagents` | `thin` | `cli`       | `openai_agents` | `pi_sdk` | Swarmline library |
+|--------------------------|--------------|--------------|--------|-------------|-----------------|----------|-------------------|
+| MCP Servers              | ✅ SDK       | ❌           | ✅     | ⚠️ bridge   | ⚠️ bridge       | ⚠️ bridge | ✅ bridge         |
+| Streaming (token-level)  | ✅           | ✅           | ⚠️     | ✅ NDJSON   | ✅ SDK          | ✅ SDK   | ✅ portable       |
+| Structured Output        | ✅ SDK       | ✅ both      | ✅     | ⚠️ via tool | ✅ SDK          | ✅ SDK   | ✅ portable       |
+| Tool Masking             | ✅ SDK       | ✅ auto      | ✅     | ⚠️          | ✅ SDK          | ⚠️       | ✅ config         |
+| Hooks (PreToolUse etc)   | ✅           | ❌           | ✅     | ❌          | ⚠️ guardrails   | ❌       | ✅ middleware     |
+| Subagents                | ✅           | ✅           | ✅     | ❌          | ✅              | ⚠️       | ✅ lib            |
+| Team Mode                | ✅ lead      | ✅ super     | ⚠️     | ❌          | ✅ handoffs     | ❌       | ✅ lib            |
+| Resume / Stateful        | ✅ SDK       | ✅ CP        | ✅     | ❌          | ⚠️              | ❌       | ✅ lib            |
+| HITL / Approvals         | ✅ SDK       | ✅ int       | ❌     | ❌          | ✅ approvals    | ❌       | ✅ event          |
+| Budget Enforcement       | ✅ SDK       | ❌           | ✅     | ❌          | ⚠️              | ❌       | ✅ middleware     |
+| Provider Override        | ❌           | ✅           | ✅     | ❌          | ⚠️              | ⚠️       | ✅ registry       |
+| Built-in Planner Mode    | ❌           | ⚠️ LG        | ✅     | ❌          | ❌              | ❌       | ✅ lib            |
+| Native Built-in Tools    | ✅ SDK       | ✅ (9)       | ❌     | depends     | ✅ SDK          | ✅ SDK   | —                 |
+| State Persistence        | ✅ SDK       | ✅ CP        | ✅     | ❌          | ⚠️              | ❌       | ✅ lib            |
+| Graph Workflows          | ❌           | ✅ LG        | ❌     | ❌          | ⚠️              | ❌       | —                 |
+| Multi-Provider           | ❌           | ✅           | ✅     | depends     | ⚠️              | ⚠️       | ✅ registry       |
+| Memory Bank              | —            | —            | —      | —           | —               | —        | ✅ FS/DB          |
+| DoD Verification         | —            | —            | —      | —           | —               | —        | ✅ lib            |
+| Context Builder          | —            | —            | —      | —           | —               | —        | ✅ budget         |
+| Planning & Orchestration | —            | —            | —      | —           | —               | —        | ✅ lib            |
 
-Legend: ✅ = Supported  ⚠️ = Partial  ❌ = Not supported  — = N/A
-CP = Checkpointer  LG = LangGraph  int = interrupt_on
-```
+Legend: ✅ = Supported  ⚠️ = Partial / via bridge  ❌ = Not supported  — = N/A
+CP = Checkpointer  LG = LangGraph  int = interrupt_on  NDJSON = streaming line-delimited JSON
 
 The **Swarmline library** column shows what works with **any** runtime — memory bank, planning, DoD verification, context builder, middleware, and orchestration are all runtime-agnostic.
 

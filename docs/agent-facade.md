@@ -7,7 +7,10 @@ The `swarmline.agent` module provides a high-level API for building AI agents in
 ```python
 from swarmline import Agent, AgentConfig, tool
 
-agent = Agent(AgentConfig(runtime="thin"))
+agent = Agent(AgentConfig(
+    system_prompt="You are a helpful assistant.",
+    runtime="thin",
+))
 result = await agent.query("Hello!")
 print(result.text)
 ```
