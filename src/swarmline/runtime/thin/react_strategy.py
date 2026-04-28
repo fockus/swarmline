@@ -19,7 +19,11 @@ from swarmline.runtime.thin.helpers import (
     _messages_to_lm,
     _should_buffer_postprocessing,
 )
-from swarmline.runtime.thin.llm_client import run_buffered_llm_call, try_stream_llm_call
+from swarmline.runtime.thin.llm_client import (
+    StreamingLlmAttempt,
+    run_buffered_llm_call,
+    stream_llm_call,
+)
 from swarmline.runtime.thin.parsers import extract_text_fallback, parse_envelope
 from swarmline.runtime.thin.prompts import build_react_prompt
 from swarmline.runtime.types import (
@@ -61,12 +65,12 @@ async def run_react(  # noqa: C901
     tool_calls_count = 0
     retries = 0
     last_raw = ""
-    stream_chunks: list[str] = []
     buffered_postprocessing = _should_buffer_postprocessing(config)
     thinking_metadata: dict[str, Any] | None = None
 
     while iterations < config.max_iterations:
         iterations += 1
+        stream_emitted_text = False
 
         # --- Native tool calling path (Strangler Fig: opt-in) ---
         if native_adapter is not None and config.use_native_tools and tools:
@@ -214,19 +218,29 @@ async def run_react(  # noqa: C901
                         "thinking": attempt.thinking,
                         "non_compactable": True,
                     }
-                stream_chunks = attempt.chunks
+                stream_emitted_text = False
                 raw = attempt.raw
             else:
-                stream_result = await try_stream_llm_call(llm_call, lm_messages, prompt)
+                stream_result: StreamingLlmAttempt | None = None
+                async for stream_item in stream_llm_call(
+                    llm_call,
+                    lm_messages,
+                    prompt,
+                ):
+                    if isinstance(stream_item, RuntimeEvent):
+                        yield stream_item
+                    else:
+                        stream_result = stream_item
                 if stream_result is not None:
-                    stream_chunks, raw = stream_result
+                    raw = stream_result.raw
+                    stream_emitted_text = stream_result.emitted_text_delta
                 else:
                     checkpoint_event = await _run_checkpoint(checkpoint)
                     if checkpoint_event is not None:
                         yield checkpoint_event
                         return
                     raw = await llm_call(lm_messages, prompt)
-                    stream_chunks = []
+                    stream_emitted_text = False
         except ThinLlmError as exc:
             yield RuntimeEvent.error(exc.error)
             return
@@ -363,10 +377,7 @@ async def run_react(  # noqa: C901
             if checkpoint_event is not None:
                 yield checkpoint_event
                 return
-            if not buffered_postprocessing and stream_chunks:
-                for chunk in stream_chunks:
-                    yield RuntimeEvent.assistant_delta(chunk)
-            elif not buffered_postprocessing:
+            if not buffered_postprocessing and not stream_emitted_text:
                 yield RuntimeEvent.assistant_delta(text)
             async for event in finalize_with_validation(
                 text,
@@ -395,10 +406,7 @@ async def run_react(  # noqa: C901
             if checkpoint_event is not None:
                 yield checkpoint_event
                 return
-            if not buffered_postprocessing and stream_chunks:
-                for chunk in stream_chunks:
-                    yield RuntimeEvent.assistant_delta(chunk)
-            elif not buffered_postprocessing:
+            if not buffered_postprocessing and not stream_emitted_text:
                 yield RuntimeEvent.assistant_delta(text)
             async for event in finalize_with_validation(
                 text,

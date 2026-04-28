@@ -6,12 +6,15 @@ Supports: single file, directory scan, single-command and multi-command formats.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -104,7 +107,8 @@ def _load_single_file(path: Path) -> list[LoadedCommand]:
     """Load commands from a single YAML file. Returns [] on error."""
     try:
         data = yaml.safe_load(path.read_text())
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to load command YAML path=%s error=%s", path, exc)
         return []
     return _parse_yaml_data(data)
 

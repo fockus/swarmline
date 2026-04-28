@@ -77,7 +77,7 @@ class RedisEventBus:
             await self._redis.close()
 
     def subscribe(self, event_type: str, callback: Callable[..., Any]) -> str:
-        """Register a local callback. Also subscribes to Redis channel."""
+        """Compatibility wrapper: register locally and subscribe fire-and-forget."""
         sub_id = f"rsub_{self._counter}"
         self._counter += 1
         is_first = (
@@ -92,14 +92,39 @@ class RedisEventBus:
 
         return sub_id
 
+    async def async_subscribe(self, event_type: str, callback: Callable[..., Any]) -> str:
+        """Register a local callback and await Redis channel subscription."""
+        sub_id = f"rsub_{self._counter}"
+        self._counter += 1
+        is_first = (
+            event_type not in self._subscribers or not self._subscribers[event_type]
+        )
+        self._subscribers.setdefault(event_type, {})[sub_id] = callback
+
+        if is_first and self._pubsub is not None:
+            channel = f"{self._prefix}:{event_type}"
+            await self._pubsub.subscribe(channel)
+
+        return sub_id
+
     def unsubscribe(self, subscription_id: str) -> None:
-        """Remove a local callback. Unsubscribes from Redis if last."""
+        """Compatibility wrapper: remove locally and unsubscribe fire-and-forget."""
         for event_type, subs in self._subscribers.items():
             if subscription_id in subs:
                 del subs[subscription_id]
                 if not subs and self._pubsub is not None:
                     channel = f"{self._prefix}:{event_type}"
                     asyncio.ensure_future(self._pubsub.unsubscribe(channel))
+                break
+
+    async def async_unsubscribe(self, subscription_id: str) -> None:
+        """Remove a local callback and await Redis unsubscribe when last."""
+        for event_type, subs in self._subscribers.items():
+            if subscription_id in subs:
+                del subs[subscription_id]
+                if not subs and self._pubsub is not None:
+                    channel = f"{self._prefix}:{event_type}"
+                    await self._pubsub.unsubscribe(channel)
                 break
 
     async def emit(self, event_type: str, data: dict[str, Any]) -> None:

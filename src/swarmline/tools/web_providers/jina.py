@@ -10,6 +10,8 @@ from __future__ import annotations
 import httpx
 import structlog
 
+from swarmline.network_safety import validate_http_endpoint_url
+
 _log = structlog.get_logger(component="web_fetch.jina")
 
 _JINA_READER_BASE = "https://r.jina.ai/"
@@ -39,6 +41,15 @@ class JinaReaderFetchProvider:
         """
         if not url or not url.strip():
             return ""
+        normalized_url = url.strip()
+        rejection = validate_http_endpoint_url(normalized_url)
+        if rejection:
+            _log.warning(
+                "jina_fetch_url_denied",
+                url=normalized_url[:200],
+                reason=rejection,
+            )
+            return ""
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",
@@ -50,12 +61,12 @@ class JinaReaderFetchProvider:
                 timeout=self._timeout, follow_redirects=True
             ) as client:
                 response = await client.get(
-                    f"{_JINA_READER_BASE}{url.strip()}",
+                    f"{_JINA_READER_BASE}{normalized_url}",
                     headers=headers,
                 )
                 response.raise_for_status()
                 content = response.text
                 return content[:50000]
         except (httpx.HTTPError, ValueError, OSError) as exc:
-            _log.warning("jina_fetch_failed", url=url[:200], error=str(exc))
+            _log.warning("jina_fetch_failed", url=normalized_url[:200], error=str(exc))
             return ""

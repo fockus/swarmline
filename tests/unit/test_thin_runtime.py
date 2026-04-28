@@ -264,7 +264,7 @@ class TestThinRuntimeConversational:
     async def test_conversational_streaming_without_postprocessing_keeps_eager_deltas(
         self,
     ) -> None:
-        """Without guardrails/output_type/retry chanki strimyatsya eagerly kak ranshe."""
+        """Without guardrails/output_type/retry final_message text streams eagerly."""
 
         async def streaming_llm(
             messages: list[dict[str, str]],
@@ -288,7 +288,7 @@ class TestThinRuntimeConversational:
         ]
         final = next(event for event in events if event.type == "final")
 
-        assert deltas == ['{"type":"final","final_message":"Hel', 'lo"}']
+        assert deltas == ["H", "e", "l", "l", "o"]
         assert final.data["text"] == "Hello"
 
     @pytest.mark.asyncio

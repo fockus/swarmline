@@ -68,7 +68,7 @@ class NatsEventBus:
             await self._nc.drain()
 
     def subscribe(self, event_type: str, callback: Callable[..., Any]) -> str:
-        """Register a local callback. Also subscribes to NATS subject."""
+        """Compatibility wrapper: register locally and subscribe fire-and-forget."""
         sub_id = f"nsub_{self._counter}"
         self._counter += 1
         is_first = (
@@ -81,13 +81,36 @@ class NatsEventBus:
 
         return sub_id
 
+    async def async_subscribe(self, event_type: str, callback: Callable[..., Any]) -> str:
+        """Register a local callback and await NATS subject subscription."""
+        sub_id = f"nsub_{self._counter}"
+        self._counter += 1
+        is_first = (
+            event_type not in self._subscribers or not self._subscribers[event_type]
+        )
+        self._subscribers.setdefault(event_type, {})[sub_id] = callback
+
+        if is_first and self._nc is not None:
+            await self._subscribe_nats(event_type)
+
+        return sub_id
+
     def unsubscribe(self, subscription_id: str) -> None:
-        """Remove a local callback. Unsubscribes from NATS if last."""
+        """Compatibility wrapper: remove locally and unsubscribe fire-and-forget."""
         for event_type, subs in self._subscribers.items():
             if subscription_id in subs:
                 del subs[subscription_id]
                 if not subs and event_type in self._nats_subs:
                     asyncio.ensure_future(self._unsubscribe_nats(event_type))
+                break
+
+    async def async_unsubscribe(self, subscription_id: str) -> None:
+        """Remove a local callback and await NATS unsubscribe when last."""
+        for event_type, subs in self._subscribers.items():
+            if subscription_id in subs:
+                del subs[subscription_id]
+                if not subs and event_type in self._nats_subs:
+                    await self._unsubscribe_nats(event_type)
                 break
 
     async def emit(self, event_type: str, data: dict[str, Any]) -> None:

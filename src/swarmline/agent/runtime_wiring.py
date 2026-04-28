@@ -175,25 +175,29 @@ def build_portable_runtime_plan(
                 "Coding profile enabled. "
                 f"allow_host_execution={agent_config.coding_profile.allow_host_execution}"
             )
-        runtime_config.input_filters.append(
-            CodingContextInputFilter(
-                workspace_cwd=cwd,
-                board_text=board_context if isinstance(board_context, str) else "",
-                search_text=search_context if isinstance(search_context, str) else "",
-                skill_profile_text=str(skill_profile_text),
-                task_session_store=session_store,
-                task_session_agent_id=(
-                    str(session_agent_id)
-                    if isinstance(session_agent_id, str)
-                    else "coding"
+        runtime_config = replace(
+            runtime_config,
+            input_filters=[
+                *runtime_config.input_filters,
+                CodingContextInputFilter(
+                    workspace_cwd=cwd,
+                    board_text=board_context if isinstance(board_context, str) else "",
+                    search_text=search_context if isinstance(search_context, str) else "",
+                    skill_profile_text=str(skill_profile_text),
+                    task_session_store=session_store,
+                    task_session_agent_id=(
+                        str(session_agent_id)
+                        if isinstance(session_agent_id, str)
+                        else "coding"
+                    ),
+                    task_session_task_id=session_id,
+                    budget_tokens=(
+                        int(budget_tokens_raw)
+                        if isinstance(budget_tokens_raw, (int, float))
+                        else 2000
+                    ),
                 ),
-                task_session_task_id=session_id,
-                budget_tokens=(
-                    int(budget_tokens_raw)
-                    if isinstance(budget_tokens_raw, (int, float))
-                    else 2000
-                ),
-            )
+            ],
         )
 
         # LLM-initiated child agents need the same sandbox template so the

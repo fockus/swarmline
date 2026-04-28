@@ -41,6 +41,17 @@ def _success_response(request_id: str | None, result: object) -> dict:
     }
 
 
+def _is_rpc_method_allowed(plugin_module: object, method: str) -> bool:
+    """Return True when method is an explicitly public plugin callable."""
+    exported = getattr(plugin_module, "__all__", None)
+    fn = getattr(plugin_module, method, None)
+    if not callable(fn):
+        return False
+    if exported is not None:
+        return method in set(exported)
+    return not method.startswith("_")
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.stderr.write(
@@ -99,10 +110,10 @@ def main() -> None:
             sys.exit(0)
 
         # Dispatch to plugin module
-        fn = getattr(plugin_module, method, None)
-        if fn is None:
+        if not _is_rpc_method_allowed(plugin_module, method):
             _respond(_error_response(request_id, -32601, f"Method not found: {method}"))
             continue
+        fn = getattr(plugin_module, method)
 
         try:
             params = request.get("params") or {}

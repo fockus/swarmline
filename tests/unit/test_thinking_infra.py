@@ -447,9 +447,9 @@ class TestTryStreamLlmCallThinking:
             "system",
         )
         assert result is not None
-        chunks, full = result
-        assert chunks == ["answer"]
-        assert full == "answer"
+        assert result.raw == "answer"
+        assert result.used_stream is False
+        assert result.thinking == "thought"
 
     @pytest.mark.asyncio
     async def test_plain_str_still_works(self) -> None:
@@ -460,9 +460,8 @@ class TestTryStreamLlmCallThinking:
             "system",
         )
         assert result is not None
-        chunks, full = result
-        assert chunks == ["text"]
-        assert full == "text"
+        assert result.raw == "text"
+        assert result.used_stream is True
 
 
 # ---------------------------------------------------------------------------

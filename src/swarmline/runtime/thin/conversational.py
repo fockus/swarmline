@@ -16,7 +16,11 @@ from swarmline.runtime.thin.helpers import (
     _messages_to_lm,
     _should_buffer_postprocessing,
 )
-from swarmline.runtime.thin.llm_client import run_buffered_llm_call, try_stream_llm_call
+from swarmline.runtime.thin.llm_client import (
+    StreamingLlmAttempt,
+    run_buffered_llm_call,
+    stream_llm_call,
+)
 from swarmline.runtime.thin.parsers import parse_envelope
 from swarmline.runtime.thin.prompts import build_conversational_prompt
 from swarmline.runtime.types import (
@@ -160,12 +164,18 @@ async def run_conversational(
         if checkpoint_event is not None:
             yield checkpoint_event
             return
-        stream_result = await try_stream_llm_call(
+        stream_result: StreamingLlmAttempt | None = None
+        async for stream_item in stream_llm_call(
             llm_call,
             lm_messages,
             prompt,
+            emit_final_message_delta=not native_structured,
             **llm_call_kwargs,
-        )
+        ):
+            if isinstance(stream_item, RuntimeEvent):
+                yield stream_item
+            else:
+                stream_result = stream_item
     except ThinLlmError as exc:
         yield RuntimeEvent.error(exc.error)
         return
@@ -176,7 +186,7 @@ async def run_conversational(
         return
 
     if stream_result is not None:
-        chunks, raw = stream_result
+        raw = stream_result.raw
 
         if native_structured:
             async for event in finalize_with_validation(
@@ -192,13 +202,11 @@ async def run_conversational(
                 yield event
             return
 
-        # Emit per-chunk deltas
-        for chunk in chunks:
-            yield RuntimeEvent.assistant_delta(chunk)
-
         envelope = parse_envelope(raw)
         if envelope is not None and envelope.type == "final" and envelope.final_message:
             text = envelope.final_message
+            if not stream_result.emitted_text_delta:
+                yield RuntimeEvent.assistant_delta(text)
             async for event in finalize_with_validation(
                 text,
                 config,

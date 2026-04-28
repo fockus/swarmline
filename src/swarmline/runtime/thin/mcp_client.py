@@ -103,6 +103,25 @@ class McpClient:
         )
         self._tools_cache: dict[str, tuple[float, list[ToolSpec]]] = {}
         self._resources_cache: dict[str, tuple[float, list[ResourceDescriptor]]] = {}
+        self._client: httpx.AsyncClient | None = None
+
+    async def __aenter__(self) -> McpClient:
+        return self
+
+    async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+        _ = (exc_type, exc, tb)
+        await self.aclose()
+
+    def _get_http_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=self._timeout)
+        return self._client
+
+    async def aclose(self) -> None:
+        """Close the pooled HTTP client, if it has been opened."""
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
 
     async def call_tool(
         self,
@@ -122,9 +141,9 @@ class McpClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(server_url, json=payload)
-                response.raise_for_status()
+            client = self._get_http_client()
+            response = await client.post(server_url, json=payload, timeout=self._timeout)
+            response.raise_for_status()
         except httpx.TimeoutException:
             return {"error": f"Таймаут при вызове MCP tool '{tool_name}'"}
         except Exception as exc:
@@ -171,10 +190,10 @@ class McpClient:
         )
 
         try:
-            async with httpx.AsyncClient(timeout=timeout_value) as client:
-                response = await client.post(server_url, json=payload)
-                response.raise_for_status()
-                data = response.json()
+            client = self._get_http_client()
+            response = await client.post(server_url, json=payload, timeout=timeout_value)
+            response.raise_for_status()
+            data = response.json()
         except Exception:
             if cached is not None:
                 return cached[1]
@@ -267,10 +286,10 @@ class McpClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(server_url, json=payload)
-                response.raise_for_status()
-                data = response.json()
+            client = self._get_http_client()
+            response = await client.post(server_url, json=payload, timeout=self._timeout)
+            response.raise_for_status()
+            data = response.json()
         except Exception:
             if cached is not None:
                 return cached[1]
@@ -337,9 +356,9 @@ class McpClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(server_url, json=payload)
-                response.raise_for_status()
+            client = self._get_http_client()
+            response = await client.post(server_url, json=payload, timeout=self._timeout)
+            response.raise_for_status()
         except httpx.TimeoutException:
             return {"error": f"Timeout reading MCP resource '{uri}'"}
         except Exception as exc:

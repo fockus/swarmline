@@ -786,9 +786,9 @@ class TestTryStreamLlmCallWithAdapter:
             "system",
         )
         assert result is not None
-        chunks, full = result
-        assert chunks == ["chunk1", "chunk2"]
-        assert full == "chunk1chunk2"
+        assert result.raw == "chunk1chunk2"
+        assert result.used_stream is True
+        assert result.emitted_text_delta is False
 
     @pytest.mark.asyncio
     async def test_try_stream_propagates_typed_thin_error(self) -> None:
