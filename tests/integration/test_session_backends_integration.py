@@ -15,6 +15,8 @@ from swarmline.session.backends import (
 from swarmline.session.manager import InMemorySessionManager
 from swarmline.session.types import SessionKey, SessionState
 
+pytestmark = pytest.mark.integration
+
 
 def _make_state(
     user_id: str = "u1",

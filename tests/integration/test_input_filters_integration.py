@@ -10,6 +10,8 @@ from swarmline.input_filters import MaxTokensFilter, SystemPromptInjector
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 
+pytestmark = pytest.mark.integration
+
 
 def _msg(role: str, content: str) -> Message:
     return Message(role=role, content=content)

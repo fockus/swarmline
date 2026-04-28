@@ -12,6 +12,8 @@ from swarmline.session.rehydrator import DefaultSessionRehydrator
 from swarmline.session.types import SessionKey, SessionState
 from swarmline.types import TurnContext
 
+pytestmark = pytest.mark.integration
+
 
 def _mock_adapter(connected: bool = True) -> MagicMock:
     adapter = MagicMock()

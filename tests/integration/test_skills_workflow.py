@@ -17,6 +17,8 @@ from swarmline.policy.tool_policy import (
 from swarmline.skills.loader import YamlSkillLoader
 from swarmline.skills.registry import SkillRegistry
 
+pytestmark = pytest.mark.integration
+
 SKILLS_DIR = Path(__file__).parent.parent.parent / "skills"
 
 

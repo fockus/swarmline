@@ -12,6 +12,8 @@ from swarmline.policy.tool_policy import (
     ToolPolicyInput,
 )
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def codec() -> DefaultToolIdCodec:

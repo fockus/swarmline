@@ -15,7 +15,7 @@ import pytest
 
 pytest.importorskip("claude_agent_sdk", reason="claude-agent-sdk не установлен")
 
-pytestmark = pytest.mark.requires_claude_sdk
+pytestmark = [pytest.mark.integration, pytest.mark.requires_claude_sdk]
 
 from swarmline.hooks.registry import HookRegistry  # noqa: E402
 from swarmline.hooks.sdk_bridge import registry_to_sdk_hooks  # noqa: E402

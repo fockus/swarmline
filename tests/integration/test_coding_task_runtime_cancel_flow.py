@@ -22,6 +22,8 @@ from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
 from swarmline.orchestration.coding_task_runtime import DefaultCodingTaskRuntime
 from swarmline.session.task_session_store import InMemoryTaskSessionStore
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def runtime():

@@ -20,6 +20,8 @@ from swarmline.runtime.thin.llm_providers import (
 )
 from swarmline.runtime.types import RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture(autouse=True)
 def _clear_adapter_cache():

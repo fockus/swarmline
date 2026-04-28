@@ -9,6 +9,9 @@ from swarmline.observability.event_bus import InMemoryEventBus
 from swarmline.observability.tracer import ConsoleTracer, TracingSubscriber
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _make_echo_llm(text: str = "Hello!"):

@@ -10,6 +10,8 @@ from swarmline.context.builder import BuiltContext, ContextInput, DefaultContext
 from swarmline.memory.types import UserProfile
 from swarmline.skills.types import LoadedSkill, McpServerSpec, SkillSpec
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def prompts_dir(tmp_path: Path) -> Path:

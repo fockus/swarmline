@@ -19,6 +19,8 @@ from swarmline.agent import (
 from swarmline.hooks.registry import HookRegistry
 from conftest import FakeStreamEvent
 
+pytestmark = pytest.mark.integration
+
 # ---------------------------------------------------------------------------
 # Full pipeline: Agent + tools + hooks + middleware
 # ---------------------------------------------------------------------------

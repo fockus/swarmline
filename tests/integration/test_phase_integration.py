@@ -13,6 +13,9 @@ from swarmline.commands.registry import CommandRegistry
 from swarmline.hooks.registry import HookRegistry
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 # ---------------------------------------------------------------------------

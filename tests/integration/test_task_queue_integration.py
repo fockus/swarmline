@@ -18,6 +18,8 @@ from swarmline.multi_agent.task_types import (
     TaskStatus,
 )
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Helpers

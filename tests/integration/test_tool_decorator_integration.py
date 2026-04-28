@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from swarmline.agent.tool import ToolDefinition, tool
 from swarmline.runtime.types import ToolSpec
 
+pytestmark = pytest.mark.integration
+
 
 class Priority(enum.Enum):
     LOW = "low"

@@ -15,6 +15,8 @@ import pytest
 
 from swarmline.domain_types import ImageBlock, Message, TextBlock
 
+pytestmark = pytest.mark.integration
+
 # ---------------------------------------------------------------------------
 # ContentBlock domain type round-trip
 # ---------------------------------------------------------------------------

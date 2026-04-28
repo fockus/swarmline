@@ -16,6 +16,8 @@ from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 from swarmline.runtime.types import RuntimeConfig, ToolSpec
 from swarmline.tools.types import SandboxConfig
 
+pytestmark = pytest.mark.integration
+
 
 def _make_llm_call_returning(text: str) -> Any:
     """Create a fake llm_call that returns a canned response."""

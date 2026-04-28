@@ -10,7 +10,7 @@ import pytest
 from swarmline.memory_bank.types import MemoryBankConfig, MemoryBankViolation
 from swarmline.tools.types import SandboxConfig, SandboxViolation
 
-pytestmark = pytest.mark.security
+pytestmark = [pytest.mark.integration, pytest.mark.security]
 
 
 class TestPathIsolationPrefixBypass:

@@ -19,6 +19,8 @@ from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 from swarmline.system_reminder_filter import SystemReminder, SystemReminderFilter
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Helpers

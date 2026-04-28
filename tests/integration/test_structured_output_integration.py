@@ -12,6 +12,8 @@ from swarmline.observability.event_bus import InMemoryEventBus
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 class WeatherReport(BaseModel):
     city: str

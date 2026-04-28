@@ -10,6 +10,9 @@ from swarmline.resilience.circuit_breaker import (
     CircuitState,
 )
 from swarmline.runtime.model_policy import ModelPolicy
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 class TestCircuitBreakerEscalation:

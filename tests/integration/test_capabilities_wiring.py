@@ -9,6 +9,8 @@ import json
 import pytest
 from swarmline.tools.types import SandboxConfig
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture()
 def sandbox_config(tmp_path) -> SandboxConfig:

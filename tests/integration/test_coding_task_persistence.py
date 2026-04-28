@@ -13,6 +13,8 @@ from swarmline.orchestration.coding_task_runtime import DefaultCodingTaskRuntime
 from swarmline.orchestration.coding_task_types import CodingTaskStatus
 from swarmline.session.task_session_store import InMemoryTaskSessionStore
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Fixtures

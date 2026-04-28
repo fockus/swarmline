@@ -13,6 +13,8 @@ from swarmline.orchestration.workflow_executor import ThinWorkflowExecutor
 from swarmline.orchestration.workflow_graph import END_NODE, State, WorkflowGraph
 from swarmline.runtime.types import RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 class TestWorkflowGraphWithThinRuntimeNodes:
     """WorkflowGraph + ThinWorkflowExecutor: 3 nodes pipeline."""

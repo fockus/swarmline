@@ -8,6 +8,8 @@ from swarmline.runtime.capabilities import CapabilityRequirements
 from swarmline.runtime.factory import RuntimeFactory
 from swarmline.runtime.types import RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 class TestRuntimeCapabilityNegotiation:
     """RuntimeFactory and Agent wiring for capability-aware selectiona runtime."""

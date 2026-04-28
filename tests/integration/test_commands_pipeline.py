@@ -16,6 +16,8 @@ from swarmline.commands import (
     load_commands_from_yaml,
 )
 
+pytestmark = pytest.mark.integration
+
 
 class TestCommandRegistryYamlDiscoveryExecute:
     """CommandRegistry + YamlCommandLoader: real YAML, real validation, real execution."""

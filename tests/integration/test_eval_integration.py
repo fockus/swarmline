@@ -14,6 +14,9 @@ from swarmline.eval.scorers import (
     LatencyScorer,
 )
 from swarmline.eval.types import EvalCase
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _mock_agent(responses: dict[str, str]) -> MagicMock:

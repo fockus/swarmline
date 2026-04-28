@@ -14,6 +14,8 @@ from swarmline.agent import Agent, AgentConfig
 from swarmline.runtime.adapter import StreamEvent
 from swarmline.runtime.types import Message, RuntimeEvent
 
+pytestmark = pytest.mark.integration
+
 
 def _portable_reply(prompt: str) -> str:
     return f"portable:{prompt}"

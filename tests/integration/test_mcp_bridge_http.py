@@ -13,6 +13,8 @@ import pytest
 from swarmline.runtime.mcp_bridge import McpBridge
 from swarmline.runtime.thin.mcp_client import McpClient
 
+pytestmark = pytest.mark.integration
+
 
 def _create_mock_transport() -> httpx.MockTransport:
     """httpx MockTransport: obrabatyvaet tools/list and tools/call JSON-RPC."""

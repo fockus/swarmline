@@ -13,6 +13,9 @@ from typing import Any
 from swarmline.rag import Document, RagInputFilter, SimpleRetriever
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 class TestRagInputFilterEndToEnd:

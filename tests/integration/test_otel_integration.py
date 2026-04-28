@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 otel_sdk = pytest.importorskip("opentelemetry.sdk")
 
 from opentelemetry.sdk.trace import TracerProvider  # noqa: E402

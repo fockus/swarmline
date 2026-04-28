@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.live
+pytestmark = [pytest.mark.integration, pytest.mark.live]
 
 from swarmline.tools.web_httpx import HttpxWebProvider, _extract_text  # noqa: E402
 from swarmline.tools.web_protocols import SearchResult  # noqa: E402

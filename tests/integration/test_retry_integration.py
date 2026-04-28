@@ -17,6 +17,9 @@ from swarmline.runtime.types import (
     RuntimeErrorData,
     RuntimeEvent,
 )
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 async def _collect_events(runtime: ThinRuntime, user_text: str) -> list[RuntimeEvent]:

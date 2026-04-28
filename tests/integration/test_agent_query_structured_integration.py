@@ -17,6 +17,8 @@ from swarmline.agent.agent import Agent
 from swarmline.agent.config import AgentConfig
 from swarmline.agent.structured import StructuredOutputError
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Test models

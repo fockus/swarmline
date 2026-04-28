@@ -15,6 +15,8 @@ from swarmline.orchestration.team_types import TeamConfig, TeamMessage
 from swarmline.orchestration.thin_team import ThinTeamOrchestrator
 from swarmline.runtime.types import RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 class TestThinSubagentTeamMessageBus:
     """ThinTeamOrchestrator: start -> workers -> MessageBus -> completion."""

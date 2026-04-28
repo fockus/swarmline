@@ -20,6 +20,8 @@ from swarmline.runtime.types import (
     ToolSpec,
 )
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Mock helpers

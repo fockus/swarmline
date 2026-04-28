@@ -16,6 +16,8 @@ import pytest
 
 from swarmline.session.jsonl_store import JsonlMessageStore
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # SESS-04: JSONL round-trip

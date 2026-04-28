@@ -18,6 +18,8 @@ from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
 from swarmline.runtime.types import Message, RuntimeEvent
 
+pytestmark = pytest.mark.integration
+
 
 async def _final_llm_call(
     messages: list[dict[str, Any]],

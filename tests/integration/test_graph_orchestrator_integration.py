@@ -32,6 +32,8 @@ from swarmline.multi_agent.graph_task_board import InMemoryGraphTaskBoard
 from swarmline.multi_agent.graph_types import AgentNode
 from swarmline.observability.event_bus import InMemoryEventBus
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Fixtures

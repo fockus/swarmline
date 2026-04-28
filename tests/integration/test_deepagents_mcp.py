@@ -13,6 +13,8 @@ from swarmline.runtime.deepagents import DeepAgentsRuntime
 from swarmline.runtime.mcp_bridge import McpBridge
 from swarmline.runtime.types import RuntimeConfig, ToolSpec
 
+pytestmark = pytest.mark.integration
+
 
 class TestDeepAgentsMcpToolInjection:
     """DeepAgentsRuntime + McpBridge: MCP tools injection."""

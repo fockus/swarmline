@@ -15,6 +15,8 @@ from swarmline.orchestration.generic_workflow_engine import (
     GenericWorkflowStatus,
 )
 
+pytestmark = pytest.mark.integration
+
 
 class TestGenericWorkflowExecuteVerifyLoop:
     """GenericWorkflowEngine with real executor and real verifier."""

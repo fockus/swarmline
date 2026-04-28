@@ -20,6 +20,9 @@ from swarmline.ui.projection import (
     UIState,
     project_stream,
 )
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _build_thin_runtime_event_sequence() -> list[RuntimeEvent]:

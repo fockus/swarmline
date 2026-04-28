@@ -16,6 +16,8 @@ from swarmline.runtime.types import Message, RuntimeConfig, ToolSpec
 from swarmline.tools.sandbox_local import LocalSandboxProvider
 from swarmline.tools.types import SandboxConfig
 
+pytestmark = pytest.mark.integration
+
 
 def _make_sandbox(tmp_path: Path) -> LocalSandboxProvider:
     """Create real LocalSandboxProvider with workspace in tmp."""

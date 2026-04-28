@@ -23,6 +23,8 @@ from swarmline.runtime.types import RuntimeConfig
 from swarmline.tools.builtin import create_web_tools
 from swarmline.tools.web_httpx import HttpxWebProvider
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Helpers

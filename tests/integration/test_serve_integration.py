@@ -7,6 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 
 from swarmline.serve.app import create_app
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _mock_agent(responses: dict[str, str] | None = None) -> MagicMock:

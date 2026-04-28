@@ -10,6 +10,8 @@ import pytest
 from swarmline.runtime.capabilities import RuntimeCapabilities
 from swarmline.runtime.types import RuntimeConfig, RuntimeEvent
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Helpers

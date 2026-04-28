@@ -21,6 +21,8 @@ from swarmline.domain_types import Message, RuntimeEvent, ThinkingConfig
 from swarmline.runtime.thin.llm_client import LlmCallResult
 from swarmline.runtime.types import RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

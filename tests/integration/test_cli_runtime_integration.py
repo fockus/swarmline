@@ -16,6 +16,8 @@ from swarmline.runtime.cli.types import CliConfig
 from swarmline.runtime.registry import get_default_registry
 from swarmline.runtime.types import Message, RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 # ---------------------------------------------------------------------------
 # Helpers

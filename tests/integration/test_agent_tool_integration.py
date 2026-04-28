@@ -11,6 +11,9 @@ from typing import Any, AsyncIterator
 from swarmline.multi_agent.agent_tool import create_agent_tool_spec, execute_agent_tool
 from swarmline.multi_agent.types import AgentToolResult
 from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent, ToolSpec
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 # ---------------------------------------------------------------------------

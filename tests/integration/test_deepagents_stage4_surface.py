@@ -14,6 +14,8 @@ from swarmline.agent.conversation import Conversation
 from swarmline.runtime.deepagents import DeepAgentsRuntime
 from swarmline.runtime.types import Message, RuntimeConfig, RuntimeEvent
 
+pytestmark = pytest.mark.integration
+
 
 class FakeRuntime:
     def __init__(self, events: list[RuntimeEvent]) -> None:

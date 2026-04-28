@@ -21,6 +21,8 @@ from swarmline.runtime.thin.coding_toolpack import CODING_TOOL_NAMES
 from swarmline.runtime.types import RuntimeConfig, ToolSpec
 from swarmline.tools.types import SandboxConfig
 
+pytestmark = pytest.mark.integration
+
 
 def _make_coding_policy() -> DefaultToolPolicy:
     """Build a coding-scoped policy allowing all CODING_TOOL_NAMES."""

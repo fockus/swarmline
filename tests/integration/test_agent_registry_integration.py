@@ -7,6 +7,9 @@ and protocol conformance.
 from swarmline.multi_agent.agent_registry import InMemoryAgentRegistry
 from swarmline.multi_agent.registry_types import AgentFilter, AgentRecord, AgentStatus
 from swarmline.protocols.multi_agent import AgentRegistry
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _record(

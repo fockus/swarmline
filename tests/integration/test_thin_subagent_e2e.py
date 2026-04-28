@@ -6,6 +6,9 @@ from __future__ import annotations
 from swarmline.agent.config import AgentConfig
 from swarmline.agent.runtime_wiring import build_portable_runtime_plan
 from swarmline.runtime.thin.subagent_tool import SubagentToolConfig
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 class TestAgentConfigSubagentPropagation:

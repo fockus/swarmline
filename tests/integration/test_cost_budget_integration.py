@@ -6,6 +6,8 @@ from typing import Any
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 class TestCostTrackerWithRealPricing:
     """CostTracker with real pricing.json data."""

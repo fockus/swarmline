@@ -15,6 +15,8 @@ from swarmline.compaction import CompactionConfig, ConversationCompactionFilter
 from swarmline.input_filters import InputFilter, MaxTokensFilter
 from swarmline.runtime.types import Message, RuntimeConfig
 
+pytestmark = pytest.mark.integration
+
 
 def _msg(
     role: str, content: str, name: str | None = None, metadata: dict | None = None

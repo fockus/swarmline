@@ -19,6 +19,8 @@ import os
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 # Skip module entirely if asyncpg / sqlalchemy / Postgres DSN unavailable
 asyncpg = pytest.importorskip("asyncpg")
 sqlalchemy_asyncio = pytest.importorskip("sqlalchemy.ext.asyncio")

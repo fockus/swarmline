@@ -19,6 +19,8 @@ from swarmline.orchestration.verification_types import (
     VerificationStatus,
 )
 
+pytestmark = pytest.mark.integration
+
 
 class PassingCodeVerifier:
     """Real (not mock) implementation CodeVerifier - vse proverki prohodyat."""

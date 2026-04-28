@@ -13,6 +13,9 @@ from unittest.mock import patch
 from swarmline.agent.agent import Agent
 from swarmline.agent.config import AgentConfig
 from swarmline.commands.registry import CommandRegistry
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def _make_registry() -> CommandRegistry:

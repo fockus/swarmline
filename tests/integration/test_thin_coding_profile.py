@@ -32,6 +32,8 @@ from swarmline.runtime.thin.coding_toolpack import (
 from swarmline.tools.sandbox_local import LocalSandboxProvider
 from swarmline.tools.types import SandboxConfig
 
+pytestmark = pytest.mark.integration
+
 
 def _make_sandbox(tmp_path: Path) -> LocalSandboxProvider:
     """Create real LocalSandboxProvider with workspace in tmp."""
