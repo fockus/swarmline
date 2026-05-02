@@ -3,8 +3,9 @@
 Establishes source-level invariants for every optional-dependency import line
 flagged by `ty check src/swarmline/`. The TDD red→green pivot point: this
 file is added BEFORE applying ignore comments to the 13 source files; the
-parametrized cases all FAIL until each line carries `# ty: ignore[unresolved-import]`
-plus an "optional dep" reason comment.
+parametrized cases all FAIL until each direct optional import line carries
+`# ty: ignore[unresolved-import]` plus an "optional dep" reason comment, or
+the optional dependency is loaded structurally through `importlib.import_module`.
 
 Why ty-native `# ty: ignore` rather than classic `# type: ignore`:
     `pyproject.toml [tool.ty.analysis] respect-type-ignore-comments = false`
@@ -21,9 +22,11 @@ Invariants tested:
     1. Each (file, line) location actually contains the expected import statement
        for the listed optional module — guards against off-by-one drift if upstream
        refactors shift line numbers.
-    2. Each such line carries `# ty: ignore[unresolved-import]`.
-    3. Each such line carries the literal substring `optional dep`.
-    4. The 13 affected files contain NO `# type: ignore[import-untyped]` or
+    2. Each direct import line carries `# ty: ignore[unresolved-import]`.
+    3. Each direct import line carries the literal substring `optional dep`.
+    4. Dynamic optional imports use `importlib.import_module(...)` rather than
+       stale ignores that become unused when CI installs all extras.
+    5. The affected files contain NO `# type: ignore[import-untyped]` or
        `# type: ignore[import-not-found]` (mypy-only codes, dead under ty strict).
 """
 
@@ -40,16 +43,10 @@ import pytest
 OPT_IMPORT_LOCATIONS: list[tuple[str, int, str]] = [
     ("src/swarmline/runtime/agent_sdk_adapter.py", 49, "claude_code_sdk"),
     ("src/swarmline/runtime/agent_sdk_adapter.py", 89, "claude_code_sdk"),
-    ("src/swarmline/runtime/openai_agents/runtime.py", 70, "agents"),
-    ("src/swarmline/runtime/openai_agents/runtime.py", 224, "agents.mcp"),
-    ("src/swarmline/runtime/openai_agents/tool_bridge.py", 34, "agents"),
     ("src/swarmline/multi_agent/graph_communication_nats.py", 48, "nats"),
     ("src/swarmline/multi_agent/graph_communication_redis.py", 48, "redis.asyncio"),
     ("src/swarmline/observability/event_bus_nats.py", 53, "nats"),
     ("src/swarmline/observability/event_bus_redis.py", 54, "redis.asyncio"),
-    ("src/swarmline/observability/otel_exporter.py", 44, "opentelemetry"),
-    ("src/swarmline/observability/otel_exporter.py", 45, "opentelemetry.trace"),
-    ("src/swarmline/mcp/_server.py", 85, "fastmcp"),
     ("src/swarmline/tools/extractors.py", 26, "pymupdf4llm"),
     ("src/swarmline/tools/extractors.py", 35, "fitz"),
     ("src/swarmline/tools/extractors.py", 68, "nbformat"),
@@ -66,9 +63,20 @@ OPT_IMPORT_LOCATIONS: list[tuple[str, int, str]] = [
     ("src/swarmline/tools/web_providers/tavily.py", 16, "tavily"),
 ]
 
-assert len(OPT_IMPORT_LOCATIONS) == 22, (
-    f"expected 22 unresolved-import diagnostics from baseline=62, "
+DYNAMIC_OPT_IMPORTS: list[tuple[str, str]] = [
+    ("src/swarmline/runtime/openai_agents/runtime.py", "agents"),
+    ("src/swarmline/runtime/openai_agents/runtime.py", "agents.mcp"),
+    ("src/swarmline/runtime/openai_agents/tool_bridge.py", "agents"),
+    ("src/swarmline/observability/otel_exporter.py", "opentelemetry.trace"),
+    ("src/swarmline/mcp/_server.py", "fastmcp"),
+]
+
+assert len(OPT_IMPORT_LOCATIONS) == 16, (
+    f"expected 16 direct unresolved-import suppressions from baseline=62, "
     f"got {len(OPT_IMPORT_LOCATIONS)}"
+)
+assert len(DYNAMIC_OPT_IMPORTS) == 5, (
+    f"expected 5 dynamic optional imports, got {len(DYNAMIC_OPT_IMPORTS)}"
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -159,3 +167,19 @@ def test_no_dead_mypy_import_codes_in_affected_files(rel_path: str) -> None:
             f"{rel_path} still contains dead mypy code `{token}...]`. "
             f"Replace with `# ty: ignore[unresolved-import]  # optional dep`."
         )
+
+
+@pytest.mark.parametrize(
+    "rel_path, module",
+    DYNAMIC_OPT_IMPORTS,
+    ids=lambda v: v if isinstance(v, str) else str(v),
+)
+def test_dynamic_optional_import_uses_importlib(rel_path: str, module: str) -> None:
+    """Optional imports made dynamic must avoid stale ty suppression comments."""
+    full = REPO_ROOT / rel_path
+    source = full.read_text(encoding="utf-8")
+    token = f'importlib.import_module("{module}")'
+    assert token in source, f"{rel_path} must dynamically import `{module}`"
+    for line in source.splitlines():
+        if token in line:
+            assert "# ty: ignore[unresolved-import]" not in line

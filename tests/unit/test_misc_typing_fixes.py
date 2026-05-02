@@ -52,7 +52,7 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/runtime/adapter.py",
-        209,
+        217,
         "# ty: ignore[invalid-return-type]",
         "McpStatusResponse",
         "claude_agent_sdk McpStatusResponse is dict-compatible at runtime",
@@ -78,7 +78,7 @@ assert len(EXPECTED_FIXES) == 4, (
 
 AFFECTED_FILES_LINE_FIX = sorted({loc[0] for loc in EXPECTED_FIXES})
 GEMINI_PARTS_FILE = "src/swarmline/runtime/thin/llm_providers.py"
-GEMINI_PARTS_LINE = 515
+GEMINI_PARTS_LINE = 521
 
 
 def _read_line(rel_path: str, line_number: int) -> str:

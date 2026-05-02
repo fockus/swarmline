@@ -8,7 +8,7 @@ import time
 from collections.abc import AsyncIterator
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal, cast
 
 from claude_agent_sdk import (
     AssistantMessage,
@@ -27,6 +27,14 @@ from claude_agent_sdk.types import StreamEvent as SdkStreamEvent
 _TASK_STARTED_MESSAGE = "TaskStartedMessage"
 _TASK_PROGRESS_MESSAGE = "TaskProgressMessage"
 _TASK_NOTIFICATION_MESSAGE = "TaskNotificationMessage"
+_PermissionMode = Literal[
+    "default",
+    "acceptEdits",
+    "plan",
+    "bypassPermissions",
+    "dontAsk",
+    "auto",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +209,7 @@ class RuntimeAdapter:
     async def set_permission_mode(self, mode: str) -> None:
         """Set permission mode."""
         client = self._require_client()
-        await client.set_permission_mode(mode)  # type: ignore[arg-type]
+        await client.set_permission_mode(cast(_PermissionMode, mode))
 
     async def get_mcp_status(self) -> dict[str, Any]:
         """Get mcp status."""

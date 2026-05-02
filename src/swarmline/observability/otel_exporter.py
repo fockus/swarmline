@@ -17,6 +17,7 @@ Requires: ``pip install swarmline[otel]``
 
 from __future__ import annotations
 
+import importlib
 import logging
 from typing import Any
 
@@ -41,8 +42,8 @@ def _try_import_otel() -> tuple[Any, Any]:
         (trace module, StatusCode enum) or raises ImportError with install hint.
     """
     try:
-        from opentelemetry import trace  # ty: ignore[unresolved-import]  # optional dep
-        from opentelemetry.trace import StatusCode  # ty: ignore[unresolved-import]  # optional dep
+        trace = importlib.import_module("opentelemetry.trace")
+        StatusCode = getattr(trace, "StatusCode")
 
         return trace, StatusCode
     except ImportError:

@@ -2,15 +2,18 @@
 
 ## Текущий фокус
 
-**v1.5.0 SHIPPED locally** (2026-04-25, tag `v1.5.0` → commit `3fae1b2`). 21-stage release-blockers plan (Tier 1 lint/runtime/docs + Tier 2 CHANGELOG/migration + Tier 3 DX paper-cuts + Tier 4 security) executed end-to-end on `main`. Tag pushed to private `origin` (`github.com/fockus/swarmline-dev`).
+**v1.5.0 RELEASED publicly** (2026-05-02). Public `Publish to PyPI` workflow succeeded for tag `v1.5.0`; PyPI shows `swarmline 1.5.0` as latest. Follow-up public CI hardening is in progress on `main` after the release artifact was published.
 
-**Pending (next step):** public sync via `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC. Awaiting user approval before destructive remote write.
+**Pending (next step):** push post-release CI hardening to private/public `main` and confirm GitHub Actions `CI` green. Do **not** move/re-push tag `v1.5.0` after PyPI publish, because PyPI artifacts are immutable.
 
-**Release gate status (verified 2026-04-27):**
+**Release/CI gate status (verified 2026-05-02):**
 - `ty check src/swarmline/` → All checks passed! (0 diagnostics, baseline locked = 0)
-- `pytest --tb=no -q` → **5452 passed, 7 skipped, 5 deselected, 0 failed** (~52s)
+- CI-like `.[dev,all]` venv: `ty check src/swarmline/` → All checks passed!
+- CI-like `pip freeze --exclude-editable` + `pip-audit --strict --desc --requirement ...` → No known vulnerabilities found
+- `pytest --tb=no -q` → **5600 passed, 7 skipped, 5 deselected, 0 failed** (~52s)
+- `pytest tests/architecture/ -v -m slow` → **3 passed**
 - `ruff check src/ tests/` → All checks passed!
-- Working tree clean except `.memory-bank/codebase/` (untracked, /mb graph output, not part of release)
+- `ruff format --check src/ tests/` → 771 files already formatted
 
 **Предыдущие фазы**:
 - ThinRuntime Claude Code Parity v2 (2026-04-13) — Parity COMPLETE 17/17 фаз. Phase 17 commit `2e2c800`.
@@ -21,7 +24,7 @@
 
 ## Версии
 
-- swarmline: **1.5.0** (tagged 2026-04-25, commit `3fae1b2`; pyproject.toml + serve/app.py both at 1.5.0; not yet on PyPI — pending public sync)
+- swarmline: **1.5.0** (released on PyPI 2026-05-02; public publish workflow succeeded)
 - swarmline: 1.4.1 (currently published on PyPI; will be superseded by 1.5.0)
 - cognitia: 1.5.0 (deprecated wrapper → swarmline; legacy)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
@@ -152,7 +155,7 @@
 ## Active plans
 
 <!-- mb-active-plans -->
-_No active plans — v1.5.0 shipped 2026-04-25. Next single deliverable: public sync (manual, awaiting user approval). Production v2.0 roadmap (Sprints 2-6) on hold pending post-release tasks._
+_No active product plans — v1.5.0 released publicly 2026-05-02. Current operational deliverable: make public GitHub Actions `CI` green after post-release hardening._
 <!-- /mb-active-plans -->
 
 ## Recently done plans
@@ -166,11 +169,11 @@ _No active plans — v1.5.0 shipped 2026-04-25. Next single deliverable: public 
 | Field | Value |
 |-------|-------|
 | Tag | `v1.5.0` |
-| Commit | `3fae1b2` (`release: v1.5.0`) |
-| Date (local) | 2026-04-25 |
-| Pushed to | private `origin` (`github.com/fockus/swarmline-dev`) |
-| Public sync | ⬜ pending — `./scripts/sync-public.sh --tags` not yet executed (awaiting user approval) |
-| PyPI | ⬜ not yet — auto-publishes via OIDC after public sync triggers GitHub Actions |
+| Commit | `a2ad514` (`fix: keep top-level import working without httpx`) |
+| Date (local) | 2026-05-02 |
+| Pushed to | private `origin` + public `fockus/swarmline` |
+| Public sync | ✅ completed via `./scripts/sync-public.sh`; public tag published |
+| PyPI | ✅ `swarmline 1.5.0` published via OIDC; latest on PyPI |
 | `pyproject.toml` version | 1.5.0 |
 | `src/swarmline/serve/app.py` `_VERSION` | 1.5.0 |
 

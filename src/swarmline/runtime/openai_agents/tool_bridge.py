@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import inspect
 from collections.abc import Awaitable, Callable, Mapping
@@ -31,7 +32,7 @@ def toolspec_to_function_tool(
             Signature: ``async def executor(tool_name: str, kwargs: dict) -> str``.
             If None, tool returns an error indicating no executor is configured.
     """
-    from agents import FunctionTool  # ty: ignore[unresolved-import]  # optional dep
+    FunctionTool = getattr(importlib.import_module("agents"), "FunctionTool")
 
     tool_name = spec.name
     tool_executor = executor

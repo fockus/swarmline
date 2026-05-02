@@ -103,5 +103,8 @@ jobs:
       - name: Install project (with all optional deps for full coverage)
         run: pip install -e ".[dev,all]"
 
+      - name: Build pinned audit requirements
+        run: python -m pip freeze --exclude-editable > /tmp/swarmline-audit-requirements.txt
+
       - name: Run pip-audit
-        run: pip-audit --strict --desc
+        run: pip-audit --strict --desc --requirement /tmp/swarmline-audit-requirements.txt

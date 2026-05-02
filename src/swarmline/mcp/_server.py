@@ -13,6 +13,7 @@ Modes:
 from __future__ import annotations
 
 import argparse
+import importlib
 import sys
 from typing import Any
 
@@ -82,7 +83,7 @@ def create_server(*, mode: str = "auto", enable_host_exec: bool = False) -> Any:
     Lazy-imports fastmcp to keep it optional.
     """
     try:
-        from fastmcp import FastMCP  # ty: ignore[unresolved-import]  # optional dep
+        FastMCP = getattr(importlib.import_module("fastmcp"), "FastMCP")
     except ImportError as exc:
         raise ImportError(
             "FastMCP is required for the MCP server. "

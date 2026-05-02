@@ -128,6 +128,12 @@ def _compact_kwargs(kwargs: dict[str, Any], allowed: set[str]) -> dict[str, Any]
     }
 
 
+def _response_text(response: object) -> str:
+    """Extract text from SDK response objects with duck-typed return models."""
+    text = getattr(response, "text", "")
+    return text if isinstance(text, str) else str(text)
+
+
 class AnthropicAdapter:
     """Adapter for Anthropic SDK (messages API)."""
 
@@ -449,7 +455,7 @@ class GoogleAdapter:
         )
         if inspect.isawaitable(response):
             response = await response
-        return response.text  # ty: ignore[unresolved-attribute]  # awaited duck-typed SDK return
+        return _response_text(response)
 
     async def stream(
         self,

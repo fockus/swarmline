@@ -10,8 +10,9 @@ Logic:
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -67,7 +68,7 @@ class OpenAIAgentsRuntime:
         and converts events to RuntimeEvent.
         """
         try:
-            from agents import Agent, Runner  # ty: ignore[unresolved-import]  # optional dep
+            agents_mod = importlib.import_module("agents")
         except ImportError:
             yield RuntimeEvent.error(
                 RuntimeErrorData(
@@ -77,6 +78,8 @@ class OpenAIAgentsRuntime:
                 )
             )
             return
+        Agent = getattr(agents_mod, "Agent")
+        Runner = getattr(agents_mod, "Runner")
 
         effective_config = config or self._config
         model = effective_config.model or self._agents_config.model
@@ -122,7 +125,7 @@ class OpenAIAgentsRuntime:
         try:
             result = Runner.run_streamed(
                 starting_agent=agent,
-                input=agent_input,  # type: ignore[arg-type]
+                input=cast(Any, agent_input),
                 max_turns=self._agents_config.max_turns,
             )
             async for event in result.stream_events():
@@ -221,7 +224,7 @@ class OpenAIAgentsRuntime:
         Passes env vars from config to the MCP server process.
         """
         try:
-            from agents.mcp import MCPServerStdio  # ty: ignore[unresolved-import]  # optional dep
+            mcp_mod = importlib.import_module("agents.mcp")
 
             cfg = self._agents_config
             params: dict[str, Any] = {
@@ -239,10 +242,11 @@ class OpenAIAgentsRuntime:
             if cfg.env:
                 params["env"] = dict(cfg.env)
 
+            MCPServerStdio = getattr(mcp_mod, "MCPServerStdio")
             return [
                 MCPServerStdio(
                     name="Codex CLI",
-                    params=params,  # type: ignore[arg-type]
+                    params=cast(Any, params),
                     client_session_timeout_seconds=300,
                 )
             ]

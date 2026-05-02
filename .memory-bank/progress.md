@@ -908,3 +908,32 @@
   - ✅ `ruff check src/ tests/` → All checks passed.
   - ✅ `ty check src/swarmline/` → All checks passed.
   - ✅ `PYTHONPATH=src pytest --tb=short -q` → **5616 passed, 7 skipped, 5 deselected**.
+
+## 2026-05-02
+
+### v1.5.0 public release + post-release CI hardening
+
+- Completed public release flow for `v1.5.0`:
+  - private `main` and tag pushed;
+  - public-safe snapshot synced to `github.com/fockus/swarmline`;
+  - GitHub Actions `Publish to PyPI` succeeded for tag `v1.5.0`;
+  - PyPI reports `swarmline 1.5.0` as latest.
+- Fixed publish smoke failure from minimal install:
+  - `McpClient` now lazy-loads optional `httpx`, keeping top-level `from swarmline import Agent, AgentConfig` working without thin/MCP extras;
+  - added regression coverage for minimal top-level imports.
+- Fixed public `CI` failure observed after release:
+  - replaced optional-dependency `ty` suppressions that became unused under `.[dev,all]` with structural `importlib.import_module(...)` lazy imports;
+  - casted Claude SDK permission mode to the SDK Literal type;
+  - structurally handled Google response text via `_response_text()`;
+  - changed pip-audit workflow to audit pinned `pip freeze --exclude-editable` requirements instead of the editable local project package.
+- Verification:
+  - ✅ Targeted runtime/optional-dep suite → **130 passed**.
+  - ✅ Typing invariant suite → **112 passed**.
+  - ✅ `ruff check src/ tests/` → All checks passed.
+  - ✅ `ruff format --check src/ tests/` → **771 files already formatted**.
+  - ✅ local `ty check src/swarmline/` → All checks passed.
+  - ✅ CI-like `.[dev,all]` venv `ty check src/swarmline/` → All checks passed.
+  - ✅ CI-like `pip freeze --exclude-editable` + `pip-audit --strict --desc --requirement ...` → No known vulnerabilities found.
+  - ✅ `pytest tests/architecture/ -v -m slow` → **3 passed**.
+  - ✅ `pytest --tb=no -q` → **5600 passed, 7 skipped, 5 deselected**.
+- Next: commit/push this post-release CI hardening, sync public `main` without re-pushing tag `v1.5.0`, then confirm public GitHub Actions `CI` green.

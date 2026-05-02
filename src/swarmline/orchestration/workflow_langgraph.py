@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from swarmline.orchestration.workflow_graph import END_NODE, WorkflowGraph
 
@@ -36,7 +36,7 @@ def compile_to_langgraph(graph: WorkflowGraph) -> Any:
 
             sg.add_node(node_id, _sub_wrapper)
         else:
-            sg.add_node(node_id, node_fn)  # ty: ignore[invalid-argument-type]  # langgraph _Node union strict; callable accepted at runtime
+            sg.add_node(node_id, cast(Any, node_fn))
 
     for entry_id in graph._parallel_groups:
         if entry_id not in graph._nodes:

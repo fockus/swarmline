@@ -5,6 +5,15 @@
 - ✅ 10/10 audit findings implemented: plugin subprocess env hardening, provider/runtime error redaction, public MCP URL validation, `McpBridge` lifecycle, ThinRuntime resumed tool transcript preservation, URL query secret redaction, and web fetch error/log redaction.
 - ✅ Verification complete: targeted audit suite **251 passed**; `ruff check src/ tests/` green; `ty check src/swarmline/` green; full `PYTHONPATH=src pytest --tb=short -q` → **5616 passed, 7 skipped, 5 deselected**.
 
+## v1.5.0 public release — 2026-05-02
+
+- ✅ Private `main` pushed and public-safe snapshot synced to `github.com/fockus/swarmline`.
+- ✅ Tag `v1.5.0` published publicly and `Publish to PyPI` GitHub Actions run succeeded.
+- ✅ PyPI now reports `swarmline 1.5.0` as latest.
+- ✅ Release publish blocker fixed: top-level `import swarmline` works without optional `httpx`.
+- ✅ Post-release CI hardening verified locally: local + CI-like `ty` green, `pip-audit` pinned-requirements path green, `ruff`/format green, architecture meta-tests green, full offline `pytest` → **5600 passed, 7 skipped, 5 deselected**.
+- ⬜ Public GitHub Actions `CI` re-run for post-release hardening must be green after pushing this follow-up commit.
+
 ## v1.5.0 — SHIPPED (2026-04-25, tag `v1.5.0` on commit `3fae1b2`)
 
 All 21 stages of [`plans/2026-04-25_fix_v150-release-blockers.md`](plans/2026-04-25_fix_v150-release-blockers.md) executed end-to-end on `main`. Tag pushed to private `origin` only.
@@ -12,7 +21,7 @@ All 21 stages of [`plans/2026-04-25_fix_v150-release-blockers.md`](plans/2026-04
 - ✅ Functional implementation for phases 11-17 is complete and full offline `pytest -q` is green (post-release: **5452 passed, 7 skipped, 5 deselected, 0 failed** verified 2026-04-27)
 - ✅ Release gate green: `ty check src/swarmline/` → All checks passed! (0 diagnostics, baseline locked = 0)
 - ✅ Public Python support contract synced to **3.11+**
-- ⬜ **Public sync to PyPI** — `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC (NOT YET RUN, awaiting user approval)
+- ✅ **Public sync to PyPI** — completed 2026-05-02; PyPI latest = `1.5.0`
 
 ## ThinRuntime Claude Code Parity v2 — v1.5.0 (Phases 11-17)
 
