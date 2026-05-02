@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import importlib
 import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
-
 from swarmline.observability.redaction import redact_secrets
 from swarmline.network_safety import validate_http_endpoint_url
 from swarmline.runtime.types import ToolSpec
+
+httpx: Any
+try:
+    httpx = importlib.import_module("httpx")
+except ImportError:  # pragma: no cover - exercised via subprocess import test
+    httpx = None
 
 
 @dataclass(frozen=True)
@@ -114,9 +119,18 @@ class McpClient:
         await self.aclose()
 
     def _get_http_client(self) -> httpx.AsyncClient:
+        if httpx is None:
+            raise RuntimeError(
+                "httpx is not installed. Install swarmline[thin] or swarmline[all] "
+                "to use MCP HTTP client features."
+            )
         if self._client is None:
             self._client = httpx.AsyncClient(timeout=self._timeout)
         return self._client
+
+    @staticmethod
+    def _is_httpx_timeout(exc: Exception) -> bool:
+        return httpx is not None and isinstance(exc, httpx.TimeoutException)
 
     @staticmethod
     def _server_url_rejection(server_url: str) -> str | None:
@@ -155,9 +169,9 @@ class McpClient:
                 server_url, json=payload, timeout=self._timeout
             )
             response.raise_for_status()
-        except httpx.TimeoutException:
-            return {"error": f"Таймаут при вызове MCP tool '{tool_name}'"}
         except Exception as exc:
+            if self._is_httpx_timeout(exc):
+                return {"error": f"Таймаут при вызове MCP tool '{tool_name}'"}
             return {
                 "error": f"HTTP ошибка MCP вызова '{tool_name}': {redact_secrets(str(exc))}"
             }
@@ -389,9 +403,9 @@ class McpClient:
                 server_url, json=payload, timeout=self._timeout
             )
             response.raise_for_status()
-        except httpx.TimeoutException:
-            return {"error": f"Timeout reading MCP resource '{uri}'"}
         except Exception as exc:
+            if self._is_httpx_timeout(exc):
+                return {"error": f"Timeout reading MCP resource '{uri}'"}
             return {
                 "error": f"HTTP error reading MCP resource '{uri}': {redact_secrets(str(exc))}"
             }
