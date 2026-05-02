@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.network_safety import validate_http_endpoint_url
 from swarmline.runtime.types import ToolSpec
 
@@ -117,6 +118,10 @@ class McpClient:
             self._client = httpx.AsyncClient(timeout=self._timeout)
         return self._client
 
+    @staticmethod
+    def _server_url_rejection(server_url: str) -> str | None:
+        return validate_http_endpoint_url(server_url)
+
     async def aclose(self) -> None:
         """Close the pooled HTTP client, if it has been opened."""
         if self._client is not None:
@@ -130,6 +135,10 @@ class McpClient:
         arguments: dict[str, Any] | None = None,
     ) -> Any:
         """Call tool."""
+        rejection = self._server_url_rejection(server_url)
+        if rejection:
+            return {"error": f"MCP server URL rejected: {rejection}"}
+
         payload = {
             "jsonrpc": "2.0",
             "id": uuid.uuid4().hex[:8],
@@ -147,7 +156,9 @@ class McpClient:
         except httpx.TimeoutException:
             return {"error": f"Таймаут при вызове MCP tool '{tool_name}'"}
         except Exception as exc:
-            return {"error": f"HTTP ошибка MCP вызова '{tool_name}': {exc}"}
+            return {
+                "error": f"HTTP ошибка MCP вызова '{tool_name}': {redact_secrets(str(exc))}"
+            }
 
         try:
             data = response.json()
@@ -169,6 +180,10 @@ class McpClient:
         request_timeout: float | None = None,
     ) -> list[ToolSpec]:
         """List tools."""
+        rejection = self._server_url_rejection(server_url)
+        if rejection:
+            return []
+
         now = time.monotonic()
         cached = self._tools_cache.get(server_url)
         if (
@@ -269,6 +284,10 @@ class McpClient:
         On network error: returns stale cache if available, otherwise raises
         ConnectionError.
         """
+        rejection = self._server_url_rejection(server_url)
+        if rejection:
+            return []
+
         now = time.monotonic()
         cached = self._resources_cache.get(server_url)
         if (
@@ -347,6 +366,9 @@ class McpClient:
         """
         if not uri or not uri.strip():
             return {"error": "Resource URI is required"}
+        rejection = self._server_url_rejection(server_url)
+        if rejection:
+            return {"error": f"MCP server URL rejected: {rejection}"}
 
         payload = {
             "jsonrpc": "2.0",
@@ -362,7 +384,9 @@ class McpClient:
         except httpx.TimeoutException:
             return {"error": f"Timeout reading MCP resource '{uri}'"}
         except Exception as exc:
-            return {"error": f"HTTP error reading MCP resource '{uri}': {exc}"}
+            return {
+                "error": f"HTTP error reading MCP resource '{uri}': {redact_secrets(str(exc))}"
+            }
 
         try:
             data = response.json()

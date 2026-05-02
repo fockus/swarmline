@@ -35,6 +35,15 @@ class TestMessages:
         assert msgs[-1].content == "msg-19"
 
     @pytest.mark.asyncio
+    async def test_get_messages_limit_zero_returns_empty(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
+        for i in range(3):
+            await provider.save_message("u1", "t1", "user", f"msg-{i}")
+
+        assert await provider.get_messages("u1", "t1", limit=0) == []
+
+    @pytest.mark.asyncio
     async def test_count_messages(self, provider: InMemoryMemoryProvider) -> None:
         await provider.save_message("u1", "t1", "user", "one")
         await provider.save_message("u1", "t1", "assistant", "two")
@@ -52,6 +61,18 @@ class TestMessages:
         msgs = await provider.get_messages("u1", "t1")
         assert len(msgs) == 3
         assert msgs[0].content == "msg-7"
+
+    @pytest.mark.asyncio
+    async def test_delete_messages_before_keep_last_zero_deletes_all(
+        self, provider: InMemoryMemoryProvider
+    ) -> None:
+        for i in range(3):
+            await provider.save_message("u1", "t1", "user", f"msg-{i}")
+
+        deleted = await provider.delete_messages_before("u1", "t1", keep_last=0)
+
+        assert deleted == 3
+        assert await provider.get_messages("u1", "t1") == []
 
     @pytest.mark.asyncio
     async def test_messages_isolated_by_topic(

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from swarmline.observability.redaction import redact_secrets
+
 
 def log_security_decision(
     logger: Any,
@@ -29,6 +31,6 @@ def log_security_decision(
     if route is not None:
         payload["route"] = route
     if url is not None:
-        payload["url"] = url[:200]
+        payload["url"] = redact_secrets(url)[:200]
     payload.update(metadata)
     logger.warning("security_decision", **payload)

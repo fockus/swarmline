@@ -11,9 +11,14 @@ Covers:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from swarmline.agent.agent import Agent
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.conversation import Conversation
+from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.session.jsonl_store import JsonlMessageStore
 
 pytestmark = pytest.mark.integration
@@ -202,3 +207,72 @@ class TestBackwardCompat:
 
         assert conv._message_store is None
         assert conv._compaction_config is None
+
+
+class TestResumeToolTranscript:
+    @pytest.mark.asyncio
+    async def test_resumed_tool_transcript_is_visible_to_next_thin_llm_call(
+        self, tmp_path: Path
+    ) -> None:
+        """Persisted tool calls/results survive resume into provider-safe prompt text."""
+        store = JsonlMessageStore(tmp_path)
+        await store.save_message("u1", "s1", "user", "Read config")
+        await store.save_message(
+            "u1",
+            "s1",
+            "assistant",
+            "",
+            tool_calls=[
+                {
+                    "id": "call-1",
+                    "name": "read_file",
+                    "arguments": {"path": "config.yml"},
+                }
+            ],
+        )
+        await store.save_message(
+            "u1",
+            "s1",
+            "tool",
+            '{"key": "value"}',
+            name="read_file",
+            metadata={"correlation_id": "call-1"},
+        )
+
+        captured_messages: list[list[dict[str, Any]]] = []
+
+        async def llm_call(
+            messages: list[dict[str, Any]],
+            system_prompt: str,
+            **kwargs: Any,
+        ) -> str:
+            _ = (system_prompt, kwargs)
+            captured_messages.append(messages)
+            return '{"type": "final", "final_message": "ok"}'
+
+        class _Factory:
+            def validate_agent_config(self, config: AgentConfig) -> None:
+                _ = config
+
+            def resolve_agent_model(self, config: AgentConfig) -> str:
+                return config.model
+
+            def create(self, **kwargs: Any) -> ThinRuntime:
+                return ThinRuntime(config=kwargs["config"], llm_call=llm_call)
+
+        agent = Agent(
+            AgentConfig(system_prompt="test", runtime="thin"),
+            runtime_factory=_Factory(),
+        )
+        conv = Conversation(agent=agent, message_store=store, user_id="u1")
+        await conv.resume("s1")
+
+        result = await conv.say("Continue")
+
+        assert result.ok is True
+        assert captured_messages
+        joined = "\n".join(message["content"] for message in captured_messages[0])
+        assert "read_file" in joined
+        assert "call-1" in joined
+        assert "config.yml" in joined
+        assert '{"key": "value"}' in joined

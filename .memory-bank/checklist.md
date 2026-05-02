@@ -1,5 +1,10 @@
 # Checklist
 
+## Audit remediation — 2026-04-30
+
+- ✅ 10/10 audit findings implemented: plugin subprocess env hardening, provider/runtime error redaction, public MCP URL validation, `McpBridge` lifecycle, ThinRuntime resumed tool transcript preservation, URL query secret redaction, and web fetch error/log redaction.
+- ✅ Verification complete: targeted audit suite **251 passed**; `ruff check src/ tests/` green; `ty check src/swarmline/` green; full `PYTHONPATH=src pytest --tb=short -q` → **5616 passed, 7 skipped, 5 deselected**.
+
 ## v1.5.0 — SHIPPED (2026-04-25, tag `v1.5.0` on commit `3fae1b2`)
 
 All 21 stages of [`plans/2026-04-25_fix_v150-release-blockers.md`](plans/2026-04-25_fix_v150-release-blockers.md) executed end-to-end on `main`. Tag pushed to private `origin` only.

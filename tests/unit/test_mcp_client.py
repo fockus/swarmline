@@ -10,6 +10,36 @@ class TestMcpClientCallTool:
     """Vyzov tools/call."""
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "server_url",
+        [
+            "file:///tmp/mcp.sock",
+            "http://127.0.0.1/mcp",
+            "http://169.254.169.254/latest/meta-data",
+            "http://example.test/mcp",
+        ],
+    )
+    async def test_call_tool_rejects_unsafe_url_without_http_request(
+        self, monkeypatch: pytest.MonkeyPatch, server_url: str
+    ) -> None:
+        def fail_client(*args, **kwargs):
+            _ = (args, kwargs)
+            raise AssertionError("HTTP client must not be constructed for unsafe URL")
+
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fail_client
+        )
+
+        client = McpClient(timeout_seconds=1.0)
+        result = await client.call_tool(server_url, "calc", {"x": 1})
+
+        assert isinstance(result, dict)
+        assert "error" in result
+        assert "rejected" in result["error"].lower() or "blocked" in result[
+            "error"
+        ].lower()
+
+    @pytest.mark.asyncio
     async def test_call_tool_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         class _Response:
             def raise_for_status(self) -> None:
@@ -79,6 +109,23 @@ class TestMcpClientCallTool:
 
 class TestMcpClientListTools:
     """Discovery tools/list + keshirovanie."""
+
+    @pytest.mark.asyncio
+    async def test_list_tools_rejects_unsafe_url_without_http_request(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_client(*args, **kwargs):
+            _ = (args, kwargs)
+            raise AssertionError("HTTP client must not be constructed for unsafe URL")
+
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fail_client
+        )
+
+        client = McpClient(timeout_seconds=1.0)
+        tools = await client.list_tools("http://127.0.0.1/mcp")
+
+        assert tools == []
 
     @pytest.mark.asyncio
     async def test_list_tools_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -161,6 +208,46 @@ class TestMcpClientListTools:
         assert len(first) == 1
         assert len(second) == 1
         assert calls["count"] == 1
+
+
+class TestMcpClientResourcesSafety:
+    @pytest.mark.asyncio
+    async def test_list_resources_rejects_unsafe_url_without_http_request(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_client(*args, **kwargs):
+            _ = (args, kwargs)
+            raise AssertionError("HTTP client must not be constructed for unsafe URL")
+
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fail_client
+        )
+
+        client = McpClient(timeout_seconds=1.0)
+        resources = await client.list_resources("http://169.254.169.254/mcp")
+
+        assert resources == []
+
+    @pytest.mark.asyncio
+    async def test_read_resource_rejects_unsafe_url_without_http_request(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_client(*args, **kwargs):
+            _ = (args, kwargs)
+            raise AssertionError("HTTP client must not be constructed for unsafe URL")
+
+        monkeypatch.setattr(
+            "swarmline.runtime.thin.mcp_client.httpx.AsyncClient", fail_client
+        )
+
+        client = McpClient(timeout_seconds=1.0)
+        result = await client.read_resource("file:///tmp/mcp.sock", "file://doc")
+
+        assert isinstance(result, dict)
+        assert "error" in result
+        assert "rejected" in result["error"].lower() or "blocked" in result[
+            "error"
+        ].lower()
 
 
 class TestMcpClientPooling:

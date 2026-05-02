@@ -62,6 +62,10 @@ class ToolExecutor:
         if self._mcp_servers and "read_mcp_resource" not in self._local_tools:
             self._local_tools["read_mcp_resource"] = self._make_read_mcp_resource()
 
+    async def aclose(self) -> None:
+        """Close resources owned by this executor."""
+        await self._mcp_client.aclose()
+
     async def execute(self, tool_name: str, args: dict[str, Any]) -> str:
         """Execute."""
         # Pre-tool hooks

@@ -55,6 +55,15 @@ DEFAULT_SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         ),
         r"\1[REDACTED]:[REDACTED]@",
     ),
+    (
+        re.compile(
+            r"([?&#;])"
+            r"(api_key|apikey|access_token|refresh_token|client_secret|authorization|password|token|secret|key)"
+            r"=([^&#]{1,512})",
+            re.IGNORECASE,
+        ),
+        r"\1\2=[REDACTED]",
+    ),
     # Common env-style assignments where the key ends in _KEY/_TOKEN/_SECRET/_PASSWORD
     (
         re.compile(r"\b([A-Z][A-Z0-9_]*(?:_KEY|_TOKEN|_SECRET|_PASSWORD))=([^\s'\"]+)"),

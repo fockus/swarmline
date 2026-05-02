@@ -76,6 +76,8 @@ class JsonlMessageStore:
         """Read the last N messages from the session file."""
         path = self._session_path(user_id, topic_id)
         lines = await asyncio.to_thread(self._read_lines, path)
+        if limit <= 0:
+            return []
         if not lines:
             return []
 
@@ -114,6 +116,10 @@ class JsonlMessageStore:
         path = self._session_path(user_id, topic_id)
         lines = await asyncio.to_thread(self._read_lines, path)
         total = len(lines)
+        if keep_last <= 0:
+            if total > 0:
+                await asyncio.to_thread(self._write_lines, path, [])
+            return total
         to_delete = max(0, total - keep_last)
         if to_delete > 0:
             kept = lines[-keep_last:]

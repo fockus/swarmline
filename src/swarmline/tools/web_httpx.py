@@ -14,6 +14,7 @@ from urllib.parse import urljoin, urlparse
 
 import structlog
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.observability.security import log_security_decision
 from swarmline.tools.web_protocols import (
     SearchResult,
@@ -334,11 +335,18 @@ class HttpxWebProvider:
                     return _extract_text(html)
 
                 _log.warning(
-                    "httpx_fetch_failed", url=url[:200], error="Too many redirects"
+                    "httpx_fetch_failed",
+                    url=redact_secrets(url)[:200],
+                    error="Too many redirects",
                 )
                 return ""
         except Exception as exc:
-            _log.warning("httpx_fetch_failed", url=url[:200], error=str(exc))
+            _log.warning(
+                "httpx_fetch_failed",
+                url=redact_secrets(url)[:200],
+                error=redact_secrets(str(exc)),
+                exc_type=type(exc).__name__,
+            )
             return ""
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:

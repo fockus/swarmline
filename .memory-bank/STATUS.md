@@ -91,7 +91,8 @@
 
 ## Тесты
 
-- Offline suite: **5452 passed, 7 skipped, 5 deselected, 0 failed** ← текущий (2026-04-27, post-v1.5.0 release tag, full suite ~52s via `rtk proxy pytest --tb=no -q`)
+- Offline suite: **5616 passed, 7 skipped, 5 deselected, 0 failed** ← текущий (2026-04-30, audit remediation for plugin env/runtime redaction/MCP safety/tool transcript)
+- Offline suite: **5452 passed, 7 skipped, 5 deselected, 0 failed** (2026-04-27, post-v1.5.0 release tag, full suite ~52s via `rtk proxy pytest --tb=no -q`)
 - Offline suite: `5352 passed, 7 skipped, 5 deselected` (2026-04-25, Sprint 1B Stage 6 done, ty=0)
 - Offline suite: `5096 passed, 5 skipped, 5 deselected` (2026-04-13, Phase 17 done)
 - Offline suite: `5042 passed, 5 skipped, 5 deselected` (после Phase 16)

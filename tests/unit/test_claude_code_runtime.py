@@ -63,6 +63,17 @@ class FakeAdapter:
         self._disconnected = True
 
 
+class FailingAdapter(FakeAdapter):
+    def __init__(self, error: Exception, connected: bool = True) -> None:
+        super().__init__(connected=connected)
+        self._error = error
+
+    async def stream_reply(self, user_text: str) -> AsyncIterator[FakeStreamEvent]:
+        _ = user_text
+        raise self._error
+        yield FakeStreamEvent(type="done")
+
+
 # ---------------------------------------------------------------------------
 # Helper for sbora sobytiy
 # ---------------------------------------------------------------------------
@@ -220,6 +231,23 @@ class TestClaudeCodeRuntimeStreaming:
 
         assert [event.type for event in events] == ["error"]
         assert "SDK crash" in events[0].data["message"]
+
+    @pytest.mark.asyncio
+    async def test_streaming_exception_redacts_secret_in_event_and_logs(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """SDK exception text is redacted at log and RuntimeEvent boundary."""
+        secret = "sk-proj-claude-secret-1234567890abcdef"
+        adapter = FailingAdapter(RuntimeError(f"provider failed with {secret}"))
+        runtime = ClaudeCodeRuntime(adapter=adapter)
+
+        caplog.set_level("ERROR", logger="swarmline.runtime.claude_code")
+        events = await collect_events(runtime, [Message(role="user", content="x")])
+
+        assert [event.type for event in events] == ["error"]
+        assert secret not in events[0].data["message"]
+        assert "RuntimeError" in events[0].data["message"]
+        assert secret not in caplog.text
 
     @pytest.mark.asyncio
     async def test_extracts_last_user_message(self) -> None:

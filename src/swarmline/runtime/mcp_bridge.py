@@ -35,6 +35,17 @@ class McpBridge:
             tools_cache_ttl_seconds=tools_cache_ttl,
         )
 
+    async def aclose(self) -> None:
+        """Close the owned pooled MCP client."""
+        await self._client.aclose()
+
+    async def __aenter__(self) -> McpBridge:
+        return self
+
+    async def __aexit__(self, *exc: Any) -> None:
+        _ = exc
+        await self.aclose()
+
     def _resolve_url(self, server_id: str) -> str | None:
         """Resolve server_id to URL string."""
         return resolve_mcp_server_url(self._servers, server_id)

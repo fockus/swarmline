@@ -7,6 +7,7 @@ with event emission at each step.
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 from typing import Any
 
@@ -15,6 +16,7 @@ from swarmline.multi_agent.workspace import ExecutionWorkspace
 from swarmline.multi_agent.workspace_types import WorkspaceHandle, WorkspaceStrategy
 
 _CONFLICT_RE = re.compile(r"CONFLICT.*?:\s+.*?in\s+(\S+)")
+_MANAGED_BRANCH_PREFIXES = ("refs/heads/factory/", "refs/heads/swarmline/")
 
 
 class WorktreeOrchestrator:
@@ -148,16 +150,43 @@ class WorktreeOrchestrator:
         )
         stdout, _ = await proc.communicate()
 
-        active_paths = {h.path for h in self._active.values()}
+        active_paths = {os.path.abspath(h.path) for h in self._active.values()}
+        main_path = os.path.abspath(base_path)
+        managed_root = os.path.join(main_path, ".worktrees")
         orphans: list[str] = []
+        current_path: str | None = None
+        current_branch: str | None = None
+
+        def flush_entry() -> None:
+            if current_path is None:
+                return
+            path = os.path.abspath(current_path)
+            if path == main_path or path in active_paths:
+                return
+            try:
+                if os.path.commonpath([managed_root, path]) != managed_root:
+                    return
+            except ValueError:
+                return
+            if not current_branch or not current_branch.startswith(
+                _MANAGED_BRANCH_PREFIXES
+            ):
+                return
+            orphans.append(current_path)
 
         for line in stdout.decode().splitlines():
+            if not line:
+                flush_entry()
+                current_path = None
+                current_branch = None
+                continue
             if line.startswith("worktree "):
-                path = line[len("worktree ") :]
-                if path == base_path:
-                    continue  # main worktree is never an orphan
-                if path not in active_paths:
-                    orphans.append(path)
+                flush_entry()
+                current_path = line[len("worktree ") :]
+                current_branch = None
+            elif line.startswith("branch "):
+                current_branch = line[len("branch ") :]
+        flush_entry()
 
         return orphans
 

@@ -58,6 +58,39 @@ class TestRedactSecretsKnownPatterns:
         assert "topsecret" not in result
 
     @pytest.mark.parametrize(
+        ("key", "secret"),
+        [
+            ("api_key", "query-secret-1234567890"),
+            ("apikey", "query-secret-1234567890"),
+            ("token", "query-secret-1234567890"),
+            ("access_token", "query-secret-1234567890"),
+            ("refresh_token", "query-secret-1234567890"),
+            ("password", "query-secret-1234567890"),
+            ("client_secret", "query-secret-1234567890"),
+            ("secret", "query-secret-1234567890"),
+            ("key", "query-secret-1234567890"),
+            ("authorization", "Bearer abc123def456ghijklmnop"),
+        ],
+    )
+    def test_redact_secrets_url_query_credentials(
+        self, key: str, secret: str
+    ) -> None:
+        result = redact_secrets(f"https://example.test/path?{key}={secret}&page=2")
+        assert secret not in result
+        assert f"{key}=[REDACTED]" in result
+        assert "page=2" in result
+
+    def test_redact_secrets_url_fragment_credentials(self) -> None:
+        secret = "fragment-secret-1234567890"
+        result = redact_secrets(f"https://example.test/cb#access_token={secret}")
+        assert secret not in result
+        assert "access_token=[REDACTED]" in result
+
+    def test_redact_secrets_keeps_benign_query_params(self) -> None:
+        text = "https://example.test/search?q=swarmline&page=2"
+        assert redact_secrets(text) == text
+
+    @pytest.mark.parametrize(
         "key",
         [
             "OPENAI_API_KEY",
@@ -211,6 +244,26 @@ class TestServe500ResponseRedacts:
         body = json.loads(resp.text)
         assert resp.status_code == 500
         assert "leaky-token-here-1234567890abcdefghi" not in body["error"]
+
+
+class TestSecurityDecisionRedaction:
+    def test_log_security_decision_redacts_url_userinfo(self) -> None:
+        from unittest.mock import Mock
+
+        from swarmline.observability.security import log_security_decision
+
+        logger = Mock()
+        log_security_decision(
+            logger,
+            component="web",
+            event_name="fetch_denied",
+            reason="unsafe_url",
+            url="https://alice:topsecret@example.com/private",
+        )
+
+        payload = logger.warning.call_args.kwargs
+        assert "alice:topsecret" not in payload["url"]
+        assert "example.com" in payload["url"]
 
 
 # ---------------------------------------------------------------------------

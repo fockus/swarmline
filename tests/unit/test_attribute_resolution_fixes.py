@@ -4,7 +4,7 @@ Closes the 4 `unresolved-attribute` diagnostics ty reports against
 `src/swarmline/` after Stage 1 (baseline=40). Three distinct patterns:
 
 1. Manual marker attribute on a plain function (no decorator → no Protocol):
-   `runtime/thin/executor.py:280` — ty-native ignore.
+   `runtime/thin/executor.py:292` — ty-native ignore.
 2. Duck-typed third-party SDK return (`response.text` after await):
    `runtime/thin/llm_providers.py:418` — ty-native ignore.
 3. Optional union member access gated by runtime check:
@@ -33,7 +33,7 @@ EXPECTED_FIXES: list[tuple[str, int, str, str]] = [
     # these surfaces here immediately rather than silently regressing the fix.
     (
         "src/swarmline/runtime/thin/executor.py",
-        288,
+        292,
         "# ty: ignore[unresolved-attribute]",
         "marker attr on plain function",
     ),

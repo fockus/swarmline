@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from swarmline.runtime.thin.native_tools import NativeToolCallAdapter
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.structured_output import append_structured_output_instruction
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.executor import ToolExecutor
@@ -105,6 +106,13 @@ async def run_react(  # noqa: C901
                         )
                         return
 
+                    for ntc in native_result.tool_calls:
+                        yield RuntimeEvent.tool_call_started(
+                            name=ntc.name,
+                            args=ntc.args,
+                            correlation_id=ntc.id,
+                        )
+
                     # Execute tool calls through executor (which runs hooks + policy)
                     # Parallel if >1, sequential otherwise
                     if len(native_result.tool_calls) > 1:
@@ -130,13 +138,8 @@ async def run_react(  # noqa: C901
                             )
                         ]
 
-                    # Emit tool_call_started/finished events and count
+                    # Emit tool_call_finished events and count
                     for ntc, result in zip(native_result.tool_calls, results):
-                        yield RuntimeEvent.tool_call_started(
-                            name=ntc.name,
-                            args=ntc.args,
-                            correlation_id=ntc.id,
-                        )
                         tool_ok = True
                         try:
                             parsed = json.loads(result)
@@ -164,9 +167,21 @@ async def run_react(  # noqa: C901
                                 "content": f"Result {ntc.name}: {result}",
                             }
                         )
+                    native_tool_calls = [
+                        {"id": ntc.id, "name": ntc.name, "args": ntc.args}
+                        for ntc in native_result.tool_calls
+                    ]
                     new_messages.append(
-                        Message(role="assistant", content=native_result.text or "")
+                        Message(
+                            role="assistant",
+                            content=native_result.text or "",
+                            tool_calls=native_tool_calls,
+                        )
                     )
+                    for ntc, result in zip(native_result.tool_calls, results):
+                        new_messages.append(
+                            Message(role="tool", content=result, name=ntc.name)
+                        )
                     native_handled = True
 
                 elif native_result.text:
@@ -188,10 +203,12 @@ async def run_react(  # noqa: C901
                         yield event
                     return
 
-            except Exception:
+            except Exception as exc:
                 _logger.warning(
-                    "Native tool calling failed, falling back to JSON-in-text",
-                    exc_info=True,
+                    "Native tool calling failed, falling back to JSON-in-text (%s): %s",
+                    type(exc).__name__,
+                    redact_secrets(str(exc)),
+                    extra={"exc_type": type(exc).__name__},
                 )
                 native_handled = False
 

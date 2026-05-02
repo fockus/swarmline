@@ -57,8 +57,14 @@ class FinalMessageDeltaExtractor:
         self._escape = False
         self._unicode_digits: str | None = None
         self._token_raw: list[str] = []
+        self._captured_value: list[str] = []
         self._awaiting_colon = False
         self._awaiting_value = False
+        self._pending_value_key: str | None = None
+        self._capturing_value_key: str | None = None
+        self._string_depth = 0
+        self._depth = 0
+        self._seen_top_level_final_type = False
 
     def feed(self, chunk: str) -> list[str]:
         deltas: list[str] = []
@@ -75,6 +81,17 @@ class FinalMessageDeltaExtractor:
         if self._in_string:
             return self._feed_string_char(char)
 
+        if char in "{[":
+            self._depth += 1
+            return ""
+
+        if char in "}]":
+            self._depth = max(0, self._depth - 1)
+            self._awaiting_colon = False
+            self._awaiting_value = False
+            self._pending_value_key = None
+            return ""
+
         if self._awaiting_colon:
             if char.isspace():
                 return ""
@@ -83,6 +100,7 @@ class FinalMessageDeltaExtractor:
                 self._awaiting_value = True
             else:
                 self._awaiting_colon = False
+                self._pending_value_key = None
             return ""
 
         if self._awaiting_value:
@@ -92,6 +110,7 @@ class FinalMessageDeltaExtractor:
                 self._start_string(capture_value=True)
             else:
                 self._awaiting_value = False
+                self._pending_value_key = None
             return ""
 
         if char == '"':
@@ -104,8 +123,14 @@ class FinalMessageDeltaExtractor:
         self._escape = False
         self._unicode_digits = None
         self._token_raw = []
+        self._captured_value = []
+        self._string_depth = self._depth
         if capture_value:
             self._awaiting_value = False
+            self._capturing_value_key = self._pending_value_key
+            self._pending_value_key = None
+        else:
+            self._capturing_value_key = None
 
     def _feed_string_char(self, char: str) -> str:
         if self._unicode_digits is not None:
@@ -115,7 +140,7 @@ class FinalMessageDeltaExtractor:
                 self._unicode_digits = None
                 self._escape = False
                 try:
-                    return chr(int(digits, 16)) if self._capture_value else ""
+                    return self._capture_decoded_char(chr(int(digits, 16)))
                 except ValueError:
                     return ""
             return ""
@@ -126,7 +151,7 @@ class FinalMessageDeltaExtractor:
                 self._unicode_digits = ""
                 return ""
             if self._capture_value:
-                return {
+                decoded = {
                     '"': '"',
                     "\\": "\\",
                     "/": "/",
@@ -136,6 +161,7 @@ class FinalMessageDeltaExtractor:
                     "r": "\r",
                     "t": "\t",
                 }.get(char, char)
+                return self._capture_decoded_char(decoded)
             self._token_raw.append("\\" + char)
             return ""
 
@@ -150,20 +176,33 @@ class FinalMessageDeltaExtractor:
             return ""
 
         if self._capture_value:
-            return char
+            return self._capture_decoded_char(char)
 
         self._token_raw.append(char)
         return ""
 
+    def _capture_decoded_char(self, char: str) -> str:
+        if not self._capture_value:
+            return ""
+        self._captured_value.append(char)
+        return char if self._capturing_value_key == "final_message" else ""
+
     def _finish_string(self) -> None:
         was_capture = self._capture_value
+        captured_key = self._capturing_value_key
         self._in_string = False
         self._capture_value = False
+        self._capturing_value_key = None
         self._escape = False
         self._unicode_digits = None
 
         if was_capture:
-            self._done = True
+            captured_value = "".join(self._captured_value)
+            self._captured_value = []
+            if captured_key == "type" and captured_value == "final":
+                self._seen_top_level_final_type = True
+            elif captured_key == "final_message":
+                self._done = True
             return
 
         raw = "".join(self._token_raw)
@@ -172,7 +211,13 @@ class FinalMessageDeltaExtractor:
             value = json.loads(f'"{raw}"')
         except json.JSONDecodeError:
             return
-        if value == "final_message":
+        if self._string_depth != 1:
+            return
+        if value == "type":
+            self._pending_value_key = "type"
+            self._awaiting_colon = True
+        elif value == "final_message" and self._seen_top_level_final_type:
+            self._pending_value_key = "final_message"
             self._awaiting_colon = True
 
 

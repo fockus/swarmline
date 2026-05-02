@@ -11,6 +11,7 @@ import httpx
 import structlog
 
 from swarmline.network_safety import validate_http_endpoint_url
+from swarmline.observability.redaction import redact_secrets
 
 _log = structlog.get_logger(component="web_fetch.jina")
 
@@ -42,11 +43,12 @@ class JinaReaderFetchProvider:
         if not url or not url.strip():
             return ""
         normalized_url = url.strip()
+        log_url = redact_secrets(normalized_url)[:200]
         rejection = validate_http_endpoint_url(normalized_url)
         if rejection:
             _log.warning(
                 "jina_fetch_url_denied",
-                url=normalized_url[:200],
+                url=log_url,
                 reason=rejection,
             )
             return ""
@@ -68,5 +70,9 @@ class JinaReaderFetchProvider:
                 content = response.text
                 return content[:50000]
         except (httpx.HTTPError, ValueError, OSError) as exc:
-            _log.warning("jina_fetch_failed", url=normalized_url[:200], error=str(exc))
+            _log.warning(
+                "jina_fetch_failed",
+                url=log_url,
+                error=redact_secrets(str(exc)),
+            )
             return ""

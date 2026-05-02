@@ -82,6 +82,14 @@ async def test_get_messages_with_limit(store: JsonlMessageStore) -> None:
     assert msgs[1].content == "msg-4"
 
 
+async def test_get_messages_limit_zero_returns_empty(store: JsonlMessageStore) -> None:
+    """limit=0 returns no messages, matching SQL backend semantics."""
+    for i in range(3):
+        await store.save_message("alice", "chat1", "user", f"msg-{i}")
+
+    assert await store.get_messages("alice", "chat1", limit=0) == []
+
+
 async def test_get_messages_empty_returns_empty(store: JsonlMessageStore) -> None:
     """get_messages on a session with no messages returns empty list."""
     # File exists but is empty
@@ -129,6 +137,19 @@ async def test_delete_messages_before_keeps_last_n(store: JsonlMessageStore) -> 
     assert msgs[0].content == "msg-7"
     assert msgs[1].content == "msg-8"
     assert msgs[2].content == "msg-9"
+
+
+async def test_delete_messages_before_keep_last_zero_deletes_all(
+    store: JsonlMessageStore,
+) -> None:
+    """keep_last=0 keeps no history and empties the JSONL file."""
+    for i in range(3):
+        await store.save_message("alice", "chat1", "user", f"msg-{i}")
+
+    deleted = await store.delete_messages_before("alice", "chat1", keep_last=0)
+
+    assert deleted == 3
+    assert await store.get_messages("alice", "chat1", limit=100) == []
 
 
 # --- Roundtrip tests ---

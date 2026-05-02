@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.types import RuntimeErrorData, RuntimeEvent
 
 
@@ -90,10 +91,11 @@ def _map_run_item_event(event: Any) -> RuntimeEvent | None:
 
 def map_run_error(error: Exception) -> RuntimeEvent:
     """Convert an exception from Runner into a RuntimeEvent error."""
+    redacted = redact_secrets(str(error))
     return RuntimeEvent.error(
         RuntimeErrorData(
             kind="runtime_crash",
-            message=f"OpenAI Agents SDK error: {error}",
+            message=f"OpenAI Agents SDK error ({type(error).__name__}): {redacted}",
             recoverable=False,
         )
     )

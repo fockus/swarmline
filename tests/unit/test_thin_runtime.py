@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from swarmline.retry import ExponentialBackoff
@@ -119,6 +120,25 @@ class TestThinRuntimeReact:
         final = next(e for e in events if e.type == "final")
         assert "42" in final.data["text"]
 
+    def test_native_adapter_init_logs_redacted_exception(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Native adapter init fallback must not log raw provider secrets."""
+        secret = "sk-proj-native-init-secret-1234567890abcdef"
+        caplog.set_level(logging.WARNING, logger="swarmline.runtime.thin.runtime")
+
+        with patch(
+            "swarmline.runtime.thin.llm_providers.get_cached_adapter",
+            side_effect=RuntimeError(f"provider init failed with {secret}"),
+        ):
+            ThinRuntime(
+                config=RuntimeConfig(runtime_name="thin", use_native_tools=True),
+            )
+
+        assert secret not in caplog.text
+        assert "RuntimeError" in caplog.text
+
     @pytest.mark.asyncio
     async def test_two_tools_then_final(self) -> None:
         """2 tool_calls → final."""
@@ -196,6 +216,17 @@ class TestThinRuntimeReact:
         finished = [e for e in events if e.type == "tool_call_finished"]
         assert len(finished) == 1
         assert finished[0].data["ok"] is False
+
+    @pytest.mark.asyncio
+    async def test_cleanup_closes_tool_executor(self) -> None:
+        """ThinRuntime cleanup releases resources owned by ToolExecutor."""
+        runtime = ThinRuntime(llm_call=MockLLM([]))
+        runtime._executor.aclose = AsyncMock()  # type: ignore[method-assign]
+
+        await runtime.cleanup()
+        await runtime.cleanup()
+
+        assert runtime._executor.aclose.await_count == 2
 
 
 # ---------------------------------------------------------------------------

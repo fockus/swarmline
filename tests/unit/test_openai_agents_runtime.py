@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+import types
 from dataclasses import dataclass
 from typing import Any
 from unittest.mock import MagicMock
@@ -148,6 +150,15 @@ class TestEventMapper:
         result = map_run_error(ValueError("test error"))
         assert result.type == "error"
         assert "test error" in result.data.get("message", "")
+
+    def test_map_run_error_redacts_secret(self) -> None:
+        """OpenAI Agents SDK errors do not expose raw credentials."""
+        secret = "sk-proj-openai-agents-secret-1234567890abcdef"
+        result = map_run_error(RuntimeError(f"request failed: {secret}"))
+
+        assert result.type == "error"
+        assert secret not in result.data.get("message", "")
+        assert "RuntimeError" in result.data.get("message", "")
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +313,46 @@ class TestOpenAIAgentsRuntime:
             rt.cancel()
             assert rt._cancel_requested is True
         assert rt._cancel_requested is False
+
+    @pytest.mark.asyncio
+    async def test_run_exception_redacts_secret_in_error_event(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Runner exceptions are sanitized before RuntimeEvent.error."""
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+        secret = "sk-proj-runner-secret-1234567890abcdef"
+
+        class _Agent:
+            def __init__(self, **kwargs: Any) -> None:
+                self.kwargs = kwargs
+
+        class _Result:
+            async def stream_events(self):
+                raise RuntimeError(f"runner failed: {secret}")
+                yield object()
+
+        class _Runner:
+            @staticmethod
+            def run_streamed(**kwargs: Any) -> _Result:
+                _ = kwargs
+                return _Result()
+
+        fake_agents = types.SimpleNamespace(Agent=_Agent, Runner=_Runner)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        rt = OpenAIAgentsRuntime()
+        events = []
+        async for event in rt.run(
+            messages=[Message(role="user", content="hello")],
+            system_prompt="test",
+            active_tools=[],
+        ):
+            events.append(event)
+
+        assert [event.type for event in events] == ["error"]
+        assert secret not in events[0].data["message"]
+        assert "RuntimeError" in events[0].data["message"]
 
 
 # ---------------------------------------------------------------------------

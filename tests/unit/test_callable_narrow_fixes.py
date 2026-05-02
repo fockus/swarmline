@@ -71,14 +71,14 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/tools/web_providers/crawl4ai.py",
-        52,
+        65,
         "# ty: ignore[call-non-callable]",
         "AsyncWebCrawler",
         "Optional class CrawlerRunConfig — gated by AsyncWebCrawler None check above",
     ),
     (
         "src/swarmline/tools/web_providers/crawl4ai.py",
-        53,
+        66,
         "# ty: ignore[call-non-callable]",
         "AsyncWebCrawler",
         "Optional class DefaultMarkdownGenerator — gated by AsyncWebCrawler None check above",

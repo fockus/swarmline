@@ -7,6 +7,7 @@ use_native_tools=False uses JSON-in-text, and fallback works.
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 import pytest
@@ -78,8 +79,11 @@ class MockLLM:
 class ErrorNativeAdapter:
     """Mock adapter that raises an error on call_with_tools."""
 
+    def __init__(self, message: str = "Native API unavailable") -> None:
+        self._message = message
+
     async def call_with_tools(self, *args: Any, **kwargs: Any) -> NativeToolCallResult:
-        raise RuntimeError("Native API unavailable")
+        raise RuntimeError(self._message)
 
 
 def _make_config(use_native_tools: bool = False) -> RuntimeConfig:
@@ -273,6 +277,164 @@ class TestNativeToolsReactIntegration:
         assert len(tool_finished) == 2
 
     @pytest.mark.asyncio
+    async def test_native_tool_started_event_precedes_execution(self) -> None:
+        """Tracing sees tool start before the native tool body runs."""
+        order: list[str] = []
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
+                ),
+                NativeToolCallResult(
+                    text="The answer is 4",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
+
+        async def calculator(expr: str) -> str:
+            order.append("executed")
+            return _SAFE_CALC[expr]
+
+        config = _make_config(use_native_tools=True)
+        executor = ToolExecutor(local_tools={"calculator": calculator})
+        llm_call = MockLLM([])
+
+        import time
+
+        async for event in run_react(
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            _make_tools(),
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
+        ):
+            if event.type == "tool_call_started":
+                order.append("started")
+            elif event.type == "tool_call_finished":
+                order.append("finished")
+
+        assert order[:3] == ["started", "executed", "finished"]
+
+    @pytest.mark.asyncio
+    async def test_native_parallel_starts_all_tools_before_execution(self) -> None:
+        """Parallel native calls emit all start events before any tool finishes."""
+        order: list[str] = []
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                        NativeToolCall(
+                            id="tc2", name="calculator", args={"expr": "3+3"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
+                ),
+                NativeToolCallResult(
+                    text="Results: 4 and 6",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
+
+        async def calculator(expr: str) -> str:
+            order.append(f"executed:{expr}")
+            return _SAFE_CALC[expr]
+
+        config = _make_config(use_native_tools=True)
+        executor = ToolExecutor(local_tools={"calculator": calculator})
+        llm_call = MockLLM([])
+
+        import time
+
+        async for event in run_react(
+            llm_call,
+            executor,
+            _make_messages(),
+            "system prompt",
+            _make_tools(),
+            config,
+            time.monotonic(),
+            native_adapter=adapter,
+        ):
+            if event.type == "tool_call_started":
+                order.append(f"started:{event.data['correlation_id']}")
+            elif event.type == "tool_call_finished":
+                order.append(f"finished:{event.data['correlation_id']}")
+
+        assert order.index("started:tc1") < order.index("executed:2+2")
+        assert order.index("started:tc2") < order.index("executed:2+2")
+        assert order.index("started:tc1") < order.index("executed:3+3")
+        assert order.index("started:tc2") < order.index("executed:3+3")
+
+    @pytest.mark.asyncio
+    async def test_native_tool_results_are_preserved_in_final_history(self) -> None:
+        """Native tool turns persist assistant tool_calls and tool result messages."""
+        adapter = MockNativeAdapter(
+            [
+                NativeToolCallResult(
+                    text="Let me calculate",
+                    tool_calls=(
+                        NativeToolCall(
+                            id="tc1", name="calculator", args={"expr": "2+2"}
+                        ),
+                    ),
+                    stop_reason="tool_use",
+                ),
+                NativeToolCallResult(
+                    text="The answer is 4",
+                    tool_calls=(),
+                    stop_reason="end_turn",
+                ),
+            ]
+        )
+        config = _make_config(use_native_tools=True)
+        executor = _make_executor()
+        llm_call = MockLLM([])
+
+        import time
+
+        events = await _collect_events(
+            run_react(
+                llm_call,
+                executor,
+                _make_messages(),
+                "system prompt",
+                _make_tools(),
+                config,
+                time.monotonic(),
+                native_adapter=adapter,
+            )
+        )
+        final = next(e for e in events if e.type == "final")
+        new_messages = final.data["new_messages"]
+
+        tool_call_message = next(m for m in new_messages if m.get("tool_calls"))
+        assert tool_call_message["role"] == "assistant"
+        assert tool_call_message["tool_calls"] == [
+            {"id": "tc1", "name": "calculator", "args": {"expr": "2+2"}}
+        ]
+
+        tool_message = next(m for m in new_messages if m["role"] == "tool")
+        assert tool_message["name"] == "calculator"
+        assert "4" in tool_message["content"]
+
+    @pytest.mark.asyncio
     async def test_native_tools_fallback_on_error(self) -> None:
         """call_with_tools raises => fall through to JSON-in-text path."""
         adapter = ErrorNativeAdapter()
@@ -304,6 +466,45 @@ class TestNativeToolsReactIntegration:
         finals = [e for e in events if e.type == "final"]
         assert len(finals) == 1
         assert finals[0].data["text"] == "Fallback response"
+
+    @pytest.mark.asyncio
+    async def test_native_tools_fallback_log_redacts_provider_exception(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Native tool provider fallback must not log raw provider secrets."""
+        secret = "sk-proj-native-call-secret-1234567890abcdef"
+        adapter = ErrorNativeAdapter(f"Native API unavailable: {secret}")
+        caplog.set_level(logging.WARNING, logger="swarmline.runtime.thin.react_strategy")
+
+        config = _make_config(use_native_tools=True)
+        executor = _make_executor()
+        llm_call = MockLLM(
+            [
+                json.dumps({"type": "final", "final_message": "Fallback response"}),
+            ]
+        )
+
+        import time
+
+        events = await _collect_events(
+            run_react(
+                llm_call,
+                executor,
+                _make_messages(),
+                "system prompt",
+                _make_tools(),
+                config,
+                time.monotonic(),
+                native_adapter=adapter,
+            )
+        )
+
+        assert next(e for e in events if e.type == "final").data["text"] == (
+            "Fallback response"
+        )
+        assert secret not in caplog.text
+        assert "RuntimeError" in caplog.text
 
     @pytest.mark.asyncio
     async def test_native_tools_single_tool_call(self) -> None:

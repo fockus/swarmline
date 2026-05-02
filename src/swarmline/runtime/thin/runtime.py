@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.cost import CostTracker, load_pricing
 from swarmline.runtime.thin.builtin_tools import create_thin_builtin_tools
 from swarmline.runtime.thin.errors import ThinLlmError
@@ -181,12 +182,14 @@ class ThinRuntime:
                 adapter = get_cached_adapter(provider)
                 if isinstance(adapter, NativeToolCallAdapter):
                     self._native_adapter = adapter
-            except Exception:
+            except Exception as exc:
                 import logging
 
                 logging.getLogger(__name__).warning(
-                    "Failed to create native tool adapter, will fall back to JSON-in-text",
-                    exc_info=True,
+                    "Failed to create native tool adapter, will fall back to JSON-in-text (%s): %s",
+                    type(exc).__name__,
+                    redact_secrets(str(exc)),
+                    extra={"exc_type": type(exc).__name__},
                 )
 
         # Cost tracking
@@ -634,3 +637,4 @@ class ThinRuntime:
 
     async def cleanup(self) -> None:
         """Cleanup."""
+        await self._executor.aclose()

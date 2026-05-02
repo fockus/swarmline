@@ -264,6 +264,44 @@ class TestScanOrphans:
         # main worktree is never an orphan; the second worktree is not in _active
         assert "/repo/.worktrees/orphan1" in orphans
 
+    async def test_ignores_unmanaged_worktrees(self, mock_workspace: AsyncMock) -> None:
+        """Manual worktrees are not Swarmline orphans after process restart."""
+        orch = WorktreeOrchestrator(workspace=mock_workspace)
+        porcelain_output = (
+            b"worktree /repo\n"
+            b"HEAD abc123\n"
+            b"branch refs/heads/main\n"
+            b"\n"
+            b"worktree /repo/manual-worktree\n"
+            b"HEAD def456\n"
+            b"branch refs/heads/feature/manual\n"
+            b"\n"
+            b"worktree /repo/.worktrees/manual-inside\n"
+            b"HEAD fedcba\n"
+            b"branch refs/heads/main\n"
+            b"\n"
+            b"worktree /repo/.worktrees/managed-factory\n"
+            b"HEAD 111111\n"
+            b"branch refs/heads/factory/goal-a/dev1\n"
+            b"\n"
+            b"worktree /repo/.worktrees/managed-swarmline\n"
+            b"HEAD 222222\n"
+            b"branch refs/heads/swarmline/dev1/task1\n"
+            b"\n"
+        )
+        mock_proc = AsyncMock()
+        mock_proc.returncode = 0
+        mock_proc.communicate = AsyncMock(return_value=(porcelain_output, b""))
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+            orphans = await orch.scan_orphans("/repo")
+
+        assert "/repo/manual-worktree" not in orphans
+        assert "/repo/.worktrees/manual-inside" not in orphans
+        assert orphans == [
+            "/repo/.worktrees/managed-factory",
+            "/repo/.worktrees/managed-swarmline",
+        ]
+
     async def test_active_worktree_not_orphan(
         self, mock_workspace: AsyncMock, policy: WorktreePolicy
     ) -> None:

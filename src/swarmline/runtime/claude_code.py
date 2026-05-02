@@ -16,6 +16,7 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
@@ -153,11 +154,16 @@ class ClaudeCodeRuntime:
                         ),
                     }
         except Exception as e:
-            logger.exception("ClaudeCodeRuntime.run(): ошибка стриминга")
+            redacted = redact_secrets(str(e))
+            logger.error(
+                "ClaudeCodeRuntime.run(): ошибка стриминга exc_type=%s error=%s",
+                type(e).__name__,
+                redacted,
+            )
             yield RuntimeEvent.error(
                 RuntimeErrorData(
                     kind="runtime_crash",
-                    message=f"Ошибка SDK стриминга: {e}",
+                    message=f"Ошибка SDK стриминга ({type(e).__name__}): {redacted}",
                     recoverable=False,
                 )
             )
@@ -232,10 +238,11 @@ class ClaudeCodeRuntime:
             )
 
         if etype == "error":
+            message = redact_secrets(stream_event.text)
             return RuntimeEvent.error(
                 RuntimeErrorData(
                     kind="runtime_crash",
-                    message=stream_event.text,
+                    message=message,
                     recoverable=False,
                 )
             )

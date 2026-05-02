@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import sys
 import time
 import uuid
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any, Protocol, runtime_checkable
 
+from swarmline.observability.redaction import redact_secrets
+from swarmline.runtime._subprocess_env import build_subprocess_env
+from swarmline.runtime.cli.types import DEFAULT_ENV_ALLOWLIST
 from swarmline.plugins.runner_types import PluginHandle, PluginManifest, PluginState
 
 logger = logging.getLogger(__name__)
@@ -48,6 +53,7 @@ class _PluginProcess:
     manifest: PluginManifest
     handle: PluginHandle
     process: asyncio.subprocess.Process | None = None
+    stderr_task: asyncio.Task[None] | None = None
     restart_count: int = 0
     rpc_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
@@ -60,9 +66,17 @@ class _PluginProcess:
 class SubprocessPluginRunner:
     """Spawn plugins as subprocesses, communicate via JSON-RPC over stdio."""
 
-    def __init__(self, env: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        env: Mapping[str, str] | None = None,
+        *,
+        inherit_host_env: bool = False,
+        env_allowlist: Iterable[str] = DEFAULT_ENV_ALLOWLIST,
+    ) -> None:
         self._processes: dict[str, _PluginProcess] = {}
-        self._env = env
+        self._env = dict(env or {})
+        self._inherit_host_env = inherit_host_env
+        self._env_allowlist = frozenset(env_allowlist)
 
     # -- public API --------------------------------------------------------
 
@@ -70,10 +84,12 @@ class SubprocessPluginRunner:
         """Launch the plugin subprocess and return a handle."""
         plugin_id = uuid.uuid4().hex[:12]
         process = await self._launch(manifest)
+        stderr_task = self._start_stderr_drain(manifest, process)
 
         # Brief wait to detect immediate crash
         await asyncio.sleep(0.1)
         if process.returncode is not None:
+            await self._stop_stderr_drain(stderr_task)
             raise RuntimeError(
                 f"Plugin {manifest.name!r} crashed immediately "
                 f"(exit code {process.returncode})"
@@ -91,6 +107,7 @@ class SubprocessPluginRunner:
             manifest=manifest,
             handle=handle,
             process=process,
+            stderr_task=stderr_task,
             restart_count=0,
         )
         self._processes[plugin_id] = pp
@@ -152,6 +169,7 @@ class SubprocessPluginRunner:
                     process.kill()
                     await process.wait()
 
+        await self._stop_stderr_drain(pp.stderr_task)
         del self._processes[handle.plugin_id]
         logger.info("plugin.stopped name=%s id=%s", handle.name, handle.plugin_id)
         return True
@@ -181,6 +199,11 @@ class SubprocessPluginRunner:
 
     async def _launch(self, manifest: PluginManifest) -> asyncio.subprocess.Process:
         """Create the subprocess for the worker shim."""
+        env = build_subprocess_env(
+            inherit_host_env=self._inherit_host_env,
+            env_allowlist=self._env_allowlist,
+            overrides=self._env,
+        )
         return await asyncio.create_subprocess_exec(
             sys.executable,
             "-m",
@@ -189,8 +212,47 @@ class SubprocessPluginRunner:
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env=self._env,
+            env=env,
         )
+
+    def _start_stderr_drain(
+        self,
+        manifest: PluginManifest,
+        process: asyncio.subprocess.Process,
+    ) -> asyncio.Task[None] | None:
+        stderr = process.stderr
+        if stderr is None:
+            return None
+        return asyncio.create_task(self._drain_stderr(manifest, stderr))
+
+    async def _drain_stderr(self, manifest: PluginManifest, stderr: Any) -> None:
+        while True:
+            try:
+                raw = await stderr.readline()
+            except Exception as exc:  # noqa: BLE001
+                logger.debug(
+                    "plugin.stderr_drain_failed name=%s error=%s",
+                    manifest.name,
+                    redact_secrets(str(exc)),
+                )
+                return
+            if not raw:
+                return
+            text = raw.decode("utf-8", errors="replace").rstrip()
+            if text:
+                logger.debug(
+                    "plugin.stderr name=%s line=%s",
+                    manifest.name,
+                    redact_secrets(text),
+                )
+
+    async def _stop_stderr_drain(self, task: asyncio.Task[None] | None) -> None:
+        if task is None:
+            return
+        if not task.done():
+            task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
 
     async def _send_rpc(
         self,
@@ -242,9 +304,12 @@ class SubprocessPluginRunner:
         )
         await asyncio.sleep(backoff)
 
+        await self._stop_stderr_drain(pp.stderr_task)
         process = await self._launch(pp.manifest)
+        stderr_task = self._start_stderr_drain(pp.manifest, process)
         await asyncio.sleep(0.1)
         if process.returncode is not None:
+            await self._stop_stderr_drain(stderr_task)
             pp.restart_count += 1
             raise RuntimeError(
                 f"Plugin {pp.manifest.name!r} crashed on restart "
@@ -252,6 +317,7 @@ class SubprocessPluginRunner:
             )
 
         pp.process = process
+        pp.stderr_task = stderr_task
         pp.restart_count += 1
         pp.handle = replace(
             pp.handle,

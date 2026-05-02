@@ -156,7 +156,7 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/runtime/thin/react_strategy.py",
-        352,
+        369,
         "# ty: ignore[invalid-argument-type]",
         "hasattr",
         "tc.assistant_message hasattr-narrow not propagated by ty",

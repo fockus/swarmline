@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import types
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -73,6 +74,74 @@ class TestProtocolShape:
 
 
 class TestStart:
+    async def test_launch_default_env_does_not_inherit_host_secret(
+        self, monkeypatch: pytest.MonkeyPatch, manifest: PluginManifest
+    ) -> None:
+        """Default plugin subprocess env forwards allowlist only."""
+        captured: dict[str, object] = {}
+
+        async def fake_create_subprocess_exec(*args, **kwargs):
+            captured["args"] = args
+            captured["env"] = kwargs["env"]
+            return _make_mock_process()
+
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-plugin-secret-1234567890abcdef")
+        monkeypatch.setenv("PATH", os.environ.get("PATH", ""))
+        monkeypatch.setattr(
+            "swarmline.plugins.runner.asyncio.create_subprocess_exec",
+            fake_create_subprocess_exec,
+        )
+
+        runner = SubprocessPluginRunner()
+        await runner._launch(manifest)
+
+        env = captured["env"]
+        assert isinstance(env, dict)
+        assert "PATH" in env
+        assert "OPENAI_API_KEY" not in env
+
+    async def test_launch_explicit_env_override_is_forwarded(
+        self, manifest: PluginManifest
+    ) -> None:
+        captured: dict[str, object] = {}
+
+        async def fake_create_subprocess_exec(*args, **kwargs):
+            captured["env"] = kwargs["env"]
+            return _make_mock_process()
+
+        with patch(
+            "swarmline.plugins.runner.asyncio.create_subprocess_exec",
+            side_effect=fake_create_subprocess_exec,
+        ):
+            runner = SubprocessPluginRunner(env={"PLUGIN_MODE": "test"})
+            await runner._launch(manifest)
+
+        env = captured["env"]
+        assert isinstance(env, dict)
+        assert env["PLUGIN_MODE"] == "test"
+
+    async def test_launch_inherit_host_env_preserves_legacy_env(
+        self, monkeypatch: pytest.MonkeyPatch, manifest: PluginManifest
+    ) -> None:
+        captured: dict[str, object] = {}
+
+        async def fake_create_subprocess_exec(*args, **kwargs):
+            captured["env"] = kwargs["env"]
+            return _make_mock_process()
+
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-plugin-secret-1234567890abcdef")
+        monkeypatch.setattr(
+            "swarmline.plugins.runner.asyncio.create_subprocess_exec",
+            fake_create_subprocess_exec,
+        )
+
+        runner = SubprocessPluginRunner(inherit_host_env=True)
+        await runner._launch(manifest)
+
+        env = captured["env"]
+        assert isinstance(env, dict)
+        assert env["OPENAI_API_KEY"] == "sk-proj-plugin-secret-1234567890abcdef"
+
     async def test_start_returns_handle_with_pid_and_running(
         self, runner: SubprocessPluginRunner, manifest: PluginManifest
     ) -> None:
@@ -102,6 +171,24 @@ class TestStart:
         with patch.object(runner, "_launch", return_value=mock_proc):
             with pytest.raises(RuntimeError, match="crashed immediately"):
                 await runner.start(manifest)
+
+    async def test_start_drains_stderr_until_stop(
+        self, runner: SubprocessPluginRunner, manifest: PluginManifest
+    ) -> None:
+        mock_proc = _make_mock_process(pid=124)
+        mock_proc.stderr.readline = AsyncMock(
+            side_effect=[b"diagnostic sk-secret-value-1234567890\n", b""]
+        )
+        with patch.object(runner, "_launch", return_value=mock_proc):
+            handle = await runner.start(manifest)
+
+        pp = runner._processes[handle.plugin_id]
+        assert pp.stderr_task is not None
+        await pp.stderr_task
+
+        result = await runner.stop(handle)
+        assert result is True
+        assert pp.stderr_task.done()
 
 
 # ---------------------------------------------------------------------------

@@ -853,3 +853,58 @@
   - Untracked: SECURITY.md, CODE_OF_CONDUCT.md, 6 audit reports under .memory-bank/reports/, coverage.json, docs/why-cognitia.md DELETED.
 - Verification: `rtk proxy "python -m pytest --tb=no -q"` → **5562 passed, 7 skipped, 5 deselected** in 52.65s. ty + ruff verification pending.
 - Next: `ty check src/swarmline/` + `ruff check src/ tests/` → green-light commit bundles 1/2/3 → tag move v1.5.0 → public sync.
+
+## 2026-04-29
+
+### Review findings remediation — worktree/native/MCP/plugin/web/retention
+
+- Implemented non-breaking fixes for the 7 planned findings plus 2 follow-up review comments:
+  - managed-only worktree orphan cleanup (`factory/` + `swarmline/` branches under `.worktrees/`);
+  - native tool start events before execution and native tool transcript preservation in `final.new_messages`;
+  - `ToolExecutor.aclose()` + `ThinRuntime.cleanup()` resource release for pooled MCP clients;
+  - URL-userinfo redaction in structured security logs;
+  - plugin stderr background draining with redacted debug logging and restart/stop cleanup;
+  - `keep_last=0` deletes all messages in in-memory and JSONL stores;
+  - direct Crawl4AI fetch URL validation before browser/network work.
+- Added regression coverage across worktree orchestration, native tool integration, thin runtime cleanup, observability redaction, plugin runner, memory/session stores, web providers, and updated ty baseline line guards after intentional source-line drift.
+- Verification:
+  - ✅ Targeted suite: `PYTHONPATH=src pytest tests/unit/test_worktree_orchestrator.py tests/unit/test_native_tools_integration.py tests/unit/test_thin_runtime.py tests/unit/test_mcp_client.py tests/unit/test_observability_redaction.py tests/unit/test_plugin_runner.py tests/unit/test_plugin_runner_subprocess.py tests/unit/test_inmemory_provider.py tests/unit/test_jsonl_store.py tests/unit/test_web_providers.py -q` → **220 passed**.
+  - ✅ Baseline guard suite: `PYTHONPATH=src pytest tests/unit/test_argument_type_fixes.py tests/unit/test_attribute_resolution_fixes.py tests/unit/test_callable_narrow_fixes.py tests/unit/test_optdep_imports.py -q` → **135 passed**.
+  - ✅ `ruff check src/ tests/` → All checks passed.
+  - ✅ `ty check src/swarmline/` → All checks passed.
+  - ✅ `PYTHONPATH=src pytest --tb=short -q` → **5574 passed, 7 skipped, 5 deselected**.
+
+## 2026-04-29
+
+### Follow-up review remediation — redaction/streaming/history limits
+
+- Implemented fixes for 7 follow-up review findings:
+  - native adapter init and native tool fallback logs no longer use `exc_info=True`; they log redacted exception text plus `exc_type`;
+  - Jina and Crawl4AI denial/failure URL logs redact URL userinfo and exception text;
+  - `InMemoryMemoryProvider.get_messages(limit=0)` and `JsonlMessageStore.get_messages(limit=0)` now return `[]`, matching SQL backend semantics;
+  - streamed JSON deltas now only emit top-level `final_message` after a top-level `"type": "final"` has been observed, preventing nested tool-arg leaks.
+- Added RED-first regression coverage in `test_thin_runtime.py`, `test_native_tools_integration.py`, `test_web_providers.py`, `test_inmemory_provider.py`, `test_jsonl_store.py`, and `test_thin_streaming.py`. Updated line-number guard baselines after intentional source-line drift.
+- Verification:
+  - ✅ RED pack initially failed 9/9 expected regressions.
+  - ✅ Targeted affected suite: `PYTHONPATH=src pytest tests/unit/test_thin_streaming.py tests/unit/test_thin_runtime.py tests/unit/test_native_tools_integration.py tests/unit/test_web_providers.py tests/unit/test_inmemory_provider.py tests/unit/test_jsonl_store.py tests/unit/test_observability_redaction.py tests/unit/test_thinking_infra.py tests/unit/test_llm_providers.py -q` → **279 passed**.
+  - ✅ Guard suite: `PYTHONPATH=src pytest tests/unit/test_argument_type_fixes.py tests/unit/test_callable_narrow_fixes.py tests/unit/test_optdep_imports.py -q` → **127 passed**.
+  - ✅ `ruff check src/ tests/` → All checks passed.
+  - ✅ `ty check src/swarmline/` → All checks passed.
+  - ✅ `PYTHONPATH=src pytest --tb=short -q` → **5583 passed, 7 skipped, 5 deselected**.
+
+## 2026-04-30
+
+### Audit remediation — plugin env/runtime redaction/MCP safety/tool transcript
+
+- Implemented the 10-finding audit plan non-breakingly:
+  - `SubprocessPluginRunner` now builds secure-by-default subprocess env from the shared allowlist helper; explicit `env` overrides still win and `inherit_host_env=True` preserves legacy full-env opt-in.
+  - Claude dispatch, `ClaudeCodeRuntime`, and OpenAI Agents runtime now log redacted provider errors with `exc_type` and emit redacted `RuntimeEvent.error` messages without raw traceback logging on provider-facing failures.
+  - `McpClient` validates URLs inside public `call_tool`, `list_tools`, `list_resources`, and `read_resource` methods before constructing an HTTP client; `McpBridge` now exposes `aclose()` and async context-manager lifecycle.
+  - ThinRuntime message serialization now preserves resumed `Message.tool_calls`, `metadata["tool_call"]`, and `role="tool"` transcripts as provider-safe assistant/user text.
+  - `redact_secrets()` now redacts URL query/fragment credentials; `web_fetch` and `HttpxWebProvider.fetch` redact URL/error logs and avoid model-visible raw provider error text.
+- Added RED-first regression coverage across plugin runner, redaction, MCP client/bridge, ThinRuntime transcript replay, Claude/OpenAI runtime errors, web providers, runtime dispatch, and session resume integration.
+- Verification:
+  - ✅ Targeted audit suite: `PYTHONPATH=src pytest tests/unit/test_plugin_runner.py tests/unit/test_plugin_runner_subprocess.py tests/unit/test_observability_redaction.py tests/unit/test_claude_code_runtime.py tests/unit/test_openai_agents_runtime.py tests/unit/test_mcp_client.py tests/unit/test_mcp_bridge.py tests/unit/test_web_providers.py tests/unit/test_thin_streaming.py tests/integration/test_session_resume_integration.py -q` → **251 passed**.
+  - ✅ `ruff check src/ tests/` → All checks passed.
+  - ✅ `ty check src/swarmline/` → All checks passed.
+  - ✅ `PYTHONPATH=src pytest --tb=short -q` → **5616 passed, 7 skipped, 5 deselected**.

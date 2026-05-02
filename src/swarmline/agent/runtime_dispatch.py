@@ -11,6 +11,7 @@ from swarmline.agent.runtime_factory_port import (
     RuntimeFactoryPort,
     build_runtime_factory,
 )
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.types import Message
 
 logger = logging.getLogger(__name__)
@@ -118,8 +119,16 @@ async def stream_claude_one_shot(
         ):
             yield event
     except Exception as exc:
-        logger.exception("stream_claude_one_shot error")
-        yield StreamEvent(type="error", text=str(exc))
+        redacted = redact_secrets(str(exc))
+        logger.error(
+            "stream_claude_one_shot error exc_type=%s error=%s",
+            type(exc).__name__,
+            redacted,
+        )
+        yield StreamEvent(
+            type="error",
+            text=f"Claude SDK error ({type(exc).__name__}): {redacted}",
+        )
 
 
 async def create_claude_conversation_adapter(

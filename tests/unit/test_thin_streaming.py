@@ -93,6 +93,58 @@ async def collect_events(
 # ---------------------------------------------------------------------------
 
 
+class TestMessagesToLmToolTranscript:
+    def test_messages_to_lm_preserves_persisted_native_tool_transcript(self) -> None:
+        """Persisted assistant tool_calls + tool result become LLM-visible text."""
+        from swarmline.runtime.thin.helpers import _messages_to_lm
+
+        result = _messages_to_lm(
+            [
+                Message(role="user", content="calculate"),
+                Message(
+                    role="assistant",
+                    content="",
+                    tool_calls=[{"id": "call-1", "name": "calc", "args": {"x": 2}}],
+                ),
+                Message(
+                    role="tool",
+                    content='{"value": 3}',
+                    name="calc",
+                    metadata={"correlation_id": "call-1"},
+                ),
+            ]
+        )
+
+        assert [message["role"] for message in result] == [
+            "user",
+            "assistant",
+            "user",
+        ]
+        joined = "\n".join(message["content"] for message in result)
+        assert "calc" in joined
+        assert "call-1" in joined
+        assert '{"value": 3}' in joined
+
+    def test_messages_to_lm_preserves_json_tool_call_metadata(self) -> None:
+        """JSON-in-text tool call metadata is not dropped after resume."""
+        from swarmline.runtime.thin.helpers import _messages_to_lm
+
+        result = _messages_to_lm(
+            [
+                Message(
+                    role="assistant",
+                    content="Вызываю lookup",
+                    metadata={"tool_call": "lookup"},
+                ),
+                Message(role="tool", content="found", name="lookup"),
+            ]
+        )
+
+        joined = "\n".join(message["content"] for message in result)
+        assert "lookup" in joined
+        assert "found" in joined
+
+
 class TestIncrementalEnvelopeParser:
     """Incremental JSON envelope parsing from token stream (low-level)."""
 
@@ -219,6 +271,53 @@ class TestStreamParser:
         assert done
         assert parser.result is not None
         assert parser.result.final_message == "fenced"
+
+
+class TestSemanticStreamingDeltas:
+    @pytest.mark.asyncio
+    async def test_nested_final_message_in_tool_args_not_emitted_as_delta(self) -> None:
+        """Only top-level final envelopes may emit final_message text deltas."""
+        from swarmline.runtime.thin.llm_client import (
+            StreamingLlmAttempt,
+            stream_llm_call,
+        )
+
+        raw = json.dumps(
+            {
+                "type": "tool_call",
+                "tool": {
+                    "name": "capture",
+                    "args": {"final_message": "leak"},
+                    "correlation_id": "c1",
+                },
+            }
+        )
+
+        async def llm_call(
+            messages: list[dict],
+            system_prompt: str,
+            *,
+            stream: bool = False,
+        ) -> AsyncIterator[str]:
+            assert stream is True
+
+            async def _stream() -> AsyncIterator[str]:
+                for idx in range(0, len(raw), 7):
+                    yield raw[idx : idx + 7]
+
+            return _stream()
+
+        deltas: list[str] = []
+        attempt: StreamingLlmAttempt | None = None
+        async for item in stream_llm_call(llm_call, [], "system"):
+            if isinstance(item, RuntimeEvent):
+                deltas.append(str(item.data["text"]))
+            else:
+                attempt = item
+
+        assert deltas == []
+        assert attempt is not None
+        assert attempt.raw == raw
 
 
 # ---------------------------------------------------------------------------

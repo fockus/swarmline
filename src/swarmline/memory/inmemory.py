@@ -88,6 +88,8 @@ class InMemoryMemoryProvider:
         """Get the last N messages."""
         key = (user_id, topic_id)
         msgs = self._messages[key]
+        if limit <= 0:
+            return []
         return msgs[-limit:]
 
     async def count_messages(self, user_id: str, topic_id: str) -> int:
@@ -103,6 +105,10 @@ class InMemoryMemoryProvider:
         """Delete old messages."""
         key = (user_id, topic_id)
         msgs = self._messages[key]
+        if keep_last <= 0:
+            deleted = len(msgs)
+            self._messages[key] = []
+            return deleted
         to_delete = max(0, len(msgs) - keep_last)
         if to_delete > 0:
             self._messages[key] = msgs[-keep_last:]

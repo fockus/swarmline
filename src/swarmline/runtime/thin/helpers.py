@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import Any
 
@@ -16,13 +17,58 @@ def _messages_to_lm(messages: list[Message]) -> list[dict[str, Any]]:
     """Messages to lm."""
     result: list[dict[str, Any]] = []
     for m in messages:
-        d: dict[str, Any] = {"role": m.role, "content": m.content}
+        d = _message_to_lm(m)
         if m.name:
             d["name"] = m.name
         if m.content_blocks is not None:
             d["content_blocks"] = [b.to_dict() for b in m.content_blocks]
         result.append(d)
     return result
+
+
+def _message_to_lm(message: Message) -> dict[str, Any]:
+    content = message.content
+    role = message.role
+
+    if message.tool_calls:
+        rendered_calls = "\n".join(
+            _render_tool_call(call)
+            for call in message.tool_calls
+            if isinstance(call, dict)
+        )
+        prefix = "Tool calls requested:"
+        content = f"{content}\n{prefix}\n{rendered_calls}".strip()
+
+    tool_call_name = None
+    if isinstance(message.metadata, dict):
+        raw_tool_call = message.metadata.get("tool_call")
+        if isinstance(raw_tool_call, str) and raw_tool_call:
+            tool_call_name = raw_tool_call
+    if tool_call_name:
+        content = f"{content}\nTool call requested: {tool_call_name}".strip()
+
+    if role == "tool":
+        role = "user"
+        tool_name = message.name or tool_call_name or "tool"
+        content = f"Tool result from {tool_name}: {content}"
+
+    return {"role": role, "content": content}
+
+
+def _json_text(value: Any) -> str:
+    try:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    except TypeError:
+        return str(value)
+
+
+def _render_tool_call(call: dict[str, Any]) -> str:
+    args = call.get("args", call.get("arguments", {}))
+    return (
+        f"- {call.get('name', '<unknown>')} "
+        f"id={call.get('id', '<none>')} "
+        f"args={_json_text(args)}"
+    )
 
 
 def _build_metrics(

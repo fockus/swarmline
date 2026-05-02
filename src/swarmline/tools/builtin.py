@@ -19,6 +19,7 @@ from typing import Any
 
 import structlog
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.types import ToolSpec
 from swarmline.tools.protocols import BinaryReadProvider, SandboxProvider
 
@@ -463,8 +464,13 @@ def create_web_tools(
             content = await web_provider.fetch(url.strip())
             return json.dumps({"status": "ok", "content": content})
         except Exception as e:
-            _log.warning("web_fetch_failed", url=url[:200], error=str(e))
-            return _make_json_error(str(e))
+            _log.warning(
+                "web_fetch_failed",
+                url=redact_secrets(url.strip())[:200],
+                error=redact_secrets(str(e)),
+                exc_type=type(e).__name__,
+            )
+            return _make_json_error("web_fetch failed")
 
     async def search_executor(args: dict) -> str:
         query = args.get("query", "")
@@ -484,8 +490,13 @@ def create_web_tools(
                 }
             )
         except Exception as e:
-            _log.warning("web_search_failed", query=query[:100], error=str(e))
-            return json.dumps({"status": "error", "message": str(e)})
+            _log.warning(
+                "web_search_failed",
+                query=query[:100],
+                error=redact_secrets(str(e)),
+                exc_type=type(e).__name__,
+            )
+            return json.dumps({"status": "error", "message": redact_secrets(str(e))})
 
     specs["web_fetch"] = ToolSpec(
         name="web_fetch",

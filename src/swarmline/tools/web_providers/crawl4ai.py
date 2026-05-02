@@ -11,6 +11,9 @@ import asyncio
 
 import structlog
 
+from swarmline.network_safety import validate_http_endpoint_url
+from swarmline.observability.redaction import redact_secrets
+
 _log = structlog.get_logger(component="web_fetch.crawl4ai")
 
 try:
@@ -43,9 +46,19 @@ class Crawl4AIFetchProvider:
         Returns:
             Markdown content. Empty string if crawl4ai is unavailable or an error occurs.
         """
-        if AsyncWebCrawler is None:
-            return ""
         if not url or not url.strip():
+            return ""
+        normalized_url = url.strip()
+        log_url = redact_secrets(normalized_url)[:200]
+        rejection = validate_http_endpoint_url(normalized_url)
+        if rejection:
+            _log.warning(
+                "crawl4ai_fetch_url_denied",
+                url=log_url,
+                reason=rejection,
+            )
+            return ""
+        if AsyncWebCrawler is None:
             return ""
 
         try:
@@ -54,12 +67,16 @@ class Crawl4AIFetchProvider:
             )
             async with AsyncWebCrawler() as crawler:
                 result = await asyncio.wait_for(
-                    crawler.arun(url=url.strip(), config=config),
+                    crawler.arun(url=normalized_url, config=config),
                     timeout=self._timeout,
                 )
             if result.success and result.markdown:
                 return result.markdown[:50000]
             return ""
         except Exception as exc:
-            _log.warning("crawl4ai_fetch_failed", url=url[:200], error=str(exc))
+            _log.warning(
+                "crawl4ai_fetch_failed",
+                url=log_url,
+                error=redact_secrets(str(exc)),
+            )
             return ""

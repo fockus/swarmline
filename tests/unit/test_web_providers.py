@@ -479,6 +479,43 @@ class TestJinaReaderFetchProvider:
         assert result == ""
         client.assert_not_called()
 
+    async def test_denied_url_log_redacts_userinfo(self) -> None:
+        """Denied Jina URLs must not log userinfo credentials."""
+        provider = JinaReaderFetchProvider(api_key="test-key")
+        url = "http://alice:topsecret@127.0.0.1/admin"
+
+        with patch("swarmline.tools.web_providers.jina._log") as log:
+            result = await provider.fetch(url)
+
+        assert result == ""
+        logged_url = log.warning.call_args.kwargs["url"]
+        assert "alice:topsecret" not in logged_url
+        assert "[REDACTED]" in logged_url
+
+    async def test_failure_url_log_redacts_userinfo(self) -> None:
+        """Failed Jina fetches must not log userinfo credentials."""
+        import httpx as real_httpx
+
+        provider = JinaReaderFetchProvider(api_key="test-key")
+        url = "https://alice:topsecret@example.com/page"
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(side_effect=real_httpx.ConnectError("no route"))
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch("swarmline.tools.web_providers.jina._log") as log,
+            patch("swarmline.tools.web_providers.jina.httpx") as mock_httpx,
+        ):
+            mock_httpx.AsyncClient = MagicMock(return_value=mock_client)
+            mock_httpx.HTTPError = real_httpx.HTTPError
+            result = await provider.fetch(url)
+
+        assert result == ""
+        logged_url = log.warning.call_args.kwargs["url"]
+        assert "alice:topsecret" not in logged_url
+        assert "[REDACTED]" in logged_url
+
     async def test_https_url_passes_validation_and_fetches(self) -> None:
         """Ordinary public HTTPS URLs still go through Jina Reader."""
         mock_response = AsyncMock()
@@ -542,6 +579,83 @@ class TestCrawl4AIFetchProvider:
             assert await provider.fetch("") == ""
         finally:
             crawl_mod.AsyncWebCrawler = original
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "file:///etc/passwd",
+            "http://127.0.0.1/admin",
+            "https://169.254.169.254/latest/meta-data",
+        ],
+    )
+    async def test_unsafe_url_returns_empty_without_crawler(self, url: str) -> None:
+        """Direct Crawl4AI fetch validates URLs before browser/network work."""
+        import swarmline.tools.web_providers.crawl4ai as crawl_mod
+
+        original_crawler = crawl_mod.AsyncWebCrawler
+        original_config = crawl_mod.CrawlerRunConfig
+        original_generator = crawl_mod.DefaultMarkdownGenerator
+        crawler_cls = MagicMock()
+        crawl_mod.AsyncWebCrawler = crawler_cls
+        crawl_mod.CrawlerRunConfig = MagicMock()
+        crawl_mod.DefaultMarkdownGenerator = MagicMock()
+        try:
+            provider = Crawl4AIFetchProvider()
+            result = await provider.fetch(url)
+        finally:
+            crawl_mod.AsyncWebCrawler = original_crawler
+            crawl_mod.CrawlerRunConfig = original_config
+            crawl_mod.DefaultMarkdownGenerator = original_generator
+
+        assert result == ""
+        crawler_cls.assert_not_called()
+
+    async def test_denied_url_log_redacts_userinfo(self) -> None:
+        """Denied Crawl4AI URLs must not log userinfo credentials."""
+        provider = Crawl4AIFetchProvider()
+        url = "http://alice:topsecret@127.0.0.1/admin"
+
+        with patch("swarmline.tools.web_providers.crawl4ai._log") as log:
+            result = await provider.fetch(url)
+
+        assert result == ""
+        logged_url = log.warning.call_args.kwargs["url"]
+        assert "alice:topsecret" not in logged_url
+        assert "[REDACTED]" in logged_url
+
+    async def test_failure_url_log_redacts_userinfo(self) -> None:
+        """Failed Crawl4AI fetches must not log userinfo credentials."""
+        import swarmline.tools.web_providers.crawl4ai as crawl_mod
+
+        class BoomCrawler:
+            async def __aenter__(self) -> BoomCrawler:
+                return self
+
+            async def __aexit__(self, *args: object) -> None:
+                return None
+
+            async def arun(self, *, url: str, config: object) -> object:
+                raise RuntimeError("browser failed")
+
+        original_crawler = crawl_mod.AsyncWebCrawler
+        original_config = crawl_mod.CrawlerRunConfig
+        original_generator = crawl_mod.DefaultMarkdownGenerator
+        crawl_mod.AsyncWebCrawler = BoomCrawler
+        crawl_mod.CrawlerRunConfig = MagicMock()
+        crawl_mod.DefaultMarkdownGenerator = MagicMock()
+        url = "https://alice:topsecret@example.com/page"
+        try:
+            with patch("swarmline.tools.web_providers.crawl4ai._log") as log:
+                result = await Crawl4AIFetchProvider().fetch(url)
+        finally:
+            crawl_mod.AsyncWebCrawler = original_crawler
+            crawl_mod.CrawlerRunConfig = original_config
+            crawl_mod.DefaultMarkdownGenerator = original_generator
+
+        assert result == ""
+        logged_url = log.warning.call_args.kwargs["url"]
+        assert "alice:topsecret" not in logged_url
+        assert "[REDACTED]" in logged_url
 
 
 # ---------------------------------------------------------------------------
@@ -674,6 +788,36 @@ class TestSearchExecutor:
         assert parsed["status"] == "error"
 
 
+class TestFetchExecutor:
+    async def test_fetch_exception_redacts_logs_and_returns_generic_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """web_fetch wrapper must not expose URL credentials or provider secrets."""
+        import json
+
+        import swarmline.tools.builtin as builtin_mod
+        from swarmline.tools.builtin import create_web_tools
+
+        secret = "sk-proj-web-fetch-secret-1234567890abcdef"
+        url = f"https://alice:password@example.test/path?api_key={secret}"
+        mock_web = AsyncMock()
+        mock_web.fetch = AsyncMock(side_effect=RuntimeError(f"provider failed {url}"))
+        warning = MagicMock()
+        monkeypatch.setattr(builtin_mod._log, "warning", warning)
+
+        _, executors = create_web_tools(mock_web)
+        raw = await executors["web_fetch"]({"url": url})
+        parsed = json.loads(raw)
+
+        assert parsed["status"] == "error"
+        assert secret not in parsed["message"]
+        assert "alice:password" not in parsed["message"]
+        assert parsed["message"] == "web_fetch failed"
+        warning.assert_called_once()
+        assert secret not in str(warning.call_args)
+        assert "alice:password" not in str(warning.call_args)
+
+
 # ---------------------------------------------------------------------------
 # _extract_text (web_httpx.py)
 # ---------------------------------------------------------------------------
@@ -748,3 +892,40 @@ class TestHttpxWebProviderFetchDelegation:
 
         assert "Hello world" in text
         assert "<" not in text
+
+    async def test_fetch_failure_logs_redacted_url_and_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import sys
+        import types
+
+        import swarmline.tools.web_httpx as web_httpx_mod
+
+        secret = "sk-proj-httpx-fetch-secret-1234567890abcdef"
+        url = f"https://alice:password@example.test/path?api_key={secret}"
+        warning = MagicMock()
+        monkeypatch.setattr(web_httpx_mod._log, "warning", warning)
+
+        class _Client:
+            def __init__(self, *args, **kwargs) -> None:
+                _ = (args, kwargs)
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                _ = (exc_type, exc, tb)
+                return None
+
+            def build_request(self, *args, **kwargs):
+                _ = (args, kwargs)
+                raise RuntimeError(f"failed with {url}")
+
+        monkeypatch.setitem(sys.modules, "httpx", types.SimpleNamespace(AsyncClient=_Client))
+
+        result = await HttpxWebProvider().fetch(url)
+
+        assert result == ""
+        warning.assert_called_once()
+        assert secret not in str(warning.call_args)
+        assert "alice:password" not in str(warning.call_args)

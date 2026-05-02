@@ -15,6 +15,7 @@ from typing import Any
 
 import structlog
 
+from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.openai_agents.event_mapper import map_run_error, map_stream_event
 from swarmline.runtime.openai_agents.tool_bridge import (
     ToolExecutorFn,
@@ -144,7 +145,11 @@ class OpenAIAgentsRuntime:
                     yield runtime_event
 
         except Exception as exc:
-            _log.exception("openai_agents_run_failed")
+            _log.error(
+                "openai_agents_run_failed",
+                exc_type=type(exc).__name__,
+                error=redact_secrets(str(exc)),
+            )
             yield map_run_error(exc)
             return
 

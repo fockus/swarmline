@@ -87,3 +87,30 @@ class TestMcpBridgeCallTool:
         # Also test discover_tools with unknown server
         tools = await bridge.discover_tools("nonexistent")
         assert tools == []
+
+
+class TestMcpBridgeLifecycle:
+    async def test_aclose_closes_owned_client(self) -> None:
+        bridge = McpBridge()
+
+        with patch.object(
+            bridge._client,
+            "aclose",
+            new_callable=AsyncMock,
+        ) as mock_close:
+            await bridge.aclose()
+
+        mock_close.assert_awaited_once()
+
+    async def test_async_context_manager_closes_on_exit(self) -> None:
+        bridge = McpBridge()
+
+        with patch.object(
+            bridge,
+            "aclose",
+            new_callable=AsyncMock,
+        ) as mock_close:
+            async with bridge as entered:
+                assert entered is bridge
+
+        mock_close.assert_awaited_once()
