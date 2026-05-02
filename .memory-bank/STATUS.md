@@ -2,9 +2,9 @@
 
 ## Текущий фокус
 
-**v1.5.0 RELEASED publicly** (2026-05-02). Public `Publish to PyPI` workflow succeeded for tag `v1.5.0`; PyPI shows `swarmline 1.5.0` as latest. Follow-up public CI hardening is in progress on `main` after the release artifact was published.
+**v1.5.0 RELEASED publicly** (2026-05-02). Public `Publish to PyPI` workflow succeeded for tag `v1.5.0`; PyPI shows `swarmline 1.5.0` as latest. Follow-up public CI hardening is complete; public GitHub Actions `CI` is green on `main`.
 
-**Pending (next step):** push post-release CI hardening to private/public `main` and confirm GitHub Actions `CI` green. Do **not** move/re-push tag `v1.5.0` after PyPI publish, because PyPI artifacts are immutable.
+**Pending (next step):** no release blockers. Do **not** move/re-push tag `v1.5.0` after PyPI publish, because PyPI artifacts are immutable.
 
 **Release/CI gate status (verified 2026-05-02):**
 - `ty check src/swarmline/` → All checks passed! (0 diagnostics, baseline locked = 0)

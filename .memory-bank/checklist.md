@@ -12,7 +12,7 @@
 - ✅ PyPI now reports `swarmline 1.5.0` as latest.
 - ✅ Release publish blocker fixed: top-level `import swarmline` works without optional `httpx`.
 - ✅ Post-release CI hardening verified locally: local + CI-like `ty` green, `pip-audit` pinned-requirements path green, `ruff`/format green, architecture meta-tests green, full offline `pytest` → **5600 passed, 7 skipped, 5 deselected**.
-- ⬜ Public GitHub Actions `CI` re-run for post-release hardening must be green after pushing this follow-up commit.
+- ✅ Public GitHub Actions `CI` re-run for post-release hardening is green: run `25256466821`.
 
 ## v1.5.0 — SHIPPED (2026-04-25, tag `v1.5.0` on commit `3fae1b2`)
 

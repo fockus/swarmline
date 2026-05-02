@@ -936,4 +936,8 @@
   - ✅ CI-like `pip freeze --exclude-editable` + `pip-audit --strict --desc --requirement ...` → No known vulnerabilities found.
   - ✅ `pytest tests/architecture/ -v -m slow` → **3 passed**.
   - ✅ `pytest --tb=no -q` → **5600 passed, 7 skipped, 5 deselected**.
-- Next: commit/push this post-release CI hardening, sync public `main` without re-pushing tag `v1.5.0`, then confirm public GitHub Actions `CI` green.
+- Public verification:
+  - ✅ Public GitHub Actions `CI` run `25256466821` succeeded on `main` (`lint`, `typecheck`, Python 3.11/3.12/3.13 tests, `pip-audit`, architecture).
+  - ✅ GitHub release `v1.5.0` published: https://github.com/fockus/swarmline/releases/tag/v1.5.0
+  - ✅ Publish workflow run `25255787717` succeeded: https://github.com/fockus/swarmline/actions/runs/25255787717
+- Next: no release blockers remain; do not move/re-push `v1.5.0` tag after PyPI publish.
