@@ -151,7 +151,9 @@ class McpClient:
 
         try:
             client = self._get_http_client()
-            response = await client.post(server_url, json=payload, timeout=self._timeout)
+            response = await client.post(
+                server_url, json=payload, timeout=self._timeout
+            )
             response.raise_for_status()
         except httpx.TimeoutException:
             return {"error": f"Таймаут при вызове MCP tool '{tool_name}'"}
@@ -206,7 +208,9 @@ class McpClient:
 
         try:
             client = self._get_http_client()
-            response = await client.post(server_url, json=payload, timeout=timeout_value)
+            response = await client.post(
+                server_url, json=payload, timeout=timeout_value
+            )
             response.raise_for_status()
             data = response.json()
         except Exception:
@@ -306,7 +310,9 @@ class McpClient:
 
         try:
             client = self._get_http_client()
-            response = await client.post(server_url, json=payload, timeout=self._timeout)
+            response = await client.post(
+                server_url, json=payload, timeout=self._timeout
+            )
             response.raise_for_status()
             data = response.json()
         except Exception:
@@ -379,7 +385,9 @@ class McpClient:
 
         try:
             client = self._get_http_client()
-            response = await client.post(server_url, json=payload, timeout=self._timeout)
+            response = await client.post(
+                server_url, json=payload, timeout=self._timeout
+            )
             response.raise_for_status()
         except httpx.TimeoutException:
             return {"error": f"Timeout reading MCP resource '{uri}'"}

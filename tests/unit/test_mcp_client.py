@@ -35,9 +35,10 @@ class TestMcpClientCallTool:
 
         assert isinstance(result, dict)
         assert "error" in result
-        assert "rejected" in result["error"].lower() or "blocked" in result[
-            "error"
-        ].lower()
+        assert (
+            "rejected" in result["error"].lower()
+            or "blocked" in result["error"].lower()
+        )
 
     @pytest.mark.asyncio
     async def test_call_tool_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -245,9 +246,10 @@ class TestMcpClientResourcesSafety:
 
         assert isinstance(result, dict)
         assert "error" in result
-        assert "rejected" in result["error"].lower() or "blocked" in result[
-            "error"
-        ].lower()
+        assert (
+            "rejected" in result["error"].lower()
+            or "blocked" in result["error"].lower()
+        )
 
 
 class TestMcpClientPooling:

@@ -182,7 +182,9 @@ def build_portable_runtime_plan(
                 CodingContextInputFilter(
                     workspace_cwd=cwd,
                     board_text=board_context if isinstance(board_context, str) else "",
-                    search_text=search_context if isinstance(search_context, str) else "",
+                    search_text=search_context
+                    if isinstance(search_context, str)
+                    else "",
                     skill_profile_text=str(skill_profile_text),
                     task_session_store=session_store,
                     task_session_agent_id=(

@@ -188,7 +188,9 @@ class TestAuth:
 
         agent = _mock_agent()
         tc = TestClient(create_app(agent, auth_token="secret-123"))
-        with patch("swarmline.serve.app.hmac.compare_digest", return_value=False) as compare:
+        with patch(
+            "swarmline.serve.app.hmac.compare_digest", return_value=False
+        ) as compare:
             resp = tc.post(
                 "/v1/query",
                 json={"prompt": "hi"},

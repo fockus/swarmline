@@ -250,7 +250,9 @@ async def stream_llm_call(
         return
 
     if isinstance(result, str):
-        yield StreamingLlmAttempt(raw=result, used_stream=True, emitted_text_delta=False)
+        yield StreamingLlmAttempt(
+            raw=result, used_stream=True, emitted_text_delta=False
+        )
         return
 
     if not hasattr(result, "__aiter__"):

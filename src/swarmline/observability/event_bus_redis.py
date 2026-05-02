@@ -92,7 +92,9 @@ class RedisEventBus:
 
         return sub_id
 
-    async def async_subscribe(self, event_type: str, callback: Callable[..., Any]) -> str:
+    async def async_subscribe(
+        self, event_type: str, callback: Callable[..., Any]
+    ) -> str:
         """Register a local callback and await Redis channel subscription."""
         sub_id = f"rsub_{self._counter}"
         self._counter += 1

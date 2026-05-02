@@ -475,7 +475,9 @@ class TestNativeToolsReactIntegration:
         """Native tool provider fallback must not log raw provider secrets."""
         secret = "sk-proj-native-call-secret-1234567890abcdef"
         adapter = ErrorNativeAdapter(f"Native API unavailable: {secret}")
-        caplog.set_level(logging.WARNING, logger="swarmline.runtime.thin.react_strategy")
+        caplog.set_level(
+            logging.WARNING, logger="swarmline.runtime.thin.react_strategy"
+        )
 
         config = _make_config(use_native_tools=True)
         executor = _make_executor()

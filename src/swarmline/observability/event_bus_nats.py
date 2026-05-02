@@ -81,7 +81,9 @@ class NatsEventBus:
 
         return sub_id
 
-    async def async_subscribe(self, event_type: str, callback: Callable[..., Any]) -> str:
+    async def async_subscribe(
+        self, event_type: str, callback: Callable[..., Any]
+    ) -> str:
         """Register a local callback and await NATS subject subscription."""
         sub_id = f"nsub_{self._counter}"
         self._counter += 1

@@ -72,9 +72,7 @@ class TestRedactSecretsKnownPatterns:
             ("authorization", "Bearer abc123def456ghijklmnop"),
         ],
     )
-    def test_redact_secrets_url_query_credentials(
-        self, key: str, secret: str
-    ) -> None:
+    def test_redact_secrets_url_query_credentials(self, key: str, secret: str) -> None:
         result = redact_secrets(f"https://example.test/path?{key}={secret}&page=2")
         assert secret not in result
         assert f"{key}=[REDACTED]" in result

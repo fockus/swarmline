@@ -921,7 +921,9 @@ class TestHttpxWebProviderFetchDelegation:
                 _ = (args, kwargs)
                 raise RuntimeError(f"failed with {url}")
 
-        monkeypatch.setitem(sys.modules, "httpx", types.SimpleNamespace(AsyncClient=_Client))
+        monkeypatch.setitem(
+            sys.modules, "httpx", types.SimpleNamespace(AsyncClient=_Client)
+        )
 
         result = await HttpxWebProvider().fetch(url)
 
