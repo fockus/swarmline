@@ -125,6 +125,35 @@ class Agent:
 
         return result
 
+    async def query_structured_result(
+        self,
+        prompt: str,
+        output_type: type[T],
+        *,
+        max_retries: int | None = None,
+        structured_mode: Any | None = None,
+    ) -> Result:
+        """Like :meth:`query_structured` but return the FULL ``Result``.
+
+        Identical structured-output setup, parsing, validation and retry behaviour — but the
+        caller gets the whole ``Result`` (``text``, ``structured_output``, ``total_cost_usd``,
+        ``usage``, ...) instead of only the validated model. Use this when the run's cost/usage
+        metadata is needed alongside the structured output (which :meth:`query_structured`
+        discards). The caller decides how to treat a ``None`` ``structured_output``.
+        """
+        # Build a temporary config with output_type set
+        overrides: dict[str, Any] = {"output_type": output_type}
+        if max_retries is not None:
+            overrides["max_model_retries"] = max_retries
+        if structured_mode is not None:
+            overrides["structured_mode"] = structured_mode
+        if self._config.output_format is None:
+            schema_builder = getattr(output_type, "model_json_schema", None)
+            if callable(schema_builder):
+                overrides["output_format"] = schema_builder()
+        config = replace(self._config, **overrides)
+        return await self._query_with_config(prompt, config)
+
     async def query_structured(
         self,
         prompt: str,
@@ -161,19 +190,9 @@ class Agent:
         """
         from swarmline.agent.structured import StructuredOutputError
 
-        # Build a temporary config with output_type set
-        overrides: dict[str, Any] = {"output_type": output_type}
-        if max_retries is not None:
-            overrides["max_model_retries"] = max_retries
-        if structured_mode is not None:
-            overrides["structured_mode"] = structured_mode
-        if self._config.output_format is None:
-            schema_builder = getattr(output_type, "model_json_schema", None)
-            if callable(schema_builder):
-                overrides["output_format"] = schema_builder()
-        config = replace(self._config, **overrides)
-
-        result = await self._query_with_config(prompt, config)
+        result = await self.query_structured_result(
+            prompt, output_type, max_retries=max_retries, structured_mode=structured_mode
+        )
 
         if result.structured_output is not None:
             return result.structured_output  # type: ignore[return-value]
