@@ -64,6 +64,15 @@ class AgentConfig:
     # If set and output_format is None, output_format is auto-generated
     # from model_json_schema(). Runtime validates and retries on error.
     output_type: type | None = None
+    #: Single public control for native-vs-portable tool-calling + structured output:
+    #: - "prompt" (default): text-ReAct + prompt-based structured output (backward compatible).
+    #: - "native": provider-native tool-calling + provider-native structured output
+    #:   (``response_format``) when supported; errors if the provider cannot.
+    #: - "auto": native when the adapter/provider supports it, else fall back to "prompt"
+    #:   (recommended). In the thin react path "native"/"auto" run a CLEAN native tool loop
+    #:   followed by a separate structured-finalization call (two-phase); native failures fall
+    #:   back to text-ReAct automatically. ``use_native_tools`` overrides the native-tools
+    #:   decision independently of structured output.
     structured_mode: StructuredMode = "prompt"
     structured_schema_name: str | None = None
     structured_strict: bool = True
@@ -109,6 +118,11 @@ class AgentConfig:
     allow_native_features: bool = False
     native_config: dict[str, Any] = field(default_factory=dict)
     runtime_options: Any | None = None
+
+    #: Native tool-calling override (advanced). None = derive from ``structured_mode``
+    #: (native when "native"/"auto"); set True/False to force native tools on/off
+    #: independently of structured output.
+    use_native_tools: bool | None = None
 
     def __post_init__(self) -> None:
         if not self.system_prompt or not self.system_prompt.strip():

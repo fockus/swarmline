@@ -175,6 +175,9 @@ class RuntimeConfig:
     # - prompt: portable prompt instruction + local validation (backward compatible)
     # - native: provider-native JSON mode/schema when supported
     # - auto: native when supported, otherwise prompt
+    # In the thin react path, "native"/"auto" also drive native tool-calling
+    # (use_native_tools is derived from this): a clean native tool loop + a separate
+    # structured-finalization call (two-phase); native failures fall back to text-ReAct.
     structured_mode: StructuredMode = "prompt"
     structured_schema_name: str | None = None
     structured_strict: bool = True

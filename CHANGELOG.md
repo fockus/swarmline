@@ -7,7 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(none yet)
+### Added / Changed — native tool-calling in the thin react path (universal, two-phase)
+
+- **`structured_mode` is now the single knob for native vs portable tool-calling + structured
+  output in the thin runtime.** When `structured_mode` is `"native"` or `"auto"` and the
+  resolved adapter supports native tool-calling, the react loop now:
+  1. runs a **clean** native tool loop (`call_with_tools`) — the model calls tools natively,
+     with no text-ReAct JSON envelope and no `final_message` nesting; then
+  2. produces the final structured output via a **separate** structured call that carries
+     provider-native `response_format` (`json_schema`/`json_object`) when supported, validated
+     via the existing `finalize_with_validation` (**two-phase**). The tool loop never carries
+     `response_format`, so models that reject "tools + response_format together" work.
+  `"prompt"` (the global default) is unchanged — existing consumers see no behavior change.
+- **`AgentConfig.use_native_tools: bool | None = None`** — advanced override. `None` derives
+  native tools from `structured_mode` (`native`/`auto` → on); set `True`/`False` to force it
+  independently of structured output.
+- **`AgentConfig.max_turns` now maps to the react `max_iterations` budget** (previously
+  unmapped; the loop was always capped at 6). The global default (6) is unchanged when
+  `max_turns` is unset.
+- **Safety:** native tool-calling is capability-checked (adapter must implement
+  `NativeToolCallAdapter`) and any native failure falls back to the text-ReAct path
+  automatically. Note: with `structured_mode="auto"` AND tools present, consumers now also get
+  native tool-calling (previously `auto` affected only structured output) — auto-fallback keeps
+  this safe.
+- See `examples/native_tools_openrouter.py` for the recommended usage.
+
+### Hardening (adversarial review of the two-phase path)
+
+- **Phase-2 finalization no longer falls back to text-ReAct on a finalization error.** The
+  structured finalize now runs *outside* the native try/except, so a structured-output error
+  surfaces cleanly to the caller instead of being mistaken for a native-adapter failure (which
+  would silently switch to text-ReAct and risk a conflicting second final event).
+- **Empty-stop is handled cleanly.** When the native loop ends with empty text and a schema is
+  configured, the structured retry no longer seeds a confusing empty `assistant` message — it
+  simply asks for the schema-valid answer given the tool context.
+- **The native path now emits an `assistant_delta`** with the model's final text before
+  finalization (when not buffering), matching the text-ReAct / clarify paths (no more UX-silent
+  native finalization).
+- Tests: added Phase-2 malformed-output retry coverage and a fail-loud native-adapter fixture.
 
 ## [1.5.0] - 2026-04-25
 

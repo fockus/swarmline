@@ -350,6 +350,16 @@ class Agent:
             required_capabilities=effective_config.require_capabilities,
             allow_native_features=effective_config.allow_native_features,
             native_config=dict(effective_config.native_config),
+            use_native_tools=(
+                effective_config.use_native_tools
+                if effective_config.use_native_tools is not None
+                else effective_config.structured_mode in {"native", "auto"}
+            ),
+            max_iterations=(
+                effective_config.max_turns
+                if effective_config.max_turns is not None
+                else RuntimeConfig().max_iterations
+            ),
         )
 
     def _merge_hooks(self) -> Any:

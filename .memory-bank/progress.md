@@ -941,3 +941,32 @@
   - ✅ GitHub release `v1.5.0` published: https://github.com/fockus/swarmline/releases/tag/v1.5.0
   - ✅ Publish workflow run `25255787717` succeeded: https://github.com/fockus/swarmline/actions/runs/25255787717
 - Next: no release blockers remain; do not move/re-push `v1.5.0` tag after PyPI publish.
+
+## 2026-05-05
+
+### Auto-capture 2026-05-05 (session 2579f3a6)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-05-05
+
+### Auto-capture 2026-05-05 (session e46392ec)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-05-05
+
+### Auto-capture 2026-05-05 (session fd9e6808)
+- Session ended without an explicit /mb done
+- Details will be reconstructed on the next /mb start (MB Manager can read the transcript)
+
+## 2026-06-06
+
+### Removed `detect_mode` — mode routing is now structural (refactor, TDD)
+- **Context:** faberlic shopping-agent review. The regex `detect_mode` execution-mode router was a footgun: a tool-equipped agent could be silently denied its tools by phrasing (it caused a real faberlic prod bug last session), and a plain question containing «план»/«plan» was hijacked into the planner. The earlier "tool-aware default" was a post-hoc patch layered ON TOP of `detect_mode`.
+- **Decision (maintainer):** don't demote — **delete `detect_mode` entirely**. Verified blast radius: imported only by `runtime.py` + `test_thin_modes.py`; `react_patterns`/`planner_patterns` ctor seams had ZERO production callers; all planner EXECUTION reached via explicit `mode_hint="planner"` or direct `ThinPlannerMode` tests.
+- **Change:** `runtime/thin/modes.py` reduced to `VALID_MODES` only (deleted `detect_mode`, `_REACT_PATTERNS`, `_PLANNER_PATTERNS`, `re`/`Sequence` imports). `runtime/thin/runtime.py` mode resolution is now structural: `explicit (valid) mode_hint > tools present → react > conversational`; dropped the dead `react_patterns`/`planner_patterns` ctor params + the unused `import re`. `planner` is explicit-only.
+- **TDD:** RED→GREEN. `test_thin_modes.py` collapsed to `TestValidModes`; `test_thin_runtime.py` added `test_tool_less_react_keyword_no_hint_stays_conversational` (asserts the `Mode:` status event is `conversational` for «Найди…» with no tools/hint — RED was `Mode: react`). Behaviour-preserving for the with-tools recommend path.
+- **Verify (all green):** swarmline `-m "not live and not slow"` = **5253 passed**, 26 failed (ALL pre-existing optional-dep: postgres×18/openai_agents×6/claude-sdk×1/otel×1) + 3 postgres collection errors — **0 new regressions**; ruff + ty(changed files) clean. faberlic gate **616 passed / 92.98%**, ruff + ty(src) clean; **live e2e 3/3 PASSED** (187s).
+- **Plan:** `plans/2026-06-06_refactor_mode-routing-tool-aware-primary.md` (✅ DONE). **Report:** `reports/2026-06-06_audit_swarmline-quality-vs-langgraph-deepagents.md` (full quality/fitness audit vs LangGraph & deepagents).
+- **Not committed** (commit-only-on-request).

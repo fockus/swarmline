@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from swarmline.errors import UnknownModelError
 from swarmline.runtime.model_registry import get_registry
 
 SdkType = Literal["anthropic", "openai_compat", "google"]
@@ -86,14 +87,28 @@ def resolve_provider(
     if explicit_provider is not None:
         model_id = model_part
         provider = explicit_provider
-    else:
+    elif registry.is_known(raw_model):
         model_id = registry.resolve(raw_model)
         provider = registry.get_provider(model_id)
+    elif base_url is not None:
+        # No provider prefix but an explicit base_url => an OpenAI-compatible custom endpoint
+        # (OpenRouter / Together / vLLM / a proxy). Honor it and pass the slug through
+        # unchanged, instead of ignoring base_url and silently substituting the registry
+        # default (which routed unknown slugs to anthropic/claude-sonnet).
+        return ResolvedProvider(
+            model_id=raw_model.strip(),
+            provider="openai_compat",
+            sdk_type="openai_compat",
+            base_url=base_url,
+        )
+    else:
+        # No prefix, unknown slug, no base_url: FAIL LOUD instead of silently substituting the
+        # default model+provider (the historical footgun). A typo or a missing provider prefix
+        # must surface immediately rather than billing a different model.
+        raise UnknownModelError(raw_model)
 
     sdk_type = _PROVIDER_SDK_MAP.get(provider, "openai_compat")
-    effective_base_url = (
-        base_url if base_url is not None else _get_default_base_url(provider)
-    )
+    effective_base_url = base_url if base_url is not None else _get_default_base_url(provider)
 
     return ResolvedProvider(
         model_id=model_id,

@@ -499,3 +499,87 @@ All 21 stages of [`plans/2026-04-25_fix_v150-release-blockers.md`](plans/2026-04
 
 ## v1.5.0 release — pending
 - ⬜ Public sync — `./scripts/sync-public.sh --tags` → `github.com/fockus/swarmline` → PyPI auto-publish via OIDC (awaiting user approval)
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 1: Spike — `CodeAgent` фасад (single-file прототип, выявить choke-points)
+- ⬜ Spike — `CodeAgent` фасад (single-file прототип, выявить choke-points)
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 2: P0-A + P0-B + P0-H — Публичный фасад + slim `ThinRuntime.__init__` + CLI
+- ⬜ P0-A + P0-B + P0-H — Публичный фасад + slim `ThinRuntime.__init__` + CLI
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 3: P0-C — Аудит coding_toolpack + `apply_patch` + `todo` tools
+- ⬜ P0-C — Аудит coding_toolpack + `apply_patch` + `todo` tools
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 4: P0-E — `on_permission_request` async callback
+- ⬜ P0-E — `on_permission_request` async callback
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 5: P0-K1 + K2 + K3 — Session lifecycle (auto-save/resume/reset/metadata)
+- ⬜ P0-K1 + K2 + K3 — Session lifecycle (auto-save/resume/reset/metadata)
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 6: P0-AA + AB + AC — Truncation continuation + reactive compaction + preflight check
+- ⬜ P0-AA + AB + AC — Truncation continuation + reactive compaction + preflight check
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 7: P0-AD + AE — File-tool safety guards + bash destructive warning
+- ⬜ P0-AD + AE — File-tool safety guards + bash destructive warning
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 8: P0-AF + AG + AH — diagnostics tool + question tool + smart truncation
+- ⬜ P0-AF + AG + AH — diagnostics tool + question tool + smart truncation
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 9: P0-D + F + G — AgentMessage + convertToLlm seam (Strangler Fig) + mid-run hooks + tool_execution mode
+- ⬜ P0-D + F + G — AgentMessage + convertToLlm seam (Strangler Fig) + mid-run hooks + tool_execution mode
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 10: Documentation + example + final E2E + release-prep
+- ⬜ Documentation + example + final E2E + release-prep
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 1: Foundation — Contracts & ADRs (Contract-First gate)
+- ⬜ Foundation — Contracts & ADRs (Contract-First gate)
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 2: Spike — `CodeAgent` фасад (single-file прототип, выявить choke-points)
+- ⬜ Spike — `CodeAgent` фасад (single-file прототип, выявить choke-points)
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 3: P0-A + P0-B + P0-H — Публичный фасад + slim `ThinRuntime.__init__` + CLI
+- ⬜ P0-A + P0-B + P0-H — Публичный фасад + slim `ThinRuntime.__init__` + CLI
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 4: P0-C — Аудит coding_toolpack + `apply_patch` + `todo` tools
+- ⬜ P0-C — Аудит coding_toolpack + `apply_patch` + `todo` tools
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 5: P0-E — `on_permission_request` async callback
+- ⬜ P0-E — `on_permission_request` async callback
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 6: P0-K1 + K2 + K3 — Session lifecycle (auto-save/resume/reset/metadata)
+- ⬜ P0-K1 + K2 + K3 — Session lifecycle (auto-save/resume/reset/metadata)
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 7: P0-AA + AB + AC — Truncation continuation + reactive compaction + preflight check
+- ⬜ P0-AA + AB + AC — Truncation continuation + reactive compaction + preflight check
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 8: P0-AD + AE — File-tool safety guards + bash destructive warning
+- ⬜ P0-AD + AE — File-tool safety guards + bash destructive warning
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 9: P0-AF + AG + AH — diagnostics tool + question tool + smart truncation
+- ⬜ P0-AF + AG + AH — diagnostics tool + question tool + smart truncation
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 10: P0-D + F + G — AgentMessage + convertToLlm seam (Strangler Fig) + mid-run hooks + tool_execution mode
+- ⬜ P0-D + F + G — AgentMessage + convertToLlm seam (Strangler Fig) + mid-run hooks + tool_execution mode
+
+<!-- mb-plan:2026-05-05_feature_minimal-code-agent-sdk.md -->
+## Stage 11: Documentation + example + final E2E + release-prep
+- ⬜ Documentation + example + final E2E + release-prep

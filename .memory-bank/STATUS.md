@@ -156,6 +156,7 @@
 
 <!-- mb-active-plans -->
 _No active product plans — v1.5.0 released publicly 2026-05-02. Current operational deliverable: make public GitHub Actions `CI` green after post-release hardening._
+- [2026-05-05] [plans/2026-05-05_feature_minimal-code-agent-sdk.md](plans/2026-05-05_feature_minimal-code-agent-sdk.md) — feature — minimal-code-agent-sdk
 <!-- /mb-active-plans -->
 
 ## Recently done plans

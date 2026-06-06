@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 
 from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.structured_output import append_structured_output_instruction
+from swarmline.runtime.structured_requests import (
+    build_llm_call_kwargs,
+    structured_mode_uses_native,
+)
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.executor import ToolExecutor
 from swarmline.runtime.thin.finalization import CheckpointFn, finalize_with_validation
@@ -59,6 +63,10 @@ async def run_react(  # noqa: C901
         ),
         tools,
     )
+    # Native tool-calling uses a CLEAN prompt: tools are passed to the provider natively
+    # and the final structured output is produced in a separate Phase-2 call, so the
+    # text-ReAct envelope / final_message nesting must NOT be imposed on the loop.
+    native_loop_prompt = system_prompt
     lm_messages = _messages_to_lm(messages)
     new_messages: list[Message] = []
 
@@ -76,6 +84,10 @@ async def run_react(  # noqa: C901
         # --- Native tool calling path (Strangler Fig: opt-in) ---
         if native_adapter is not None and config.use_native_tools and tools:
             native_handled = False
+            # Phase 2 finalize runs AFTER the native try/except (see below) so a structured
+            # finalization error is never mistaken for a native-adapter failure. None = the
+            # loop produced tool calls (or errored); a str = the loop's final text to finalize.
+            native_finalize_text: str | None = None
             try:
                 tool_defs = [
                     {
@@ -87,7 +99,7 @@ async def run_react(  # noqa: C901
                 ]
                 native_result = await native_adapter.call_with_tools(
                     lm_messages,
-                    prompt,
+                    native_loop_prompt,
                     tool_defs,
                 )
 
@@ -97,13 +109,36 @@ async def run_react(  # noqa: C901
                         tool_calls_count + len(native_result.tool_calls)
                         > config.max_tool_calls
                     ):
-                        yield RuntimeEvent.error(
-                            RuntimeErrorData(
-                                kind="budget_exceeded",
-                                message=f"Превышен лимит tool_calls ({config.max_tool_calls})",
-                                recoverable=False,
+                        # Tool budget exhausted. A weak / non-converging model can keep
+                        # requesting tool calls forever; rather than erroring out (which loses
+                        # everything gathered so far), STOP calling tools and FORCE a final
+                        # structured answer from the accumulated context — the same Phase-2
+                        # finalize the clean-stop path uses. Graceful degradation, not a crash.
+                        forced_kwargs = build_llm_call_kwargs(config)
+                        forced_kwargs.pop("_swarmline_structured_strategy", None)
+                        forced_prompt = (
+                            system_prompt
+                            if structured_mode_uses_native(config)
+                            else append_structured_output_instruction(
+                                system_prompt,
+                                config.output_format,
+                                final_response_field=None,
                             )
                         )
+                        async for event in finalize_with_validation(
+                            native_result.text or "",
+                            config,
+                            lm_messages,
+                            forced_prompt,
+                            llm_call,
+                            start_time,
+                            iterations=iterations,
+                            tool_calls=tool_calls_count,
+                            new_messages_prefix=new_messages,
+                            checkpoint=checkpoint,
+                            llm_call_kwargs=forced_kwargs,
+                        ):
+                            yield event
                         return
 
                     for ntc in native_result.tool_calls:
@@ -184,24 +219,13 @@ async def run_react(  # noqa: C901
                         )
                     native_handled = True
 
-                elif native_result.text:
-                    # Text-only response -- finalize
-                    async for event in finalize_with_validation(
-                        native_result.text,
-                        config,
-                        lm_messages,
-                        prompt,
-                        llm_call,
-                        start_time,
-                        iterations=iterations,
-                        tool_calls=tool_calls_count,
-                        new_messages_prefix=new_messages,
-                        checkpoint=checkpoint,
-                    ):
-                        if not buffered_postprocessing and event.type == "final":
-                            yield RuntimeEvent.assistant_delta(native_result.text)
-                        yield event
-                    return
+                else:
+                    # Native tool loop finished (no further tool calls). Defer Phase 2
+                    # finalization to AFTER this try/except (a falsy text is normalised to
+                    # "" so the empty-stop case still finalizes). Doing it outside the try is
+                    # deliberate: a finalization error must surface, not be swallowed as a
+                    # native-adapter failure and trigger a redundant text-ReAct fallback.
+                    native_finalize_text = native_result.text or ""
 
             except Exception as exc:
                 _logger.warning(
@@ -211,6 +235,48 @@ async def run_react(  # noqa: C901
                     extra={"exc_type": type(exc).__name__},
                 )
                 native_handled = False
+                native_finalize_text = None  # Phase-1 native failure → fall back, do NOT finalize
+
+            if native_finalize_text is not None:
+                # Phase 2 (two-phase structured finalization). finalize_with_validation
+                # returns the text as-is when valid (or when no structured output is
+                # configured) and otherwise repairs it with a dedicated structured call that
+                # carries provider-native response_format — the tool loop never carries it, so
+                # flash-class models work. Structured retries inside finalize are NOT counted
+                # as ``iterations`` (which counts agent-loop turns only). Errors raised here
+                # propagate to the caller; they are not native-adapter failures and must NOT
+                # silently fall back to text-ReAct.
+                llm_call_kwargs = build_llm_call_kwargs(config)
+                llm_call_kwargs.pop("_swarmline_structured_strategy", None)
+                final_prompt = (
+                    system_prompt
+                    if structured_mode_uses_native(config)
+                    else append_structured_output_instruction(
+                        system_prompt,
+                        config.output_format,
+                        final_response_field=None,
+                    )
+                )
+                # Surface the model's final text immediately (when not buffering), matching
+                # the text-ReAct / clarify paths so the native path is not UX-silent before
+                # the final event arrives.
+                if not buffered_postprocessing and native_finalize_text:
+                    yield RuntimeEvent.assistant_delta(native_finalize_text)
+                async for event in finalize_with_validation(
+                    native_finalize_text,
+                    config,
+                    lm_messages,
+                    final_prompt,
+                    llm_call,
+                    start_time,
+                    iterations=iterations,
+                    tool_calls=tool_calls_count,
+                    new_messages_prefix=new_messages,
+                    checkpoint=checkpoint,
+                    llm_call_kwargs=llm_call_kwargs,
+                ):
+                    yield event
+                return
 
             if native_handled:
                 continue

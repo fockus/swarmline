@@ -128,6 +128,26 @@ def _compact_kwargs(kwargs: dict[str, Any], allowed: set[str]) -> dict[str, Any]
     }
 
 
+def _to_openai_function_tool(tool: dict[str, Any]) -> dict[str, Any]:
+    """Wrap a flat ``{name, description, parameters}`` tool dict in OpenAI's function envelope.
+
+    The thin react loop builds tools as flat dicts; the OpenAI/OpenRouter chat API requires
+    ``{"type": "function", "function": {"name", "description", "parameters"}}``. Without the
+    envelope the provider ignores the tools entirely and the model can never call them. Idempotent:
+    a tool already carrying a ``function`` key (or a non-function ``type``) is returned unchanged.
+    """
+    if "function" in tool or tool.get("type") not in (None, "function"):
+        return tool
+    return {
+        "type": "function",
+        "function": {
+            "name": tool.get("name"),
+            "description": tool.get("description", ""),
+            "parameters": tool.get("parameters", {"type": "object", "properties": {}}),
+        },
+    }
+
+
 def _response_text(response: object) -> str:
     """Extract text from SDK response objects with duck-typed return models."""
     text = getattr(response, "text", "")
@@ -370,11 +390,17 @@ class OpenAICompatAdapter:
         api_messages = _apply_content_blocks(
             api_messages, _convert_content_blocks_openai
         )
+        # The react loop hands tools as flat ``{name, description, parameters}`` dicts. The
+        # OpenAI/OpenRouter chat API requires the ``{"type": "function", "function": {...}}``
+        # envelope — without it the provider silently ignores the tools and the model can never
+        # call them (it answers directly / fabricates). Wrap here (idempotent: an already-wrapped
+        # tool with a ``function`` key is passed through untouched).
+        openai_tools = [_to_openai_function_tool(tool) for tool in tools]
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=api_messages,  # ty: ignore[invalid-argument-type]  # OpenAI MessageParam strict; runtime dict matches (call_with_tools)
             max_tokens=kwargs.get("max_tokens", 4096),
-            tools=tools,  # ty: ignore[invalid-argument-type]  # OpenAI ChatCompletionToolParam strict; runtime dict matches
+            tools=openai_tools,  # ty: ignore[invalid-argument-type]  # OpenAI ChatCompletionToolParam strict; runtime dict matches
         )
         choice = response.choices[0]
         text = choice.message.content or ""

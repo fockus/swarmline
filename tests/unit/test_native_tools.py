@@ -367,6 +367,87 @@ class TestOpenAIAdapterCallWithTools:
         assert result.tool_calls[0].name == "calculator"
         assert result.tool_calls[0].args == {"expr": "2+2"}
 
+    @pytest.mark.asyncio
+    async def test_openai_adapter_wraps_flat_tool_dicts_in_function_envelope(self) -> None:
+        """Flat ``{name, description, parameters}`` tools are wrapped in the function envelope.
+
+        The react loop hands tools as flat dicts. Without the ``{"type": "function", "function":
+        {...}}`` envelope the OpenAI/OpenRouter chat API silently ignores them and the model can
+        never call a tool (it answers directly / fabricates URLs). The adapter must wrap them.
+        """
+        mock_message = MagicMock()
+        mock_message.content = "ok"
+        mock_message.tool_calls = None
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client = MagicMock()
+        mock_client.chat = MagicMock()
+        mock_client.chat.completions = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with patch.dict("sys.modules", {"openai": MagicMock()}):
+            from swarmline.runtime.thin.llm_providers import OpenAICompatAdapter
+
+            adapter = OpenAICompatAdapter.__new__(OpenAICompatAdapter)
+            adapter._model = "gpt-4o"
+            adapter._base_url = None
+            adapter._client = mock_client
+
+            await adapter.call_with_tools(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                tools=[
+                    {
+                        "name": "search",
+                        "description": "Search the catalogue",
+                        "parameters": {"type": "object", "properties": {}},
+                    }
+                ],
+            )
+
+        sent_tools = mock_client.chat.completions.create.call_args.kwargs["tools"]
+        assert sent_tools[0]["type"] == "function"
+        assert sent_tools[0]["function"]["name"] == "search"
+        assert sent_tools[0]["function"]["description"] == "Search the catalogue"
+        assert sent_tools[0]["function"]["parameters"] == {"type": "object", "properties": {}}
+
+    @pytest.mark.asyncio
+    async def test_openai_adapter_passes_through_already_wrapped_tools(self) -> None:
+        """A tool already in function-envelope form is sent unchanged (idempotent wrapping)."""
+        mock_message = MagicMock()
+        mock_message.content = "ok"
+        mock_message.tool_calls = None
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client = MagicMock()
+        mock_client.chat = MagicMock()
+        mock_client.chat.completions = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        already = {"type": "function", "function": {"name": "x", "parameters": {}}}
+        with patch.dict("sys.modules", {"openai": MagicMock()}):
+            from swarmline.runtime.thin.llm_providers import OpenAICompatAdapter
+
+            adapter = OpenAICompatAdapter.__new__(OpenAICompatAdapter)
+            adapter._model = "gpt-4o"
+            adapter._base_url = None
+            adapter._client = mock_client
+
+            await adapter.call_with_tools(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                tools=[already],
+            )
+
+        sent_tools = mock_client.chat.completions.create.call_args.kwargs["tools"]
+        assert sent_tools == [already]
+
 
 class TestGoogleAdapterCallWithTools:
     """Test GoogleAdapter.call_with_tools with mocked google SDK."""

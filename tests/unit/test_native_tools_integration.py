@@ -590,8 +590,14 @@ class TestNativeToolsReactIntegration:
         assert finals[0].data["text"] == "Just a text answer"
 
     @pytest.mark.asyncio
-    async def test_native_tools_budget_exceeded_returns_error(self) -> None:
-        """Tool calls exceeding max_tool_calls returns budget_exceeded error."""
+    async def test_native_tools_budget_exhaustion_forces_finalize(self) -> None:
+        """Exceeding max_tool_calls FORCES a finalize from gathered context, not a hard error.
+
+        A non-converging model that keeps requesting tools must still degrade gracefully: when the
+        per-turn tool budget is exhausted the native loop stops calling tools and finalizes a
+        best-effort answer from what it gathered — rather than erroring out (which previously
+        surfaced to the caller as an empty StructuredOutputError and a broken turn).
+        """
         adapter = MockNativeAdapter(
             [
                 NativeToolCallResult(
@@ -635,8 +641,9 @@ class TestNativeToolsReactIntegration:
         events = await _collect_events(strategy)
 
         errors = [e for e in events if e.type == "error"]
-        assert len(errors) == 1
-        assert "budget_exceeded" in str(errors[0].data)
+        finals = [e for e in events if e.type == "final"]
+        assert not errors, "budget exhaustion must force-finalize, not raise budget_exceeded"
+        assert finals, "expected a forced final event after the tool budget was exhausted"
 
     @pytest.mark.asyncio
     async def test_native_tools_adapter_none_uses_json_in_text(self) -> None:

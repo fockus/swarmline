@@ -551,3 +551,145 @@ class TestPerCallConfig:
         assert mock_default.call_count >= 1
         first_call_config = mock_default.call_args_list[0][0][0]
         assert first_call_config.model == "opus"
+
+
+# ---------------------------------------------------------------------------
+# Mode is structural, not lexical — a tool-equipped agent always reaches the
+# react loop (the model decides whether to call a tool); a tool-less, hint-less
+# turn is always conversational. There is no regex routing on the user's
+# wording (the former detect_mode heuristic was removed).
+# ---------------------------------------------------------------------------
+
+
+def _search_tool_spec() -> ToolSpec:
+    """A minimal catalogue-search tool spec (shape mirrors a real product search)."""
+    return ToolSpec(
+        name="search_faberlic_catalog",
+        description="Search the Faberlic catalogue for products matching a query.",
+        parameters={
+            "type": "object",
+            "properties": {"query": {"type": "string"}},
+        },
+        is_local=True,
+    )
+
+
+class TestThinRuntimeToolAwareDefault:
+    """Mode is resolved structurally: explicit mode_hint > tools-present → react
+    > conversational. A tool-equipped agent must reach the react loop so the
+    model can call its tools; the user's wording never decides the mode.
+    """
+
+    @pytest.mark.asyncio
+    async def test_run_with_tools_and_no_mode_hint_routes_to_react_loop(self) -> None:
+        """Tools present + auto-detected conversational text + no mode_hint → react.
+
+        The text "Посоветуй три крема для сухой кожи" matches NO react/planner
+        pattern, so ``detect_mode`` returns ``conversational`` — which runs WITHOUT
+        tools. With tools handed to the agent and no explicit ``mode_hint``, the
+        runtime must upgrade to the react loop so the model can actually call the
+        tool. RED before the tool-aware-default fix (the tool is never executed and
+        no ``tool_call_started`` event is emitted because conversational ignores the
+        ``tool_call`` envelope).
+        """
+        tool_invoked = False
+
+        def search(args: dict) -> dict:
+            nonlocal tool_invoked
+            tool_invoked = True
+            return {"results": ["крем 1", "крем 2"]}
+
+        llm = MockLLM(
+            [
+                make_tool_call_response("search_faberlic_catalog", {"query": "крем"}),
+                make_final_response("Подобрал два крема для сухой кожи."),
+            ]
+        )
+        runtime = ThinRuntime(
+            llm_call=llm,
+            local_tools={"search_faberlic_catalog": search},
+        )
+
+        # NOTE: mode_hint is deliberately omitted (None) — this is the auto-detect path.
+        events = await collect(
+            runtime,
+            "Посоветуй три крема для сухой кожи",
+            tools=[_search_tool_spec()],
+        )
+        types = [e.type for e in events]
+
+        assert "tool_call_started" in types, (
+            "a tool-equipped agent must reach the react loop and call its tool; "
+            f"got event types: {types}"
+        )
+        assert "tool_call_finished" in types
+        assert tool_invoked, "the catalogue search tool must actually be executed"
+
+    @pytest.mark.asyncio
+    async def test_explicit_conversational_mode_hint_is_still_honored(self) -> None:
+        """An explicit ``mode_hint='conversational'`` is respected even with tools.
+
+        The tool-aware default must only override the AUTO-detected conversational
+        mode (mode_hint is None). When the caller explicitly asks for conversational,
+        the runtime keeps it — the tool is never executed.
+        """
+        tool_invoked = False
+
+        def search(args: dict) -> dict:
+            nonlocal tool_invoked
+            tool_invoked = True
+            return {"results": []}
+
+        llm = MockLLM([make_final_response("Чем могу помочь?")])
+        runtime = ThinRuntime(
+            llm_call=llm,
+            local_tools={"search_faberlic_catalog": search},
+        )
+
+        events = await collect(
+            runtime,
+            "Посоветуй три крема для сухой кожи",
+            tools=[_search_tool_spec()],
+            mode_hint="conversational",
+        )
+        types = [e.type for e in events]
+
+        assert "tool_call_started" not in types
+        assert not tool_invoked, "explicit conversational must not run tools"
+
+    @pytest.mark.asyncio
+    async def test_no_tools_keeps_conversational_default(self) -> None:
+        """With NO tools, the conversational default is unchanged (no upgrade)."""
+        llm = MockLLM([make_final_response("Привет!")])
+        runtime = ThinRuntime(llm_call=llm)
+
+        events = await collect(runtime, "Просто поболтаем")
+        types = [e.type for e in events]
+
+        assert "tool_call_started" not in types
+        assert "final" in types
+
+    @pytest.mark.asyncio
+    async def test_tool_less_react_keyword_no_hint_stays_conversational(self) -> None:
+        """No regex routing: a tool-less, hint-less turn is ALWAYS conversational.
+
+        The text «Найди лучший вариант» previously matched the react keyword
+        regex and was routed to the react loop. With ``detect_mode`` removed,
+        mode is structural — no tools + no mode_hint → conversational. RED before
+        the deletion (the runtime emitted ``Mode: react``). Asserted via the
+        ``Mode: <mode>`` status event, which every turn emits.
+        """
+        llm = MockLLM([make_final_response("Вот что я думаю.")])
+        runtime = ThinRuntime(llm_call=llm)
+
+        events = await collect(runtime, "Найди лучший вариант для меня")
+        mode_status = next(
+            e.data["text"]
+            for e in events
+            if e.type == "status" and e.data.get("text", "").startswith("Mode:")
+        )
+
+        assert mode_status == "Mode: conversational", (
+            "a tool-less, hint-less turn must be conversational regardless of "
+            f"react-keyword phrasing; got {mode_status!r}"
+        )

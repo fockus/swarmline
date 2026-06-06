@@ -94,6 +94,23 @@ class ModelRegistry:
 
         return self._default_model
 
+    def is_known(self, raw: str | None) -> bool:
+        """Return True if ``raw`` matches a known model id or alias.
+
+        Mirrors ``resolve``'s matching (alias → exact → prefix) but WITHOUT the
+        default-model fallback, so callers can distinguish a genuinely recognized model
+        from one that ``resolve`` would silently coerce to the default. Empty / whitespace
+        input is not "known" (it is the caller's signal to use the default explicitly).
+        """
+        if not raw:
+            return False
+        name = raw.strip().lower()
+        if not name:
+            return False
+        if name in self._aliases or name in self._valid_models:
+            return True
+        return any(full_name.startswith(name) for full_name in self._valid_models)
+
     def get_provider(self, model_id: str) -> str:
         """Get provider."""
 

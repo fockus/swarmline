@@ -80,7 +80,7 @@ from swarmline.runtime.types import (  # noqa: F401
     TurnMetrics,
 )
 from swarmline.domain_types import ContentBlock, ImageBlock, TextBlock  # noqa: F401
-from swarmline.errors import SwarmlineError  # noqa: F401
+from swarmline.errors import SwarmlineError, UnknownModelError  # noqa: F401
 from swarmline.session.jsonl_store import JsonlMessageStore  # noqa: F401
 from swarmline.system_reminder_filter import (  # noqa: F401
     SystemReminder,

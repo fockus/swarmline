@@ -56,6 +56,16 @@ def build_portable_runtime_plan(
         required_capabilities=agent_config.require_capabilities,
         allow_native_features=agent_config.allow_native_features,
         native_config=dict(agent_config.native_config),
+        use_native_tools=(
+            agent_config.use_native_tools
+            if agent_config.use_native_tools is not None
+            else agent_config.structured_mode in {"native", "auto"}
+        ),
+        max_iterations=(
+            agent_config.max_turns
+            if agent_config.max_turns is not None
+            else RuntimeConfig().max_iterations
+        ),
     )
     if runtime_name == "deepagents" and session_id is not None:
         runtime_config.native_config = {

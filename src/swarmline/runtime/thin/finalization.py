@@ -158,7 +158,11 @@ async def finalize_with_validation(
 
     retry_messages = list(lm_messages)
     for _ in range(config.max_model_retries):
-        retry_messages.append({"role": "assistant", "content": current_text})
+        # Only echo a NON-empty prior answer back as the assistant turn. An empty-stop
+        # (native loop returned no text and no tool calls) would otherwise seed a confusing
+        # empty assistant message; we just ask for the schema-valid answer given the context.
+        if current_text:
+            retry_messages.append({"role": "assistant", "content": current_text})
         retry_messages.append(
             {
                 "role": "user",

@@ -1008,6 +1008,833 @@ Microsoft Agent Framework = AutoGen + Semantic Kernel merger. GA target Q1 2026.
 
 ---
 
+### IDEA-054: Handoff as primitive с HandoffInputFilter (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: openai-agents-python (`src/agents/handoffs/`) — сравнение архитектур
+
+Добавить first-class handoff-примитив с фильтрацией истории при передаче контроля между агентами.
+
+**Мотивация**: У swarmline богатый `multi_agent/` (graph_orchestrator, persistent_graph, governance, agent_registry), но именно «handoff с переписыванием/обрезкой conversation history» как стандартный примитив отсутствует. agents-sdk имеет `Handoff`, `HandoffInputData`, `HandoffInputFilter`, `default_handoff_history_mapper`, `nest_handoff_history` — следующий агент видит не raw history, а отфильтрованный/трансформированный контекст. Полезно для приватности (один агент не должен видеть креды другого), снижения токенов и аудита передач.
+
+**Что нужно**:
+1. `Handoff` dataclass: target agent + optional `input_filter` callable + optional `on_handoff` hook
+2. `HandoffInputData(input_history, pre_handoff_items, new_items, run_context, input_items)` — что передаётся фильтру
+3. `HandoffInputFilter` Protocol: `(data: HandoffInputData) -> HandoffInputData`
+4. Defaults: `default_handoff_history_mapper` (всё видно), `nest_handoff_history` (вложенная история как одно сообщение)
+5. Интеграция в `multi_agent/graph_communication` и `a2a` — handoff поверх существующих message-channels
+6. Span `handoff_span` в observability/tracer для аудита
+
+**Тесты**: filter не пропускает PII; nested handoffs работают; tripwire через filter возвращающий error.
+
+**Связано с**: IDEA-055 (RunState recovery) — handoff-то как точка восстановления.
+
+---
+
+### IDEA-055: RunState + RunErrorHandler — mid-run recovery (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: openai-agents-python (`src/agents/run_state.py`, `run_error_handlers.py`)
+
+Сериализуемый `RunState` + хуки восстановления после ошибок прямо посреди выполнения, не только на границах сессии.
+
+**Мотивация**: У swarmline есть `session/session_resumption.py`, но это resumption на уровне session. agents-sdk даёт `RunState` (snapshot in-flight run) + `RunErrorHandler` который вызывается при ошибке на N-ом turn и решает: retry / fallback / handoff / abort. Критично для долгих агентов с дорогим контекстом — упало на 12-м turn → не начинать с нуля.
+
+**Что нужно**:
+1. `RunState` dataclass — frozen snapshot: turn_count, history, tool_calls, current_agent, accumulated_output, run_config_hash
+2. `RunState.serialize()` / `RunState.deserialize()` — JSON-serialization для persistence
+3. `RunErrorHandler` Protocol: `(error, state) -> RunErrorHandlerResult` (`retry` / `fallback_to_agent(...)` / `abort` / `transform_error`)
+4. `RunErrorHandlers` collection — chain handlers по типу ошибки (`MaxTurnsExceeded` → retry, `ModelRefusalError` → fallback)
+5. Integration: thin runtime emits `state_snapshot` event, persistable в `runtime/portable_memory.py`
+6. `runner.resume(state)` — продолжить с конкретного RunState
+
+**DoD**: тесты на kill -9 после 5 turn → restart продолжает с 6; ModelBehaviorError → handler меняет model → retry; chain handlers порядок гарантирован.
+
+**Связано с**: session/session_resumption (уровень сессии vs run), resilience/circuit_breaker (стратегии fallback).
+
+---
+
+### IDEA-056: Sandbox Manifest + Snapshots — declarative workspaces (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: openai-agents-python `sandbox/` (v0.14, новинка)
+
+Декларативное описание workspace через Manifest + capabilities + Local/Remote snapshots для долгих агентов.
+
+**Мотивация**: У swarmline есть `multi_agent/worktree_orchestrator` и `tools/sandbox`, но manifest-based composable workspace с snapshots — уровень выше. agents-sdk:
+```python
+Manifest(entries={
+    "repo": GitRepo("openai/x", ref="main"),
+    "data": LocalFile(path="/tmp/data.json"),
+    "mount": RemoteMount(...)
+})
+```
++ Capabilities (`Filesystem`, `Shell`, `Compaction`, `Memory`, `Skills`) — декларация, что доступно в sandbox. + `LocalSnapshot` / `RemoteSnapshot` — replay state. + `SandboxPathGrant` — fine-grained path permissions.
+
+**Что нужно**:
+1. `Manifest` dataclass с `entries: dict[str, ManifestEntry]`
+2. Entry types: `GitRepoEntry`, `LocalFileEntry`, `RemoteMountEntry`, `DirEntry`
+3. `Capability` Protocol + `Filesystem` / `Shell` / `Compaction` / `Memory` / `Skills` impls
+4. `Snapshot` Protocol + `LocalSnapshot` (filesystem tar) / `RemoteSnapshot` (object storage)
+5. `SandboxPathGrant` — read-only / read-write / deny per path
+6. Integration: расширить `tools/sandbox` + `multi_agent/workspace.py` Manifest-driven setup
+7. CLI: `swarmline sandbox snapshot save/restore <name>`
+
+**DoD**: agent с GitRepo entry получает свежий repo на старте; snapshot save/restore round-trip; deny-path реально блокирует write.
+
+**Связано с**: IDEA-051 (worktree isolation, уже есть), path_safety.py.
+
+---
+
+### IDEA-057: Tool-level guardrails (ToolInput/ToolOutputGuardrail) (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Low
+
+**Источник**: openai-agents-python `tool_guardrails.py`
+
+Отдельный примитив для read-only валидации tool args/results, рядом с PreToolUse hook (который для side-effects).
+
+**Мотивация**: У swarmline `hooks/` (PreToolUse/PostToolUse) — для побочных эффектов (logging, mutating context). agents-sdk имеет `ToolInputGuardrail` / `ToolOutputGuardrail` — pure functions с tripwire-семантикой, специально для validation. Чище separation of concerns: guardrail валидирует и решает halt/proceed, hook делает side-effect.
+
+**Что нужно**:
+1. `ToolInputGuardrail` Protocol: `(ctx, data: ToolInputGuardrailData) -> ToolGuardrailFunctionOutput`
+2. `ToolOutputGuardrail` Protocol: `(ctx, data: ToolOutputGuardrailData) -> ToolGuardrailFunctionOutput`
+3. `ToolGuardrailFunctionOutput(output_info, tripwire_triggered)` — tripwire halts run
+4. Декораторы `@tool_input_guardrail` / `@tool_output_guardrail`
+5. Регистрация: per-tool list в FunctionTool / в AgentConfig.tool_guardrails
+6. Интеграция в thin runtime executor: гонять параллельно с tool execution
+7. Exceptions: `ToolInputGuardrailTripwireTriggered`, `ToolOutputGuardrailTripwireTriggered`
+
+**DoD**: guardrail rejecting PII в args останавливает run; tripwire поднимает typed exception; decorator-style работает; параллельное выполнение не блокирует tool.
+
+**Связано с**: guardrails.py (агент-уровень) — этот идея на tool-уровень.
+
+---
+
+### IDEA-058: tool_use_behavior — granular контроль loop'а (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: Low
+**Источник**: openai-agents-python `agent.py` (`tool_use_behavior` field)
+
+4 режима для контроля «что считать финальным выходом агента» — защита от бесконечных tool-loops.
+
+**Мотивация**: agents-sdk:
+- `"run_llm_again"` — default, результат tool → LLM (как сейчас)
+- `"stop_on_first_tool"` — первый tool result = final output
+- `StopAtTools(stop_at_tool_names=["submit", "answer"])` — стоп на конкретных tools
+- `ToolsToFinalOutputFunction(ctx, results) -> ToolsToFinalOutputResult` — кастомная функция
+
+Полезно для специализированных агентов: research-агент с tool `final_answer` → стоп; единичный SQL-агент → first-tool-result финал.
+
+**Что нужно**:
+1. `ToolUseBehavior` union в `agent/config.py`
+2. `StopAtTools` TypedDict + `ToolsToFinalOutputFunction` callable type
+3. `ToolsToFinalOutputResult(is_final_output, final_output)` dataclass
+4. Логика в thin runtime executor: после tool calls применить behavior
+5. `reset_tool_choice: bool = True` — авто-сброс tool_choice после tool call (предотвращает infinite loop)
+
+**DoD**: stop_on_first_tool возвращает первый result; StopAtTools(["x"]) останавливается только на x; custom function переопределяет; reset_tool_choice ломает infinite loop в тесте.
+
+---
+
+### IDEA-059: Generic typed context Agent[TContext] (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: Medium
+
+**Источник**: openai-agents-python `RunContextWrapper[TContext]`
+
+Type-safe shared state, текущий через tools/guardrails/handoffs, проверяемый mypy/pyright.
+
+**Мотивация**: swarmline использует dict-based context в основном. agents-sdk: `Agent[MyContext]` + `RunContextWrapper[MyContext]` — generic тип течёт через всё, IDE и type-checker ловят ошибки доступа к полям.
+
+**Что нужно**:
+1. `RunContext[T]` Generic в domain_types
+2. Параметризовать `Agent`, tool signature, hook signature, guardrail signature через TContext
+3. Backward compat: `RunContext[Any]` = текущее поведение
+4. Doc: пример с typed dataclass context
+
+**DoD**: пример с typed dataclass context проходит ty check; backward compat с dict-context работает.
+
+---
+
+### IDEA-060: Hosted tools as primitives (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: Medium
+
+**Источник**: openai-agents-python tools (WebSearchTool, FileSearchTool, CodeInterpreterTool, ImageGenerationTool, ApplyPatchTool, ToolSearchTool)
+
+Готовые tool-классы для распространённых сценариев — лучший DX чем «опиши свой через @tool».
+
+**Мотивация**: У swarmline есть builtin (sandbox/web/thinking) + MCP. Но импорт-готовые `WebSearchTool()`, `FileSearchTool(index=...)`, `CodeInterpreterTool()` — добавил в `tools=[...]` и поехал. Снижает порог входа.
+
+**Что нужно** (минимум, провайдер-нейтральные обёртки):
+1. `WebSearchTool` — поверх Anthropic web search / OpenAI / Tavily / Brave
+2. `FileSearchTool` — поверх RAG (см. rag.py) с index argument
+3. `ApplyPatchTool` — diff application (см. IDEA-062)
+4. `ToolSearchTool` — meta-tool, ищет тулзы по описанию когда tools >50
+
+**DoD**: каждая обёртка работает с минимум 2 провайдерами; integration tests; docs пример «тулы за 5 строк».
+
+**Связано с**: IDEA-047 (Web Tools), rag.py.
+
+---
+
+### IDEA-061: Apply patch + ApplyPatchEditor (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: Low
+**Источник**: openai-agents-python `apply_diff.py`, `editor.py`
+
+Первоклассный diff-tool для код-пишущих агентов.
+
+**Мотивация**: thin runtime имеет coding-tools (`thin/coding_toolpack.py`), но «apply patch как стандартный tool с проверкой результата и rollback» отдельно — полезно для PR-генераторов и refactor-агентов. agents-sdk: `apply_diff()` + `ApplyPatchOperation` + `ApplyPatchResult` + `ApplyPatchEditor`.
+
+**Что нужно**:
+1. `apply_diff(file_content, patch)` → result с success/failure + new_content
+2. `ApplyPatchOperation(target_file, patch_text)` dataclass
+3. `ApplyPatchResult(success, new_content, error_message, line_offsets)` 
+4. `ApplyPatchTool` ToolSpec: операция → результат, dry-run опция
+5. `ApplyPatchEditor` для batch операций с rollback
+6. Format: unified diff (стандартный) + Codex-style (см. agents-sdk)
+
+**DoD**: round-trip apply → result совпадает с git apply; rollback восстанавливает; dry-run не пишет; некорректный patch возвращает structured error.
+
+**Связано с**: IDEA-060 (hosted tools).
+
+---
+
+### IDEA-062: Dynamic instructions как callable (2026-05-05)
+
+**Приоритет**: Low
+**Сложность**: Low
+**Источник**: openai-agents-python `Agent.instructions: str | Callable[..., MaybeAwaitable[str]]`
+
+Instructions как функция от context, не только статичная строка.
+
+**Мотивация**:
+```python
+Agent(instructions=lambda ctx, agent: f"You are working on task {ctx.context.task_id} for user {ctx.context.user.name}")
+```
+Чище, чем собирать system prompt в setup-коде. Sync/async поддержка. agents-sdk поддерживает str | sync callable | async callable.
+
+**Что нужно**:
+1. `agent/config.py`: `instructions: str | InstructionsFunction | None`
+2. `InstructionsFunction = Callable[[RunContext, Agent], MaybeAwaitable[str]]`
+3. Resolver в bootstrap: вызывать callable перед стартом turn'а
+4. Кеширование: если instructions detereministic относительно context — кешировать в run
+
+**DoD**: callable работает sync и async; переменные context корректно подставляются; кеширование при идемпотентном callable.
+
+**Связано с**: IDEA-045 (Project Instructions Loading) — этот про CLAUDE.md, новая идея про runtime генерацию.
+
+---
+
+### IDEA-063: run_demo_loop() REPL (2026-05-05)
+
+**Приоритет**: Low
+**Сложность**: Low
+**Источник**: openai-agents-python `repl.py`
+
+Однострочный REPL для интерактивного тестирования агента.
+
+**Мотивация**: agents-sdk:
+```python
+from agents.repl import run_demo_loop
+run_demo_loop(agent)  # readline-style chat
+```
+swarmline имеет CLI с командами, но quick-test REPL для разработчика — отдельная вещь. Снижает trial-and-error цикл при разработке агента.
+
+**Что нужно**:
+1. `swarmline.repl.run_demo_loop(agent, *, history=True, render_tools=True)`
+2. Readline для навигации история
+3. Pretty-print stream events (tool calls, thinking)
+4. `:reset`, `:save <file>`, `:load <file>`, `:context` команды
+5. Интеграция в CLI: `swarmline repl <agent.yaml>`
+
+**DoD**: agent работает; история сохраняется; tool calls читаемо рендерятся; команды работают.
+
+---
+
+### IDEA-064: tool_namespace для группировки tools (2026-05-05)
+
+**Приоритет**: Low
+**Сложность**: Low
+**Источник**: openai-agents-python `tool_namespace`
+
+Контекст-менеджер для логической группировки tools когда их 50+.
+
+**Мотивация**: При больших коллекциях (особенно после IDEA-060) tools загромождаются. agents-sdk: `with tool_namespace("github"): @function_tool def create_issue(): ...` → tool name становится `github.create_issue`.
+
+**Что нужно**:
+1. Context manager `tool_namespace(prefix)` 
+2. Tools зарегистрированные внутри получают prefix
+3. ToolSearchTool (IDEA-060) использует namespace для фильтрации
+
+**DoD**: nested namespaces работают; tool_choice по namespace.tool работает; export/import сохраняет namespacing.
+
+---
+
+### IDEA-065: Realtime / voice agents (2026-05-05)
+
+**Приоритет**: Low
+**Сложность**: Very High
+**Источник**: openai-agents-python `realtime/`
+
+Voice pipeline для голосовых агентов.
+
+**Мотивация**: agents-sdk имеет полный voice (audio_formats, openai_realtime, model_events, runner). swarmline LLM-agnostic, фокус на text. Добавлять только если есть реальный кейс (assistant, voice command, accessibility).
+
+**Что нужно** (если решим делать):
+1. `RealtimeAgent` с audio config
+2. Audio formats: PCM16, μ-law, WAV
+3. WebSocket transport для streaming
+4. Provider adapters: OpenAI Realtime, Anthropic (когда выйдет)
+5. STT/TTS pipeline опционально
+
+**Решение**: defer до явного запроса — большой объём, узкий use case.
+
+---
+
+### IDEA-066: Computer use (browser automation) (2026-05-05)
+
+**Приоритет**: Low
+**Сложность**: High
+**Источник**: openai-agents-python `computer.py`, `ComputerTool`
+
+Browser automation tools.
+
+**Мотивация**: agents-sdk: `ComputerTool` + `Computer` Protocol + `Button` + `Environment` для агентов кликающих по сайтам. Anthropic computer-use уже есть в Claude Sonnet. Можно сделать провайдер-нейтральную обёртку.
+
+**Что нужно**:
+1. `Computer` Protocol: screenshot, click, type, scroll, drag
+2. `AsyncComputer` async вариант
+3. `ComputerTool` ToolSpec
+4. Backends: Playwright local / Anthropic computer-use API / OpenAI computer
+
+**Решение**: defer — есть конкуренты (browser-use, lavague, stagehand). Делать только если станет частью core use case.
+
+---
+
+### IDEA-067: Self-editing memory blocks через tools (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: Letta `memory_blocks`, Mastra `working memory`
+
+Агент модифицирует свою долговременную память через tool calls (`core_memory_replace`, `core_memory_append`, `working_memory_update`), а не через application code.
+
+**Мотивация**: У swarmline память (`FactStore`, `MessageStore`, `SummaryStore`) пишется приложением — агент пассивный consumer. У Letta/Mastra агент сам решает что важно и обновляет именованные блоки (`persona`, `human`, `task`, custom). Killer feature: continual learning без ручной orchestration. Mastra идёт дальше — working memory имеет JSON/markdown schema, агент следует ей.
+
+**Что нужно**:
+1. `MemoryBlock` dataclass: `{label, value, schema, last_modified, edit_count, char_limit}`
+2. `MemoryBlockStore` Protocol с CRUD + history
+3. Builtin tools: `core_memory_replace(label, old, new)`, `core_memory_append(label, content)`, `core_memory_search(query)`, `archival_memory_insert(content)`, `archival_memory_search(query)`
+4. SystemPrompt assembly: блоки auto-injected в system prompt с границами (`<persona>...</persona>`)
+5. Schema-validated блоки — Pydantic model описывает structure, агент обязан вернуть valid update
+6. Edit history для audit + rollback
+
+**DoD**: agent с persona-block самообновляет себя через 3 turn'а; schema-validated блок отвергает invalid updates с retry; edit history сохраняется; rollback работает.
+
+**Связано с**: IDEA-068 (three-tier memory), IDEA-069 (sleep-time agents).
+
+---
+
+### IDEA-068: Three-tier memory architecture (core/recall/archival) (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: Letta — direct из MemGPT paper (UC Berkeley)
+
+Явное разделение памяти на три уровня по latency и стоимости: **core** (всегда in-context) / **recall** (полная история, searchable) / **archival** (vector DB, long-term knowledge).
+
+**Мотивация**: swarmline имеет facts/messages/summaries, но без явного контракта «что всегда в context vs searchable vs архивное». MemGPT-paper показал, что чёткое разделение + LLM-driven paging между уровнями = OS-like virtual memory для модели. Это парадигмальный сдвиг от ad-hoc «кладём всё в RAG».
+
+**Что нужно**:
+1. `CoreMemory` Protocol — bounded size (e.g. 4KB), всегда в system prompt, mutable через memory blocks (IDEA-067)
+2. `RecallMemory` Protocol — full conversation history, searchable, не in-context. Tool: `recall_memory_search(query)`
+3. `ArchivalMemory` Protocol — vector DB (RAG), insert/search через tools. Long-term facts/docs.
+4. `MemoryRouter` — auto-decision что писать куда (или manual через tools)
+5. Migrate существующие FactStore/MessageStore/SummaryStore: messages → recall, facts → archival, summaries → core, или гибрид
+6. Token budget enforcement: core memory hard limit + warning system
+
+**DoD**: core memory не превышает limit; recall search возвращает messages из 1000+; archival vector search работает на 10K документов; auto-router classifies new info correctly в 80%+ кейсов.
+
+**Связано с**: IDEA-067 (self-editing), IDEA-044 (compaction), IDEA-046 (session resume).
+
+---
+
+### IDEA-069: Sleep-time agents для memory consolidation (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: Letta sleep-time agents
+
+Фоновые agent processes между сессиями: суммаризируют, экстрактят facts, обновляют persona, prune outdated info. «Агент видит сны».
+
+**Мотивация**: revolution feature от Letta. Между активными сессиями специализированный agent перерабатывает recall memory → обновляет core, инвалидирует устаревшее. У swarmline есть compaction.py (статическая суммаризация), но не «фоновый agent с собственными tools специально для memory consolidation».
+
+**Что нужно**:
+1. `SleepTimeAgent` — minimal agent с tool subset: только memory tools (read recall, write core, write archival)
+2. `SleepTrigger` — какие события запускают: `on_session_end`, `cron schedule`, `idle_threshold`, `memory_pressure`
+3. `MemoryConsolidationStrategy` — что делать: extract_facts / update_persona / prune_stale / detect_contradictions
+4. Изоляция: sleep agent не пишет user-facing output, только memory mutations
+5. Cost budget — sleep agent имеет hard token budget, нельзя scope-creep
+6. Daemon integration: запуск через `daemon/` или external scheduler
+
+**DoD**: sleep agent после 100 messages обновляет persona block; prune убирает контрадикции; budget enforced; не запускается во время active session (lock).
+
+**Связано с**: IDEA-067, IDEA-068, daemon/.
+
+---
+
+### IDEA-070: Stateful agents API — agent_id lives forever (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: High
+**Источник**: Letta `agent_state` API + Mastra persistent agents
+
+Парадигмальный сдвиг: агенты это persistent entities с `agent_id`, не runtime instances. `client.agents.create()` → можно слать messages в любой момент через дни/недели, state восстанавливается автоматически.
+
+**Мотивация**: swarmline сейчас session-based — `Agent(...)` создаётся в коде, runtime instance, после завершения сессии restart требует ре-сетапа. Letta/Mastra API: `agent.id` URL, можно `POST /agents/{id}/messages` в любой момент. Намного проще для multi-tenant SaaS-style продуктов.
+
+**Что нужно**:
+1. `AgentRegistry` (есть в `multi_agent/agent_registry`) расширить: `create(...) -> agent_id`, `get(agent_id)`, `delete(agent_id)`, `update_config(agent_id, ...)`
+2. Persistent agent state: config + memory blocks + memory tiers + tool set — всё bound к `agent_id`
+3. REST API в `serve/`: `POST /v1/agents`, `GET /v1/agents/{id}`, `POST /v1/agents/{id}/messages`, `GET /v1/agents/{id}/messages`
+4. Lazy loading — агент гидрируется из storage при первом use
+5. Multi-tenancy: `tenant_id` + `agent_id` namespacing
+6. Versioning — config changes сохраняют history; старые сессии используют snapshot конфига того момента
+
+**DoD**: создал agent → процесс убил → restart → POST message работает с тем же id и memory; multi-tenant изоляция гарантирована; версионирование позволяет откатить config.
+
+**Связано с**: IDEA-067/068 (memory persistence), `multi_agent/agent_registry`, `serve/`.
+
+---
+
+### IDEA-071: Reducer-based channels с типизированным state (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: LangGraph `Annotated[T, reducer]` channels
+
+Типизированные state slots с явным reducer'ом для merge'а параллельных writes — Pregel-inspired model. Гарантирует детерминизм при concurrent fan-out.
+
+**Мотивация**: swarmline `graph_orchestrator_state` имеет state, но reducer-семантика для параллельных writes неявная. LangGraph: `state: Annotated[list[Message], operator.add]` — параллельные nodes конкурентно пишут, reducer мерджит. Без этого — race conditions / overwrites.
+
+**Что нужно**:
+1. `Channel[T]` Generic type с `reducer: Callable[[T, T], T]` (default = replace)
+2. Standard reducers: `add` / `extend` / `merge_dicts` / `last_write_wins` / custom
+3. `StateSchema` через TypedDict с `Annotated[type, reducer]`
+4. `graph_orchestrator` validate: parallel writes без reducer = error
+5. Migrate existing graph state на channel-based model
+6. Documentation: examples с parallel branches и merge-correctness
+
+**DoD**: 10 параллельных nodes пишут в `messages` channel — все 10 сообщений в финальном state; race condition тест проходит; `last_write_wins` корректно работает; type errors ловятся ty check.
+
+**Связано с**: `multi_agent/graph_orchestrator_state`, IDEA-072 (super-steps).
+
+---
+
+### IDEA-072: Pregel-style super-steps + barrier sync (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: LangGraph (Pregel-inspired) / Apache Beam
+
+Формальная модель параллельного исполнения: super-steps с barrier синхронизацией — все nodes текущего шага завершаются до перехода к следующему. Гарантирует детерминизм.
+
+**Мотивация**: текущий swarmline graph executor — нужно проверить, как именно решён параллелизм. Pregel super-step model — индустриальный стандарт (BSP — Bulk Synchronous Parallel). Без этого debug параллельных flow — кошмар.
+
+**Что нужно**:
+1. `SuperStep` execution model: collect all messages → execute all enabled nodes in parallel → barrier wait → apply reducers → emit transition
+2. Detection of next active nodes по edge conditions
+3. Deterministic ordering of reducer applications (по node name lex)
+4. Step counter в state — для checkpointing (IDEA-073) и time-travel (IDEA-074)
+5. Backward compat: existing graphs работают без opt-in
+
+**DoD**: 5 параллельных nodes завершаются до запуска следующего шага; повторное выполнение с тем же input даёт identical state; performance overhead <10% vs free-fly execution.
+
+**Связано с**: IDEA-071, IDEA-073, IDEA-074.
+
+---
+
+### IDEA-073: Durable execution через checkpointer ABC (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: LangGraph `MemorySaver`/`SqliteSaver`/`PostgresSaver`/`RedisSaver`
+
+Auto-resume from last super-step после crash/restart. Каждый super-step boundary = serializable checkpoint.
+
+**Мотивация**: swarmline session_resumption есть, но именно «упало посреди super-step → restart продолжает с прошлого checkpoint без перезапуска uphill nodes» — нужна формализация. LangGraph даёт unified ABC + 4 backends.
+
+**Что нужно**:
+1. `Checkpointer` Protocol: `put(thread_id, checkpoint, metadata)`, `get(thread_id)`, `list(thread_id)`, `get_tuple(config)`
+2. Backends: `InMemoryCheckpointer`, `SqliteCheckpointer`, `PostgresCheckpointer`, `RedisCheckpointer`
+3. Auto-checkpoint на каждом super-step boundary
+4. `Checkpoint` schema: state, next_nodes, step_id, parent_id, created_at
+5. `graph.compile(checkpointer=...)` — opt-in
+6. Resume API: `graph.run(thread_id="x", input=None)` — continues from last checkpoint
+
+**DoD**: kill -9 после 5 super-steps → restart → продолжает с 6-го; PostgresCheckpointer survives DB restart; concurrent threads с одним checkpointer изолированы.
+
+**Связано с**: IDEA-072, IDEA-055 (RunState recovery).
+
+---
+
+### IDEA-074: Time-travel debugging через checkpoint history (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: LangGraph time-travel + LangSmith Studio
+
+Откатиться на N super-steps назад и пойти другой веткой. Killer feature для отладки сложных flow.
+
+**Мотивация**: LangGraph `graph.get_state_history(thread_id)` → list of checkpoints → `graph.update_state(checkpoint_id, override)` → run continues from there. У swarmline нет primitive «откати агента на 3 turn'а назад и попробуй другой ответ».
+
+**Что нужно** (зависит от IDEA-073):
+1. `Checkpointer.list(thread_id)` возвращает upstream history
+2. `Checkpoint.parent_id` — DAG of states
+3. API: `graph.update_state(thread_id, checkpoint_id, state_update)` — fork from this checkpoint
+4. CLI: `swarmline trace history <thread_id>` / `swarmline trace fork <checkpoint_id>`
+5. UI: visual checkpoint tree (см. IDEA-080 DevPlayground)
+
+**DoD**: revert to checkpoint 3 → run with new input → forks DAG; original branch сохранён; UI показывает branching tree.
+
+**Связано с**: IDEA-073, IDEA-080.
+
+---
+
+### IDEA-075: Send API для dynamic fan-out (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: Medium
+**Источник**: LangGraph `Send(node, state)`
+
+Runtime-resolved параллельные edges: оркестратор сам решает «сейчас разветвляюсь на N веток с разным state».
+
+**Мотивация**: swarmline graph edges статические (определяются на build). Send API позволяет: `return [Send("worker", {"item": x}) for x in items]` — fan-out количеством зависит от runtime data. Map-reduce паттерн для агентов.
+
+**Что нужно**:
+1. `Send(target_node, state_override)` dataclass
+2. Node может возвращать `list[Send]` вместо плоского state update
+3. Executor создаёт parallel super-step tasks с overridden state
+4. Reduce step после fan-out — reducer мерджит результаты обратно
+5. Visualisation в UI: dynamic fan-out branches
+
+**DoD**: map-reduce пример (process 10 items в параллель → reduce) работает; overrides не affecting parent state; reducer merge корректен.
+
+**Связано с**: IDEA-071, IDEA-072.
+
+---
+
+### IDEA-076: Native interrupts с Command resume (2026-05-05)
+
+**Приоритет**: Medium
+**Сложность**: Medium
+**Источник**: LangGraph `interrupt()` + `Command(resume=...)`
+
+Стандартизованный HITL flow: `interrupt(payload) → state.resume(value)` — без custom infrastructure.
+
+**Мотивация**: swarmline `hitl/gate.py` есть, но pattern «node делает interrupt → возвращает state клиенту → клиент решает → resume точно с того же места» лучше формализовать. LangGraph даёт единый pattern.
+
+**Что нужно**:
+1. `interrupt(payload: Any) -> Any` function — внутри node останавливает execution, payload идёт в checkpoint
+2. `Command(resume=value)` или `Command(goto=node, update=state)` — возобновление
+3. `graph.run(input=Command(resume=approval))` — продолжить interrupted graph
+4. Integration в hitl/gate.py: Gate использует interrupt поверх своего API
+5. UI: pending interrupts list в DevPlayground (IDEA-080)
+
+**DoD**: HITL approval flow через 3 interrupt'а в одном run; resume с фронтенда работает; параллельные interrupts (multiple agents wait) обрабатываются.
+
+**Связано с**: hitl/, IDEA-073, IDEA-080.
+
+---
+
+### IDEA-077: Capabilities как composable bundles (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Medium
+**Источник**: Pydantic AI `capabilities=[Thinking(), WebSearch(), MCP(...)]`
+
+Bundle (tools + hooks + instructions snippet + model_settings) как reusable unit. Provider-adaptive — capability сама выбирает native API per provider.
+
+**Мотивация**: у swarmline tools, hooks, instructions, model settings — отдельные слои. Pydantic AI: один импорт `WebSearch()` → bundle всего что нужно для web search, на Anthropic = native web_search, на OpenAI = web_search_preview tool, на Gemini = grounding. Намного лучший DX чем «опиши свой tool на каждый provider».
+
+**Что нужно**:
+1. `Capability` Protocol: `apply(agent_config: AgentConfig, runtime: Runtime) -> AgentConfig`
+2. Built-in: `Thinking()`, `WebSearch(provider_overrides=...)`, `FileSearch(index=...)`, `MCP(servers=[...])`, `CodeExecution()`, `Memory(tier=...)`
+3. Provider-adaptive logic: capability смотрит на runtime kind → выбирает реализацию
+4. `AgentConfig.capabilities: list[Capability]` — порядок применения важен
+5. Custom capabilities: third-party packages (см. IDEA-002 extensibility)
+6. Composability: `WebSearch()` + `Thinking()` не конфликтуют, merge clean
+
+**DoD**: `capabilities=[Thinking(), WebSearch()]` работает на 3+ provider'ах с native APIs; custom capability registry поддерживает third-party; tests на adaptation logic.
+
+**Связано с**: IDEA-060 (hosted tools), IDEA-002 (registry).
+
+---
+
+### IDEA-078: Output retry on validation error (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: Low
+**Источник**: Pydantic AI auto-retry на schema violation
+
+LLM вернул невалидный JSON для `output_type` → автоматически retry с validation error в качестве hint обратно в LLM.
+
+**Мотивация**: swarmline `structured_output.py` валидирует, но retry-on-validation-error flow стоит проверить/улучшить. Pydantic AI: `agent.run_sync(...)` автоматически делает до N retry с error message обратно. Дешевле чем падать.
+
+**Что нужно**:
+1. `OutputValidator` Protocol с retry semantics
+2. `AgentConfig.output_max_retries: int = 3`
+3. На validation error: error message → user message в conversation → retry с тем же promt
+4. Retry budget tracking в `cost.py` (не съесть всё на retry loop)
+5. Decorator `@agent.output_validator` для custom validation logic
+6. Logging retry attempts в observability
+
+**DoD**: invalid JSON → 1 retry → success; persistent invalid → fail после N с typed exception; retry budget exhausted → controlled failure; tests на edge cases.
+
+**Связано с**: structured_output.py, retry.py.
+
+---
+
+### IDEA-079: Workflow DSL — .then().branch().parallel().foreach() (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: Mastra workflows + LangGraph
+
+Type-safe builder API для воркфлоу с явным control flow вместо ad-hoc graph building.
+
+**Мотивация**: swarmline `pipeline/` есть, но менее декларативный. Mastra DSL:
+```ts
+workflow.step(researchAgent).then(writerAgent).branch([
+  { when: needsReview, then: reviewerAgent },
+  { else: publishStep }
+]).parallel([notifyEmail, notifySlack])
+```
+Клянусь golden DX. Можно адаптировать в Python через method chaining.
+
+**Что нужно**:
+1. `Workflow` builder: `.step(handler)`, `.then(handler)`, `.branch(conditions)`, `.parallel(handlers)`, `.foreach(items, handler)`, `.dountil(handler, condition)`
+2. Step result types: типизированные через generic `Workflow[Input, Output]`
+3. Suspend/resume support — workflow приостанавливается на любом step (см. IDEA-073/074)
+4. Compile to internal graph representation (поверх IDEA-071/072 channels)
+5. Visualization: render workflow as DAG в UI
+6. Backward compat: старый `pipeline/` API остаётся
+
+**DoD**: 5-step workflow с branch + parallel + foreach работает; suspend/resume on any step; types type-check end-to-end; visual rendering матчит execution.
+
+**Связано с**: pipeline/, IDEA-072, IDEA-076.
+
+---
+
+### IDEA-080: DevPlayground — local UI для agent dev (2026-05-05)
+
+**Приоритет**: High
+**Сложность**: High
+**Источник**: Mastra `mastra dev` (localhost:4111)
+
+Локальный UI с tabs: agents / workflows / memory / tools / evals / traces. Запустил → потыкал агента → посмотрел memory → запустил workflow со step-by-step inspection.
+
+**Мотивация**: swarmline `ui/` есть, но Mastra DevPlayground задаёт стандарт DX. Killer feature для onboarding и debugging. Чем-то похоже на Postman+Insomnia для агентов.
+
+**Что нужно**:
+1. `swarmline dev` CLI command поднимает local server (FastAPI + frontend)
+2. Tabs:
+   - **Agents**: список registered agents → клик → chat interface
+   - **Memory**: inspect core/recall/archival по agent_id, edit blocks manually
+   - **Workflows**: list workflows, run with custom input, step-by-step inspection
+   - **Tools**: list tools per agent, test invocation в isolation
+   - **Evals**: run evals, compare results
+   - **Traces**: timeline of recent runs с tool calls / thinking / handoffs
+   - **Checkpoints**: browse history (IDEA-074), fork from any
+3. Frontend: React/Vue/Svelte (определиться) embedded в Python wheel
+4. WebSocket для streaming events
+5. Auth: defaults `localhost only`, opt-in remote с token
+
+**DoD**: `swarmline dev` поднимает UI на :4111; агента можно прочат интерактивно; memory blocks редактируются; workflow step-by-step run; UI shipped в pip install.
+
+**Связано с**: ui/, IDEA-073, IDEA-074, IDEA-076.
+
+---
+
+### IDEA-081: Minimal Code Agent SDK поверх ThinRuntime (2026-05-05, refined 2026-05-05)
+
+**Приоритет**: HIGH
+**Источник**: `reports/2026-05-05_analysis_thin-vs-pi-mono-opencode-code-agent-sdk.md` — сравнение thin с `badlogic/pi-mono` (44.6K ⭐), `anomalyco/opencode` (форк `sst/opencode`, ~155K ⭐), `HarnessLab/claw-code-agent` (Python Claude Code clone), `ultraworkers/claw-code` (Rust).
+
+**Философия**: «LLM умная — дай ей петлю обратной связи и не мешай». Минимум — это **правильные** фичи (safety + self-verification + reactivity), а не маленький набор. После них умный LLM сам себя проверяет, не падает на длинной сессии и не делает страшное.
+
+**Цель**: чтобы разработчик мог построить простейший code-agent тремя строками:
+
+```python
+from swarmline import CodeAgent
+agent = CodeAgent(model="sonnet", cwd="/repo")
+async for ev in agent.run("fix typo in README"):
+    print(ev)
+```
+
+— без явного знания `RuntimeConfig` / `HookRegistry` / `DefaultToolPolicy` / `ExecutionWorkspace` / `CommandRegistry` / `SwarmlineStack`.
+
+#### Философская карта (как фичи замыкают LLM на себя)
+
+```
+Думай свободно
+   ↓
+   AgentMessage (D) ← LLM не зажат в LLM-формат сообщений
+   ↓
+Действуй
+   ↓
+   tools (C: read/write/edit/glob/apply_patch/todo/bash/grep + AG question)
+   ↓
+Получи структурный сигнал
+   ↓
+   AH smart truncation        — видишь сигнал, не шум
+   AF diagnostics             — видишь свои ошибки (compiler-as-tool)
+   tool_output_chunk events   — видишь progress, можешь abort
+   ↓
+Не упади, не сожги
+   ↓
+   AA truncation continuation — закончил мысль
+   AB reactive compact        — пережил длинную сессию
+   AC preflight check         — не сжёг лимит
+   AD file safety             — не вышел за workspace
+   AE bash safety             — не снёс репо
+   ↓
+Если совсем неясно
+   ↓
+   AG question tool           — спросил, не гадал
+```
+
+#### P0 — обязательное (19 пунктов)
+
+##### Базовая SDK-механика (A–H)
+
+| ID | Зазор | Что сделать |
+|----|-------|-------------|
+| **A** | Нет публичного `CodeAgent` фасада | Новый модуль `swarmline.code_agent`: `CodeAgent(model, cwd, tools=..., on_permission=..., on_question=...)`, `.run(prompt)` → `AsyncIterator[Event]`, `.stream()`, `.close()` |
+| **B** | `ThinRuntime.__init__` принимает 12 коллабораторов | Builder / `from_config()` factory; авто-дефолты для `hook_registry` / `tool_policy` / `workspace` / `command_registry` / `subagent_config` |
+| **C** | Канонический набор coding-tools неполный | Аудит `coding_toolpack.py` против: `read`, `write`, `edit`, `glob`, **`apply_patch`** (нет), **`todo`** (нет), `bash`, `grep` |
+| **D** | Нет AgentMessage / convertToLlm seam | Ввести `AgentMessage` (user / assistant / tool_result + UI: notification / status) + `convert_to_llm` callback. Strangler-Fig миграция |
+| **E** | Нет async permission-callback | `on_permission_request: (tool, args) -> Allow \| Deny(reason) \| AskUser(prompt)` отдельно от `DefaultToolPolicy` |
+| **F** | Нет mid-run control surface | В `RuntimeConfig`: `should_stop_after_turn`, `get_steering_messages`, `get_followup_messages`, `transform_context` (паттерн pi-agent-core) |
+| **G** | Tool execution mode неявный | `tool_execution: Literal["sequential","parallel"]` поле в `RuntimeConfig` |
+| **H** | Нет CLI-runner | `python -m swarmline.code_agent "<prompt>"` поверх фасада — adoption + e2e smoke |
+
+##### Safety / resilience guards (AA–AE)
+
+| ID | Что | Почему must-have | Цена |
+|----|-----|------------------|------|
+| **AA** | **Truncation continuation** (`finish_reason=length` → авто-retry с continuation) | LLM обрывает ответ молча на длинных правках | ~50 LOC |
+| **AB** | **Reactive compaction** на `prompt_too_long` ошибке провайдера | Без — агент **умирает** на длинной сессии при первом overflow | ~100 LOC, поверх P1-L |
+| **AC** | **Preflight prompt-length check** (counter + soft warn / hard block) | Экономит деньги: ловим overflow до API call. Эвристика char/4 без тяжёлого tokenizer'а | ~80 LOC |
+| **AD** | **File-tool safety guards**: binary detection, max read/write size, workspace boundary, symlink escape | Без — агент читает `/etc/passwd` через симлинк или 5GB бинарник в контекст | ~150 LOC |
+| **AE** | **Bash destructive-command warning** (regex: `rm -rf`, `git push --force`, `drop database`, `dd of=`) | Без — агент сам затирает workspace. Лёгкий guard, не Claude-Code-style 18-submodule матрица | ~80 LOC |
+
+##### Self-verification / feedback loops (AF–AH)
+
+| ID | Что | Почему (LLM-brain-to-max) | Цена |
+|----|-----|---------------------------|------|
+| **AF** | **`diagnostics` tool** — generic shell-out к project-linter/type-checker (auto-detect: `pyproject.toml` → `ruff`/`ty`, `package.json` → `tsc --noEmit`/`eslint`, `Cargo.toml` → `cargo check`, `go.mod` → `go vet`). Output: `[{file, line, col, severity, message}]` | **THE feedback loop** для code-агента. После edit агент сам вызывает `diagnostics()`, видит свои ошибки, исправляется. Без него LLM пишет вслепую. Замещает full LSP в minimal | ~150 LOC |
+| **AG** | **`question` tool + `on_question` callback** — агент спрашивает SDK-консьюмера в середине run'а в неоднозначной ситуации. Default = «no answer, use best judgment» (LLM свободен) | LLM не должен **гадать** и **не должен застревать**. opencode `question.ts`, HarnessLab `ask-user-runtime` | ~50 LOC |
+| **AH** | **Smart tool-output truncation** — head/tail с маркером `[N more lines truncated, use offset=X to see more]`, configurable per-tool | `grep "TODO"` на большом репо забивает контекст и LLM глупеет. С truncation — LLM видит сигнал, не шум, может продолжить через `offset`. pi `truncate.ts` + `output-accumulator` | ~80 LOC |
+
+##### Session lifecycle minimum (K1–K3)
+
+Code-agent — это работа на часы/дни, не curl call. Без сессий после первого крэша теряется вся работа; без `reset()` нельзя начать заново внутри той же логической сессии. Все 4 reference-проекта (pi-coding-agent, opencode, claw-code-agent, ultraworkers/claw) имеют сессии как P0.
+
+| ID | Что | Почему P0 | Цена |
+|----|-----|-----------|------|
+| **K1** | **Session lifecycle minimum**: `agent.session_id` (auto UUID), `agent.save()`, **auto-save после каждого turn** в `~/.swarmline/sessions/<id>/`, `CodeAgent.resume(id)`. Storage поверх существующего `swarmline.memory.sqlite` | После крэша агент восстанавливает работу с того же turn. Минимум для жизни code-agent'а | ~150 LOC, поверх существующего `MessageStore`/`SessionStateStore` |
+| **K2** | **`agent.reset()` + `agent.clear_history(keep=["system", "agents_md"])`** | Без — чтобы начать заново нужно `del agent; agent = CodeAgent(...)`, теряя session_id и cwd. С — чистый контекст внутри той же логической сессии | ~30 LOC |
+| **K3** | **Метаданные сессии**: title (auto из первого prompt — первые 60 символов), cwd, git branch (auto-detect если репо), created_at, last_used_at, status (`active`/`paused`/`done`), turn_count | Без — sessions это безымянные UUIDs, искать невозможно. С — `list_sessions()` имеет смысл (P1-U) | ~50 LOC |
+
+#### P1 — сильные дифференциаторы (12 пунктов)
+
+##### Базовый набор (I, J, L, N, O, R)
+
+| ID | Что | Зачем |
+|----|-----|-------|
+| **I** | Atomic file-mutation queue | pi `file-mutation-queue.ts`: защита от partial-write между batched edits |
+| **J** | Snapshot + revert | `agent.snapshot()` → откат файлов и истории. opencode `session/revert.ts` |
+| **L** | Pluggable compaction strategy | `compaction_strategy: CompactionStrategy` в config (база для AB и X) |
+| **N** | `AGENTS.md` loader | Авто-merge `cwd/AGENTS.md` (+ `.claude/rules/*.md` опционально) в system prompt |
+| **O** | Cost / budget guard как event | `BudgetExceededEvent` в потоке; soft/hard limits в config (есть в `cost.py`) |
+| **R** | **`tool_output_chunk` event** — streaming tool output как first-class event. SDK видит progress длинной команды, может оборвать через `abort_signal` | pi: «agent sees output as it appears, can decide to abort». Часть инфраструктуры в `stream_parser.py` уже есть, нужно дотащить как event |
+
+> **Note**: бывшая P1-K (session save/resume одной строчкой) расщеплена на **P0-K1/K2/K3** — это слишком central для code-agent SDK, чтобы быть P1.
+
+##### Multi-session UX (U–W)
+
+| ID | Что | Зачем |
+|----|-----|-------|
+| **U** | **`CodeAgent.list_sessions(cwd=None, status=None)`** — табличный обзор: id, title, cwd, last_used, status, turn_count | Daily UX: «что я делал на прошлой неделе?» |
+| **V** | **`CodeAgent.fork(session_id, title=...)`** — копия истории + cwd + текущего snapshot, новый id. «Попробовать альтернативный подход без потери оригинала» | pi и opencode имеют |
+| **W** | **`CodeAgent.delete(session_id)` / `archive(session_id)`** | Гигиена: удалять/архивировать накопленные эксперименты |
+
+##### Продвинутая работа с контекстом (X–Z)
+
+| ID | Что | Зачем |
+|----|-----|-------|
+| **X** | **Proactive compaction trigger** — при превышении threshold (например, 80% context window) — авто-summarize старых turns в compact note. **Превентивно**, не реактивно как P0-AB | P0-AB ловит overflow когда уже поздно. X — упреждает. У HarnessLab `auto-compact` отдельно от reactive |
+| **Y** | **Microcompact** — компактация **отдельных** длинных сообщений (особенно tool-outputs) с сохранением структуры. Например: длинный `grep` → «matched 423 files; first 10: ...; structure: ...» | HarnessLab: `microcompact.py` отдельный модуль. Без — один длинный grep съедает 50% контекста |
+| **Z** | **File-history journal** per session — список всех write/edit/shell с snapshot IDs. На resume агент видит «ранее редактировал X.py на turn 5, snapshot snap-7» | HarnessLab: `file-history` с replay. Усиливает P1-J snapshot |
+
+#### Сознательно отложено (post-minimal)
+
+- ~~Per-tool prompt sidecar~~ — cosmetic
+- ~~Full LSP-client~~ — `diagnostics` tool через `ruff`/`tsc` решает 80% за 5% работы. Реальный LSP — когда нужны `find references` / `hover`
+- ~~Worktree-aware execution~~ — полезно в CI, не нужно для «простейшего»
+- ~~HTTP-server + OpenAPI~~ — opencode-стиль over-engineering для Python SDK
+- ~~Plugin entry-points~~ — `local_tools=` параметр покрывает кейсы
+- ~~Skills discovery directory~~ — орто к thin
+- ~~Read-after-write автохук~~ — спамит контекст; LLM сам решит вызвать read
+- ~~Test-runner tool~~ — это just `bash("pytest")`, отдельный tool не нужен
+- ~~Custom agent profiles из `~/.claude/agents/*.md`~~ — swarmline уже имеет skills/subagents
+- ~~Manifest plugins~~ — claw-code-уровень сложности
+
+**DoD умбреллы (P0)**:
+- [ ] `from swarmline import CodeAgent` работает
+- [ ] `CodeAgent(model="sonnet", cwd=tmpdir).run("...")` без явной сборки stack
+- [ ] CLI: `python -m swarmline.code_agent "<prompt>"` запускается
+- [ ] Все 4263+ существующих тестов проходят (обратная совместимость)
+- [ ] Покрытие нового модуля ≥ 90% (core SDK)
+- [ ] `examples/code_agent_quickstart.py` прогоняется в CI
+- [ ] Документация: `docs/code_agent_sdk.md` с примерами
+- [ ] **Self-verification loop работает E2E**: edit→diagnostics→fix без вмешательства пользователя (P0-AF + P0-C edit)
+- [ ] **Long-session survival test**: агент переживает > 50 turns без падения (P0-AA + AB + AC)
+- [ ] **Safety test**: `rm -rf $HOME` блокируется (AE), symlink-escape блокируется (AD)
+- [ ] **Session resume E2E**: kill agent → `CodeAgent.resume(id)` → продолжает с того же turn без потери истории (P0-K1)
+- [ ] **Auto-save invariant**: после каждого turn в `~/.swarmline/sessions/<id>/` появляется persisted state (P0-K1)
+- [ ] **`agent.reset()` works**: чистит history но сохраняет session_id, cwd, и AGENTS.md контекст (P0-K2)
+
+**Roadmap первого подхода (~3.5 недели для P0)**:
+1. **Спайк** (1 день): прототип `CodeAgent` фасада, найти Optional-defaults choke-points
+2. **P0-A, B, H** (2-3 дня): фасад + default stack + CLI
+3. **P0-C** (2 дня): `apply_patch` + `todo` tools, аудит существующих
+4. **P0-E** (1 день): `on_permission_request` API
+5. **P0-K1, K2, K3** (2-3 дня): session lifecycle (auto-save / resume / reset / metadata) поверх `swarmline.memory.sqlite`
+6. **P0-AA, AB, AC** (2-3 дня): truncation continuation + reactive compact + preflight check
+7. **P0-AD, AE** (1-2 дня): file safety + bash destructive warning
+8. **P0-AF, AG, AH** (2-3 дня): diagnostics tool + question tool + smart truncation
+9. **P0-D, F, G** (3-4 дня): AgentMessage + convertToLlm + mid-run hooks (Strangler Fig — самое инвазивное)
+10. **Docs + example** (1-2 дня)
+
+**Связано с**: thin/, IDEA-068 (Project Instructions Loading) ↔ N, IDEA-070 (Session Resume) ↔ K, IDEA-076 (Conversation Compaction) ↔ L+AB, IDEA-077 (Web Tools) ✓ done in P0-C.
+
+**План**: *(не создан, ждёт promotion через `/mb plan feature minimal-code-agent-sdk` после согласования приоритета)*
+
+---
+
 ## ADR
 
 - **ADR-001**: OpenAI Agents SDK — REJECTED (пересмотреть после v1.0). См. `notes/2026-03-17_ADR-001_openai-agents-sdk.md`

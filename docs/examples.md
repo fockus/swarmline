@@ -97,6 +97,7 @@ Default behavior:
 | 30 | `30_a2a_agent.py` | A2A protocol: expose agent as service, send tasks, streaming |
 | 32 | `32_agent_evaluation.py` | Eval framework: run suite with multiple scorers, console/JSON reports |
 | 33 | `33_eval_comparison.py` | A/B model comparison with EvalComparator |
+| — | `native_tools_openrouter.py` | Native tool-calling + native structured output via the single `structured_mode="auto"` knob (mock offline; `--live` for OpenRouter) |
 
 ## Picking a Starting Point
 

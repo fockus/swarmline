@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from swarmline.errors import SwarmlineError, UnknownModelError
 from swarmline.runtime.provider_resolver import (
     ResolvedProvider,
     resolve_provider,
@@ -162,13 +163,55 @@ class TestResolveProviderDefaultModel:
 
 
 class TestResolveProviderUnknownModel:
-    """Notizvestnaya model without prefix -> fallback on default."""
+    """Unknown model WITHOUT a provider prefix: FAIL LOUD instead of silent substitution.
 
-    def test_unknown_model_fallback(self) -> None:
-        r = resolve_provider("nonexistent-model-xyz")
-        # ModelRegistry.resolve() returns default on unknown
-        assert r.model_id == "claude-sonnet-4-20250514"
+    Previously an unrecognized bare slug silently became the registry default
+    (claude-sonnet-4 / anthropic) — so a typo or a missing ``provider:`` prefix routed to a
+    completely different model+provider than intended (wrong billing / confusing auth error).
+    It now raises ``UnknownModelError`` so the misconfiguration surfaces immediately.
+    """
+
+    def test_unknown_model_no_prefix_no_base_url_raises(self) -> None:
+        with pytest.raises(UnknownModelError):
+            resolve_provider("nonexistent-model-xyz")
+
+    def test_unknown_model_error_is_a_swarmline_error_and_value_error(self) -> None:
+        """Catchable both as ``SwarmlineError`` (lib-wide) and as ``ValueError`` (bad arg)."""
+        with pytest.raises(SwarmlineError):
+            resolve_provider("nonexistent-model-xyz")
+        with pytest.raises(ValueError):
+            resolve_provider("nonexistent-model-xyz")
+
+    def test_unknown_model_error_message_names_the_slug(self) -> None:
+        """The message includes the offending slug so the misconfig is obvious."""
+        with pytest.raises(UnknownModelError) as exc_info:
+            resolve_provider("nonexistent-model-xyz")
+        assert "nonexistent-model-xyz" in str(exc_info.value)
+
+
+class TestResolveProviderHonorsExplicitBaseUrlForUnknownSlug:
+    """No provider prefix + an explicit ``base_url`` => OpenAI-compatible custom endpoint.
+
+    A custom ``base_url`` without a provider prefix means an OpenAI-compatible server
+    (OpenRouter / Together / vLLM / a proxy). Honor it: route through ``openai_compat`` and
+    pass the slug through unchanged, instead of ignoring ``base_url`` and silently
+    substituting the anthropic default. Safety net for callers who pass ``base_url`` but
+    forget the ``openrouter:`` prefix.
+    """
+
+    def test_unknown_slug_with_base_url_routes_openai_compat(self) -> None:
+        r = resolve_provider("google/gemini-3.5-flash", base_url="https://openrouter.ai/api/v1")
+        assert r.sdk_type == "openai_compat"
+        assert r.provider == "openai_compat"
+        assert r.model_id == "google/gemini-3.5-flash"
+        assert r.base_url == "https://openrouter.ai/api/v1"
+
+    def test_known_alias_with_base_url_keeps_its_native_provider(self) -> None:
+        """Honoring ``base_url`` must NOT hijack a KNOWN model: 'sonnet' stays anthropic."""
+        r = resolve_provider("sonnet", base_url="https://proxy.example.com/v1")
         assert r.provider == "anthropic"
+        assert r.sdk_type == "anthropic"
+        assert r.base_url == "https://proxy.example.com/v1"
 
 
 class TestResolvedProviderDataclass:

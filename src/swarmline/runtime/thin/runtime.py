@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 import time
 from collections.abc import AsyncIterator, Callable
 from functools import partial
@@ -24,7 +23,7 @@ from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.executor import ToolExecutor
 from swarmline.runtime.thin.helpers import _should_buffer_postprocessing
 from swarmline.runtime.thin.llm_client import default_llm_call
-from swarmline.runtime.thin.modes import detect_mode
+from swarmline.runtime.thin.modes import VALID_MODES
 from swarmline.runtime.thin.runtime_support import (
     auto_wrap_retriever,
     budget_exceeded_event,
@@ -59,8 +58,6 @@ class ThinRuntime:
         llm_call: Callable[..., Any] | None = None,
         local_tools: dict[str, Callable[..., Any]] | None = None,
         mcp_servers: dict[str, Any] | None = None,
-        react_patterns: list[re.Pattern[str]] | None = None,
-        planner_patterns: list[re.Pattern[str]] | None = None,
         sandbox: Any | None = None,
         hook_registry: HookRegistry | None = None,
         tool_policy: DefaultToolPolicy | None = None,
@@ -80,8 +77,6 @@ class ThinRuntime:
         if self._config.event_bus is not None:
             raw_llm_call = self._wrap_with_event_bus(raw_llm_call)
         self._llm_call = raw_llm_call
-        self._react_patterns = react_patterns
-        self._planner_patterns = planner_patterns
 
         # Hook dispatch (optional)
         self._hook_dispatcher = self._build_hook_dispatcher(hook_registry)
@@ -377,12 +372,17 @@ class ThinRuntime:
             for f in effective_config.input_filters:
                 messages, system_prompt = await f.filter(messages, system_prompt)
 
-        mode = detect_mode(
-            user_text,
-            mode_hint,
-            react_patterns=self._react_patterns,
-            planner_patterns=self._planner_patterns,
-        )
+        # Resolve execution mode — explicit, else structural. No regex routing.
+        # Priority: explicit (valid) mode_hint > tool-aware default (tools present
+        # → react) > conversational. Whether to call a tool on a given turn is the
+        # model's decision (native tool_choice=auto); we never guess the mode from
+        # the user's wording. ``planner`` is reachable ONLY via mode_hint="planner".
+        if mode_hint is not None and mode_hint in VALID_MODES:
+            mode = mode_hint
+        elif active_tools:
+            mode = "react"
+        else:
+            mode = "conversational"
 
         yield RuntimeEvent.status(f"Mode: {mode}")
 

@@ -8,6 +8,7 @@ After public sync: Production v2.0 roadmap (Sprints 2-6, 24 phases, ~22 working 
 
 <!-- mb-active-plans -->
 _No active plans — v1.5.0 done, public sync awaits user approval. Production v2.0 roadmap on hold._
+- [2026-05-05] [plans/2026-05-05_feature_minimal-code-agent-sdk.md](plans/2026-05-05_feature_minimal-code-agent-sdk.md) — feature — minimal-code-agent-sdk
 <!-- /mb-active-plans -->
 
 ## Завершено: v1.5.0 release (2026-04-25)
