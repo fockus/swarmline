@@ -448,6 +448,99 @@ class TestOpenAIAdapterCallWithTools:
         sent_tools = mock_client.chat.completions.create.call_args.kwargs["tools"]
         assert sent_tools == [already]
 
+    @pytest.mark.asyncio
+    async def test_openai_adapter_call_with_tools_forwards_timeout(self) -> None:
+        """call_with_tools forwards ``timeout`` kwarg to the underlying create() call.
+
+        Regression test: per-request timeout (set via request_options.timeout_sec →
+        build_llm_call_kwargs → **native_call_kwargs) was silently dropped, causing
+        hung requests to wait for the wall-clock cap instead of the intended 30s budget.
+        """
+        mock_message = MagicMock()
+        mock_message.content = "ok"
+        mock_message.tool_calls = None
+
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = "stop"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+
+        mock_client = MagicMock()
+        mock_client.chat = MagicMock()
+        mock_client.chat.completions = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with patch.dict("sys.modules", {"openai": MagicMock()}):
+            from swarmline.runtime.thin.llm_providers import OpenAICompatAdapter
+
+            adapter = OpenAICompatAdapter.__new__(OpenAICompatAdapter)
+            adapter._model = "gpt-4o"
+            adapter._base_url = None
+            adapter._client = mock_client
+
+            await adapter.call_with_tools(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                tools=[],
+                timeout=30,
+            )
+
+        call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert call_kwargs.get("timeout") == 30, (
+            "timeout must be forwarded to create() so per-request budgets are honoured; "
+            f"got call_kwargs={call_kwargs}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_openai_adapter_call_with_tools_does_not_forward_response_format(self) -> None:
+        """call_with_tools must NOT forward ``response_format`` — it is incompatible with tools.
+
+        The non-native path passes ``response_format`` through build_llm_call_kwargs, but the
+        native tool loop must strip it (flash-models reject the combination; finalisation is
+        handled by a separate Phase-2 call).
+        """
+        mock_message = MagicMock()
+        mock_message.content = "ok"
+        mock_message.tool_calls = None
+
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = "stop"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+
+        mock_client = MagicMock()
+        mock_client.chat = MagicMock()
+        mock_client.chat.completions = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with patch.dict("sys.modules", {"openai": MagicMock()}):
+            from swarmline.runtime.thin.llm_providers import OpenAICompatAdapter
+
+            adapter = OpenAICompatAdapter.__new__(OpenAICompatAdapter)
+            adapter._model = "gpt-4o"
+            adapter._base_url = None
+            adapter._client = mock_client
+
+            await adapter.call_with_tools(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                tools=[],
+                response_format={"type": "json_object"},
+                timeout=30,
+            )
+
+        call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert "response_format" not in call_kwargs, (
+            "response_format must NOT reach create() in the native tool-loop path; "
+            f"got call_kwargs={call_kwargs}"
+        )
+        # timeout must still be present
+        assert call_kwargs.get("timeout") == 30
+
 
 class TestGoogleAdapterCallWithTools:
     """Test GoogleAdapter.call_with_tools with mocked google SDK."""

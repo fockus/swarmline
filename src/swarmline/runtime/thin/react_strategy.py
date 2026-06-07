@@ -97,10 +97,14 @@ async def run_react(  # noqa: C901
                     }
                     for t in tools
                 ]
+                native_call_kwargs = build_llm_call_kwargs(config)
+                native_call_kwargs.pop("_swarmline_structured_strategy", None)
+                native_call_kwargs.pop("response_format", None)
                 native_result = await native_adapter.call_with_tools(
                     lm_messages,
                     native_loop_prompt,
                     tool_defs,
+                    **native_call_kwargs,
                 )
 
                 if native_result.tool_calls:

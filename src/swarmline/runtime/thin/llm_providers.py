@@ -401,6 +401,7 @@ class OpenAICompatAdapter:
             messages=api_messages,  # ty: ignore[invalid-argument-type]  # OpenAI MessageParam strict; runtime dict matches (call_with_tools)
             max_tokens=kwargs.get("max_tokens", 4096),
             tools=openai_tools,  # ty: ignore[invalid-argument-type]  # OpenAI ChatCompletionToolParam strict; runtime dict matches
+            **_compact_kwargs(kwargs, {"temperature", "timeout", "extra_body"}),
         )
         choice = response.choices[0]
         text = choice.message.content or ""
