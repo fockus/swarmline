@@ -6,10 +6,10 @@ from typing import Any
 
 from swarmline.multi_agent.graph_comm_types import ChannelType, GraphMessage
 from swarmline.pipeline import (
-    LoopPipelineStage,
-    ParallelPipelineStage,
+    LoopStage,
+    ParallelStage,
     PipelineContext,
-    TypedPipelineStage,
+    TypedStage,
     WorkflowBridge,
     WorkflowChain,
     WorkflowStep,
@@ -23,17 +23,17 @@ class TestWorkflowChainNames:
         assert chain.__class__.__name__ == "TypedPipeline"
 
 
-class TestParallelPipelineStage:
+class TestParallelStage:
     async def test_parallel_stage_fans_out_and_joins_branch_outputs(self) -> None:
         chain = WorkflowChain(
             stages=[
-                ParallelPipelineStage(
+                ParallelStage(
                     "compare",
                     branches={
-                        "fast": TypedPipelineStage(
+                        "fast": TypedStage(
                             "fast", lambda value: f"fast:{value}"
                         ),
-                        "deep": TypedPipelineStage(
+                        "deep": TypedStage(
                             "deep", lambda value: f"deep:{value}"
                         ),
                     },
@@ -51,11 +51,11 @@ class TestParallelPipelineStage:
     async def test_parallel_stage_can_allow_partial_branch_failures(self) -> None:
         chain = WorkflowChain(
             stages=[
-                ParallelPipelineStage(
+                ParallelStage(
                     "compare",
                     branches={
-                        "ok": TypedPipelineStage("ok", lambda value: f"ok:{value}"),
-                        "bad": TypedPipelineStage(
+                        "ok": TypedStage("ok", lambda value: f"ok:{value}"),
+                        "bad": TypedStage(
                             "bad",
                             lambda value: (_ for _ in ()).throw(RuntimeError("boom")),
                         ),
@@ -93,11 +93,11 @@ class TestParallelPipelineStage:
 
         chain = WorkflowChain(
             stages=[
-                ParallelPipelineStage(
+                ParallelStage(
                     "compare",
                     branches={
-                        "fast": TypedPipelineStage("fast", fast_branch),
-                        "deep": TypedPipelineStage("deep", deep_branch),
+                        "fast": TypedStage("fast", fast_branch),
+                        "deep": TypedStage("deep", deep_branch),
                     },
                     joiner=join,
                 )
@@ -118,7 +118,7 @@ class TestParallelPipelineStage:
         )
 
 
-class TestLoopPipelineStage:
+class TestLoopStage:
     async def test_loop_stage_repeats_body_until_reviewer_passes(self) -> None:
         attempts = 0
 
@@ -129,9 +129,9 @@ class TestLoopPipelineStage:
 
         chain = WorkflowChain(
             stages=[
-                LoopPipelineStage(
+                LoopStage(
                     "review_loop",
-                    body=TypedPipelineStage("draft", draft),
+                    body=TypedStage("draft", draft),
                     reviewer=lambda value: "approved" in value,
                     max_iterations=3,
                 )
@@ -149,9 +149,9 @@ class TestLoopPipelineStage:
     ) -> None:
         chain = WorkflowChain(
             stages=[
-                LoopPipelineStage(
+                LoopStage(
                     "review_loop",
-                    body=TypedPipelineStage("draft", lambda value: f"{value}!"),
+                    body=TypedStage("draft", lambda value: f"{value}!"),
                     reviewer=lambda _value: False,
                     max_iterations=2,
                 )

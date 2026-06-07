@@ -44,6 +44,10 @@ static fork/join stages, but it should not become a general graph engine.
 chains, reviewer loops, or deterministic workflows where stages have validators,
 retry limits, structured outputs, and fallbacks.
 
+Since 1.6.0 `WorkflowChain` runs on the unified [registry-dispatch engine](#typed-data-flow-pipeline-registry-dispatch)
+below — same behaviour, same events, one engine. The canonical stage names are the short
+`TypedStage` / `ParallelStage` / `LoopStage` (the verbose `*PipelineStage` names are deprecated; see the note at the end of that section).
+
 ```python
 from pydantic import BaseModel
 from swarmline import Agent
@@ -86,11 +90,11 @@ result = await pipeline.run("Explain the credit risks")
 
 ### Reviewer Loops
 
-Use `LoopPipelineStage` when a reviewer must approve the candidate before the
+Use `LoopStage` when a reviewer must approve the candidate before the
 chain can continue. The loop is always bounded.
 
 ```python
-from swarmline.pipeline import LoopPipelineStage, WorkflowChain, WorkflowStep
+from swarmline.pipeline import LoopStage, WorkflowChain, WorkflowStep
 
 
 async def draft_report(payload, context):
@@ -107,7 +111,7 @@ async def review_report(candidate, context):
 
 chain = WorkflowChain(
     stages=[
-        LoopPipelineStage(
+        LoopStage(
             "review_loop",
             body=WorkflowStep("draft", draft_report),
             reviewer=review_report,
@@ -119,12 +123,12 @@ chain = WorkflowChain(
 
 ### Static Fork/Join
 
-Use `ParallelPipelineStage` for small static fan-out/fan-in cases. Branches share
+Use `ParallelStage` for small static fan-out/fan-in cases. Branches share
 a `PipelineContext` for structured artifacts and compact messages; this is not a
 free-form agent chat bus.
 
 ```python
-from swarmline.pipeline import ParallelPipelineStage, PipelineContext, WorkflowChain, WorkflowStep
+from swarmline.pipeline import ParallelStage, PipelineContext, WorkflowChain, WorkflowStep
 
 
 async def fast_model(question, context: PipelineContext):
@@ -147,7 +151,7 @@ async def join(outputs, context: PipelineContext):
 
 chain = WorkflowChain(
     stages=[
-        ParallelPipelineStage(
+        ParallelStage(
             "compare",
             branches={
                 "fast": WorkflowStep("fast", fast_model),
@@ -182,6 +186,99 @@ analysis_node = WorkflowBridge.chain_node(
     result_key="analysis_result",
 )
 ```
+
+## Typed Data-Flow Pipeline (registry-dispatch)
+
+`WorkflowChain` above is the high-level facade. Under it sits a **registry-dispatch engine**:
+stages are frozen dataclasses dispatched by their *type* (no `isinstance` chain — open for
+extension, closed for modification), executed by `run_pipeline`. Six stage primitives ship built in:
+
+| Stage | Purpose |
+|-------|---------|
+| `TypedStage` | a single typed step with an optional validator and bounded retries |
+| `ConditionalStage` | route the value to one of N sub-chains by a selector |
+| `GuardStage` | short-circuit with a fixed payload when a predicate trips |
+| `FanOutStage` | dynamic, concurrency-capped fan-out over a runtime list (dedup, fail-soft) |
+| `ParallelStage` | static named fork/join (`require_all` / `allow_partial`) |
+| `LoopStage` | bounded reviewer loop (re-run the body until approved) |
+
+```python
+from swarmline.pipeline import TypedStage, run_pipeline
+
+stages = [
+    TypedStage("double", lambda v: v * 2),
+    TypedStage("label", lambda v: f"value={v}"),
+]
+result = await run_pipeline(stages, 3)
+assert result.status == "completed" and result.output == "value=6"
+```
+
+### Custom stage kinds (OCP)
+
+Register your own stage type and runner without touching the engine:
+
+```python
+import asyncio
+import dataclasses
+
+from swarmline.pipeline import StageOutcome, stage_runner
+
+
+@dataclasses.dataclass(frozen=True)
+class DelayStage:
+    name: str
+    seconds: float
+
+
+@stage_runner(DelayStage)
+async def _run_delay(stage: DelayStage, value, ctx, event_sink) -> StageOutcome:
+    await asyncio.sleep(stage.seconds)
+    return StageOutcome(value=value)
+```
+
+### Declarative YAML pipelines
+
+Define the pipeline structure in YAML and resolve handler / validator / selector / predicate /
+payload **names** against injected registries. The structure is validated by a pydantic spec, and an
+unknown name fails fast at load time (callables never live in the YAML):
+
+```yaml
+name: demo
+events: [searching, composing]
+stages:
+  - {name: decide, kind: llm, handler: decide, params: {max_queries: 4}, status_label: searching}
+  - name: route
+    kind: conditional
+    selector: kind
+    cases:
+      search:
+        - {name: gather, kind: fanout, item_handler: gather, over: queries, concurrency: 4, max_n: 4, dedup_key: by_url}
+        - {name: guard_empty, kind: guard, predicate: pool_empty, on_trip: empty_notice}
+        - {name: finalize, kind: llm, handler: finalize, status_label: composing}
+```
+
+```python
+from swarmline.pipeline import PipelineRegistries, load_pipeline_from_yaml, run_pipeline
+
+registries = PipelineRegistries(
+    handlers={"decide": decide, "gather": gather, "finalize": finalize},
+    predicates={"pool_empty": lambda pool: not pool},
+    payloads={"empty_notice": "Nothing found"},
+    dedups={"by_url": lambda item: item["url"]},
+)
+stages = load_pipeline_from_yaml("pipeline.yaml", registries=registries)
+result = await run_pipeline(stages, user_query)
+```
+
+The YAML loader builds `TypedStage` (`kind: llm` / `io` / `pure`), `ConditionalStage`, `GuardStage`
+and `FanOutStage`; `ParallelStage` and `LoopStage` are constructed directly in code.
+
+> **Deprecation (1.6.0).** The verbose stage aliases `TypedPipelineStage`, `ParallelPipelineStage`
+> and `LoopPipelineStage` are deprecated in favour of the canonical `TypedStage`, `ParallelStage`
+> and `LoopStage`; importing a long name emits a `DeprecationWarning` and it will be removed in 2.0.0.
+> `TypedPipelineResult` is retained (it is the only public name for the data-flow result type).
+
+See `examples/31_typed_dataflow_pipeline.py` for a complete runnable example.
 
 ## Quick Start
 

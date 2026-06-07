@@ -1,135 +1,79 @@
-"""Universal typed pipeline primitives.
+"""Universal typed pipeline facade — the legacy ``TypedPipeline`` surface over the registry engine.
 
-This module intentionally contains no domain concepts. It provides a small
-workflow chain that applications can compose into generation, validation,
-evaluation, review-loop, and fork/join flows.
+``TypedPipeline`` (alias ``WorkflowChain``) is the original static workflow-chain API. It is now a
+THIN facade over the registry-dispatch engine (:func:`swarmline.pipeline.dataflow_engine.run_pipeline`):
+it builds an event-name adapter — mapping the engine's events onto the legacy ``event_bus.emit``
+names so existing subscribers keep firing — and delegates execution. There is a single engine and a
+single set of stage primitives; this module exposes the canonical engine types and serves the
+verbose legacy stage names as **deprecated aliases** (no behaviour change, no ``isinstance`` dispatch).
+
+The long ``*PipelineStage`` names are deprecated since 1.6.0 (removal in 2.0.0) and resolve — lazily,
+via PEP 562 ``__getattr__``, emitting a ``DeprecationWarning`` — to the canonical short classes:
+
+* ``TypedPipelineStage`` → :class:`~swarmline.pipeline.stages.typed_stage.TypedStage`
+* ``ParallelPipelineStage`` → :class:`~swarmline.pipeline.stages.parallel.ParallelStage`
+* ``LoopPipelineStage`` → :class:`~swarmline.pipeline.stages.loop.LoopStage`
+
+Each alias returns the *identical* canonical class (never a subclass), so ``type(stage)`` stays
+canonical and the engine's type→runner registry still dispatches. ``TypedPipelineResult`` remains a
+plain (non-deprecated) alias of :class:`~swarmline.pipeline.dataflow_core.PipelineResult` — the only
+public name for the data-flow result class (the top-level ``PipelineResult`` is the distinct
+phase-based result), so there is no unambiguous short name to redirect it to.
+
+``PipelineContext`` is the single class from :mod:`swarmline.pipeline.dataflow_core`, re-exported so
+``from swarmline.pipeline.typed import PipelineContext`` and the top-level import keep working.
 """
 
 from __future__ import annotations
 
-import asyncio
-import inspect
-from collections.abc import Awaitable, Callable, Mapping
-from dataclasses import dataclass, field
-from typing import Any, Literal
+import dataclasses
+import warnings
+from typing import Any
 
-FallbackMode = Literal["none", "last_valid"]
-PipelineStatus = Literal["completed", "failed", "fallback"]
-ParallelFailurePolicy = Literal["require_all", "allow_partial"]
+from swarmline.pipeline.dataflow_core import (
+    EventSink,
+    FallbackMode,
+    PipelineContext,
+    PipelineResult,
+)
+from swarmline.pipeline.dataflow_engine import run_pipeline
+from swarmline.pipeline.stages.loop import LoopStage
+from swarmline.pipeline.stages.parallel import ParallelStage
+from swarmline.pipeline.stages.typed_stage import TypedStage
+
+# Back-compat re-exports — these module-level type aliases lived in the original ``typed`` engine
+# before it became a facade; keep them importable from here (identical ``Literal`` values at their
+# new canonical homes) so ``from swarmline.pipeline.typed import PipelineStatus`` keeps working.
+from swarmline.pipeline.dataflow_core import PipelineStatus as PipelineStatus
+from swarmline.pipeline.stages.parallel import ParallelFailurePolicy as ParallelFailurePolicy
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class FallbackPolicy:
-    """Fallback policy for typed pipeline failures."""
+    """Fallback policy for a typed pipeline; ``mode`` is the engine's fallback mode."""
 
     mode: FallbackMode = "none"
 
 
-@dataclass
-class PipelineContext:
-    """Shared structured context for a workflow chain run.
-
-    It is intentionally not a chat bus. Stages can publish artifacts and compact
-    messages for later join/review stages, while real agent-to-agent messaging
-    remains in graph/team orchestration.
-    """
-
-    artifacts: dict[str, Any] = field(default_factory=dict)
-    messages: list[dict[str, Any]] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def write_artifact(self, key: str, value: Any) -> None:
-        """Store a structured artifact for later stages."""
-        self.artifacts[key] = value
-
-    def read_artifact(self, key: str, default: Any = None) -> Any:
-        """Read a structured artifact."""
-        return self.artifacts.get(key, default)
-
-    def add_message(self, sender: str, content: str, **metadata: Any) -> None:
-        """Record a compact pipeline-local message."""
-        message = {"from": sender, "content": content}
-        message.update(metadata)
-        self.messages.append(message)
-
-
-@dataclass(frozen=True)
-class TypedPipelineStage:
-    """One sequential pipeline stage."""
-
-    name: str
-    handler: Callable[..., Any | Awaitable[Any]]
-    validator: Callable[..., bool | None | Awaitable[bool | None]] | None = None
-    max_attempts: int = 1
-
-    def __post_init__(self) -> None:
-        if not self.name.strip():
-            raise ValueError("stage name must not be empty")
-        if self.max_attempts < 1:
-            raise ValueError("max_attempts must be >= 1")
-
-
-@dataclass(frozen=True)
-class ParallelPipelineStage:
-    """Static fork/join stage for a workflow chain."""
-
-    name: str
-    branches: Mapping[str, TypedPipelineStage]
-    joiner: Callable[..., Any | Awaitable[Any]] | None = None
-    failure_policy: ParallelFailurePolicy = "require_all"
-
-    def __post_init__(self) -> None:
-        if not self.name.strip():
-            raise ValueError("parallel stage name must not be empty")
-        if not self.branches:
-            raise ValueError("parallel stage requires at least one branch")
-        if self.failure_policy not in {"require_all", "allow_partial"}:
-            raise ValueError("failure_policy must be 'require_all' or 'allow_partial'")
-
-
-@dataclass(frozen=True)
-class LoopPipelineStage:
-    """Bounded review loop stage.
-
-    The body runs, then reviewer decides whether the output can continue.
-    If reviewer returns False, the body is retried against the original stage
-    input until max_iterations is reached. Stages that need reviewer notes can
-    use PipelineContext artifacts/messages.
-    """
-
-    name: str
-    body: TypedPipelineStage
-    reviewer: Callable[..., bool | Awaitable[bool]]
-    max_iterations: int = 3
-
-    def __post_init__(self) -> None:
-        if not self.name.strip():
-            raise ValueError("loop stage name must not be empty")
-        if self.max_iterations < 1:
-            raise ValueError("max_iterations must be >= 1")
-
-
-PipelineStage = TypedPipelineStage | ParallelPipelineStage | LoopPipelineStage
-
-
-@dataclass(frozen=True)
-class TypedPipelineResult:
-    """Result of a typed pipeline run."""
-
-    status: PipelineStatus
-    output: Any = None
-    failed_stage: str | None = None
-    attempts: dict[str, int] = field(default_factory=dict)
-    errors: tuple[str, ...] = ()
+#: Map the registry engine's event names onto the legacy ``TypedPipeline`` event names so existing
+#: ``event_bus`` subscribers keep firing. Unmapped names (``branch_*`` / ``loop_iteration_*``) pass
+#: through unchanged — they were already the legacy names.
+_LEGACY_EVENT_NAMES: dict[str, str] = {
+    "stage_start": "pipeline_stage_start",
+    "stage_end": "pipeline_stage_end",
+    "stage_failed": "pipeline_stage_end",
+    "parallel_start": "parallel_stage_start",
+    "parallel_join": "parallel_stage_join",
+}
 
 
 class TypedPipeline:
-    """Static workflow chain with validators, retries, loops, fork/join, and events."""
+    """Static workflow chain over the registry engine — validators, retries, loops, fork/join, events."""
 
     def __init__(
         self,
         *,
-        stages: list[PipelineStage],
+        stages: list[Any],
         fallback_policy: FallbackPolicy | None = None,
         event_bus: Any | None = None,
     ) -> None:
@@ -140,261 +84,85 @@ class TypedPipeline:
         self._bus = event_bus
 
     async def run(
-        self,
-        initial_input: Any,
-        *,
-        context: PipelineContext | None = None,
-    ) -> TypedPipelineResult:
-        """Run all stages sequentially."""
-        current = initial_input
-        run_context = context or PipelineContext()
-        last_valid: Any = None
-        has_last_valid = False
-        attempts_by_stage: dict[str, int] = {}
-        errors: list[str] = []
-
-        for stage in self._stages:
-            await self._emit("pipeline_stage_start", {"stage": stage.name})
-            (
-                stage_result,
-                stage_attempts,
-                stage_errors,
-                error,
-            ) = await self._run_any_stage(
-                stage,
-                current,
-                run_context,
-            )
-            attempts_by_stage.update(stage_attempts)
-            errors.extend(stage_errors)
-            if error is not None:
-                errors.append(error)
-                await self._emit(
-                    "pipeline_stage_end",
-                    {"stage": stage.name, "ok": False, "error": error},
-                )
-                if self._fallback_policy.mode == "last_valid" and has_last_valid:
-                    await self._emit(
-                        "fallback_selected",
-                        {"stage": stage.name, "mode": "last_valid"},
-                    )
-                    return TypedPipelineResult(
-                        status="fallback",
-                        output=last_valid,
-                        failed_stage=stage.name,
-                        attempts=attempts_by_stage,
-                        errors=tuple(errors),
-                    )
-                return TypedPipelineResult(
-                    status="failed",
-                    output=None,
-                    failed_stage=stage.name,
-                    attempts=attempts_by_stage,
-                    errors=tuple(errors),
-                )
-
-            current = stage_result
-            last_valid = stage_result
-            has_last_valid = True
-            await self._emit("pipeline_stage_end", {"stage": stage.name, "ok": True})
-
-        return TypedPipelineResult(
-            status="completed",
-            output=current,
-            attempts=attempts_by_stage,
-            errors=tuple(errors),
+        self, initial_input: Any, *, context: PipelineContext | None = None
+    ) -> PipelineResult:
+        """Run all stages sequentially via the registry engine, honouring the fallback policy."""
+        return await run_pipeline(
+            self._stages,
+            initial_input,
+            context,
+            event_sink=self._event_sink(),
+            fallback=self._fallback_policy.mode,
         )
 
-    async def _run_any_stage(
-        self,
-        stage: PipelineStage,
-        current: Any,
-        context: PipelineContext,
-    ) -> tuple[Any, dict[str, int], list[str], str | None]:
-        if isinstance(stage, ParallelPipelineStage):
-            output, branch_attempts, errors, error = await self._run_parallel_stage(
-                stage,
-                current,
-                context,
-            )
-            return output, branch_attempts, errors, error
-        if isinstance(stage, LoopPipelineStage):
-            output, loop_attempts, error = await self._run_loop_stage(
-                stage, current, context
-            )
-            return output, {stage.name: loop_attempts}, [], error
-        output, stage_attempts, error = await self._run_stage(stage, current, context)
-        return output, {stage.name: stage_attempts}, [], error
+    def _event_sink(self) -> EventSink | None:
+        """Adapt the engine's async event sink onto the legacy ``event_bus.emit`` names."""
+        bus = self._bus
+        if bus is None:
+            return None
 
-    async def _run_stage(
-        self,
-        stage: TypedPipelineStage,
-        current: Any,
-        context: PipelineContext,
-    ) -> tuple[Any, int, str | None]:
-        last_error: str | None = None
-        for attempt in range(1, stage.max_attempts + 1):
-            try:
-                output = await _call_with_optional_context(
-                    stage.handler, current, context
-                )
-                await self._validate(stage, output, context)
-                return output, attempt, None
-            except Exception as exc:  # noqa: BLE001
-                last_error = str(exc)
-        return None, stage.max_attempts, last_error or "stage failed"
+        async def sink(name: str, data: dict[str, Any]) -> None:
+            # The legacy pipeline_stage_end payload carried an ``ok`` flag distinguishing
+            # success from failure under the same event name; re-inject it on the adapter.
+            if name == "stage_end":
+                data = {**data, "ok": True}
+            elif name == "stage_failed":
+                data = {**data, "ok": False}
+            await bus.emit(_LEGACY_EVENT_NAMES.get(name, name), data)
 
-    async def _run_parallel_stage(
-        self,
-        stage: ParallelPipelineStage,
-        current: Any,
-        context: PipelineContext,
-    ) -> tuple[Any, dict[str, int], list[str], str | None]:
-        await self._emit("parallel_stage_start", {"stage": stage.name})
-
-        async def _run_branch(
-            branch_name: str, branch: TypedPipelineStage
-        ) -> tuple[str, Any, int, str | None]:
-            await self._emit(
-                "branch_start", {"stage": stage.name, "branch": branch_name}
-            )
-            output, attempts, error = await self._run_stage(branch, current, context)
-            await self._emit(
-                "branch_end",
-                {
-                    "stage": stage.name,
-                    "branch": branch_name,
-                    "ok": error is None,
-                    "error": error,
-                },
-            )
-            return branch_name, output, attempts, error
-
-        branch_results = await asyncio.gather(
-            *[
-                _run_branch(branch_name, branch)
-                for branch_name, branch in stage.branches.items()
-            ]
-        )
-
-        outputs: dict[str, Any] = {}
-        attempts: dict[str, int] = {}
-        errors: list[str] = []
-        for branch_name, output, attempt_count, error in branch_results:
-            attempts[f"{stage.name}.{branch_name}"] = attempt_count
-            if error is None:
-                outputs[branch_name] = output
-            else:
-                errors.append(f"{stage.name}.{branch_name}: {error}")
-
-        if errors and stage.failure_policy == "require_all":
-            return None, attempts | {stage.name: 1}, errors, "; ".join(errors)
-        if not outputs:
-            return (
-                None,
-                attempts | {stage.name: 1},
-                errors,
-                "all parallel branches failed",
-            )
-
-        if stage.joiner is None:
-            joined = outputs
-        else:
-            joined = await _call_with_optional_context(stage.joiner, outputs, context)
-        await self._emit(
-            "parallel_stage_join",
-            {
-                "stage": stage.name,
-                "branches": tuple(outputs),
-                "partial": bool(errors),
-            },
-        )
-        return joined, attempts | {stage.name: 1}, errors, None
-
-    async def _run_loop_stage(
-        self,
-        stage: LoopPipelineStage,
-        current: Any,
-        context: PipelineContext,
-    ) -> tuple[Any, int, str | None]:
-        for iteration in range(1, stage.max_iterations + 1):
-            await self._emit(
-                "loop_iteration_start", {"stage": stage.name, "iteration": iteration}
-            )
-            candidate, _attempts, error = await self._run_stage(
-                stage.body, current, context
-            )
-            if error is not None:
-                return None, iteration, error
-            approved = await _call_with_optional_context(
-                stage.reviewer, candidate, context
-            )
-            await self._emit(
-                "loop_iteration_end",
-                {
-                    "stage": stage.name,
-                    "iteration": iteration,
-                    "approved": bool(approved),
-                },
-            )
-            if approved:
-                return candidate, iteration, None
-        return (
-            None,
-            stage.max_iterations,
-            f"stage '{stage.name}' reviewer did not pass after {stage.max_iterations} iterations",
-        )
-
-    async def _validate(
-        self,
-        stage: TypedPipelineStage,
-        output: Any,
-        context: PipelineContext,
-    ) -> None:
-        if stage.validator is None:
-            return
-        result = await _call_with_optional_context(stage.validator, output, context)
-        if result is False:
-            raise ValueError(f"stage '{stage.name}' validator returned False")
-
-    async def _emit(self, event_type: str, data: dict[str, Any]) -> None:
-        if self._bus is not None:
-            await self._bus.emit(event_type, data)
+        return sink
 
 
-async def _maybe_await(value: Any | Awaitable[Any]) -> Any:
-    if inspect.isawaitable(value):
-        return await value
-    return value
-
-
-async def _call_with_optional_context(
-    fn: Callable[..., Any | Awaitable[Any]],
-    value: Any,
-    context: PipelineContext,
-) -> Any:
-    if _accepts_context(fn):
-        return await _maybe_await(fn(value, context))
-    return await _maybe_await(fn(value))
-
-
-def _accepts_context(fn: Callable[..., Any]) -> bool:
-    try:
-        signature = inspect.signature(fn)
-    except (TypeError, ValueError):
-        return False
-    positional_count = 0
-    for parameter in signature.parameters.values():
-        if parameter.kind == inspect.Parameter.VAR_POSITIONAL:
-            return True
-        if parameter.kind in (
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        ):
-            positional_count += 1
-    return positional_count >= 2
-
+# ── Backward-compatible aliases — the canonical engine types under their legacy names ────────────
+# ``TypedPipelineResult`` is a plain (non-deprecated) alias: it is the only public name for the
+# data-flow result class. ``WorkflowChain``/``WorkflowStep``/``WorkflowChainResult`` are the original
+# workflow-chain surface and stay non-deprecated. The verbose ``*PipelineStage`` names are deprecated
+# and served lazily below (see ``__getattr__``).
+TypedPipelineResult = PipelineResult
+PipelineStage = TypedStage | ParallelStage | LoopStage
 
 WorkflowChain = TypedPipeline
-WorkflowStep = TypedPipelineStage
-WorkflowChainResult = TypedPipelineResult
+WorkflowStep = TypedStage
+WorkflowChainResult = PipelineResult
+
+
+# ── Deprecated long aliases (PEP 562) ────────────────────────────────────────────────────────────
+#: Long legacy stage name → (canonical short name, canonical class). Returning the canonical class —
+#: not a subclass — keeps ``type(stage)`` canonical so the engine's type→runner registry dispatches.
+_DEPRECATED_STAGE_ALIASES: dict[str, tuple[str, type]] = {
+    "TypedPipelineStage": ("TypedStage", TypedStage),
+    "ParallelPipelineStage": ("ParallelStage", ParallelStage),
+    "LoopPipelineStage": ("LoopStage", LoopStage),
+}
+
+
+#: Aliases already warned about this process — collapses the duplicate fire that CPython's
+#: ``from pkg import Name`` machinery (``_handle_fromlist`` probes ``__getattr__`` twice) produces, so
+#: each deprecated alias warns at most once per process. Cleared between tests by an autouse fixture.
+_warned_aliases: set[str] = set()
+
+
+def _warn_deprecated_alias(name: str) -> type:
+    """Warn once-per-process for a deprecated long alias and return its canonical class.
+
+    Precondition: ``name in _DEPRECATED_STAGE_ALIASES``. Called from this module's and the package's
+    ``__getattr__`` at equal depth (user → ``__getattr__`` → here → ``warn``), so ``stacklevel=3``
+    lands on user code from either import path.
+    """
+    canonical_name, canonical = _DEPRECATED_STAGE_ALIASES[name]
+    if name not in _warned_aliases:
+        _warned_aliases.add(name)
+        warnings.warn(
+            f"{name} is deprecated since swarmline 1.6.0; import {canonical_name} instead "
+            "(it will be removed in 2.0.0).",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+    return canonical
+
+
+def __getattr__(name: str) -> Any:
+    """PEP 562 — serve the deprecated long stage aliases lazily so importing the module stays clean."""
+    if name in _DEPRECATED_STAGE_ALIASES:
+        return _warn_deprecated_alias(name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

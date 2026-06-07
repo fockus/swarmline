@@ -95,6 +95,7 @@ Default behavior:
 | 28 | `28_opentelemetry_tracing.py` | OpenTelemetry span export from EventBus events |
 | 29 | `29_structured_output_pydantic.py` | Type-safe structured output with `Agent.query_structured()` |
 | 30 | `30_a2a_agent.py` | A2A protocol: expose agent as service, send tasks, streaming |
+| 31 | `31_typed_dataflow_pipeline.py` | Registry-dispatch typed pipeline: stage primitives, custom kinds (OCP), YAML loader (offline) |
 | 32 | `32_agent_evaluation.py` | Eval framework: run suite with multiple scorers, console/JSON reports |
 | 33 | `33_eval_comparison.py` | A/B model comparison with EvalComparator |
 | — | `native_tools_openrouter.py` | Native tool-calling + native structured output via the single `structured_mode="auto"` knob (mock offline; `--live` for OpenRouter) |

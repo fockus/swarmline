@@ -5,15 +5,15 @@ from __future__ import annotations
 from typing import Any
 
 from swarmline.observability.event_bus import InMemoryEventBus
-from swarmline.pipeline import FallbackPolicy, TypedPipeline, TypedPipelineStage
+from swarmline.pipeline import FallbackPolicy, TypedPipeline, TypedStage
 
 
 class TestTypedPipeline:
     async def test_runs_sequential_stages(self) -> None:
         pipeline = TypedPipeline(
             stages=[
-                TypedPipelineStage("double", lambda value: value * 2),
-                TypedPipelineStage("format", lambda value: f"value={value}"),
+                TypedStage("double", lambda value: value * 2),
+                TypedStage("format", lambda value: f"value={value}"),
             ]
         )
 
@@ -33,7 +33,7 @@ class TestTypedPipeline:
 
         pipeline = TypedPipeline(
             stages=[
-                TypedPipelineStage(
+                TypedStage(
                     "generate",
                     generate,
                     validator=lambda value: value.endswith("-ok"),
@@ -51,8 +51,8 @@ class TestTypedPipeline:
     async def test_returns_last_valid_output_when_fallback_enabled(self) -> None:
         pipeline = TypedPipeline(
             stages=[
-                TypedPipelineStage("draft", lambda value: f"{value}-draft"),
-                TypedPipelineStage(
+                TypedStage("draft", lambda value: f"{value}-draft"),
+                TypedStage(
                     "validate",
                     lambda value: f"{value}-invalid",
                     validator=lambda value: "never" in value,
@@ -78,7 +78,7 @@ class TestTypedPipeline:
             )
 
         pipeline = TypedPipeline(
-            stages=[TypedPipelineStage("draft", lambda value: f"{value}-draft")],
+            stages=[TypedStage("draft", lambda value: f"{value}-draft")],
             event_bus=bus,
         )
 

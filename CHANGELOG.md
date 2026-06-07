@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-07
+
+### Added — typed data-flow pipeline (registry-dispatch engine)
+
+- **A declarative, registry-dispatch typed data-flow pipeline** under `swarmline.pipeline`. Stages
+  are frozen dataclasses dispatched by their *type* (no `isinstance` chain — open/closed);
+  `run_pipeline(stages, value, *, event_sink=None, fallback="none")` executes them. Register custom
+  stage kinds with `register_stage_runner` or the `@stage_runner` decorator — extend the engine
+  without modifying it.
+- **Six stage primitives:** `TypedStage` (validator + retries + fallback), `ConditionalStage`
+  (route to one of N sub-chains by a selector), `GuardStage` (short-circuit with a fixed payload
+  when a predicate trips), `FanOutStage` (dynamic, concurrency-capped fan-out with dedup +
+  fail-soft), `ParallelStage` (static named fork/join, `require_all` / `allow_partial`), `LoopStage`
+  (bounded reviewer loop).
+- **Declarative YAML loader:** `load_pipeline_from_yaml(path, *, registries=...)`,
+  `build_pipeline(spec, *, registries=...)`, `PipelineRegistries`. Structure is validated by a
+  pydantic spec; handler / validator / selector / predicate / payload / dedup **names** resolve
+  against the injected registries and fail fast on an unknown name at load time (callables never
+  live in the YAML).
+- **Public surface:** `StageOutcome`, the `PipelineError` hierarchy (`StageConfigError`,
+  `StageValidationError`, `StageExecutionError`), `StageDependency`, `EventSink`, `resolve_path`.
+  Everything is additive — no existing export changed.
+- **Docs:** new "Typed Data-Flow Pipeline (registry-dispatch)" section in `docs/pipeline.md`.
+  **Example:** `examples/31_typed_dataflow_pipeline.py` (offline, runnable).
+
+### Changed — `TypedPipeline` (alias `WorkflowChain`) now runs on the unified registry engine
+
+- `TypedPipeline` is now a **thin facade** over the registry-dispatch engine — one engine, one set
+  of stage primitives, no `isinstance` dispatch. Existing behaviour, the legacy `event_bus` event
+  names, and the result shape are preserved (the published contract test suite passes unchanged in
+  behaviour).
+- Observable hardening (more correct than before, backward-compatible): a **failed stage now records
+  its attempt count** in `result.attempts`; with `fallback="last_valid"` and **no prior successful
+  stage**, a failure is reported as `failed` (nothing to fall back to) rather than `fallback`. These
+  are intentional, non-byte-identical refinements of the previous wording/accounting.
+- `PipelineResult.terminated_early: bool` added (additive, default `False`).
+- `PipelineContext` is now a single shared class across the typed pipeline and the data-flow engine.
+
+### Deprecated — verbose `*PipelineStage` aliases
+
+- `TypedPipelineStage`, `ParallelPipelineStage` and `LoopPipelineStage` are **deprecated** in favour
+  of the canonical short names `TypedStage`, `ParallelStage` and `LoopStage`. Importing a long name
+  (from `swarmline.pipeline` or `swarmline.pipeline.typed`) emits a `DeprecationWarning`; the alias
+  still resolves to the *identical* canonical class (so registry dispatch is unaffected) and will be
+  **removed in 2.0.0**.
+- `TypedPipelineResult` is **retained** (not deprecated): it is the only public name for the
+  data-flow result type — the top-level `PipelineResult` is the distinct phase-based result.
+- The deprecated long aliases are no longer listed in `__all__`, so `from swarmline.pipeline import *`
+  no longer pulls them (import them explicitly by name if needed). Both `import swarmline.pipeline`
+  and the star-import stay warning-free even under `-W error::DeprecationWarning`; each alias warns
+  only on explicit access (once per process).
+
 ### Added / Changed — native tool-calling in the thin react path (universal, two-phase)
 
 - **`structured_mode` is now the single knob for native vs portable tool-calling + structured
@@ -526,7 +578,8 @@ resume, conversation compaction, and a typed thinking-events surface.
 - **Memory** — `InMemoryMemoryProvider`, `PostgresMemoryProvider`
 - **Commands** — `CommandRegistry` with aliases
 
-[Unreleased]: https://github.com/fockus/swarmline/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/fockus/swarmline/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/fockus/swarmline/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/fockus/swarmline/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/fockus/swarmline/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/fockus/swarmline/compare/v1.3.0...v1.4.0

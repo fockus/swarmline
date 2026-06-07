@@ -80,3 +80,9 @@ python examples/01_agent_basics.py
 | 25 | `25_shopping_agent.py` | Shopping assistant with HITL | `WorkflowGraph` interrupts, parallel search, structured output |
 | 26 | `26_code_project_team.py` | Multi-agent dev team | `AgentRegistry`, `TaskQueue`, `WorkflowGraph` |
 | 27 | `27_nano_claw.py` | Simple Claude Code-like CLI agent | `Agent`, `@tool`, `Conversation`, streaming |
+
+### Data-Flow Pipeline (31)
+
+| # | File | Feature | Key Imports |
+|---|------|---------|-------------|
+| 31 | `31_typed_dataflow_pipeline.py` | Registry-dispatch engine, stage primitives, custom kinds (OCP), YAML loader (offline) | `run_pipeline`, `TypedStage`, `ParallelStage`, `LoopStage`, `ConditionalStage`, `stage_runner`, `load_pipeline_from_yaml` |
