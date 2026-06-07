@@ -396,11 +396,11 @@ class OpenAICompatAdapter:
         # call them (it answers directly / fabricates). Wrap here (idempotent: an already-wrapped
         # tool with a ``function`` key is passed through untouched).
         openai_tools = [_to_openai_function_tool(tool) for tool in tools]
-        response = await self._client.chat.completions.create(
+        response = await self._client.chat.completions.create(  # ty: ignore[no-matching-overload]  # OpenAI params strict; runtime dicts + **kwargs splat match at runtime (call_with_tools)
             model=self._model,
-            messages=api_messages,  # ty: ignore[invalid-argument-type]  # OpenAI MessageParam strict; runtime dict matches (call_with_tools)
+            messages=api_messages,
             max_tokens=kwargs.get("max_tokens", 4096),
-            tools=openai_tools,  # ty: ignore[invalid-argument-type]  # OpenAI ChatCompletionToolParam strict; runtime dict matches
+            tools=openai_tools,
             **_compact_kwargs(kwargs, {"temperature", "timeout", "extra_body"}),
         )
         choice = response.choices[0]
