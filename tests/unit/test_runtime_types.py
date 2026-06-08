@@ -442,6 +442,24 @@ class TestResolveModelName:
             == "openrouter:anthropic/claude-3.5-haiku"
         )
 
+    def test_polza_provider_prefix_passthrough(self) -> None:
+        """polza:model must pass through unchanged (regression: polza was missing from the
+        resolve_model_name provider allowlist, so it silently resolved to the default
+        claude-sonnet-4 and every structured deep-search call hit anthropic with no key)."""
+        assert (
+            resolve_model_name("polza:google/gemini-3.5-flash")
+            == "polza:google/gemini-3.5-flash"
+        )
+
+    def test_all_openai_compat_providers_round_trip(self) -> None:
+        """Drift-guard: EVERY provider known to provider_resolver must pass through
+        resolve_model_name unchanged (the two provider lists must never diverge again)."""
+        from swarmline.runtime.provider_resolver import _OPENAI_COMPAT_PROVIDERS
+
+        for provider in _OPENAI_COMPAT_PROVIDERS:
+            slug = f"{provider}:some/model-x"
+            assert resolve_model_name(slug) == slug, f"{provider} prefix dropped"
+
     def test_whitespace_trimmed(self) -> None:
         assert resolve_model_name("  sonnet  ") == "claude-sonnet-4-20250514"
 

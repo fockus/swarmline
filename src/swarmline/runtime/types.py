@@ -126,6 +126,10 @@ def resolve_model_name(raw: str | None) -> str:
             provider = prefix.strip().lower()
             if provider == "google_genai":
                 provider = "google"
+            # MUST stay in sync with provider_resolver._OPENAI_COMPAT_PROVIDERS (+ anthropic,
+            # google). A prefix missing here silently falls through to the registry and resolves
+            # to the DEFAULT_MODEL — that is exactly how ``polza:`` was dropped to claude-sonnet-4.
+            # The drift-guard test_all_openai_compat_providers_round_trip pins this invariant.
             if provider in {
                 "anthropic",
                 "google",
@@ -137,6 +141,7 @@ def resolve_model_name(raw: str | None) -> str:
                 "groq",
                 "fireworks",
                 "deepseek",
+                "polza",
             }:
                 return f"{provider}:{model_part.strip()}"
     result: str = _get_registry().resolve(raw)

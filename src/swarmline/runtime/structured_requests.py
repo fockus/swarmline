@@ -51,6 +51,10 @@ _PROVIDER_CAPABILITIES: dict[str, ProviderStructuredCapabilities] = {
         default_provider_options={"require_parameters": True},
     ),
     "deepseek": ProviderStructuredCapabilities(json_schema=False, json_object=True),
+    # polza.ai is an OpenAI-compatible proxy (serves gemini-3.5-flash et al.); it reliably
+    # supports json_object response_format. Without this entry deep-search structured calls
+    # fell back to portable prompt-mode for an "unknown" provider.
+    "polza": ProviderStructuredCapabilities(json_schema=False, json_object=True),
     "anthropic": ProviderStructuredCapabilities(),
     "google": ProviderStructuredCapabilities(),
     "ollama": ProviderStructuredCapabilities(json_object=True),
@@ -77,7 +81,9 @@ def resolve_structured_request_strategy(
     if config.structured_mode == "prompt":
         return StructuredRequestStrategy("prompt", "", str(config.model))
 
-    resolved = resolve_provider(config.model, base_url=config.base_url, api_key=config.api_key)
+    resolved = resolve_provider(
+        config.model, base_url=config.base_url, api_key=config.api_key
+    )
     capabilities = get_provider_structured_capabilities(resolved.provider)
     if capabilities.json_schema:
         return StructuredRequestStrategy(
