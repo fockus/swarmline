@@ -77,7 +77,7 @@ def resolve_structured_request_strategy(
     if config.structured_mode == "prompt":
         return StructuredRequestStrategy("prompt", "", str(config.model))
 
-    resolved = resolve_provider(config.model, base_url=config.base_url)
+    resolved = resolve_provider(config.model, base_url=config.base_url, api_key=config.api_key)
     capabilities = get_provider_structured_capabilities(resolved.provider)
     if capabilities.json_schema:
         return StructuredRequestStrategy(

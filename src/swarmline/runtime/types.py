@@ -164,6 +164,10 @@ class RuntimeConfig:
     # None = provider default URL
     base_url: str | None = None
 
+    # Per-config API key forwarded through resolve_provider to the LLM adapter.
+    # None = adapter falls back to the environment variable OPENAI_API_KEY (back-compat default).
+    api_key: str | None = None
+
     # Structured output schema for the portable/native runtime path
     output_format: dict[str, Any] | None = None
 

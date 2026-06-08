@@ -173,6 +173,7 @@ class ThinRuntime:
                 provider = resolve_provider(
                     self._config.model,
                     base_url=self._config.base_url,
+                    api_key=self._config.api_key,
                 )
                 adapter = get_cached_adapter(provider)
                 if isinstance(adapter, NativeToolCallAdapter):

@@ -39,13 +39,13 @@ EXPECTED_FIXES: list[tuple[str, int, str, str]] = [
     ),
     (
         "src/swarmline/runtime/thin/llm_providers.py",
-        484,
+        489,
         "_response_text(response)",
         "duck-typed awaited response.text helper",
     ),
     (
         "src/swarmline/runtime/thin/llm_providers.py",
-        547,
+        552,
         "# ty: ignore[unresolved-attribute, not-iterable]",
         "Gemini Content.parts gated by candidates check (Stage 5 extends with not-iterable)",
     ),

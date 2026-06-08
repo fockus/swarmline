@@ -121,51 +121,44 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/runtime/thin/llm_providers.py",
-        338,
+        342,
         "# ty: ignore[no-matching-overload]",
         "OpenAI",
         "OpenAI ChatCompletion overload — runtime dict structure matches (call)",
     ),
     (
         "src/swarmline/runtime/thin/llm_providers.py",
-        359,
+        363,
         "# ty: ignore[no-matching-overload]",
         "OpenAI",
         "OpenAI ChatCompletion overload — runtime dict structure matches (stream)",
     ),
     (
         "src/swarmline/runtime/thin/llm_providers.py",
-        401,
-        "# ty: ignore[invalid-argument-type]",
-        "OpenAI",
-        "OpenAI MessageParam strict; runtime dict matches (call_with_tools)",
-    ),
-    (
-        "src/swarmline/runtime/thin/llm_providers.py",
         403,
-        "# ty: ignore[invalid-argument-type]",
+        "# ty: ignore[no-matching-overload]",
         "OpenAI",
-        "OpenAI ChatCompletionToolParam strict; runtime dict matches",
+        "OpenAI params strict; runtime dicts + kwargs splat match at runtime (call_with_tools)",
     ),
     (
         "src/swarmline/runtime/thin/llm_providers.py",
-        540,
+        545,
         "# ty: ignore[invalid-argument-type]",
         "Google",
         "Google Tool union strict; runtime list matches",
     ),
     (
         "src/swarmline/runtime/thin/react_strategy.py",
-        435,
+        439,
         "# ty: ignore[invalid-argument-type]",
         "hasattr",
         "tc.assistant_message hasattr-narrow not propagated by ty",
     ),
 ]
 
-assert len(EXPECTED_FIXES) == 18, (
-    f"expected 18 line-anchored fixes (22 errors − 4 covered by event_mapper "
-    f"structural fix), got {len(EXPECTED_FIXES)}"
+assert len(EXPECTED_FIXES) == 17, (
+    f"expected 17 line-anchored fixes (22 errors − 4 covered by event_mapper "
+    f"structural fix − 1 merged call_with_tools overload), got {len(EXPECTED_FIXES)}"
 )
 
 # Files where Stage 4 fixes land (used by cleanup invariants).

@@ -292,7 +292,9 @@ class AnthropicAdapter:
 class OpenAICompatAdapter:
     """Open A I Compat Adapter implementation."""
 
-    def __init__(self, model: str, *, base_url: str | None = None) -> None:
+    def __init__(
+        self, model: str, *, base_url: str | None = None, api_key: str | None = None
+    ) -> None:
         try:
             import openai
         except ImportError:
@@ -308,6 +310,8 @@ class OpenAICompatAdapter:
         client_kwargs: dict[str, Any] = {}
         if base_url:
             client_kwargs["base_url"] = base_url
+        if api_key:
+            client_kwargs["api_key"] = api_key
         self._client = openai.AsyncOpenAI(**client_kwargs)
 
     @staticmethod
@@ -573,19 +577,21 @@ def create_llm_adapter(resolved: ResolvedProvider) -> LlmAdapter:
     if resolved.sdk_type == "anthropic":
         return AnthropicAdapter(model=resolved.model_id, base_url=resolved.base_url)
     if resolved.sdk_type == "openai_compat":
-        return OpenAICompatAdapter(model=resolved.model_id, base_url=resolved.base_url)
+        return OpenAICompatAdapter(
+            model=resolved.model_id, base_url=resolved.base_url, api_key=resolved.api_key
+        )
     if resolved.sdk_type == "google":
         return GoogleAdapter(model=resolved.model_id, base_url=resolved.base_url)
     msg = f"Неизвестный sdk_type: {resolved.sdk_type!r}"
     raise ValueError(msg)
 
 
-_adapter_cache: dict[tuple[str, str, str | None], LlmAdapter] = {}
+_adapter_cache: dict[tuple[str, str, str | None, str | None], LlmAdapter] = {}
 
 
 def get_cached_adapter(resolved: ResolvedProvider) -> LlmAdapter:
     """Get cached adapter."""
-    key = (resolved.model_id, resolved.provider, resolved.base_url)
+    key = (resolved.model_id, resolved.provider, resolved.base_url, resolved.api_key)
     if key not in _adapter_cache:
         _adapter_cache[key] = create_llm_adapter(resolved)
     return _adapter_cache[key]

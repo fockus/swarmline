@@ -19,6 +19,7 @@ class ResolvedProvider:
     provider: str
     sdk_type: SdkType
     base_url: str | None
+    api_key: str | None = None
 
 
 _OPENAI_COMPAT_PROVIDERS: dict[str, str | None] = {
@@ -30,6 +31,7 @@ _OPENAI_COMPAT_PROVIDERS: dict[str, str | None] = {
     "groq": "https://api.groq.com/openai/v1",
     "fireworks": "https://api.fireworks.ai/inference/v1",
     "deepseek": "https://api.deepseek.com/v1",
+    "polza": "https://polza.ai/api/v1",
 }
 
 # Provider -> SDK type
@@ -67,8 +69,20 @@ def resolve_provider(
     raw_model: str | None,
     *,
     base_url: str | None = None,
+    api_key: str | None = None,
 ) -> ResolvedProvider:
-    """Resolve provider."""
+    """Resolve provider.
+
+    Parameters
+    ----------
+    raw_model:
+        Raw model slug, optionally prefixed with a provider name (e.g. ``polza:google/gemini-3.5-flash``).
+    base_url:
+        Override the provider's default base URL.  ``None`` uses the registered default.
+    api_key:
+        Per-config API key.  ``None`` means the adapter will fall back to the environment
+        variable ``OPENAI_API_KEY`` (back-compat default).
+    """
     registry = get_registry()
 
     if not raw_model or not raw_model.strip():
@@ -80,6 +94,7 @@ def resolve_provider(
             provider=provider,
             sdk_type=sdk_type,
             base_url=base_url,
+            api_key=api_key,
         )
 
     explicit_provider, model_part = _parse_prefix(raw_model.strip())
@@ -100,6 +115,7 @@ def resolve_provider(
             provider="openai_compat",
             sdk_type="openai_compat",
             base_url=base_url,
+            api_key=api_key,
         )
     else:
         # No prefix, unknown slug, no base_url: FAIL LOUD instead of silently substituting the
@@ -115,4 +131,5 @@ def resolve_provider(
         provider=provider,
         sdk_type=sdk_type,
         base_url=effective_base_url,
+        api_key=api_key,
     )

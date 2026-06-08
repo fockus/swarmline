@@ -46,6 +46,7 @@ def build_portable_runtime_plan(
         ),
         model=factory.resolve_agent_model(agent_config),
         base_url=agent_config.base_url,
+        api_key=agent_config.api_key,
         output_format=agent_config.output_format,
         output_type=agent_config.output_type,
         structured_mode=agent_config.structured_mode,

@@ -41,6 +41,10 @@ class AgentConfig:
     # Base URL for LLM API (OpenRouter, proxy, etc.). None = provider default.
     base_url: str | None = None
 
+    # Per-config API key forwarded to the LLM adapter. None = adapter falls back to the
+    # environment variable OPENAI_API_KEY (back-compat default).
+    api_key: str | None = None
+
     # Tools (standalone @tool decorated functions)
     tools: tuple[ToolDefinition, ...] = ()
 

@@ -489,7 +489,7 @@ class TestDefaultLlmCallDispatch:
                 "system",
             )
             mock_resolve.assert_called_once_with(
-                "gpt-4o", base_url="https://proxy.example.com/v1"
+                "gpt-4o", base_url="https://proxy.example.com/v1", api_key=None
             )
 
     @pytest.mark.asyncio
