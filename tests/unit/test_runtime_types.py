@@ -426,8 +426,31 @@ class TestResolveModelName:
         result = resolve_model_name("claude-opus")
         assert result == "claude-opus-4-20250514"
 
-    def test_invalid_returns_default(self) -> None:
+    def test_invalid_raises_instead_of_silent_default(self) -> None:
+        """A non-empty, unrecognized model name MUST fail loud, not silently coerce to the
+        default model. Silent coercion is exactly how polza:gemini once became claude-sonnet-4
+        in production with zero signal."""
+        from swarmline.errors import UnknownModelError
+
+        with pytest.raises(UnknownModelError):
+            resolve_model_name("nonexistent_model_xyz")
+
+    def test_unknown_provider_prefix_raises(self) -> None:
+        """A provider-prefixed slug whose provider is NOT recognized must fail loud — never
+        fall through to the registry default (the polza→sonnet bug class)."""
+        from swarmline.errors import UnknownModelError
+
+        with pytest.raises(UnknownModelError):
+            resolve_model_name("madeup:google/gemini-3.5-flash")
+
+    def test_unknown_model_opt_in_fallback_warns_and_defaults(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Silent fallback to the default model is allowed ONLY behind an explicit opt-in
+        env flag, and even then resolves to the default (with a warning logged)."""
+        monkeypatch.setenv("SWARMLINE_ALLOW_MODEL_FALLBACK", "1")
         assert resolve_model_name("nonexistent_model_xyz") == DEFAULT_MODEL
+        assert resolve_model_name("madeup:foo/bar") == DEFAULT_MODEL
 
     def test_multi_provider_models(self) -> None:
         """Multiprovaydernye models from models.yaml."""

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-06-09
+
+### Changed
+- **`resolve_model_name` is now fail-loud (behavior change).** A non-empty model that is neither
+  a known alias/id nor a recognized `provider:model` slug now raises `UnknownModelError` instead
+  of silently coercing to the default model. This is the bug class that turned
+  `polza:google/gemini-3.5-flash` into `claude-sonnet-4` in production with zero signal when the
+  provider was missing from the allowlist. Set `SWARMLINE_ALLOW_MODEL_FALLBACK=1` to restore the
+  old silent-fallback behavior (now emits a warning). `None`/empty/whitespace still resolves to
+  the default (the caller's explicit "use default" signal).
+- The accepted-provider allowlist in `resolve_model_name` is now **derived** from
+  `provider_resolver._OPENAI_COMPAT_PROVIDERS` (plus native `anthropic`/`google`) instead of a
+  duplicated hardcoded set — the drift between the two lists was the root cause of the polza bug.
+
 ## [1.6.0] - 2026-06-07
 
 ### Added — typed data-flow pipeline (registry-dispatch engine)

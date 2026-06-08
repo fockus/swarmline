@@ -104,11 +104,72 @@ def _ensure_model_constants() -> None:
             DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
+def _allow_model_fallback() -> bool:
+    """True only when the operator has explicitly opted into silent model fallback.
+
+    Default (env unset) is fail-loud: an unresolvable model raises instead of silently
+    becoming the default model.
+    """
+    import os
+
+    return os.getenv("SWARMLINE_ALLOW_MODEL_FALLBACK", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _known_model_providers() -> frozenset[str]:
+    """Provider prefixes that ``resolve_model_name`` accepts as a pass-through.
+
+    Derived from ``provider_resolver._OPENAI_COMPAT_PROVIDERS`` (single source of truth) plus the
+    two native providers, so a provider added there can never again drift out of this allowlist —
+    that drift is exactly how ``polza:`` once resolved silently to the default model.
+    """
+    from swarmline.runtime.provider_resolver import _OPENAI_COMPAT_PROVIDERS
+
+    return frozenset(_OPENAI_COMPAT_PROVIDERS) | {"anthropic", "google"}
+
+
+def _fallback_or_raise(raw: str, reason: str) -> str:
+    """Fail loud by default; only fall back to the default model under an explicit opt-in.
+
+    Raises ``UnknownModelError`` unless ``SWARMLINE_ALLOW_MODEL_FALLBACK`` is set, in which case it
+    logs a warning and returns the registry default. Silent coercion (the old behaviour) is gone:
+    that is how ``polza:gemini`` became ``claude-sonnet-4`` in production with zero signal.
+    """
+    from swarmline.errors import UnknownModelError
+
+    default = _get_registry().default_model
+    if _allow_model_fallback():
+        import structlog
+
+        structlog.get_logger(component="runtime.model_resolver").warning(
+            "model_fallback_to_default",
+            requested=raw,
+            reason=reason,
+            fallback=default,
+        )
+        return default
+    raise UnknownModelError(
+        f"Cannot resolve model {raw!r}: {reason}. "
+        f"Known provider prefixes: {', '.join(sorted(_known_model_providers()))}. "
+        f"Set SWARMLINE_ALLOW_MODEL_FALLBACK=1 to fall back to {default!r} "
+        f"with a warning instead of failing."
+    )
+
+
 def resolve_model_name(raw: str | None) -> str:
     """Resolve a model name: alias/prefix/full -> full name.
 
     Multi-provider support - models and aliases are loaded from models.yaml.
     Supports Anthropic, OpenAI, Google, DeepSeek, and others.
+
+    Fail-loud: a non-empty model that is neither a known alias/id nor a recognized
+    ``provider:model`` slug raises ``UnknownModelError`` instead of silently coercing to the
+    default model. Set ``SWARMLINE_ALLOW_MODEL_FALLBACK=1`` to restore the old fall-back (with a
+    warning). ``None`` / empty / whitespace remains the caller's explicit "use the default" signal.
 
     Examples:
     - "sonnet" -> "claude-sonnet-4-20250514"
@@ -117,35 +178,33 @@ def resolve_model_name(raw: str | None) -> str:
     - "r1" -> "deepseek-reasoner"
     - "openrouter:anthropic/claude-3.5-haiku" -> "openrouter:anthropic/claude-3.5-haiku"
     - None -> DEFAULT_MODEL
+    - "madeup:foo" -> raises UnknownModelError (unknown provider prefix)
     """
     _ensure_model_constants()
-    if raw:
+    if raw and raw.strip():
         normalized = raw.strip()
         if ":" in normalized:
             prefix, model_part = normalized.split(":", 1)
             provider = prefix.strip().lower()
             if provider == "google_genai":
                 provider = "google"
-            # MUST stay in sync with provider_resolver._OPENAI_COMPAT_PROVIDERS (+ anthropic,
-            # google). A prefix missing here silently falls through to the registry and resolves
-            # to the DEFAULT_MODEL — that is exactly how ``polza:`` was dropped to claude-sonnet-4.
-            # The drift-guard test_all_openai_compat_providers_round_trip pins this invariant.
-            if provider in {
-                "anthropic",
-                "google",
-                "openai",
-                "openrouter",
-                "ollama",
-                "local",
-                "together",
-                "groq",
-                "fireworks",
-                "deepseek",
-                "polza",
-            }:
+            if provider in _known_model_providers():
                 return f"{provider}:{model_part.strip()}"
-    result: str = _get_registry().resolve(raw)
-    return result
+            # Provider-prefixed but provider unknown: previously fell through to the registry and
+            # silently resolved to DEFAULT_MODEL (the polza->sonnet bug class). Fail loud.
+            return _fallback_or_raise(
+                normalized, f"unknown provider prefix {provider!r}"
+            )
+        # No provider prefix: resolve via the registry of bare names/aliases, but use is_known()
+        # to distinguish a genuine hit from the registry's silent default-coercion on a total miss.
+        if _get_registry().is_known(normalized):
+            result: str = _get_registry().resolve(normalized)
+            return result
+        return _fallback_or_raise(
+            normalized, "not a known model id, alias, or provider-prefixed slug"
+        )
+    # None / empty / whitespace -> caller's explicit signal to use the default model.
+    return _get_registry().resolve(raw)
 
 
 @dataclass
