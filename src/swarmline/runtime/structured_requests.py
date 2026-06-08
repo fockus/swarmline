@@ -51,10 +51,12 @@ _PROVIDER_CAPABILITIES: dict[str, ProviderStructuredCapabilities] = {
         default_provider_options={"require_parameters": True},
     ),
     "deepseek": ProviderStructuredCapabilities(json_schema=False, json_object=True),
-    # polza.ai is an OpenAI-compatible proxy (serves gemini-3.5-flash et al.); it reliably
-    # supports json_object response_format. Without this entry deep-search structured calls
-    # fell back to portable prompt-mode for an "unknown" provider.
-    "polza": ProviderStructuredCapabilities(json_schema=False, json_object=True),
+    # polza.ai is DELIBERATELY absent here (empty caps → portable PROMPT-mode for structured
+    # output). polza proxies gemini-3.5-flash, a reasoning model: under OpenAI `json_object`
+    # response_format it reliably returns an empty/structurally-wrong object for NESTED schemas
+    # (e.g. FinalSelection.picks parsed to []), whereas prompt-mode (extract JSON from the text)
+    # populates them correctly. Verified end-to-end against the live polza endpoint. Native
+    # TOOL-calling is unaffected (that is driven by the openai_compat SDK, not these caps).
     "anthropic": ProviderStructuredCapabilities(),
     "google": ProviderStructuredCapabilities(),
     "ollama": ProviderStructuredCapabilities(json_object=True),

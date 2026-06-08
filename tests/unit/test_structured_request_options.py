@@ -58,6 +58,27 @@ def test_resolve_structured_request_strategy_auto_falls_back_to_prompt() -> None
     assert strategy.provider == "anthropic"
 
 
+def test_resolve_structured_request_strategy_polza_uses_prompt_not_json_object() -> (
+    None
+):
+    """polza (gemini-3.5-flash) must use PROMPT-mode structured output, not json_object.
+
+    Regression: a json_object cap for polza made gemini return empty/structurally-wrong objects
+    for nested schemas (FinalSelection.picks parsed to []); prompt-mode populates them. The model
+    prefix still routes (provider resolves to polza), but the strategy must be prompt."""
+    cfg = RuntimeConfig(
+        runtime_name="thin",
+        model="polza:google/gemini-3.5-flash",
+        output_type=DemoResponse,
+        structured_mode="auto",
+    )
+
+    strategy = resolve_structured_request_strategy(cfg)
+
+    assert strategy.mode == "prompt"
+    assert strategy.provider == "polza"
+
+
 def test_build_llm_call_kwargs_adds_openrouter_native_schema_options() -> None:
     cfg = RuntimeConfig(
         runtime_name="thin",
