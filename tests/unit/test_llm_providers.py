@@ -218,6 +218,141 @@ class TestOpenAICompatAdapterCall:
             assert call_kwargs["base_url"] == "http://localhost:11434/v1"
 
 
+class TestOpenAICompatAdapterReasoningFold:
+    """``reasoning`` request option reaches OpenAI-compatible proxies via ``extra_body``.
+
+    Aggregator proxies (polza.ai, OpenRouter) accept the unified ``reasoning`` control ONLY
+    inside ``extra_body`` — as a top-level kwarg the openai SDK rejects it, and the previous
+    ``_compact_kwargs`` allowlist silently DROPPED it, so ``ModelRequestOptions.reasoning``
+    never reached the wire (thinking models burned the max_tokens budget on reasoning and
+    returned empty content). Verified live against polza.ai (deepseek-v4 / qwen3.7-max).
+    """
+
+    @pytest.fixture
+    def mock_openai(self):
+        mock_module = MagicMock()
+        mock_client = AsyncMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = "ok"
+        mock_choice.message.tool_calls = None
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_module.AsyncOpenAI.return_value = mock_client
+        return mock_module, mock_client
+
+    @pytest.mark.asyncio
+    async def test_call_folds_reasoning_into_extra_body(self, mock_openai) -> None:
+        mock_module, mock_client = mock_openai
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="deepseek/deepseek-v4-flash")
+            adapter._client = mock_client
+            await adapter.call(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                reasoning={"enabled": False},
+            )
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            assert kwargs["extra_body"]["reasoning"] == {"enabled": False}
+            assert "reasoning" not in kwargs  # never a top-level kwarg
+
+    @pytest.mark.asyncio
+    async def test_call_merges_reasoning_with_existing_extra_body(
+        self, mock_openai
+    ) -> None:
+        mock_module, mock_client = mock_openai
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="deepseek/deepseek-v4-flash")
+            adapter._client = mock_client
+            await adapter.call(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                reasoning={"enabled": False},
+                extra_body={"provider": {"require_parameters": True}},
+            )
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            assert kwargs["extra_body"] == {
+                "provider": {"require_parameters": True},
+                "reasoning": {"enabled": False},
+            }
+
+    @pytest.mark.asyncio
+    async def test_explicit_extra_body_reasoning_wins(self, mock_openai) -> None:
+        mock_module, mock_client = mock_openai
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="deepseek/deepseek-v4-flash")
+            adapter._client = mock_client
+            await adapter.call(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                reasoning={"enabled": False},
+                extra_body={"reasoning": {"effort": "high"}},
+            )
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            assert kwargs["extra_body"]["reasoning"] == {"effort": "high"}
+
+    @pytest.mark.asyncio
+    async def test_stream_folds_reasoning_into_extra_body(self) -> None:
+        mock_module = MagicMock()
+        mock_client = AsyncMock()
+
+        async def _aiter_chunks():
+            chunk = MagicMock()
+            chunk.choices = [MagicMock()]
+            chunk.choices[0].delta.content = "hi"
+            yield chunk
+
+        mock_client.chat.completions.create = AsyncMock(return_value=_aiter_chunks())
+        mock_module.AsyncOpenAI.return_value = mock_client
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="qwen/qwen3.7-max")
+            adapter._client = mock_client
+            async for _ in adapter.stream(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                reasoning={"enabled": False},
+            ):
+                pass
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            assert kwargs["extra_body"]["reasoning"] == {"enabled": False}
+            assert "reasoning" not in kwargs
+
+    @pytest.mark.asyncio
+    async def test_call_with_tools_folds_reasoning_into_extra_body(
+        self, mock_openai
+    ) -> None:
+        mock_module, mock_client = mock_openai
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            adapter = OpenAICompatAdapter(model="deepseek/deepseek-v4-flash")
+            adapter._client = mock_client
+            await adapter.call_with_tools(
+                messages=[{"role": "user", "content": "hi"}],
+                system_prompt="test",
+                tools=[{"name": "t", "description": "d", "parameters": {}}],
+                reasoning={"enabled": False},
+            )
+            kwargs = mock_client.chat.completions.create.call_args.kwargs
+            assert kwargs["extra_body"]["reasoning"] == {"enabled": False}
+            assert "reasoning" not in kwargs
+
+
+class TestOpenAICompatAdapterClientRetries:
+    """The SDK-internal retry loop is disabled — swarmline's retry policy owns retries.
+
+    openai's default ``max_retries=2`` STACKS with swarmline's own retry policy: one
+    swarmline attempt silently became up to 3 HTTP attempts x timeout (90s+ observed in
+    prod before the caller even saw the error). ``max_retries=0`` keeps retry ownership
+    in exactly one place.
+    """
+
+    def test_client_constructed_with_zero_max_retries(self) -> None:
+        mock_module = MagicMock()
+        with patch.dict("sys.modules", {"openai": mock_module}):
+            OpenAICompatAdapter(model="gpt-4o", base_url="https://polza.ai/api/v1")
+            call_kwargs = mock_module.AsyncOpenAI.call_args.kwargs
+            assert call_kwargs["max_retries"] == 0
+
+
 # ---------------------------------------------------------------------------
 # GoogleAdapter
 # ---------------------------------------------------------------------------

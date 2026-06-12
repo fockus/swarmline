@@ -128,6 +128,23 @@ def _compact_kwargs(kwargs: dict[str, Any], allowed: set[str]) -> dict[str, Any]
     }
 
 
+def _fold_reasoning_into_extra_body(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Move the unified ``reasoning`` option inside ``extra_body`` for OpenAI-compat proxies.
+
+    Aggregators (polza.ai, OpenRouter) accept the ``reasoning`` control ONLY as an
+    ``extra_body`` member — the openai SDK rejects it as a top-level kwarg, and the
+    ``_compact_kwargs`` allowlist would silently drop it, so ``ModelRequestOptions.reasoning``
+    never reached the wire. An explicit ``extra_body["reasoning"]`` wins over the folded one
+    (setdefault). Returns a new dict; the caller's kwargs are not mutated.
+    """
+    reasoning = kwargs.get("reasoning")
+    if reasoning is None:
+        return kwargs
+    extra_body = dict(kwargs.get("extra_body") or {})
+    extra_body.setdefault("reasoning", reasoning)
+    return {**kwargs, "extra_body": extra_body}
+
+
 def _to_openai_function_tool(tool: dict[str, Any]) -> dict[str, Any]:
     """Wrap a flat ``{name, description, parameters}`` tool dict in OpenAI's function envelope.
 
@@ -312,6 +329,10 @@ class OpenAICompatAdapter:
             client_kwargs["base_url"] = base_url
         if api_key:
             client_kwargs["api_key"] = api_key
+        # Swarmline's retry policy owns retries. The SDK default (max_retries=2) STACKS with
+        # it: one swarmline attempt silently became up to 3 HTTP attempts x timeout (90s+
+        # observed in prod) before the caller even saw the error.
+        client_kwargs["max_retries"] = 0
         self._client = openai.AsyncOpenAI(**client_kwargs)
 
     @staticmethod
@@ -335,6 +356,7 @@ class OpenAICompatAdapter:
         system_prompt: str,
         **kwargs: Any,
     ) -> str:
+        kwargs = _fold_reasoning_into_extra_body(kwargs)
         api_messages = self._prepare(messages, system_prompt)
         api_messages = _apply_content_blocks(
             api_messages, _convert_content_blocks_openai
@@ -356,6 +378,7 @@ class OpenAICompatAdapter:
         system_prompt: str,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
+        kwargs = _fold_reasoning_into_extra_body(kwargs)
         api_messages = self._prepare(messages, system_prompt)
         api_messages = _apply_content_blocks(
             api_messages, _convert_content_blocks_openai
@@ -390,6 +413,7 @@ class OpenAICompatAdapter:
             NativeToolCallResult,
         )
 
+        kwargs = _fold_reasoning_into_extra_body(kwargs)
         api_messages = self._prepare(messages, system_prompt)
         api_messages = _apply_content_blocks(
             api_messages, _convert_content_blocks_openai
@@ -578,7 +602,9 @@ def create_llm_adapter(resolved: ResolvedProvider) -> LlmAdapter:
         return AnthropicAdapter(model=resolved.model_id, base_url=resolved.base_url)
     if resolved.sdk_type == "openai_compat":
         return OpenAICompatAdapter(
-            model=resolved.model_id, base_url=resolved.base_url, api_key=resolved.api_key
+            model=resolved.model_id,
+            base_url=resolved.base_url,
+            api_key=resolved.api_key,
         )
     if resolved.sdk_type == "google":
         return GoogleAdapter(model=resolved.model_id, base_url=resolved.base_url)
