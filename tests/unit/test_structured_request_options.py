@@ -79,6 +79,29 @@ def test_resolve_structured_request_strategy_polza_uses_prompt_not_json_object()
     assert strategy.provider == "polza"
 
 
+def test_resolve_structured_request_strategy_polza_deepseek_uses_json_object() -> None:
+    """polza + deepseek/qwen upstreams DO support json_object — use it (v1.6.7).
+
+    polza proxies HETEROGENEOUS upstream models, so structured-output support is a property
+    of the UPSTREAM model, not of the proxy: gemini via polza returns empty nested structures
+    under json_object (the test above — stays prompt), while deepseek/qwen populate nested
+    schemas correctly (verified live 2026-06-13: deepseek-v4-flash 3/3, qwen3.7-max 2/2 runs
+    with a nested picks[] schema). Prompt-mode on these models intermittently returned EMPTY
+    payloads (prod empty-retry spikes of 18-26s per call)."""
+    for model in ("polza:deepseek/deepseek-v4-flash", "polza:qwen/qwen3.7-max"):
+        cfg = RuntimeConfig(
+            runtime_name="thin",
+            model=model,
+            output_type=DemoResponse,
+            structured_mode="auto",
+        )
+
+        strategy = resolve_structured_request_strategy(cfg)
+
+        assert strategy.mode == "native_json_object", model
+        assert strategy.provider == "polza"
+
+
 def test_build_llm_call_kwargs_adds_openrouter_native_schema_options() -> None:
     cfg = RuntimeConfig(
         runtime_name="thin",

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-06-13
+
+### Changed
+- **polza structured output is now model-aware.** The polza proxy serves heterogeneous upstream
+  models, so structured-output capability is keyed on the upstream model id, not the proxy:
+  `polza:deepseek/*` and `polza:qwen/*` now use native `json_object` response_format (verified
+  live: nested schemas populate correctly), while `polza:google/gemini-*` keeps portable
+  prompt-mode (json_object reliably returned empty nested structures there). Fixes the
+  intermittent EMPTY structured payloads (and the resulting 18-26s retry spikes) that
+  prompt-mode produced on the deepseek/qwen families.
+  `get_provider_structured_capabilities()` gained an optional `model_id` parameter
+  (back-compat default `""`).
+
 ## [1.6.4] - 2026-06-09
 
 ### Changed

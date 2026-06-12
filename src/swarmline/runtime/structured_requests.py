@@ -52,11 +52,14 @@ _PROVIDER_CAPABILITIES: dict[str, ProviderStructuredCapabilities] = {
     ),
     "deepseek": ProviderStructuredCapabilities(json_schema=False, json_object=True),
     # polza.ai is DELIBERATELY absent here (empty caps → portable PROMPT-mode for structured
-    # output). polza proxies gemini-3.5-flash, a reasoning model: under OpenAI `json_object`
-    # response_format it reliably returns an empty/structurally-wrong object for NESTED schemas
-    # (e.g. FinalSelection.picks parsed to []), whereas prompt-mode (extract JSON from the text)
-    # populates them correctly. Verified end-to-end against the live polza endpoint. Native
-    # TOOL-calling is unaffected (that is driven by the openai_compat SDK, not these caps).
+    # output by default). polza proxies HETEROGENEOUS upstream models, so structured-output
+    # support is a property of the UPSTREAM model, not of the proxy: gemini-3.5-flash under
+    # OpenAI `json_object` reliably returns an empty/structurally-wrong object for NESTED
+    # schemas (e.g. FinalSelection.picks parsed to []) — it stays prompt-mode — while the
+    # deepseek/qwen families populate nested schemas correctly under `json_object` (verified
+    # live 2026-06-13: deepseek-v4-flash 3/3, qwen3.7-max 2/2 runs) and on prompt-mode
+    # intermittently returned EMPTY payloads instead. See _POLZA_NATIVE_MODEL_PREFIXES.
+    # Native TOOL-calling is unaffected (driven by the openai_compat SDK, not these caps).
     "anthropic": ProviderStructuredCapabilities(),
     "google": ProviderStructuredCapabilities(),
     "ollama": ProviderStructuredCapabilities(json_object=True),
@@ -67,10 +70,23 @@ _PROVIDER_CAPABILITIES: dict[str, ProviderStructuredCapabilities] = {
 }
 
 
+#: polza upstream-model families whose `json_object` support is verified live (2026-06-13).
+#: The proxy serves heterogeneous models, so capability is keyed on the upstream model id:
+#: anything NOT matching these prefixes (e.g. google/gemini-*) keeps portable prompt-mode.
+_POLZA_NATIVE_MODEL_PREFIXES: tuple[str, ...] = ("deepseek/", "qwen/")
+
+
 def get_provider_structured_capabilities(
     provider: str,
+    model_id: str = "",
 ) -> ProviderStructuredCapabilities:
-    """Return structured-output capabilities for a provider."""
+    """Return structured-output capabilities for a provider (model-aware for proxies).
+
+    ``model_id`` (optional, back-compat default "") refines the answer for aggregator
+    providers that proxy heterogeneous upstream models: polza + deepseek/qwen → json_object.
+    """
+    if provider == "polza" and model_id.startswith(_POLZA_NATIVE_MODEL_PREFIXES):
+        return ProviderStructuredCapabilities(json_object=True)
     return _PROVIDER_CAPABILITIES.get(provider, ProviderStructuredCapabilities())
 
 
@@ -86,7 +102,9 @@ def resolve_structured_request_strategy(
     resolved = resolve_provider(
         config.model, base_url=config.base_url, api_key=config.api_key
     )
-    capabilities = get_provider_structured_capabilities(resolved.provider)
+    capabilities = get_provider_structured_capabilities(
+        resolved.provider, resolved.model_id
+    )
     if capabilities.json_schema:
         return StructuredRequestStrategy(
             "native_json_schema", resolved.provider, resolved.model_id
@@ -117,7 +135,9 @@ def build_llm_call_kwargs(config: RuntimeConfig) -> dict[str, Any]:
     elif strategy.mode == "native_json_object" and "response_format" not in kwargs:
         kwargs["response_format"] = {"type": "json_object"}
 
-    capabilities = get_provider_structured_capabilities(strategy.provider)
+    capabilities = get_provider_structured_capabilities(
+        strategy.provider, strategy.model
+    )
     extra_body = dict(kwargs.pop("extra_body", {}) or {})
     if capabilities.default_provider_options:
         extra_body.setdefault("provider", dict(capabilities.default_provider_options))
