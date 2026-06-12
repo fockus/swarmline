@@ -116,6 +116,28 @@ async def run_conversational(
                 yield event
             return
 
+        if config.output_type is not None:
+            # PROMPT-mode bare-JSON tolerance: deepseek/qwen-class models routinely answer
+            # with the TARGET schema JSON directly, skipping the final_message envelope the
+            # instruction asks for (the envelope is a swarmline convention, not a provider
+            # contract). The envelope miss used to burn a SECOND LLM call and then hard-fail
+            # ("LLM returned invalid JSON after 2 attempts") even though the answer was
+            # schema-valid. finalize_with_validation validates against the schema and owns
+            # the retry, so route the raw text there directly.
+            async for event in finalize_with_validation(
+                raw,
+                config,
+                lm_messages,
+                prompt,
+                llm_call,
+                start_time,
+                checkpoint=checkpoint,
+                assistant_metadata=thinking_metadata,
+                llm_call_kwargs=llm_call_kwargs,
+            ):
+                yield event
+            return
+
         try:
             checkpoint_event = await _run_checkpoint(checkpoint)
             if checkpoint_event is not None:
@@ -220,6 +242,22 @@ async def run_conversational(
                 yield event
             return
 
+        if config.output_type is not None:
+            # PROMPT-mode bare-JSON tolerance (see the buffered branch above): route the raw
+            # streamed text to schema validation instead of demanding the envelope.
+            async for event in finalize_with_validation(
+                raw,
+                config,
+                lm_messages,
+                prompt,
+                llm_call,
+                start_time,
+                checkpoint=checkpoint,
+                llm_call_kwargs=llm_call_kwargs,
+            ):
+                yield event
+            return
+
         try:
             checkpoint_event = await _run_checkpoint(checkpoint)
             if checkpoint_event is not None:
@@ -264,7 +302,10 @@ async def run_conversational(
         yield checkpoint_event
         return
 
-    if native_structured:
+    if native_structured or config.output_type is not None:
+        # native: the provider already enforced the schema shape. PROMPT-mode with an
+        # output_type: bare-JSON tolerance (see the buffered branch) — validate the raw
+        # answer against the schema instead of demanding the final_message envelope.
         async for event in finalize_with_validation(
             raw,
             config,
