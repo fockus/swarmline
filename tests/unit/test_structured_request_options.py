@@ -79,15 +79,17 @@ def test_resolve_structured_request_strategy_polza_uses_prompt_not_json_object()
     assert strategy.provider == "polza"
 
 
-def test_resolve_structured_request_strategy_polza_deepseek_uses_json_object() -> None:
-    """polza + deepseek/qwen upstreams DO support json_object — use it (v1.6.7).
+def test_resolve_structured_request_strategy_polza_deepseek_uses_prompt() -> None:
+    """polza + deepseek/qwen MUST use PROMPT-mode, not json_object (v1.6.8 revert).
 
-    polza proxies HETEROGENEOUS upstream models, so structured-output support is a property
-    of the UPSTREAM model, not of the proxy: gemini via polza returns empty nested structures
-    under json_object (the test above — stays prompt), while deepseek/qwen populate nested
-    schemas correctly (verified live 2026-06-13: deepseek-v4-flash 3/3, qwen3.7-max 2/2 runs
-    with a nested picks[] schema). Prompt-mode on these models intermittently returned EMPTY
-    payloads (prod empty-retry spikes of 18-26s per call)."""
+    v1.6.7 routed polza deepseek/qwen to native json_object on a tiny live sample
+    (3/3, 2/2). A controlled repro against the REAL nested deep-search schemas
+    (OrchestratorSelection.picks, FinalSelection.picks), N=12 per stage per mode ×2 runs,
+    contradicted that: json_object emptied the orchestrator stage 11/12 of the time while
+    prompt-mode emptied 0/12 on both stages. Root cause: json_object mode does NOT inject the
+    schema into the prompt, so the proxied model omits the `picks` field and Pydantic's
+    default_factory=list parses it to [] → "nothing found". polza proxies heterogeneous
+    upstreams, so structured output stays PROMPT-mode for ALL polza models (the 1.6.3 default)."""
     for model in ("polza:deepseek/deepseek-v4-flash", "polza:qwen/qwen3.7-max"):
         cfg = RuntimeConfig(
             runtime_name="thin",
@@ -98,7 +100,7 @@ def test_resolve_structured_request_strategy_polza_deepseek_uses_json_object() -
 
         strategy = resolve_structured_request_strategy(cfg)
 
-        assert strategy.mode == "native_json_object", model
+        assert strategy.mode == "prompt", model
         assert strategy.provider == "polza"
 
 
