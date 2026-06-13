@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 
-from swarmline.runtime.structured_output import append_structured_output_instruction
+from swarmline.runtime.structured_output import (
+    append_structured_output_instruction_for_mode,
+)
 from swarmline.runtime.structured_requests import (
     build_llm_call_kwargs,
-    structured_mode_uses_native,
+    resolve_structured_request_strategy,
 )
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.finalization import CheckpointFn, finalize_with_validation
@@ -41,15 +43,16 @@ async def run_conversational(
     on_retry: Callable[[int, float], None] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Run conversational."""
-    native_structured = structured_mode_uses_native(config)
-    prompt_source = (
-        system_prompt
-        if native_structured
-        else append_structured_output_instruction(
-            system_prompt,
-            config.output_format,
-            final_response_field="final_message",
-        )
+    strategy = resolve_structured_request_strategy(config)
+    native_structured = strategy.is_native
+    # json_object mode forces JSON SYNTAX but not the schema SHAPE → describe the schema in the
+    # prompt too (else the model omits fields). prompt-mode keeps its final_message envelope;
+    # native_json_schema is enforced provider-side and left unchanged.
+    prompt_source = append_structured_output_instruction_for_mode(
+        strategy.mode,
+        system_prompt,
+        config.output_format,
+        final_response_field="final_message",
     )
     prompt = build_conversational_prompt(prompt_source)
     lm_messages = _messages_to_lm(messages)

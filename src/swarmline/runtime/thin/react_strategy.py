@@ -12,10 +12,13 @@ if TYPE_CHECKING:
     from swarmline.runtime.thin.native_tools import NativeToolCallAdapter
 
 from swarmline.observability.redaction import redact_secrets
-from swarmline.runtime.structured_output import append_structured_output_instruction
+from swarmline.runtime.structured_output import (
+    append_structured_output_instruction,
+    append_structured_output_instruction_for_mode,
+)
 from swarmline.runtime.structured_requests import (
     build_llm_call_kwargs,
-    structured_mode_uses_native,
+    resolve_structured_request_strategy,
 )
 from swarmline.runtime.thin.errors import ThinLlmError
 from swarmline.runtime.thin.executor import ToolExecutor
@@ -120,14 +123,11 @@ async def run_react(  # noqa: C901
                         # finalize the clean-stop path uses. Graceful degradation, not a crash.
                         forced_kwargs = build_llm_call_kwargs(config)
                         forced_kwargs.pop("_swarmline_structured_strategy", None)
-                        forced_prompt = (
-                            system_prompt
-                            if structured_mode_uses_native(config)
-                            else append_structured_output_instruction(
-                                system_prompt,
-                                config.output_format,
-                                final_response_field=None,
-                            )
+                        forced_prompt = append_structured_output_instruction_for_mode(
+                            resolve_structured_request_strategy(config).mode,
+                            system_prompt,
+                            config.output_format,
+                            final_response_field=None,
                         )
                         async for event in finalize_with_validation(
                             native_result.text or "",
@@ -239,7 +239,9 @@ async def run_react(  # noqa: C901
                     extra={"exc_type": type(exc).__name__},
                 )
                 native_handled = False
-                native_finalize_text = None  # Phase-1 native failure → fall back, do NOT finalize
+                native_finalize_text = (
+                    None  # Phase-1 native failure → fall back, do NOT finalize
+                )
 
             if native_finalize_text is not None:
                 # Phase 2 (two-phase structured finalization). finalize_with_validation
@@ -252,14 +254,11 @@ async def run_react(  # noqa: C901
                 # silently fall back to text-ReAct.
                 llm_call_kwargs = build_llm_call_kwargs(config)
                 llm_call_kwargs.pop("_swarmline_structured_strategy", None)
-                final_prompt = (
-                    system_prompt
-                    if structured_mode_uses_native(config)
-                    else append_structured_output_instruction(
-                        system_prompt,
-                        config.output_format,
-                        final_response_field=None,
-                    )
+                final_prompt = append_structured_output_instruction_for_mode(
+                    resolve_structured_request_strategy(config).mode,
+                    system_prompt,
+                    config.output_format,
+                    final_response_field=None,
                 )
                 # Surface the model's final text immediately (when not buffering), matching
                 # the text-ReAct / clarify paths so the native path is not UX-silent before

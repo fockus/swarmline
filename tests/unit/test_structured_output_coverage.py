@@ -6,6 +6,7 @@ from typing import Any
 
 from swarmline.runtime.structured_output import (
     append_structured_output_instruction,
+    append_structured_output_instruction_for_mode,
     extract_structured_output,
     normalize_output_schema,
 )
@@ -51,6 +52,56 @@ class TestAppendStructuredOutputInstruction:
         }
         result = append_structured_output_instruction("System", output_format)
         assert '"x"' in result
+
+
+class TestAppendStructuredOutputInstructionForMode:
+    """Mode-aware injection: json_object needs the schema described in-prompt.
+
+    response_format={"type":"json_object"} forces valid-JSON SYNTAX but the provider does NOT
+    enforce the schema SHAPE, so without the schema in the prompt the model omits fields / returns
+    an empty object. json_schema enforces the schema provider-side (no prompt text needed)."""
+
+    _SCHEMA: dict[str, Any] = {
+        "type": "object",
+        "properties": {"picks": {"type": "array", "items": {"type": "integer"}}},
+    }
+
+    def test_native_json_object_injects_schema(self) -> None:
+        result = append_structured_output_instruction_for_mode(
+            "native_json_object", "System", self._SCHEMA
+        )
+        assert "Structured output" in result
+        assert '"picks"' in result
+        assert result != "System"
+
+    def test_native_json_schema_left_unchanged(self) -> None:
+        result = append_structured_output_instruction_for_mode(
+            "native_json_schema", "System", self._SCHEMA
+        )
+        assert result == "System"
+
+    def test_none_left_unchanged(self) -> None:
+        result = append_structured_output_instruction_for_mode(
+            "none", "System", self._SCHEMA
+        )
+        assert result == "System"
+
+    def test_prompt_mode_uses_envelope_field(self) -> None:
+        result = append_structured_output_instruction_for_mode(
+            "prompt", "System", self._SCHEMA, final_response_field="final_message"
+        )
+        assert "`final_message`" in result
+
+    def test_native_json_object_ignores_final_response_field(self) -> None:
+        """json_object's response IS the structured object — never an envelope field."""
+        result = append_structured_output_instruction_for_mode(
+            "native_json_object",
+            "System",
+            self._SCHEMA,
+            final_response_field="final_message",
+        )
+        assert "`final_message`" not in result
+        assert "valid JSON" in result
 
 
 class TestExtractStructuredOutput:

@@ -114,6 +114,39 @@ def append_structured_output_instruction(
     return f"{system_prompt}{instruction}"
 
 
+def append_structured_output_instruction_for_mode(
+    mode: str,
+    system_prompt: str,
+    output_format: dict[str, Any] | None,
+    *,
+    final_response_field: str | None = None,
+) -> str:
+    """Augment the prompt with the schema when the resolved strategy needs it described in-prompt.
+
+    Structured-output reliability depends on the strategy ``mode``:
+
+    * ``"prompt"`` — no ``response_format`` at all → inject the full instruction (with
+      ``final_response_field`` when the strategy wraps the answer in an envelope).
+    * ``"native_json_object"`` — ``response_format={"type": "json_object"}`` forces valid-JSON
+      SYNTAX but the provider does NOT enforce the schema SHAPE. Without the schema in the prompt
+      the model emits an empty / partial object (e.g. a nested ``picks`` list parses to ``[]``).
+      Inject the SCHEMA-ONLY instruction: the response IS the structured object (parsed directly),
+      so never an envelope field.
+    * ``"native_json_schema"`` / ``"none"`` — the provider enforces the full schema (or there is
+      none) → return the prompt unchanged.
+
+    This makes ``json_object`` structured output reliable for every swarmline consumer, not only
+    those on the portable ``prompt`` strategy.
+    """
+    if mode == "prompt":
+        return append_structured_output_instruction(
+            system_prompt, output_format, final_response_field=final_response_field
+        )
+    if mode == "native_json_object":
+        return append_structured_output_instruction(system_prompt, output_format)
+    return system_prompt
+
+
 def extract_structured_output(
     text: str,
     output_format: dict[str, Any] | None,
