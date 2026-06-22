@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.9] - 2026-06-22
+
+### Changed
+- **`json_object` structured mode now injects the JSON schema into the prompt.** Providers that
+  support `response_format={"type": "json_object"}` but not full `json_schema` were returning empty
+  nested structures because the schema was never communicated to the model. The engine now appends
+  the schema to the prompt in `json_object` mode so nested fields populate reliably. This is the
+  fix that lets the polza deepseek/qwen families use native `json_object` (see 1.6.7/1.6.8).
+
+## [1.6.8] - 2026-06-14
+
+### Fixed
+- **Reverted the polza→`json_object` structured flip introduced in 1.6.7.** Plain `json_object`
+  mode was emptying nested schema structures on the polza deepseek/qwen families, so structured
+  output temporarily returned to the portable prompt-mode path. Superseded by the schema-injection
+  fix in 1.6.9.
+
 ## [1.6.7] - 2026-06-13
 
 ### Changed
@@ -19,6 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prompt-mode produced on the deepseek/qwen families.
   `get_provider_structured_capabilities()` gained an optional `model_id` parameter
   (back-compat default `""`).
+
+## [1.6.6] - 2026-06-12
+
+### Fixed
+- **Prompt-mode structured calls now accept a bare schema JSON object** (not only a
+  `{"schema": ...}` wrapper) returned by OpenAI-compatible proxies.
+
+## [1.6.5] - 2026-06-12
+
+### Fixed
+- **The `reasoning` option now reaches OpenAI-compatible proxies** via `extra_body`, paired with
+  `max_retries=0` so a proxy that rejects the field fails fast instead of silently retrying.
 
 ## [1.6.4] - 2026-06-09
 
@@ -33,6 +62,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The accepted-provider allowlist in `resolve_model_name` is now **derived** from
   `provider_resolver._OPENAI_COMPAT_PROVIDERS` (plus native `anthropic`/`google`) instead of a
   duplicated hardcoded set — the drift between the two lists was the root cause of the polza bug.
+
+## [1.6.3] - 2026-06-08
+
+### Fixed
+- **polza uses PROMPT-mode structured output, not `json_object`.** Initial portability fix for the
+  polza proxy. Later refined into model-aware handling (1.6.7) and schema-injection (1.6.9).
+
+## [1.6.2] - 2026-06-08
+
+### Fixed
+- **polza registered in the `resolve_model_name` allowlist** with its structured-output
+  capabilities, fixing the silent fallback-to-default for `polza:*` models.
+
+## [1.6.1] - 2026-06-08
+
+### Added
+- **`polza.ai` provider** (OpenAI-compatible proxy) and **per-config `api_key` threading** so each
+  `AgentConfig` can carry its own provider API key instead of relying solely on environment.
 
 ## [1.6.0] - 2026-06-07
 
@@ -124,6 +171,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   finalization (when not buffering), matching the text-ReAct / clarify paths (no more UX-silent
   native finalization).
 - Tests: added Phase-2 malformed-output retry coverage and a fail-loud native-adapter fixture.
+
+## [1.5.1] - 2026-06-07
+
+### Added
+- **`Agent.query_structured_result(...)`** — like `query_structured`, but returns the full
+  `Result` (the parsed structured value plus run metadata/usage) instead of just the parsed value.
 
 ## [1.5.0] - 2026-04-25
 
