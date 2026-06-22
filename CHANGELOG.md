@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the schema to the prompt in `json_object` mode so nested fields populate reliably. This is the
   fix that lets the polza deepseek/qwen families use native `json_object` (see 1.6.7/1.6.8).
 
+### Fixed
+- **`/v1/info` now reports the real package version.** `serve/app.py` hardcoded the version string
+  and had silently drifted (stuck at `1.5.0` through the entire 1.6.x line); it now derives from
+  `importlib.metadata.version("swarmline")`, so the served version can never drift from the
+  package again.
+
 ## [1.6.8] - 2026-06-14
 
 ### Fixed
