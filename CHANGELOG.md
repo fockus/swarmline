@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.6.9] - 2026-06-22
+## [1.6.10] - 2026-06-22
+
+### Security
+- **`swarmline[deepagents]` now requires `langchain>=1.3.9`** (was `>=1.2.11`), clearing
+  **GHSA-gr75-jv2w-4656** — a path-traversal class in LangChain filesystem-search middleware and
+  config loaders where resolved paths/symlinks could escape the configured root. Only affected
+  callers exposing a deepagents filesystem agent over untrusted input. Pulls `langgraph>=1.2.5,<1.3.0`
+  and `langchain-core>=1.3` to satisfy the upgrade (verified: deepagents runtime tests green).
+
+### Internal
+- **`ty` is now pinned exactly (`ty==0.0.29`) in the `dev` extra.** The unpinned floor let CI pull a
+  newer pre-1.0 `ty` whose changed diagnostics broke the type-check gate (and the version-coupled
+  suppression meta-tests). No source/runtime change; the pin only makes the CI type-check
+  deterministic. Bump `ty` deliberately in future, fixing new diagnostics + meta-tests together.
 
 ### Changed
 - **`json_object` structured mode now injects the JSON schema into the prompt.** Providers that
