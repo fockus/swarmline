@@ -642,8 +642,12 @@ class TestNativeToolsReactIntegration:
 
         errors = [e for e in events if e.type == "error"]
         finals = [e for e in events if e.type == "final"]
-        assert not errors, "budget exhaustion must force-finalize, not raise budget_exceeded"
-        assert finals, "expected a forced final event after the tool budget was exhausted"
+        assert not errors, (
+            "budget exhaustion must force-finalize, not raise budget_exceeded"
+        )
+        assert finals, (
+            "expected a forced final event after the tool budget was exhausted"
+        )
 
     @pytest.mark.asyncio
     async def test_native_tools_adapter_none_uses_json_in_text(self) -> None:

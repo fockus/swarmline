@@ -30,7 +30,10 @@ class _AppendStage:
 
 
 async def _run_append(
-    stage: _AppendStage, value: Any, ctx: PipelineContext, event_sink: Any  # noqa: ARG001
+    stage: _AppendStage,
+    value: Any,
+    ctx: PipelineContext,
+    event_sink: Any,  # noqa: ARG001
 ) -> StageOutcome:
     return StageOutcome(value=f"{value}{stage.suffix}")
 
@@ -44,7 +47,10 @@ class _TerminateStage:
 
 
 async def _run_terminate(
-    stage: _TerminateStage, value: Any, ctx: PipelineContext, event_sink: Any  # noqa: ARG001
+    stage: _TerminateStage,
+    value: Any,
+    ctx: PipelineContext,
+    event_sink: Any,  # noqa: ARG001
 ) -> StageOutcome:
     return StageOutcome(value=stage.payload, terminate_early=True)
 
@@ -57,7 +63,10 @@ class _BoomStage:
 
 
 async def _run_boom(
-    stage: _BoomStage, value: Any, ctx: PipelineContext, event_sink: Any  # noqa: ARG001
+    stage: _BoomStage,
+    value: Any,
+    ctx: PipelineContext,
+    event_sink: Any,  # noqa: ARG001
 ) -> StageOutcome:
     raise RuntimeError("boom")
 
@@ -100,7 +109,9 @@ async def test_status_label_emitted_before_stage_runs() -> None:
     async def sink(name: str, data: dict[str, Any]) -> None:
         events.append((name, data))
 
-    await run_pipeline([_AppendStage("a", "-A", status_label="searching")], "s", event_sink=sink)
+    await run_pipeline(
+        [_AppendStage("a", "-A", status_label="searching")], "s", event_sink=sink
+    )
 
     statuses = [data["label"] for name, data in events if name == "status"]
     assert statuses == ["searching"]
@@ -149,7 +160,10 @@ class _CompositeStage:
 
 
 async def _run_composite(
-    stage: _CompositeStage, value: Any, ctx: PipelineContext, event_sink: Any  # noqa: ARG001
+    stage: _CompositeStage,
+    value: Any,
+    ctx: PipelineContext,
+    event_sink: Any,  # noqa: ARG001
 ) -> StageOutcome:
     return StageOutcome(
         value=f"{value}-joined",
@@ -166,11 +180,12 @@ class _FatalStage:
 
 
 async def _run_fatal(
-    stage: _FatalStage, value: Any, ctx: PipelineContext, event_sink: Any  # noqa: ARG001
+    stage: _FatalStage,
+    value: Any,
+    ctx: PipelineContext,
+    event_sink: Any,  # noqa: ARG001
 ) -> StageOutcome:
-    raise StageExecutionError(
-        f"stage {stage.name!r} gave up after 3 tries", attempts=3
-    )
+    raise StageExecutionError(f"stage {stage.name!r} gave up after 3 tries", attempts=3)
 
 
 register_stage_runner(_CompositeStage, _run_composite)
@@ -221,7 +236,10 @@ class _FatalWithChildErrors:
 
 
 async def _run_fatal_with_children(
-    stage: _FatalWithChildErrors, value: Any, ctx: PipelineContext, event_sink: Any  # noqa: ARG001
+    stage: _FatalWithChildErrors,
+    value: Any,
+    ctx: PipelineContext,
+    event_sink: Any,  # noqa: ARG001
 ) -> StageOutcome:
     raise StageExecutionError(
         "all children failed",

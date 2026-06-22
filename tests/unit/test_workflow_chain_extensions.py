@@ -30,12 +30,8 @@ class TestParallelStage:
                 ParallelStage(
                     "compare",
                     branches={
-                        "fast": TypedStage(
-                            "fast", lambda value: f"fast:{value}"
-                        ),
-                        "deep": TypedStage(
-                            "deep", lambda value: f"deep:{value}"
-                        ),
+                        "fast": TypedStage("fast", lambda value: f"fast:{value}"),
+                        "deep": TypedStage("deep", lambda value: f"deep:{value}"),
                     },
                     joiner=lambda outputs: outputs["fast"] + "|" + outputs["deep"],
                 )

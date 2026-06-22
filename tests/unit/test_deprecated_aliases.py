@@ -23,7 +23,11 @@ _DEPRECATED = [
     ("ParallelPipelineStage", "ParallelStage"),
     ("LoopPipelineStage", "LoopStage"),
 ]
-_CANONICAL = {"TypedStage": TypedStage, "ParallelStage": ParallelStage, "LoopStage": LoopStage}
+_CANONICAL = {
+    "TypedStage": TypedStage,
+    "ParallelStage": ParallelStage,
+    "LoopStage": LoopStage,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +39,9 @@ def _reset_deprecation_memo() -> None:
 
 
 @pytest.mark.parametrize(("alias", "canonical"), _DEPRECATED)
-def test_alias_on_typed_module_warns_and_returns_canonical(alias: str, canonical: str) -> None:
+def test_alias_on_typed_module_warns_and_returns_canonical(
+    alias: str, canonical: str
+) -> None:
     """Accessing a long alias on ``swarmline.pipeline.typed`` warns and yields the canonical class."""
     import swarmline.pipeline.typed as typed_mod
 
@@ -45,7 +51,9 @@ def test_alias_on_typed_module_warns_and_returns_canonical(alias: str, canonical
 
 
 @pytest.mark.parametrize(("alias", "canonical"), _DEPRECATED)
-def test_alias_on_package_warns_and_returns_canonical(alias: str, canonical: str) -> None:
+def test_alias_on_package_warns_and_returns_canonical(
+    alias: str, canonical: str
+) -> None:
     """Accessing a long alias on the ``swarmline.pipeline`` package warns and yields the canonical class."""
     import swarmline.pipeline as pkg
 
@@ -97,13 +105,17 @@ def test_from_import_emits_exactly_one_warning() -> None:
         from swarmline.pipeline import LoopPipelineStage  # noqa: F401,PLC0415 — deprecated path
 
     dep = [
-        r for r in records
-        if issubclass(r.category, DeprecationWarning) and "LoopPipelineStage" in str(r.message)
+        r
+        for r in records
+        if issubclass(r.category, DeprecationWarning)
+        and "LoopPipelineStage" in str(r.message)
     ]
     assert len(dep) == 1, [str(r.message) for r in dep]
 
 
-@pytest.mark.parametrize("stmt", ["import swarmline.pipeline", "from swarmline.pipeline import *"])
+@pytest.mark.parametrize(
+    "stmt", ["import swarmline.pipeline", "from swarmline.pipeline import *"]
+)
 def test_imports_are_warning_free_under_w_error(stmt: str) -> None:
     """Plain import AND star-import must exit 0 under ``-W error::DeprecationWarning`` (no eager warn)."""
     proc = subprocess.run(

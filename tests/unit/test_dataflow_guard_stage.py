@@ -47,7 +47,11 @@ async def test_guard_passes_through_when_not_tripped() -> None:
 async def test_guard_on_trip_callable_computes_payload() -> None:
     """When on_trip is callable it is invoked with the value to compute the early output."""
     result = await run_pipeline(
-        [GuardStage("g", predicate=lambda v: v == "X", on_trip=lambda v: f"tripped:{v}")],
+        [
+            GuardStage(
+                "g", predicate=lambda v: v == "X", on_trip=lambda v: f"tripped:{v}"
+            )
+        ],
         "X",
     )
 

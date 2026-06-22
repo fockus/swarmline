@@ -52,7 +52,11 @@ def _dedup(element: object) -> object:
 
 def _registries() -> PipelineRegistries:
     return PipelineRegistries(
-        handlers={"decide": lambda v: v, "gather": lambda v: [v], "finalize": lambda v: v},  # noqa: ARG005
+        handlers={
+            "decide": lambda v: v,
+            "gather": lambda v: [v],
+            "finalize": lambda v: v,
+        },  # noqa: ARG005
         predicates={"pool_empty": lambda v: not v},
         payloads={"empty_notice": "Nothing found"},
         dedups={"by_url": _dedup},
@@ -155,7 +159,9 @@ def test_over_resolves_against_overs_registry_else_literal(tmp_path: Path) -> No
     gather, reviews = stages[1].cases["search"]
 
     assert gather.over == "queries"  # not in overs registry → literal dotted path
-    assert reviews.over is _identity  # 'self' resolved to the registered identity callable
+    assert (
+        reviews.over is _identity
+    )  # 'self' resolved to the registered identity callable
 
 
 def test_overrides_inject_numbers_into_a_numberless_yaml(tmp_path: Path) -> None:
@@ -176,7 +182,9 @@ def test_overrides_inject_numbers_into_a_numberless_yaml(tmp_path: Path) -> None
     )
     gather, reviews = stages[1].cases["search"]
 
-    assert stages[0].params == {"max_queries": 4}  # injected into the decide stage params
+    assert stages[0].params == {
+        "max_queries": 4
+    }  # injected into the decide stage params
     assert (gather.concurrency, gather.max_n) == (4, 8)  # injected fanout numbers
     assert (reviews.concurrency, reviews.max_n) == (2, 2)
 
@@ -189,4 +197,6 @@ def test_numberless_fanout_without_overrides_fails_validation(tmp_path: Path) ->
         overs={"self": _identity},
     )
     with pytest.raises(ValidationError):
-        load_pipeline_from_yaml(_write(tmp_path, _NUMBERLESS_YAML), registries=registries)
+        load_pipeline_from_yaml(
+            _write(tmp_path, _NUMBERLESS_YAML), registries=registries
+        )

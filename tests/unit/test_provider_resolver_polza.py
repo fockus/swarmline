@@ -5,7 +5,9 @@ from __future__ import annotations
 from swarmline.runtime.provider_resolver import resolve_provider
 
 
-def test_resolve_provider_polza_prefix_resolves_to_openai_compat_with_polza_base_url() -> None:
+def test_resolve_provider_polza_prefix_resolves_to_openai_compat_with_polza_base_url() -> (
+    None
+):
     """polza: prefix must resolve to provider=polza, sdk_type=openai_compat, polza base URL."""
     # Arrange / Act
     r = resolve_provider("polza:google/gemini-3.5-flash")

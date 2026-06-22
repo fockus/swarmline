@@ -21,9 +21,7 @@ async def test_handler_receives_params_when_three_arg() -> None:
     async def handler(value: int, ctx: PipelineContext, params: dict[str, Any]) -> int:  # noqa: ARG001
         return value * params["factor"]
 
-    result = await run_pipeline(
-        [TypedStage("mul", handler, params={"factor": 3})], 4
-    )
+    result = await run_pipeline([TypedStage("mul", handler, params={"factor": 3})], 4)
 
     assert result.output == 12
 
@@ -67,7 +65,8 @@ async def test_validator_none_passes() -> None:
     """A validator returning None (not False) is treated as a pass."""
 
     result = await run_pipeline(
-        [TypedStage("v", lambda value: value, validator=lambda out: None)], 7  # noqa: ARG005
+        [TypedStage("v", lambda value: value, validator=lambda out: None)],
+        7,  # noqa: ARG005
     )
 
     assert result.status == "completed"

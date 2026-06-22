@@ -32,7 +32,9 @@ def test_add_message_appends_with_from_and_metadata() -> None:
     ctx = PipelineContext()
     ctx.add_message("gather", "8 candidates", phase="search")
 
-    assert ctx.messages == [{"from": "gather", "content": "8 candidates", "phase": "search"}]
+    assert ctx.messages == [
+        {"from": "gather", "content": "8 candidates", "phase": "search"}
+    ]
 
 
 def test_context_is_re_exported_from_typed() -> None:

@@ -368,7 +368,9 @@ class TestOpenAIAdapterCallWithTools:
         assert result.tool_calls[0].args == {"expr": "2+2"}
 
     @pytest.mark.asyncio
-    async def test_openai_adapter_wraps_flat_tool_dicts_in_function_envelope(self) -> None:
+    async def test_openai_adapter_wraps_flat_tool_dicts_in_function_envelope(
+        self,
+    ) -> None:
         """Flat ``{name, description, parameters}`` tools are wrapped in the function envelope.
 
         The react loop hands tools as flat dicts. Without the ``{"type": "function", "function":
@@ -412,7 +414,10 @@ class TestOpenAIAdapterCallWithTools:
         assert sent_tools[0]["type"] == "function"
         assert sent_tools[0]["function"]["name"] == "search"
         assert sent_tools[0]["function"]["description"] == "Search the catalogue"
-        assert sent_tools[0]["function"]["parameters"] == {"type": "object", "properties": {}}
+        assert sent_tools[0]["function"]["parameters"] == {
+            "type": "object",
+            "properties": {},
+        }
 
     @pytest.mark.asyncio
     async def test_openai_adapter_passes_through_already_wrapped_tools(self) -> None:
@@ -494,7 +499,9 @@ class TestOpenAIAdapterCallWithTools:
         )
 
     @pytest.mark.asyncio
-    async def test_openai_adapter_call_with_tools_does_not_forward_response_format(self) -> None:
+    async def test_openai_adapter_call_with_tools_does_not_forward_response_format(
+        self,
+    ) -> None:
         """call_with_tools must NOT forward ``response_format`` — it is incompatible with tools.
 
         The non-native path passes ``response_format`` through build_llm_call_kwargs, but the

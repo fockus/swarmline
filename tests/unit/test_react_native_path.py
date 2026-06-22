@@ -135,7 +135,9 @@ async def test_native_loop_prompt_is_clean_no_react_envelope() -> None:
 async def test_phase2_makes_structured_call_with_response_format() -> None:
     adapter = _FakeNativeAdapter(
         [
-            NativeToolCallResult(tool_calls=(NativeToolCall(id="c1", name="search", args={}),)),
+            NativeToolCallResult(
+                tool_calls=(NativeToolCall(id="c1", name="search", args={}),)
+            ),
             NativeToolCallResult(text="here is my answer", tool_calls=()),
         ]
     )
@@ -152,14 +154,22 @@ async def test_phase2_retries_on_malformed_then_succeeds() -> None:
     # Phase 2's FIRST structured call returns non-schema text; finalize_with_validation must
     # retry and the SECOND (valid) call yields the structured output — it must NOT error out
     # and (Fix B contract) must NOT fall back to text-ReAct on a finalization-level miss.
-    adapter = _FakeNativeAdapter([NativeToolCallResult(text="here is my answer", tool_calls=())])
+    adapter = _FakeNativeAdapter(
+        [NativeToolCallResult(text="here is my answer", tool_calls=())]
+    )
     llm_call = _SequencedLlmCall(["not json at all", '{"answer": "repaired"}'])
     events = await _drive(adapter, llm_call, _config(max_model_retries=2))
     finals = _final(events)
-    assert finals, "expected a final after Phase-2 retry recovered the structured output"
+    assert finals, (
+        "expected a final after Phase-2 retry recovered the structured output"
+    )
     assert finals[-1].data.get("structured_output") is not None
-    assert len(llm_call.calls) >= 2, "Phase 2 must retry the structured call on malformed output"
-    assert not _errors(events), "a recoverable Phase-2 miss must not surface as an error"
+    assert len(llm_call.calls) >= 2, (
+        "Phase 2 must retry the structured call on malformed output"
+    )
+    assert not _errors(events), (
+        "a recoverable Phase-2 miss must not surface as an error"
+    )
 
 
 @pytest.mark.asyncio
@@ -184,7 +194,9 @@ async def test_prompt_mode_never_uses_native_branch() -> None:
     llm_call = _RecordingLlmCall(
         '{"type": "final", "final_message": "{\\"answer\\": \\"p\\"}"}'
     )
-    await _drive(adapter, llm_call, _config(structured_mode="prompt", use_native_tools=False))
+    await _drive(
+        adapter, llm_call, _config(structured_mode="prompt", use_native_tools=False)
+    )
     assert adapter.seen_prompts == [], "prompt mode must not call the native adapter"
 
 
@@ -205,14 +217,20 @@ async def test_tool_budget_exhaustion_forces_finalize_not_error() -> None:
     # (1 + 1 > 1) and must force-finalize. Two tool-call results are seeded for the two iterations.
     adapter = _FakeNativeAdapter(
         [
-            NativeToolCallResult(tool_calls=(NativeToolCall(id="c1", name="search", args={}),)),
-            NativeToolCallResult(tool_calls=(NativeToolCall(id="c2", name="search", args={}),)),
+            NativeToolCallResult(
+                tool_calls=(NativeToolCall(id="c1", name="search", args={}),)
+            ),
+            NativeToolCallResult(
+                tool_calls=(NativeToolCall(id="c2", name="search", args={}),)
+            ),
         ]
     )
     llm_call = _RecordingLlmCall('{"answer": "best-effort from gathered context"}')
     events = await _drive(adapter, llm_call, _config(max_tool_calls=1))
 
-    assert not _errors(events), "budget exhaustion must force-finalize, not raise an error"
+    assert not _errors(events), (
+        "budget exhaustion must force-finalize, not raise an error"
+    )
     finals = _final(events)
     assert finals, "expected a forced final event after the tool budget was exhausted"
     assert finals[-1].data.get("structured_output") is not None

@@ -63,7 +63,9 @@ async def test_loop_body_failure_fails_the_stage() -> None:
     """A body that raises fails the loop stage (failed_stage = the loop name)."""
     stage = LoopStage(
         name="review_loop",
-        body=TypedStage("draft", lambda value: (_ for _ in ()).throw(RuntimeError("kaboom"))),
+        body=TypedStage(
+            "draft", lambda value: (_ for _ in ()).throw(RuntimeError("kaboom"))
+        ),
         reviewer=lambda _value: True,
         max_iterations=3,
     )

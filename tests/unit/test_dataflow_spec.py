@@ -21,7 +21,9 @@ from swarmline.pipeline.dataflow_spec import (
 
 def test_llm_stage_parses_with_handler() -> None:
     """A minimal llm/io/pure stage needs only a name, kind and handler."""
-    stage = StageConfig(name="decide", kind="llm", handler="decide", params={"max_queries": 4})
+    stage = StageConfig(
+        name="decide", kind="llm", handler="decide", params={"max_queries": 4}
+    )
 
     assert stage.handler == "decide"
     assert stage.params == {"max_queries": 4}
@@ -66,7 +68,9 @@ def test_conditional_requires_selector_and_cases() -> None:
 
 def test_guard_requires_predicate_and_on_trip() -> None:
     """A guard stage needs a predicate and an on_trip payload key."""
-    ok = StageConfig(name="empty", kind="guard", predicate="pool_empty", on_trip="empty_notice")
+    ok = StageConfig(
+        name="empty", kind="guard", predicate="pool_empty", on_trip="empty_notice"
+    )
     assert ok.predicate == "pool_empty"
 
     with pytest.raises(ValidationError):

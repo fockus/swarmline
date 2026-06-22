@@ -200,7 +200,9 @@ class TestResolveProviderHonorsExplicitBaseUrlForUnknownSlug:
     """
 
     def test_unknown_slug_with_base_url_routes_openai_compat(self) -> None:
-        r = resolve_provider("google/gemini-3.5-flash", base_url="https://openrouter.ai/api/v1")
+        r = resolve_provider(
+            "google/gemini-3.5-flash", base_url="https://openrouter.ai/api/v1"
+        )
         assert r.sdk_type == "openai_compat"
         assert r.provider == "openai_compat"
         assert r.model_id == "google/gemini-3.5-flash"

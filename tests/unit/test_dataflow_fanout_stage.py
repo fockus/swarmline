@@ -30,7 +30,11 @@ async def test_concurrency_is_bounded_by_semaphore() -> None:
         return [item]
 
     await run_pipeline(
-        [FanOutStage("fan", item_handler=handler, over=lambda v: v, concurrency=2, max_n=10)],
+        [
+            FanOutStage(
+                "fan", item_handler=handler, over=lambda v: v, concurrency=2, max_n=10
+            )
+        ],
         [1, 2, 3, 4, 5],
     )
 
@@ -46,11 +50,19 @@ async def test_max_n_caps_issued_items() -> None:
         return item
 
     result = await run_pipeline(
-        [FanOutStage("fan", item_handler=handler, over=lambda v: v, concurrency=4, max_n=3)],
+        [
+            FanOutStage(
+                "fan", item_handler=handler, over=lambda v: v, concurrency=4, max_n=3
+            )
+        ],
         [1, 2, 3, 4, 5],
     )
 
-    assert sorted(calls) == [1, 2, 3]  # only 3 issued, never re-issued (no double-spend)
+    assert sorted(calls) == [
+        1,
+        2,
+        3,
+    ]  # only 3 issued, never re-issued (no double-spend)
     assert sorted(result.output) == [1, 2, 3]
 
 
@@ -156,11 +168,22 @@ async def test_joiner_combines_results_into_dict() -> None:
 def test_bad_config_rejected() -> None:
     """Empty name / sub-1 concurrency or max_n / bad on_item_error are rejected at construction."""
     bad_configs = [
-        lambda: FanOutStage("", item_handler=lambda x: x, over="o", concurrency=1, max_n=1),  # noqa: ARG005
-        lambda: FanOutStage("f", item_handler=lambda x: x, over="o", concurrency=0, max_n=1),  # noqa: ARG005
-        lambda: FanOutStage("f", item_handler=lambda x: x, over="o", concurrency=1, max_n=0),  # noqa: ARG005
         lambda: FanOutStage(
-            "f", item_handler=lambda x: x, over="o", concurrency=1, max_n=1, on_item_error="oops"  # noqa: ARG005
+            "", item_handler=lambda x: x, over="o", concurrency=1, max_n=1
+        ),  # noqa: ARG005
+        lambda: FanOutStage(
+            "f", item_handler=lambda x: x, over="o", concurrency=0, max_n=1
+        ),  # noqa: ARG005
+        lambda: FanOutStage(
+            "f", item_handler=lambda x: x, over="o", concurrency=1, max_n=0
+        ),  # noqa: ARG005
+        lambda: FanOutStage(
+            "f",
+            item_handler=lambda x: x,
+            over="o",
+            concurrency=1,
+            max_n=1,
+            on_item_error="oops",  # noqa: ARG005
         ),
     ]
     for make in bad_configs:

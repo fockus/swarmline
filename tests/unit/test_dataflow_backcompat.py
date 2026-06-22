@@ -42,9 +42,7 @@ async def test_failed_stage_records_attempts_and_verbatim_error() -> None:
 
 async def test_exhausted_retry_records_attempt_count() -> None:
     """A pure stage that fails every attempt records max_attempts in result.attempts."""
-    pipeline = TypedPipeline(
-        stages=[TypedStage("gen", _raise("nope"), max_attempts=3)]
-    )
+    pipeline = TypedPipeline(stages=[TypedStage("gen", _raise("nope"), max_attempts=3)])
 
     result = await pipeline.run("x")
 
@@ -72,9 +70,7 @@ async def test_pipeline_stage_end_carries_ok_true_on_success() -> None:
     seen: list[dict[str, Any]] = []
     bus.subscribe("pipeline_stage_end", lambda data: seen.append(data))
 
-    pipeline = TypedPipeline(
-        stages=[TypedStage("draft", lambda v: v)], event_bus=bus
-    )
+    pipeline = TypedPipeline(stages=[TypedStage("draft", lambda v: v)], event_bus=bus)
     await pipeline.run("x")
 
     assert seen == [{"stage": "draft", "ok": True}]
@@ -96,7 +92,9 @@ async def test_fallback_selected_event_emitted_on_last_valid_degrade() -> None:
     """A last_valid degrade re-emits the legacy ``fallback_selected`` event."""
     bus = InMemoryEventBus()
     seen: list[tuple[str, dict[str, Any]]] = []
-    bus.subscribe("fallback_selected", lambda data: seen.append(("fallback_selected", data)))
+    bus.subscribe(
+        "fallback_selected", lambda data: seen.append(("fallback_selected", data))
+    )
 
     pipeline = TypedPipeline(
         stages=[

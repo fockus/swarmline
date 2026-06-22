@@ -104,7 +104,9 @@ async def test_conditional_propagates_nested_parallel_accounting() -> None:
         name="par",
         branches={
             "good": TypedStage("good", lambda v: f"ok:{v.kind}"),
-            "bad": TypedStage("bad", lambda v: (_ for _ in ()).throw(RuntimeError("boom"))),
+            "bad": TypedStage(
+                "bad", lambda v: (_ for _ in ()).throw(RuntimeError("boom"))
+            ),
         },
         joiner=lambda outputs: outputs,
         failure_policy="allow_partial",
@@ -143,7 +145,9 @@ async def test_early_terminate_in_branch_propagates() -> None:
     """A guard tripping inside a branch terminates the whole run early with its payload."""
     cases = {
         "search": [
-            GuardStage("empty", predicate=lambda v: v.kind == "search", on_trip="EMPTY"),
+            GuardStage(
+                "empty", predicate=lambda v: v.kind == "search", on_trip="EMPTY"
+            ),
             TypedStage("never", lambda v: "X"),  # noqa: ARG005
         ]
     }

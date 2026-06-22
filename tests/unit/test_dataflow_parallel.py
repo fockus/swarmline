@@ -43,7 +43,9 @@ async def test_parallel_allow_partial_drops_failed_branch() -> None:
         name="compare",
         branches={
             "ok": TypedStage("ok", lambda value: f"ok:{value}"),
-            "bad": TypedStage("bad", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))),
+            "bad": TypedStage(
+                "bad", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))
+            ),
         },
         joiner=lambda outputs: outputs,
         failure_policy="allow_partial",
@@ -62,7 +64,9 @@ async def test_parallel_require_all_fails_the_stage_on_a_branch_error() -> None:
         name="compare",
         branches={
             "ok": TypedStage("ok", lambda value: f"ok:{value}"),
-            "bad": TypedStage("bad", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))),
+            "bad": TypedStage(
+                "bad", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))
+            ),
         },
     )
 
@@ -105,9 +109,14 @@ async def test_parallel_branches_share_pipeline_context() -> None:
     result = await run_pipeline([stage], "question")
 
     assert result.status == "completed"
-    assert result.output["outputs"] == {"fast": "fast-candidate", "deep": "deep-candidate"}
+    assert result.output["outputs"] == {
+        "fast": "fast-candidate",
+        "deep": "deep-candidate",
+    }
     assert result.output["artifacts"]["fast_notes"]["input"] == "question"
-    assert result.output["messages"] == ({"from": "fast", "content": "candidate ready"},)
+    assert result.output["messages"] == (
+        {"from": "fast", "content": "candidate ready"},
+    )
 
 
 async def test_parallel_emits_branch_events() -> None:
@@ -137,8 +146,12 @@ async def test_parallel_require_all_surfaces_per_branch_errors() -> None:
     stage = ParallelStage(
         name="compare",
         branches={
-            "a": TypedStage("a", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))),
-            "b": TypedStage("b", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))),
+            "a": TypedStage(
+                "a", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))
+            ),
+            "b": TypedStage(
+                "b", lambda value: (_ for _ in ()).throw(RuntimeError("boom"))
+            ),
         },
     )
 
@@ -160,7 +173,9 @@ async def test_branch_end_event_carries_error_on_failure() -> None:
         name="compare",
         branches={
             "ok": TypedStage("ok", lambda value: value),
-            "bad": TypedStage("bad", lambda value: (_ for _ in ()).throw(RuntimeError("nope"))),
+            "bad": TypedStage(
+                "bad", lambda value: (_ for _ in ()).throw(RuntimeError("nope"))
+            ),
         },
         failure_policy="allow_partial",
     )
@@ -172,7 +187,9 @@ async def test_branch_end_event_carries_error_on_failure() -> None:
         for name, data in events
         if name == "branch_end" and data.get("branch") == "bad"
     ]
-    assert bad_ends == [{"stage": "compare", "branch": "bad", "ok": False, "error": "nope"}]
+    assert bad_ends == [
+        {"stage": "compare", "branch": "bad", "ok": False, "error": "nope"}
+    ]
 
 
 async def test_parallel_requires_at_least_one_branch() -> None:
