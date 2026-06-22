@@ -54,7 +54,11 @@ claude-talk-to-figma-mcp/
 # Memory Bank — regeneratable runtime artefacts (not part of versioned content)
 .memory-bank/index.json
 .memory-bank/.session-lock
+.memory-bank/session/
 # /mb graph + /mb map heavy outputs (tens of MB, regenerable via the same commands)
 .memory-bank/codebase/.archive/
 .memory-bank/codebase/.cache/
 .memory-bank/codebase/graph.json
+
+# memsearch plugin cache (local index, regeneratable)
+.memsearch/
