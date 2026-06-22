@@ -2,20 +2,18 @@
 
 ## Текущий фокус
 
-**v1.5.0 RELEASED publicly** (2026-05-02). Public `Publish to PyPI` workflow succeeded for tag `v1.5.0`; PyPI shows `swarmline 1.5.0` as latest. Follow-up public CI hardening is complete; public GitHub Actions `CI` is green on `main`.
+**v1.6.9 release prepared** (2026-06-22). All 1.6.x work — typed data-flow pipeline (registry-dispatch engine), `polza.ai` provider, per-config `api_key` threading, structured-output hardening, and native tool-calling in the thin react path — merged from `feat/typed-dataflow-pipeline` into `main`. `pyproject` = 1.6.9, CHANGELOG backfilled (1.5.1 + 1.6.1–1.6.9), tag `v1.6.9` pushed to private `origin`. Dead branches pruned (`feat/query-structured-result`, `fix/native-tool-timeout-kwargs`, `_sync_public_temp`, remote `codex/swarmline-runtime-primitives`).
 
-**Pending (next step):** no release blockers. Do **not** move/re-push tag `v1.5.0` after PyPI publish, because PyPI artifacts are immutable.
+**Pending (next step):** public sync `./scripts/sync-public.sh --tags` → PyPI publish via OIDC. **Gated on explicit go.** Last PUBLISHED release remains **v1.5.0** on PyPI until the public sync runs.
 
-**Release/CI gate status (verified 2026-05-02):**
-- `ty check src/swarmline/` → All checks passed! (0 diagnostics, baseline locked = 0)
-- CI-like `.[dev,all]` venv: `ty check src/swarmline/` → All checks passed!
-- CI-like `pip freeze --exclude-editable` + `pip-audit --strict --desc --requirement ...` → No known vulnerabilities found
-- `pytest --tb=no -q` → **5600 passed, 7 skipped, 5 deselected, 0 failed** (~52s)
-- `pytest tests/architecture/ -v -m slow` → **3 passed**
-- `ruff check src/ tests/` → All checks passed!
-- `ruff format --check src/ tests/` → 771 files already formatted
+**Release/CI gate status (verified 2026-06-22):**
+- `ty check src/swarmline/` → All checks passed!
+- `pytest --tb=short -q` → **5728 passed, 7 skipped, 0 failed**
+- `ruff check src/ tests/` → No issues found
+- `ruff format --check src/ tests/` → 800 files already formatted
 
 **Предыдущие фазы**:
+- v1.5.0 RELEASED publicly (2026-05-02) — PyPI `swarmline 1.5.0`, public CI green on `main`. (PyPI artifacts immutable — never re-push tag `v1.5.0`.)
 - ThinRuntime Claude Code Parity v2 (2026-04-13) — Parity COMPLETE 17/17 фаз. Phase 17 commit `2e2c800`.
 - Production v2.0 Sprint 1 (2026-04-25) — ty diagnostics 75 → 0, baseline locked = 0. ADR-003 fulfilled (ty strict-mode = sole release gate, no mypy).
 - v1.4.0 Stabilization (2026-04-11) — secure-by-default, validation gate green
@@ -24,8 +22,8 @@
 
 ## Версии
 
-- swarmline: **1.5.0** (released on PyPI 2026-05-02; public publish workflow succeeded)
-- swarmline: 1.4.1 (currently published on PyPI; will be superseded by 1.5.0)
+- swarmline: **1.6.9** (prepared 2026-06-22; on `main` + tag `v1.6.9` on private `origin`; NOT yet on PyPI — pending public sync)
+- swarmline: 1.5.0 (latest on PyPI; released 2026-05-02)
 - cognitia: 1.5.0 (deprecated wrapper → swarmline; legacy)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
 

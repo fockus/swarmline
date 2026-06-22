@@ -970,3 +970,17 @@
 - **Verify (all green):** swarmline `-m "not live and not slow"` = **5253 passed**, 26 failed (ALL pre-existing optional-dep: postgres×18/openai_agents×6/claude-sdk×1/otel×1) + 3 postgres collection errors — **0 new regressions**; ruff + ty(changed files) clean. faberlic gate **616 passed / 92.98%**, ruff + ty(src) clean; **live e2e 3/3 PASSED** (187s).
 - **Plan:** `plans/2026-06-06_refactor_mode-routing-tool-aware-primary.md` (✅ DONE). **Report:** `reports/2026-06-06_audit_swarmline-quality-vs-langgraph-deepagents.md` (full quality/fitness audit vs LangGraph & deepagents).
 - **Not committed** (commit-only-on-request).
+
+## 2026-06-22
+
+### Auto-capture 2026-06-22 (session 6c2fc9a8)
+- Session ended without an explicit /mb done
+- Summary auto-captured to session/ (searchable via /mb recall); core files were not actualized
+
+### v1.6.9 release prep — consolidate the typed-dataflow branch into main
+- **Context:** the entire 1.6.x line (typed data-flow pipeline + polza.ai provider + structured-output hardening + native tool-calling) lived only on `feat/typed-dataflow-pipeline`, 12 commits ahead of `main`, unreleased. `main` was stuck at an un-tagged "bump to 1.5.1". Memory Bank still reported v1.5.0 as the focus.
+- **Green gate:** 1.6.x files were never `ruff format`-ed (33 files) and `test_misc_typing_fixes.py` had a drifted hardcoded line constant (`GEMINI_PARTS_LINE` 552→576, the Gemini Content.parts ty-ignore loop shifted after native-tools additions). Fixed both → `ruff/ty/format` clean, **pytest 5728 passed / 7 skipped / 0 failed**.
+- **CHANGELOG:** backfilled the missing per-version entries — `1.5.1` (`query_structured_result`) and `1.6.1`–`1.6.9` — so the file is complete and descending; `[1.6.9]` dated to the release day.
+- **Merge:** fast-forward `feat/typed-dataflow-pipeline` → `main` (main was a strict ancestor). Tag `v1.6.9`.
+- **Branch cleanup:** deleted merged/stale `feat/query-structured-result`, `fix/native-tool-timeout-kwargs`, `_sync_public_temp` (local) and remote `codex/swarmline-runtime-primitives`.
+- **Pending:** public sync + PyPI publish gated on explicit maintainer go (`./scripts/sync-public.sh --tags`). PyPI latest still v1.5.0 until then.
