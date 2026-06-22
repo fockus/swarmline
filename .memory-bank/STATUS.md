@@ -4,7 +4,7 @@
 
 **v1.6.9 release prepared** (2026-06-22). All 1.6.x work — typed data-flow pipeline (registry-dispatch engine), `polza.ai` provider, per-config `api_key` threading, structured-output hardening, and native tool-calling in the thin react path — merged from `feat/typed-dataflow-pipeline` into `main`. `pyproject` = 1.6.9, CHANGELOG backfilled (1.5.1 + 1.6.1–1.6.9), tag `v1.6.9` pushed to private `origin`. Dead branches pruned (`feat/query-structured-result`, `fix/native-tool-timeout-kwargs`, `_sync_public_temp`, remote `codex/swarmline-runtime-primitives`).
 
-**Pending (next step):** public sync `./scripts/sync-public.sh --tags` → PyPI publish via OIDC. **Gated on explicit go.** Last PUBLISHED release remains **v1.5.0** on PyPI until the public sync runs.
+**v1.6.9 RELEASED publicly** (2026-06-22). `./scripts/sync-public.sh --tags` ran clean (5729 passed), public `main` force-updated to `4824c28`, tag `v1.6.9` pushed → GitHub Actions `Publish to PyPI` succeeded (publish-pypi + github-release). **PyPI shows `swarmline 1.6.9` as latest** (sdist + wheel); GitHub Release `v1.6.9` published. Do **not** re-push tag `v1.6.9` (PyPI artifacts immutable).
 
 **Release/CI gate status (verified 2026-06-22):**
 - `ty check src/swarmline/` → All checks passed!
@@ -22,8 +22,8 @@
 
 ## Версии
 
-- swarmline: **1.6.9** (prepared 2026-06-22; on `main` + tag `v1.6.9` on private `origin`; NOT yet on PyPI — pending public sync)
-- swarmline: 1.5.0 (latest on PyPI; released 2026-05-02)
+- swarmline: **1.6.9** (latest on PyPI; released 2026-06-22 via public sync + OIDC)
+- swarmline: 1.5.0 (previous PyPI release, 2026-05-02)
 - cognitia: 1.5.0 (deprecated wrapper → swarmline; legacy)
 - deepagents: 0.4.11 (0.5.0 ещё не на PyPI)
 
@@ -167,14 +167,17 @@ _No active product plans — v1.5.0 released publicly 2026-05-02. Current operat
 
 | Field | Value |
 |-------|-------|
-| Tag | `v1.5.0` |
-| Commit | `a2ad514` (`fix: keep top-level import working without httpx`) |
-| Date (local) | 2026-05-02 |
+| Tag | `v1.6.9` |
+| Commit | `b0a25a8` (private `main`); public `main` = `4824c28` (filtered) |
+| Date (local) | 2026-06-22 |
 | Pushed to | private `origin` + public `fockus/swarmline` |
-| Public sync | ✅ completed via `./scripts/sync-public.sh`; public tag published |
-| PyPI | ✅ `swarmline 1.5.0` published via OIDC; latest on PyPI |
-| `pyproject.toml` version | 1.5.0 |
-| `src/swarmline/serve/app.py` `_VERSION` | 1.5.0 |
+| Public sync | ✅ completed via `./scripts/sync-public.sh --tags`; public tag published |
+| PyPI | ✅ `swarmline 1.6.9` published via OIDC; latest on PyPI (sdist + wheel) |
+| GitHub Release | ✅ `v1.6.9` published (github-release job) |
+| `pyproject.toml` version | 1.6.9 |
+| `src/swarmline/serve/app.py` `_VERSION` | now derived from package metadata (no longer a manual field) |
+
+_Previous release: `v1.5.0` (2026-05-02), commit `a2ad514`._
 
 ## Release gate (v1.5.0) — verified at tag time
 

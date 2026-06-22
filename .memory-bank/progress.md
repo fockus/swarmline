@@ -983,4 +983,5 @@
 - **CHANGELOG:** backfilled the missing per-version entries — `1.5.1` (`query_structured_result`) and `1.6.1`–`1.6.9` — so the file is complete and descending; `[1.6.9]` dated to the release day.
 - **Merge:** fast-forward `feat/typed-dataflow-pipeline` → `main` (main was a strict ancestor). Tag `v1.6.9`.
 - **Branch cleanup:** deleted merged/stale `feat/query-structured-result`, `fix/native-tool-timeout-kwargs`, `_sync_public_temp` (local) and remote `codex/swarmline-runtime-primitives`.
-- **Pending:** public sync + PyPI publish gated on explicit maintainer go (`./scripts/sync-public.sh --tags`). PyPI latest still v1.5.0 until then.
+- **SHIPPED 2026-06-22:** maintainer gave go → `./scripts/sync-public.sh --tags` ran clean (5729 passed), public `main` = `4824c28` (filtered), tag `v1.6.9` pushed → GitHub Actions `Publish to PyPI` succeeded (publish-pypi 24s + github-release 8s). **PyPI latest = `swarmline 1.6.9`** (sdist + wheel); GitHub Release `v1.6.9` live. Also gitignored local `.memsearch/` + `.memory-bank/session/` (were blocking the sync clean-tree check).
+- **Lesson:** `serve/app.py` `_VERSION` had silently drifted (1.5.0 through the whole 1.6.x line) — now derived from `importlib.metadata`; removed it as a manual release-checklist field.
