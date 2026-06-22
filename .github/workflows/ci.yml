@@ -42,7 +42,9 @@ jobs:
 
       - name: Install ty + project (with all optional deps for accurate type-checking)
         run: |
-          pip install ty
+          # ty is pre-1.0 and changes diagnostics between 0.0.x releases — pin
+          # exactly (keep in sync with the [dev] extra in pyproject.toml).
+          pip install "ty==0.0.29"
           pip install -e ".[dev,all]"
 
       - name: Run ty type-check
@@ -81,7 +83,8 @@ jobs:
 
       - name: Install ty + pytest + project
         run: |
-          pip install ty
+          # ty pinned exactly (pre-1.0; keep in sync with pyproject [dev]).
+          pip install "ty==0.0.29"
           pip install -e ".[dev,all]"
 
       - name: Run architecture tests (incl. ty baseline meta-test)
