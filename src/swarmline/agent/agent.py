@@ -191,7 +191,10 @@ class Agent:
         from swarmline.agent.structured import StructuredOutputError
 
         result = await self.query_structured_result(
-            prompt, output_type, max_retries=max_retries, structured_mode=structured_mode
+            prompt,
+            output_type,
+            max_retries=max_retries,
+            structured_mode=structured_mode,
         )
 
         if result.structured_output is not None:

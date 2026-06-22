@@ -66,7 +66,9 @@ class StageConfig(BaseModel):
         """Enforce the fields each stage kind structurally requires."""
         if self.kind in ("llm", "io", "pure"):
             if not self.handler:
-                raise ValueError(f"stage {self.name!r} of kind {self.kind!r} requires 'handler'")
+                raise ValueError(
+                    f"stage {self.name!r} of kind {self.kind!r} requires 'handler'"
+                )
         elif self.kind == "fanout":
             missing = [
                 field

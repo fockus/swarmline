@@ -109,7 +109,9 @@ async def _run_typed_stage(
         try:
             output = await call_with_arity(stage.handler, value, ctx, stage.params)
             if stage.validator is not None:
-                verdict = await call_with_arity(stage.validator, output, ctx, stage.params)
+                verdict = await call_with_arity(
+                    stage.validator, output, ctx, stage.params
+                )
                 if verdict is False:
                     raise StageValidationError(
                         f"stage '{stage.name}' validator returned False"

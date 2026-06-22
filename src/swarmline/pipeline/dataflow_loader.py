@@ -36,9 +36,15 @@ class PipelineRegistries:
     """
 
     handlers: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
-    validators: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
-    selectors: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
-    predicates: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
+    validators: Mapping[str, Callable[..., Any]] = dataclasses.field(
+        default_factory=dict
+    )
+    selectors: Mapping[str, Callable[..., Any]] = dataclasses.field(
+        default_factory=dict
+    )
+    predicates: Mapping[str, Callable[..., Any]] = dataclasses.field(
+        default_factory=dict
+    )
     joiners: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
     dedups: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
     overs: Mapping[str, Callable[..., Any]] = dataclasses.field(default_factory=dict)
@@ -132,14 +138,18 @@ def _build_stage(cfg: StageConfig, reg: PipelineRegistries) -> Any:
     if cfg.kind == "fanout":
         # spec validation guarantees these; the explicit check narrows the type for the type checker.
         if cfg.concurrency is None or cfg.max_n is None:
-            raise StageConfigError(f"fanout stage {cfg.name!r} missing concurrency/max_n")
+            raise StageConfigError(
+                f"fanout stage {cfg.name!r} missing concurrency/max_n"
+            )
         return FanOutStage(
             name=cfg.name,
             item_handler=_require(reg.handlers, cfg.item_handler, "handler"),
             over=_registry_or_literal(reg.overs, cfg.over) if cfg.over else "",
             concurrency=cfg.concurrency,
             max_n=cfg.max_n,
-            dedup_key=_registry_or_literal(reg.dedups, cfg.dedup_key) if cfg.dedup_key else None,
+            dedup_key=_registry_or_literal(reg.dedups, cfg.dedup_key)
+            if cfg.dedup_key
+            else None,
             on_item_error=cfg.on_item_error,
             joiner=_optional(reg.joiners, cfg.joiner, "joiner"),
             status_label=cfg.status_label,
@@ -148,11 +158,16 @@ def _build_stage(cfg: StageConfig, reg: PipelineRegistries) -> Any:
     if cfg.kind == "conditional":
         # spec validation guarantees these; the explicit check narrows the type for the type checker.
         if cfg.selector is None or cfg.cases is None:
-            raise StageConfigError(f"conditional stage {cfg.name!r} missing selector/cases")
+            raise StageConfigError(
+                f"conditional stage {cfg.name!r} missing selector/cases"
+            )
         cases = {
-            key: [_build_stage(sub, reg) for sub in branch] for key, branch in cfg.cases.items()
+            key: [_build_stage(sub, reg) for sub in branch]
+            for key, branch in cfg.cases.items()
         }
-        default = [_build_stage(sub, reg) for sub in cfg.default] if cfg.default else None
+        default = (
+            [_build_stage(sub, reg) for sub in cfg.default] if cfg.default else None
+        )
         return ConditionalStage(
             name=cfg.name,
             selector=_registry_or_literal(reg.selectors, cfg.selector),

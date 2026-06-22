@@ -45,7 +45,9 @@ from swarmline.pipeline.stages.typed_stage import TypedStage
 # before it became a facade; keep them importable from here (identical ``Literal`` values at their
 # new canonical homes) so ``from swarmline.pipeline.typed import PipelineStatus`` keeps working.
 from swarmline.pipeline.dataflow_core import PipelineStatus as PipelineStatus
-from swarmline.pipeline.stages.parallel import ParallelFailurePolicy as ParallelFailurePolicy
+from swarmline.pipeline.stages.parallel import (
+    ParallelFailurePolicy as ParallelFailurePolicy,
+)
 
 
 @dataclasses.dataclass(frozen=True)

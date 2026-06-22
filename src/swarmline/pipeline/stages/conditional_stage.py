@@ -62,7 +62,8 @@ async def _run_conditional_stage(
         # A runtime branch failure (not a config error): propagate the inner accounting + verbatim
         # reason via StageExecutionError so the outer run keeps the sub-chain's attempts and message.
         raise StageExecutionError(
-            "; ".join(sub.errors) or f"conditional {stage.name!r} branch {key!r} failed",
+            "; ".join(sub.errors)
+            or f"conditional {stage.name!r} branch {key!r} failed",
             attempts=1,
             sub_attempts=dict(sub.attempts),
         )

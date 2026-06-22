@@ -124,7 +124,9 @@ def resolve_provider(
         raise UnknownModelError(raw_model)
 
     sdk_type = _PROVIDER_SDK_MAP.get(provider, "openai_compat")
-    effective_base_url = base_url if base_url is not None else _get_default_base_url(provider)
+    effective_base_url = (
+        base_url if base_url is not None else _get_default_base_url(provider)
+    )
 
     return ResolvedProvider(
         model_id=model_id,

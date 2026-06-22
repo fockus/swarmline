@@ -60,7 +60,9 @@ class FanOutStage:
             raise StageConfigError("FanOutStage.on_item_error must be 'skip' or 'fail'")
 
 
-async def _resolve_items(stage: FanOutStage, value: Any, ctx: PipelineContext) -> list[Any]:
+async def _resolve_items(
+    stage: FanOutStage, value: Any, ctx: PipelineContext
+) -> list[Any]:
     """Resolve the runtime item list from ``over`` (callable or dotted path on the value)."""
     if callable(stage.over):
         items = await call_with_arity(stage.over, value, ctx, stage.params)
@@ -76,7 +78,9 @@ def _key_of(element: Any, key: str) -> Any:
     return getattr(element, key, None)
 
 
-def _dedup_flatten(batches: list[Any], dedup_key: str | Callable[..., Any]) -> list[Any]:
+def _dedup_flatten(
+    batches: list[Any], dedup_key: str | Callable[..., Any]
+) -> list[Any]:
     """Flatten per-item iterables and drop duplicates by key, preserving first-seen order."""
     seen: set[Any] = set()
     out: list[Any] = []
@@ -105,7 +109,9 @@ async def _run_fanout_stage(
     async def _one(item: Any) -> tuple[bool, Any]:
         async with semaphore:
             try:
-                return True, await call_with_arity(stage.item_handler, item, ctx, stage.params)
+                return True, await call_with_arity(
+                    stage.item_handler, item, ctx, stage.params
+                )
             except Exception:  # noqa: BLE001 — fail-soft per item unless on_item_error='fail'
                 if stage.on_item_error == "fail":
                     raise

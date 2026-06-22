@@ -55,7 +55,9 @@ async def _run_loop_stage(
     body_runner = resolve_runner(stage.body)
     for iteration in range(1, stage.max_iterations + 1):
         await emit_event(
-            event_sink, "loop_iteration_start", {"stage": stage.name, "iteration": iteration}
+            event_sink,
+            "loop_iteration_start",
+            {"stage": stage.name, "iteration": iteration},
         )
         try:
             outcome = await body_runner(stage.body, value, ctx, event_sink)

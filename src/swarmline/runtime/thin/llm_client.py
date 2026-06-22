@@ -405,7 +405,9 @@ async def default_llm_call(
     """Default llm call."""
     use_stream = kwargs.pop("stream", False)
 
-    resolved = resolve_provider(config.model, base_url=config.base_url, api_key=config.api_key)
+    resolved = resolve_provider(
+        config.model, base_url=config.base_url, api_key=config.api_key
+    )
 
     # Extended thinking: inject _thinking_config for Anthropic only
     if config.thinking is not None and resolved.sdk_type == "anthropic":

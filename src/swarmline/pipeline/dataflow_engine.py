@@ -29,7 +29,9 @@ from swarmline.pipeline.dataflow_core import (
 logger = logging.getLogger(__name__)
 
 #: A stage runner: ``await runner(stage, value, context, event_sink) -> StageOutcome``.
-StageRunner = Callable[[Any, Any, PipelineContext, "EventSink | None"], Awaitable[StageOutcome]]
+StageRunner = Callable[
+    [Any, Any, PipelineContext, "EventSink | None"], Awaitable[StageOutcome]
+]
 
 #: Type → runner registry. Populated by ``register_stage_runner`` at stage-module import time.
 _STAGE_RUNNERS: dict[type, StageRunner] = {}
@@ -50,7 +52,9 @@ def stage_runner(stage_type: type) -> Callable[[StageRunner], StageRunner]:
     return decorate
 
 
-async def emit_event(event_sink: EventSink | None, name: str, data: dict[str, Any]) -> None:
+async def emit_event(
+    event_sink: EventSink | None, name: str, data: dict[str, Any]
+) -> None:
     """Fire an event on the sink if one is wired (no-op otherwise).
 
     Public so composite stage runners (fork/join, review loop) can emit their own granular events
@@ -91,7 +95,9 @@ async def _fail(
     """
     if fallback == "last_valid" and has_valid:
         await emit_event(
-            event_sink, "fallback_selected", {"stage": failed_stage, "mode": "last_valid"}
+            event_sink,
+            "fallback_selected",
+            {"stage": failed_stage, "mode": "last_valid"},
         )
         return PipelineResult(
             status="fallback",
@@ -136,7 +142,9 @@ async def run_pipeline(
         runner = resolve_runner(stage)
         status_label = getattr(stage, "status_label", None)
         if status_label:
-            await emit_event(event_sink, "status", {"label": status_label, "stage": stage.name})
+            await emit_event(
+                event_sink, "status", {"label": status_label, "stage": stage.name}
+            )
         await emit_event(event_sink, "stage_start", {"stage": stage.name})
         try:
             outcome = await runner(stage, value, ctx, event_sink)
@@ -145,17 +153,41 @@ async def run_pipeline(
             attempts[stage.name] = exc.attempts
             if exc.sub_attempts:
                 attempts.update(exc.sub_attempts)
-            errors.extend(exc.errors)  # per-child detail first, then the verbatim summary below
-            errors.append(str(exc))  # verbatim — the stage already formatted its message
-            await emit_event(event_sink, "stage_failed", {"stage": stage.name, "error": str(exc)})
+            errors.extend(
+                exc.errors
+            )  # per-child detail first, then the verbatim summary below
+            errors.append(
+                str(exc)
+            )  # verbatim — the stage already formatted its message
+            await emit_event(
+                event_sink, "stage_failed", {"stage": stage.name, "error": str(exc)}
+            )
             logger.debug("pipeline stage %r failed: %s", stage.name, exc)
-            return await _fail(event_sink, fallback, has_valid, last_valid, stage.name, attempts, errors)
+            return await _fail(
+                event_sink,
+                fallback,
+                has_valid,
+                last_valid,
+                stage.name,
+                attempts,
+                errors,
+            )
         except Exception as exc:  # noqa: BLE001 — a stage failure is handled per the fallback policy
             attempts[stage.name] = getattr(stage, "max_attempts", 1)
             errors.append(f"{stage.name}: {exc}")
-            await emit_event(event_sink, "stage_failed", {"stage": stage.name, "error": str(exc)})
+            await emit_event(
+                event_sink, "stage_failed", {"stage": stage.name, "error": str(exc)}
+            )
             logger.debug("pipeline stage %r failed: %s", stage.name, exc)
-            return await _fail(event_sink, fallback, has_valid, last_valid, stage.name, attempts, errors)
+            return await _fail(
+                event_sink,
+                fallback,
+                has_valid,
+                last_valid,
+                stage.name,
+                attempts,
+                errors,
+            )
         attempts[stage.name] = outcome.attempts
         if outcome.sub_attempts:
             attempts.update(outcome.sub_attempts)

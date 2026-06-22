@@ -90,7 +90,9 @@ def resolve_path(obj: Any, path: str) -> Any:
             try:
                 current = getattr(current, part)
             except AttributeError as exc:
-                raise StageConfigError(f"path {path!r}: attribute {part!r} not found") from exc
+                raise StageConfigError(
+                    f"path {path!r}: attribute {part!r} not found"
+                ) from exc
     return current
 
 

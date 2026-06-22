@@ -41,6 +41,7 @@ from swarmline.pipeline.gate import CallbackGate, CompositeGate
 from swarmline.pipeline.pipeline import Pipeline
 from swarmline.pipeline.protocols import CostTracker, GoalDecomposer, QualityGate
 from swarmline.pipeline.runner import PipelineRunner
+
 # The deprecated long stage aliases (TypedPipelineStage / ParallelPipelineStage / LoopPipelineStage)
 # are intentionally NOT imported eagerly and NOT listed in ``__all__`` — they are served lazily by
 # ``__getattr__`` below so that ``import swarmline.pipeline`` and ``from swarmline.pipeline import *``

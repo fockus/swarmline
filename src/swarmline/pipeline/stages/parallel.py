@@ -67,18 +67,32 @@ async def _run_one_branch(
     event_sink: Any,
 ) -> tuple[str, Any, int, str | None]:
     """Run a single branch through its registered runner, isolating its failure (decided later)."""
-    runner = resolve_runner(branch)  # fail-fast outside the try — a bad branch type is a config bug
-    await emit_event(event_sink, "branch_start", {"stage": stage.name, "branch": branch_name})
+    runner = resolve_runner(
+        branch
+    )  # fail-fast outside the try — a bad branch type is a config bug
+    await emit_event(
+        event_sink, "branch_start", {"stage": stage.name, "branch": branch_name}
+    )
     try:
         outcome = await runner(branch, value, ctx, event_sink)
-        result: tuple[str, Any, int, str | None] = (branch_name, outcome.value, outcome.attempts, None)
+        result: tuple[str, Any, int, str | None] = (
+            branch_name,
+            outcome.value,
+            outcome.attempts,
+            None,
+        )
     except Exception as exc:  # noqa: BLE001 — per-branch isolation; fatality decided by the policy
         attempts = int(getattr(branch, "max_attempts", 1))
         result = (branch_name, None, attempts, str(exc))
     await emit_event(
         event_sink,
         "branch_end",
-        {"stage": stage.name, "branch": branch_name, "ok": result[3] is None, "error": result[3]},
+        {
+            "stage": stage.name,
+            "branch": branch_name,
+            "ok": result[3] is None,
+            "error": result[3],
+        },
     )
     return result
 
@@ -88,7 +102,9 @@ async def _run_parallel_stage(
 ) -> StageOutcome:
     """Fork every branch over the shared value, then join the survivors per the failure policy."""
     await emit_event(
-        event_sink, "parallel_start", {"stage": stage.name, "branches": tuple(stage.branches)}
+        event_sink,
+        "parallel_start",
+        {"stage": stage.name, "branches": tuple(stage.branches)},
     )
     branch_results = await asyncio.gather(
         *(
@@ -109,7 +125,10 @@ async def _run_parallel_stage(
 
     if errors and stage.failure_policy == "require_all":
         raise StageExecutionError(
-            "; ".join(errors), attempts=1, sub_attempts=sub_attempts, errors=tuple(errors)
+            "; ".join(errors),
+            attempts=1,
+            sub_attempts=sub_attempts,
+            errors=tuple(errors),
         )
     if not outputs:
         raise StageExecutionError(
@@ -129,7 +148,9 @@ async def _run_parallel_stage(
         "parallel_join",
         {"stage": stage.name, "branches": tuple(outputs), "partial": bool(errors)},
     )
-    return StageOutcome(value=joined, attempts=1, sub_attempts=sub_attempts, errors=tuple(errors))
+    return StageOutcome(
+        value=joined, attempts=1, sub_attempts=sub_attempts, errors=tuple(errors)
+    )
 
 
 register_stage_runner(ParallelStage, _run_parallel_stage)
