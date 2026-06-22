@@ -5,6 +5,7 @@ from __future__ import annotations
 import structlog
 import hmac
 import time
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from typing import Any
 
 from starlette.applications import Starlette
@@ -18,7 +19,10 @@ from swarmline.network_safety import is_loopback_host
 from swarmline.observability.redaction import redact_secrets
 from swarmline.observability.security import log_security_decision
 
-_VERSION = "1.5.0"
+try:
+    _VERSION = _pkg_version("swarmline")
+except PackageNotFoundError:  # running from a source tree without an install
+    _VERSION = "0.0.0+unknown"
 _log = structlog.get_logger(component="serve")
 
 

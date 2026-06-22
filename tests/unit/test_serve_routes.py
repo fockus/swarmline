@@ -78,6 +78,15 @@ class TestInfo:
         data = tc.get("/v1/info").json()
         assert "version" in data
 
+    def test_info_version_matches_installed_package(self, client) -> None:
+        """Served version is derived from package metadata — guards the
+        _VERSION-vs-pyproject drift that went unnoticed through 1.6.0–1.6.9."""
+        from importlib.metadata import version
+
+        tc, _ = client
+        data = tc.get("/v1/info").json()
+        assert data["version"] == version("swarmline")
+
     def test_info_excludes_query_when_closed(self, client) -> None:
         tc, _ = client
         data = tc.get("/v1/info").json()
