@@ -143,3 +143,11 @@ class TestConsolidationPipeline:
         result = await pipeline.consolidate(min_episodes=2)
         assert "fixed fact 1" in result.new_facts
         assert "fixed fact 2" in result.new_facts
+
+    async def test_consolidation_default_extractor_is_keyword(self) -> None:
+        """Stage C2.3: LlmFactExtractor is opt-in only -- the pipeline's
+        default extractor is untouched, so today's behavior holds unchanged."""
+        episodic = InMemoryEpisodicMemory()
+        pipeline = ConsolidationPipeline(episodic=episodic)
+
+        assert isinstance(pipeline._extractor, KeywordFactExtractor)

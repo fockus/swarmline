@@ -115,6 +115,36 @@ class TestCollectCapabilityTools:
         assert "bash" in specs
         assert "thinking" not in specs
 
+    def test_artifacts_only(self, tmp_path) -> None:
+        """Artifacts enabled -> artifact.*/workspace.* tools + thinking."""
+        from swarmline.artifacts.run_root import ArtifactRoot
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+
+        root = ArtifactRoot.create(tmp_path, run_id="run_1")
+        specs, executors = collect_capability_tools(
+            artifact_root=root,
+            thinking_enabled=True,
+        )
+
+        assert "artifact.create" in specs
+        assert "artifact.load" in specs
+        assert "workspace.read" in specs
+        assert "workspace.write" in specs
+        assert "workspace.update_todo" in specs
+        assert "workspace.update_plan" in specs
+        assert "workspace.search" in specs
+        assert "workspace.list_files" in specs
+        assert "thinking" in specs
+        assert set(specs.keys()) == set(executors.keys())
+
+    def test_artifacts_disabled_by_default(self) -> None:
+        """No artifact_root -> no artifact/workspace tools."""
+        from swarmline.bootstrap.capabilities import collect_capability_tools
+
+        specs, _executors = collect_capability_tools(thinking_enabled=False)
+
+        assert not any(name.startswith(("artifact.", "workspace.")) for name in specs)
+
 
 class TestCapabilityToolsExecution:
     """Tests chto builtnye tools realno work."""

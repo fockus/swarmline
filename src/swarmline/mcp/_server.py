@@ -95,7 +95,7 @@ def create_server(*, mode: str = "auto", enable_host_exec: bool = False) -> Any:
 
     mcp = FastMCP(
         "swarmline",
-        description=(
+        instructions=(
             "Swarmline AI Agent Framework -- memory, plans, team coordination, "
             "and agent orchestration for code agents."
         ),

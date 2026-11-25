@@ -189,7 +189,7 @@ config = ToolBudgetConfig(
         ToolGroup.ALWAYS,                   # thinking, todo
         ToolGroup.MCP,                      # business tools via MCP
         ToolGroup.MEMORY,                   # memory bank tools
-        ToolGroup.PLANNING,                 # plan_create / plan_status / plan_execute
+        ToolGroup.PLANNING,                 # plan_create / plan_status
         ToolGroup.SANDBOX,                  # bash, read, write, ...
         ToolGroup.WEB,                      # web_fetch, web_search
     ],

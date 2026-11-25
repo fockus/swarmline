@@ -1,4 +1,11 @@
-"""Ports package."""
+"""Ports package.
+
+.. warning:: EXPERIMENTAL — this layer is not on the ``Agent`` production
+   path and is excluded from the runtime-parity obligations of
+   the runtime-parity plan (open question 2 resolved 2026-07-04:
+   marked experimental; removal in favor of dispatch-level filters is a
+   separate future decision, tracked in the Memory Bank backlog).
+"""
 
 from __future__ import annotations
 

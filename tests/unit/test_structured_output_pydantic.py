@@ -118,6 +118,19 @@ class TestExtractPydanticSchema:
         # Just check it's a valid dict with color property
         assert isinstance(schema["properties"]["color"], dict)
 
+    def test_extract_pydantic_schema_non_pydantic_type_raises_named_value_error(
+        self,
+    ) -> None:
+        """I-099 review finding 2: loud-over-silent — a type without
+        model_json_schema (plain dict/dataclass/TypedDict) must raise a named
+        ValueError, not a bare AttributeError deep inside model_json_schema
+        resolution. Every caller (claude one-shot, claude conversation,
+        pi_sdk/cli dispatch-structured-output) funnels through this helper."""
+        with pytest.raises(
+            ValueError, match="output_type must be a Pydantic BaseModel"
+        ):
+            extract_pydantic_schema(dict)
+
 
 # ---------------------------------------------------------------------------
 # RuntimeConfig.output_type generates output_format

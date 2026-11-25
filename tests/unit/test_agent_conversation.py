@@ -581,38 +581,34 @@ class TestConversationLifecycle:
         create_kwargs = fake_factory.create.call_args.kwargs
         assert create_kwargs["mcp_servers"] == agent.config.mcp_servers
 
-    @pytest.mark.asyncio
-    async def test_execute_agent_runtime_omits_mcp_servers_for_cli(self) -> None:
+    def test_cli_with_mcp_servers_fails_fast_at_construction(self) -> None:
+        """cli cannot deliver MCP: strict capability validation rejects the
+        config at Agent construction instead of silently dropping it
+        (RUNTIME-PARITY-PLAN E1/E2)."""
         from swarmline.skills.types import McpServerSpec
 
-        agent = _make_agent(
-            runtime="cli",
-            mcp_servers={"iss": McpServerSpec(name="iss", url="http://iss.test")},
-        )
-        conv = Conversation(agent=agent)
+        with pytest.raises(ValueError, match="requires capability 'mcp'"):
+            _make_agent(
+                runtime="cli",
+                mcp_servers={"iss": McpServerSpec(name="iss", url="http://iss.test")},
+            )
 
-        class FakeRuntime:
-            async def run(self, **kwargs: Any):
-                from swarmline.runtime.types import RuntimeEvent
+    def test_cli_with_mcp_servers_degrades_with_warning_when_not_strict(
+        self,
+    ) -> None:
+        import warnings as _warnings
 
-                yield RuntimeEvent.final("ok")
+        from swarmline.skills.types import McpServerSpec
 
-            async def cleanup(self) -> None:
-                return None
-
-        fake_factory = MagicMock()
-        fake_factory.create.return_value = FakeRuntime()
-
-        with patch(
-            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
-        ):
-            events = []
-            async for event in conv._execute_agent_runtime("hello", "cli"):
-                events.append(event)
-
-        assert events[-1].type == "done"
-        create_kwargs = fake_factory.create.call_args.kwargs
-        assert "mcp_servers" not in create_kwargs
+        with _warnings.catch_warnings(record=True) as caught:
+            _warnings.simplefilter("always")
+            agent = _make_agent(
+                runtime="cli",
+                mcp_servers={"iss": McpServerSpec(name="iss", url="http://iss.test")},
+                strict_capabilities=False,
+            )
+        assert agent is not None
+        assert any("mcp" in str(w.message) for w in caught)
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_cli_conversation_works_with_mocked_subprocess(

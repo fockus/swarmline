@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Protocol, cast
+from typing import Any, Protocol, cast, runtime_checkable
 
 from swarmline.runtime.thin.parsers import (
     strip_markdown_fences as _strip_markdown_fences,
@@ -18,6 +18,45 @@ class _StructuredOutputModel(Protocol):
 
     @classmethod
     def model_json_schema(cls) -> dict[str, Any]: ...
+
+
+@runtime_checkable
+class _EmptyAwareOutput(Protocol):
+    """Opt-in protocol for structured outputs that can report semantic emptiness.
+
+    A structured output is **schema-valid** yet **semantically empty** when it parses
+    correctly but carries no usable payload (e.g. a selection schema whose ``picks`` list
+    is ``[]``). Such a result is a degenerate provider miss — the same retryable failure as
+    a parse error — rather than a legitimate "found nothing" answer.
+
+    The contract is entirely opt-in: a schema participates ONLY by defining
+    ``is_empty_result(self) -> bool``. Schemas that do not implement the method are never
+    inspected and behave byte-for-byte as before. No provider/model knowledge is involved.
+    """
+
+    def is_empty_result(self) -> bool: ...
+
+
+def empty_result_error(output: Any) -> str | None:
+    """Return a retry message when an opt-in structured output reports itself empty.
+
+    Returns an informative string when ``output`` implements the :class:`_EmptyAwareOutput`
+    protocol and ``is_empty_result()`` is truthy; otherwise ``None``. A buggy predicate that
+    raises is treated as "not empty" (fail-safe → ``None``): a faulty emptiness check must
+    never break finalization. Outputs without the method are ignored entirely (opt-in).
+    """
+    if not isinstance(output, _EmptyAwareOutput):
+        return None
+    try:
+        is_empty = output.is_empty_result()
+    except Exception:
+        return None
+    if not is_empty:
+        return None
+    return (
+        "Previous response was schema-valid but semantically empty "
+        "(it reported no usable result)."
+    )
 
 
 def validate_structured_output(text: str, output_type: _StructuredOutputModel) -> Any:
@@ -38,8 +77,30 @@ def validate_structured_output(text: str, output_type: _StructuredOutputModel) -
 
 
 def extract_pydantic_schema(output_type: _StructuredOutputModel) -> dict[str, Any]:
-    """Extract JSON Schema dict from a Pydantic model class."""
-    return output_type.model_json_schema()
+    """Extract JSON Schema dict from a Pydantic model class.
+
+    This is the single funnel every ``output_type`` -> ``output_format``
+    derivation goes through (claude_sdk one-shot and conversation dispatch via
+    ``_effective_output_format``; portable-runtime structured-output emulation
+    for pi_sdk/cli). Callers pass whatever ``AgentConfig.output_type``/
+    ``RuntimeConfig.output_type`` holds, which is typed as ``type | None``
+    without validating it is actually a Pydantic ``BaseModel`` subclass.
+
+    Raises:
+      ValueError: if ``output_type`` does not expose a callable
+        ``model_json_schema`` (i.e. is not a Pydantic ``BaseModel`` subclass —
+        e.g. a plain dataclass, ``dict``, or ``TypedDict``). Loud-over-silent:
+        a bare ``AttributeError`` from ``model_json_schema()`` deep in this
+        function would be an unnamed, uninformative failure for a
+        configuration mistake every caller can make.
+    """
+    schema_builder = getattr(output_type, "model_json_schema", None)
+    if not callable(schema_builder):
+        raise ValueError(
+            f"output_type must be a Pydantic BaseModel (got {output_type!r}); "
+            "pass a JSON schema via output_format instead."
+        )
+    return schema_builder()
 
 
 def resolve_structured_output(

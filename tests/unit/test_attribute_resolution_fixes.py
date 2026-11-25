@@ -4,7 +4,7 @@ Closes the 4 `unresolved-attribute` diagnostics ty reports against
 `src/swarmline/` after Stage 1 (baseline=40). Three distinct patterns:
 
 1. Manual marker attribute on a plain function (no decorator → no Protocol):
-   `runtime/thin/executor.py:292` — ty-native ignore.
+   `runtime/thin/executor.py:361` — ty-native ignore.
 2. Duck-typed third-party SDK return (`response.text` after await):
    `runtime/thin/llm_providers.py:418` — ty-native ignore.
 3. Optional union member access gated by runtime check:
@@ -32,20 +32,29 @@ EXPECTED_FIXES: list[tuple[str, int, str, str]] = [
     # is the whole point of this test, so a future refactor shifting any of
     # these surfaces here immediately rather than silently regressing the fix.
     (
+        # Stage 3 (context-engineering-manus-parity, AGR-004): line shifted
+        # 362 -> 396 -> 399 by the stage-based soft-masking `execute()`
+        # parameter + docstring + gate (+ cast import) inserted earlier in
+        # this file.
         "src/swarmline/runtime/thin/executor.py",
-        292,
+        399,
         "# ty: ignore[unresolved-attribute]",
         "marker attr on plain function",
     ),
     (
+        # Stage 2 (context-engineering-manus-parity) fix-cycle 1 of prompt-caching
+        # codex round 1: line shifted again, 696 -> 738 (guarded-decoration helper
+        # + TTL kwarg + usage-log normalization added earlier in the file).
+        # Sprint 1ce CE-9: per-call usage/cache capture shifted lines again.
         "src/swarmline/runtime/thin/llm_providers.py",
-        513,
+        752,
         "_response_text(response)",
         "duck-typed awaited response.text helper",
     ),
     (
+        # line shifted 778 -> 820 (see note above).
         "src/swarmline/runtime/thin/llm_providers.py",
-        576,
+        834,
         "# ty: ignore[unresolved-attribute, not-iterable]",
         "Gemini Content.parts gated by candidates check (Stage 5 extends with not-iterable)",
     ),

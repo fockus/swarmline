@@ -1,7 +1,7 @@
 """RuntimeRegistry - extensible adapter registry for runtime factories.
 
 Built-in runtimes (`claude_sdk`, `deepagents`, `thin`, `cli`, `openai_agents`,
-`pi_sdk`, `headless`)
+`pi_sdk`, `headless`, `temporal`)
 are registered automatically. Third-party runtimes can be registered via
 register() or entry points (group="swarmline.runtimes").
 """
@@ -105,6 +105,7 @@ def _create_thin(config: RuntimeConfig, **kwargs: Any) -> Any:
     tool_executors = kwargs.pop("tool_executors", None) or {}
     if tool_executors:
         local_tools.update(tool_executors)
+    if local_tools:
         kwargs["local_tools"] = local_tools
 
     from swarmline.runtime.thin import ThinRuntime
@@ -116,9 +117,25 @@ def _create_cli(config: RuntimeConfig, **kwargs: Any) -> Any:
     """Lazy factory for CliAgentRuntime."""
     from swarmline.runtime.cli.runtime import CliAgentRuntime
 
-    kwargs.pop("tool_executors", None)
-    kwargs.pop("local_tools", None)
-    kwargs.pop("mcp_servers", None)
+    # The CLI wrapper has no channel to inject Swarmline tools or MCP into
+    # the wrapped process — fail fast instead of silently dropping config.
+    mcp_servers = kwargs.pop("mcp_servers", None)
+    if mcp_servers:
+        raise ValueError(
+            "runtime='cli' does not support AgentConfig.mcp_servers: the wrapped "
+            "CLI process only uses its own built-in tools. Choose runtime='thin' "
+            "or runtime='deepagents' for Swarmline MCP bridge support, or "
+            "runtime='claude_sdk' for native MCP."
+        )
+    local_tools = dict(kwargs.pop("local_tools", {}) or {})
+    local_tools.update(kwargs.pop("tool_executors", {}) or {})
+    if local_tools:
+        raise ValueError(
+            "runtime='cli' does not support custom @tool handlers: the wrapped "
+            "CLI process cannot call back into Swarmline. Choose runtime='thin', "
+            "runtime='deepagents', 'claude_sdk', 'openai_agents' or 'pi_sdk' "
+            "for local tool support."
+        )
     return CliAgentRuntime(config=config, **kwargs)
 
 
@@ -141,11 +158,7 @@ def _create_openai_agents(config: RuntimeConfig, **kwargs: Any) -> Any:
 
     mcp_servers = kwargs.pop("mcp_servers", None)
     if mcp_servers:
-        raise ValueError(
-            "runtime='openai_agents' does not support AgentConfig.mcp_servers yet. "
-            "Use OpenAIAgentsConfig.codex_enabled for Codex MCP, or choose runtime='thin' "
-            "or runtime='deepagents' for Swarmline MCP bridge support."
-        )
+        kwargs["mcp_servers"] = dict(mcp_servers)
     return OpenAIAgentsRuntime(config=config, **kwargs)
 
 
@@ -161,6 +174,35 @@ def _create_pi_sdk(config: RuntimeConfig, **kwargs: Any) -> Any:
             "for Swarmline MCP bridge support."
         )
     return PiSdkRuntime(config=config, **kwargs)
+
+
+def _create_temporal(config: RuntimeConfig, **kwargs: Any) -> Any:
+    """Lazy factory for TemporalAgentRuntime."""
+    # The portable wiring always emits tool_executors (possibly {}): swallow
+    # the empty artifact, reject anything non-empty loudly — the temporal
+    # client holds no tools (I-096, re-audit 2026-07-04).
+    for client_side_unsupported in (
+        "local_tools",
+        "tool_executors",
+        "mcp_servers",
+        "sandbox",
+    ):
+        if kwargs.pop(client_side_unsupported, None):
+            raise ValueError(
+                f"runtime='temporal' executes tools on Temporal workers; "
+                f"configure '{client_side_unsupported}' on the worker "
+                "(swarmline.runtime.temporal.worker), not on the client."
+            )
+    for client_side_unsupported in ("hook_registry", "command_registry"):
+        if kwargs.pop(client_side_unsupported, None) is not None:
+            raise ValueError(
+                f"runtime='temporal' does not support '{client_side_unsupported}': "
+                "hooks and slash-commands run in-process, but temporal executes "
+                "the agent loop on remote workers."
+            )
+    from swarmline.runtime.temporal.runtime import TemporalAgentRuntime
+
+    return TemporalAgentRuntime(config=config, **kwargs)
 
 
 def _register_builtins(registry: RuntimeRegistry) -> None:
@@ -199,6 +241,11 @@ def _register_builtins(registry: RuntimeRegistry) -> None:
         "headless",
         _create_headless,
         capabilities=get_runtime_capabilities("headless"),
+    )
+    registry.register(
+        "temporal",
+        _create_temporal,
+        capabilities=get_runtime_capabilities("temporal"),
     )
 
 
@@ -272,7 +319,16 @@ def reset_default_registry() -> None:
 # ---------------------------------------------------------------------------
 
 _BUILTIN_NAMES = frozenset(
-    {"claude_sdk", "deepagents", "thin", "cli", "openai_agents", "pi_sdk", "headless"}
+    {
+        "claude_sdk",
+        "deepagents",
+        "thin",
+        "cli",
+        "openai_agents",
+        "pi_sdk",
+        "headless",
+        "temporal",
+    }
 )
 
 

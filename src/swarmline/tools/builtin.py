@@ -15,13 +15,16 @@ import json
 import os
 import re
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
 from swarmline.observability.redaction import redact_secrets
 from swarmline.runtime.types import ToolSpec
 from swarmline.tools.protocols import BinaryReadProvider, SandboxProvider
+
+if TYPE_CHECKING:
+    from swarmline.runtime.thin.coding_profile import CodingProfileConfig
 
 _log = structlog.get_logger(component="web_tools")
 
@@ -81,6 +84,25 @@ _EDIT_SCHEMA: dict[str, Any] = {
     "required": ["path", "old_string", "new_string"],
 }
 
+_EDIT_ANCHOR_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "path": {"type": "string", "description": "Путь к файлу"},
+        "old_string": {"type": "string", "description": "Строка для замены"},
+        "new_string": {"type": "string", "description": "Строка-замена"},
+        "anchor": {
+            "type": "string",
+            "description": (
+                "REQUIRED in anchor mode: sha256 hexdigest (64 hex chars) of the "
+                "exact matched slice as last read from the file.  The edit is rejected "
+                "if omitted, empty, whitespace-only, or if the file content at the "
+                "target changed since the anchor was computed."
+            ),
+        },
+    },
+    "required": ["path", "old_string", "new_string", "anchor"],
+}
+
 _MULTI_EDIT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -99,6 +121,62 @@ _MULTI_EDIT_SCHEMA: dict[str, Any] = {
         },
     },
     "required": ["path", "edits"],
+}
+
+_MULTI_FILE_EDIT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "edits": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Путь к файлу"},
+                    "old_string": {"type": "string"},
+                    "new_string": {"type": "string"},
+                },
+                "required": ["path", "old_string", "new_string"],
+            },
+            "description": (
+                "Массив правок [{path, old_string, new_string}] по нескольким файлам. "
+                "Транзакционно: либо все применяются, либо ни одной (all-or-nothing)."
+            ),
+        },
+    },
+    "required": ["edits"],
+}
+
+_MULTI_FILE_EDIT_ANCHOR_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "edits": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Путь к файлу"},
+                    "old_string": {"type": "string"},
+                    "new_string": {"type": "string"},
+                    "anchor": {
+                        "type": "string",
+                        "description": (
+                            "REQUIRED in anchor mode: sha256 hexdigest (64 hex chars) of the "
+                            "exact matched slice as last read from the file.  The edit is "
+                            "rejected (stale_anchor) if omitted, empty, or if the file content "
+                            "at the target changed since the anchor was computed."
+                        ),
+                    },
+                },
+                "required": ["path", "old_string", "new_string", "anchor"],
+            },
+            "description": (
+                "Массив правок [{path, old_string, new_string, anchor}] по нескольким файлам. "
+                "anchor ОБЯЗАТЕЛЕН: sha256 целевого фрагмента — отклоняет правку при несовпадении. "
+                "Транзакционно: либо все применяются, либо ни одной (all-or-nothing)."
+            ),
+        },
+    },
+    "required": ["edits"],
 }
 
 _LS_SCHEMA: dict[str, Any] = {
@@ -298,6 +376,177 @@ def _create_multi_edit_executor(sandbox: SandboxProvider) -> Callable:
     return executor
 
 
+def _create_tolerant_edit_executor(sandbox: SandboxProvider) -> Callable:
+    """Tolerant single-file `edit`: fuzzy cascade + structured failure (REQ-SCA-001/002)."""
+
+    async def executor(args: dict) -> str:
+        from swarmline.tools.edit.strategy import Hunk, SearchReplaceStrategy
+
+        path = args.get("path", "")
+        old_string = args.get("old_string", "")
+        new_string = args.get("new_string", "")
+        if not path or not old_string:
+            return _make_json_error("path и old_string обязательны")
+        try:
+            outcome = await SearchReplaceStrategy().apply(
+                (Hunk(path=path, old=old_string, new=new_string),),
+                sandbox,
+                transactional=False,
+            )
+        except Exception as e:
+            return _make_json_error(str(e))
+        return _serialize_edit_outcome(outcome, path=path)
+
+    return executor
+
+
+def _create_multi_file_edit_executor(sandbox: SandboxProvider) -> Callable:
+    """Transactional multi-file `multi_file_edit`: dry-run all → all-or-nothing (REQ-SCA-003/004).
+
+    The V4APatchStrategy (with its single AsyncPathLock) is constructed ONCE here,
+    outside the inner async executor, so all calls share the same lock registry
+    (F3 fix: concurrent overlapping calls on the same paths serialize correctly).
+    """
+    from swarmline.tools.edit.strategy import Hunk, V4APatchStrategy
+
+    # Single shared strategy instance — its AsyncPathLock is reused across calls.
+    _strategy = V4APatchStrategy()
+
+    async def executor(args: dict) -> str:
+        raw_edits = args.get("edits", [])
+        if not raw_edits:
+            return _make_json_error("edits обязателен")
+        try:
+            hunks = tuple(
+                Hunk(
+                    path=e.get("path", ""),
+                    old=e.get("old_string", ""),
+                    new=e.get("new_string", ""),
+                )
+                for e in raw_edits
+            )
+            if any(not h.path or not h.old for h in hunks):
+                return _make_json_error("каждый edit требует path и old_string")
+            outcome = await _strategy.apply(hunks, sandbox, transactional=True)
+        except Exception as e:
+            return _make_json_error(str(e))
+        return _serialize_edit_outcome(outcome)
+
+    return executor
+
+
+def _create_anchor_edit_executor(sandbox: SandboxProvider) -> Callable:
+    """Single-file `edit` executor backed by AnchorEditStrategy (REQ-RCA-070).
+
+    Fail-closed: ``anchor`` is REQUIRED and must be non-empty.  A missing or
+    empty anchor is rejected before any file access — no unanchored write path
+    exists in anchor mode.  AnchorEditStrategy is constructed once, shared.
+    """
+    from swarmline.tools.edit.anchor import AnchoredHunk, AnchorEditStrategy
+
+    _strategy = AnchorEditStrategy()
+
+    async def executor(args: dict) -> str:
+        path = args.get("path", "")
+        old_string = args.get("old_string", "")
+        new_string = args.get("new_string", "")
+        anchor = (args.get("anchor") or "").strip()
+        if not path or not old_string:
+            return _make_json_error("path и old_string обязательны")
+        if not anchor:
+            return _make_json_error(
+                "anchor is required when edit_strategy='anchor'; "
+                "provide sha256 hexdigest of the target slice as last read"
+            )
+        try:
+            outcome = await _strategy.apply(
+                (
+                    AnchoredHunk(
+                        path=path, old=old_string, new=new_string, anchor=anchor
+                    ),
+                ),
+                sandbox,
+                transactional=True,
+            )
+        except Exception as e:  # noqa: BLE001
+            return _make_json_error(str(e))
+        return _serialize_edit_outcome(outcome, path=path)
+
+    return executor
+
+
+def _create_anchor_multi_file_edit_executor(sandbox: SandboxProvider) -> Callable:
+    """Multi-file `multi_file_edit` executor backed by AnchorEditStrategy (REQ-RCA-070).
+
+    Fail-closed: every edit item MUST supply a non-empty ``anchor``.  If ANY
+    item is missing or has an empty anchor the ENTIRE call is rejected before
+    any file is touched — no unanchored write path exists in anchor mode.
+    AnchorEditStrategy is constructed once so its AsyncPathLock is shared.
+    """
+    from swarmline.tools.edit.anchor import AnchoredHunk, AnchorEditStrategy
+
+    _strategy = AnchorEditStrategy()
+
+    async def executor(args: dict) -> str:
+        raw_edits = args.get("edits", [])
+        if not raw_edits:
+            return _make_json_error("edits обязателен")
+        try:
+            hunks: list[AnchoredHunk] = []
+            for idx, e in enumerate(raw_edits):
+                path = e.get("path", "")
+                old_string = e.get("old_string", "")
+                new_string = e.get("new_string", "")
+                anchor = (e.get("anchor") or "").strip()
+                if not path or not old_string:
+                    return _make_json_error("каждый edit требует path и old_string")
+                if not anchor:
+                    return _make_json_error(
+                        f"anchor is required for every edit when edit_strategy='anchor'; "
+                        f"edit[{idx}] (path={path!r}) is missing an anchor — "
+                        f"provide sha256 hexdigest of the target slice as last read"
+                    )
+                hunks.append(
+                    AnchoredHunk(
+                        path=path, old=old_string, new=new_string, anchor=anchor
+                    )
+                )
+            outcome = await _strategy.apply(tuple(hunks), sandbox, transactional=True)
+        except Exception as e:  # noqa: BLE001
+            return _make_json_error(str(e))
+        return _serialize_edit_outcome(outcome)
+
+    return executor
+
+
+def _serialize_edit_outcome(outcome: Any, *, path: str | None = None) -> str:
+    """Serialize an EditOutcome into a JSON tool result (REQ-SCA-002)."""
+    first_failure = next((r for r in outcome.results if r.status == "failed"), None)
+    payload: dict[str, Any] = {
+        "status": "ok" if outcome.applied else "error",
+        "applied": outcome.applied,
+        "mode": outcome.mode,
+        "message": outcome.message,
+        "results": [
+            {
+                "path": r.path,
+                "status": r.status,
+                "failure": r.failure,
+                "detail": r.detail,
+                "match_strategy": r.match_strategy,
+            }
+            for r in outcome.results
+        ],
+    }
+    if path is not None:
+        payload["path"] = path
+    if not outcome.applied and first_failure is not None:
+        # Surface the leading failure at top level for easy model consumption.
+        payload["failure"] = first_failure.failure
+        payload["detail"] = first_failure.detail
+    return json.dumps(payload)
+
+
 def _create_ls_executor(sandbox: SandboxProvider) -> Callable:
     async def executor(args: dict) -> str:
         path = args.get("path", ".")
@@ -367,8 +616,16 @@ def _create_grep_executor(sandbox: SandboxProvider) -> Callable:
 
 def create_sandbox_tools(
     sandbox: SandboxProvider,
+    *,
+    config: CodingProfileConfig | None = None,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
     """Create sandbox tools.
+
+    Args:
+        sandbox: SandboxProvider for file/shell tools.
+        config: Optional CodingProfileConfig. Reserved for flag-gated features
+                introduced in Tasks 1-8 (B2 propagation seam). When None or all
+                flags at defaults, output is byte-identical to the no-config call.
 
     Returns:
         Tuple: (specs dict, executors dict).
@@ -430,6 +687,44 @@ def create_sandbox_tools(
     for name, desc, schema, executor in tools:
         specs[name] = ToolSpec(name=name, description=desc, parameters=schema)
         executors[name] = executor
+
+    # B2 seam: legacy path (config is None or edit_strategy == "legacy") is
+    # byte-identical to the original — no tolerant routing, no extra tools.
+    if config is not None and config.edit_strategy != "legacy":
+        if config.edit_strategy == "anchor":
+            # REQ-RCA-070: hash-anchored transactional strategy.  Both single-file
+            # and multi-file tools are backed by AnchorEditStrategy.  The spec AND
+            # executor for 'edit' are both replaced so the model surface (schema)
+            # matches the executor contract: anchor REQUIRED, fail-closed on missing.
+            # Default ("legacy") path is untouched.
+            specs["edit"] = ToolSpec(
+                name="edit",
+                description="Заменить подстроку в файле (str_replace, hash-якорь обязателен)",
+                parameters=_EDIT_ANCHOR_SCHEMA,
+            )
+            executors["edit"] = _create_anchor_edit_executor(sandbox)
+            specs["multi_file_edit"] = ToolSpec(
+                name="multi_file_edit",
+                description=(
+                    "Транзакционная правка нескольких файлов с hash-якорями (all-or-nothing)"
+                ),
+                parameters=_MULTI_FILE_EDIT_ANCHOR_SCHEMA,
+            )
+            executors["multi_file_edit"] = _create_anchor_multi_file_edit_executor(
+                sandbox
+            )
+        else:
+            # Tolerant single-file `edit` replaces the legacy first-occurrence one.
+            # The visible ToolSpec is unchanged (same name/description/schema) so the
+            # model surface is stable; only the executor becomes tolerant.
+            executors["edit"] = _create_tolerant_edit_executor(sandbox)
+            # New opt-in transactional multi-file edit tool.
+            specs["multi_file_edit"] = ToolSpec(
+                name="multi_file_edit",
+                description="Транзакционная правка нескольких файлов (all-or-nothing)",
+                parameters=_MULTI_FILE_EDIT_SCHEMA,
+            )
+            executors["multi_file_edit"] = _create_multi_file_edit_executor(sandbox)
 
     return specs, executors
 

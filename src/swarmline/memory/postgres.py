@@ -28,9 +28,14 @@ from swarmline.memory.types import (
 
 # Subquery for resolving the internal user id by external_id (DRY)
 _USER_ID_SUB = "(SELECT id FROM users WHERE external_id = :user_id)"
+
+# "working_memory" ranks alongside "user" (top): WorkingMemory.aset is
+# deliberate last-write-wins profile maintenance on its own reserved wm.*
+# keys, so it must never be silently blocked by this priority guard.
 _POSTGRES_EXISTING_SOURCE_PRIORITY = (
     "CASE facts.source "
     "WHEN 'user' THEN 3 "
+    "WHEN 'working_memory' THEN 3 "
     "WHEN 'ai_inferred' THEN 2 "
     "WHEN 'mcp' THEN 1 "
     "ELSE 0 END"
@@ -38,6 +43,7 @@ _POSTGRES_EXISTING_SOURCE_PRIORITY = (
 _POSTGRES_INCOMING_SOURCE_PRIORITY = (
     "CASE EXCLUDED.source "
     "WHEN 'user' THEN 3 "
+    "WHEN 'working_memory' THEN 3 "
     "WHEN 'ai_inferred' THEN 2 "
     "WHEN 'mcp' THEN 1 "
     "ELSE 0 END"

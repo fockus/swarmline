@@ -10,8 +10,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Callable
 
+from swarmline.domain_types import Message, ToolSpec
 from swarmline.multi_agent.types import AgentToolResult
-from swarmline.runtime.types import ToolSpec, Message
 
 
 async def execute_agent_tool(

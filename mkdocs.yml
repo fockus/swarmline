@@ -61,6 +61,7 @@ nav:
   - Build:
     - Agent Facade API: agent-facade.md
     - Runtimes: runtimes.md
+    - Composable Harness: harness.md
     - Architecture: architecture.md
     - Tools & Skills: tools-and-skills.md
     - Structured Output: structured-output.md

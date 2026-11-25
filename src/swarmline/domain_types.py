@@ -15,7 +15,22 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
+
+
+class LifecycleMode(str, Enum):
+    """Agent lifecycle mode — how the agent lives and dies.
+
+    EPHEMERAL: self-terminates after goal completion (default).
+    SUPERVISED: creator decides when to terminate.
+    PERSISTENT: only orchestrator/user can remove; stays alive across goals.
+    """
+
+    EPHEMERAL = "ephemeral"
+    SUPERVISED = "supervised"
+    PERSISTENT = "persistent"
+
 
 # ---------------------------------------------------------------------------
 # ContentBlock - multimodal content blocks
@@ -143,6 +158,38 @@ class ToolSpec:
 
 
 # ---------------------------------------------------------------------------
+# ProviderTool - provider-executed (hosted) tool spec
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ProviderTool:
+    """A provider-executed (hosted) tool: serialized untouched into the provider request and run
+    server-side, NOT locally. There is no local handler. ``type`` is an opaque, provider-owned
+    (dated/versioned) identifier passed through as-is.
+
+    swarmline never enumerates concrete hosted-tool types — any current/future provider tool
+    works by setting ``type`` + ``config``; no validation is performed on either field.
+    """
+
+    provider: str  # "anthropic" | "openai" (future: "google")
+    type: str  # e.g. "web_search_20250305" / "web_search_preview"
+    name: str | None = None  # Anthropic requires a logical name (e.g. "web_search")
+    config: dict[str, Any] = field(
+        default_factory=dict
+    )  # extra provider fields + optional "beta"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dict, omitting unset name and empty config."""
+        d: dict[str, Any] = {"provider": self.provider, "type": self.type}
+        if self.name is not None:
+            d["name"] = self.name
+        if self.config:
+            d["config"] = self.config
+        return d
+
+
+# ---------------------------------------------------------------------------
 # RuntimeErrorData - typed error
 # ---------------------------------------------------------------------------
 
@@ -160,6 +207,7 @@ RUNTIME_ERROR_KINDS = frozenset(
         "cancelled",  # operation cancelled via CancellationToken
         "guardrail_tripwire",  # guardrail check failed (input or output)
         "retry",  # retrying LLM call after a transient failure
+        "session_not_found",  # resume requested but the session does not exist
     }
 )
 

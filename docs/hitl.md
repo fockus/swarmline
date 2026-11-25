@@ -223,6 +223,10 @@ caps = RuntimeCapabilities(supports_hitl=True)
 assert caps.supports("hitl")
 ```
 
+### Temporal runtime — durable approvals
+
+The Temporal runtime is the only one whose approvals are **durable**: a gated tool call parks the workflow on a Temporal signal, so a pending approval survives worker deploys, restarts, and weekends, with an optional expiry timer (auto-deny, default 24h). The worker holds the `ApprovalPolicy`; any process holding a Temporal client resolves requests via `TemporalApprovalClient.approve()/deny()`. See [Temporal Runtime — Durable HITL](runtimes/temporal.md#durable-hitl-approval-signals).
+
 ### DeepAgents (LangGraph) runtime
 
 The DeepAgents runtime has native HITL support through LangGraph's interrupt mechanism. When the graph pauses for human review, Swarmline translates the interrupt payloads into standard `RuntimeEvent` objects.

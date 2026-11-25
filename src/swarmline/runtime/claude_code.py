@@ -29,6 +29,16 @@ from swarmline.runtime.types import (
 logger = logging.getLogger(__name__)
 
 
+def _usage_int(usage: Any, key: str) -> int:
+    """Read a token counter from a usage dict, defensively."""
+    if not isinstance(usage, dict):
+        return 0
+    try:
+        return int(usage.get(key) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 class ClaudeCodeRuntime:
     """AgentRuntime wrapper around Claude-agent-SDK.
 
@@ -50,6 +60,8 @@ class ClaudeCodeRuntime:
         """
         self._config = config or RuntimeConfig(runtime_name="claude_sdk")
         self._adapter = adapter
+        self._cancel_requested = False
+        self._interrupt_task: Any = None
 
     @property
     def adapter(self) -> Any:
@@ -103,6 +115,8 @@ class ClaudeCodeRuntime:
             )
             return
 
+        self._cancel_requested = False
+
         # Extract the last user message
         user_text = self._extract_last_user_text(messages)
         if not user_text:
@@ -129,6 +143,15 @@ class ClaudeCodeRuntime:
 
         try:
             async for stream_event in self._adapter.stream_reply(user_text):
+                if self._cancel_requested:
+                    yield RuntimeEvent.error(
+                        RuntimeErrorData(
+                            kind="cancelled",
+                            message="Run cancelled by user.",
+                            recoverable=False,
+                        )
+                    )
+                    return
                 runtime_event = self._convert_event(stream_event)
                 if runtime_event is not None:
                     if runtime_event.type == "error":
@@ -178,8 +201,13 @@ class ClaudeCodeRuntime:
                 )
             )
 
-        # Final event
+        # Final event — mirror native usage into TurnMetrics so consumers
+        # reading metrics see the same numbers as the usage dict (parity
+        # with thin/deepagents/openai_agents/pi_sdk).
+        usage = result_meta.get("usage")
         metrics = TurnMetrics(
+            tokens_in=_usage_int(usage, "input_tokens"),
+            tokens_out=_usage_int(usage, "output_tokens"),
             tool_calls_count=tool_calls_count,
             model=self._config.model,
         )
@@ -189,9 +217,41 @@ class ClaudeCodeRuntime:
             metrics=metrics,
             session_id=result_meta.get("session_id"),
             total_cost_usd=result_meta.get("total_cost_usd"),
-            usage=result_meta.get("usage"),
+            usage=usage,
             structured_output=result_meta.get("structured_output"),
         )
+
+    def cancel(self) -> None:
+        """Request cancellation: native SDK interrupt plus a cooperative flag.
+
+        The AgentRuntime protocol's cancel() is synchronous, while the SDK's
+        interrupt is async — schedule it on the running loop when possible
+        and rely on the cooperative flag checked in the stream loop otherwise.
+        """
+        import asyncio
+
+        self._cancel_requested = True
+        adapter = self._adapter
+        if adapter is None or not getattr(adapter, "is_connected", False):
+            return
+        interrupt = getattr(adapter, "interrupt", None)
+        if interrupt is None:
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+
+        async def _safe_interrupt() -> None:
+            try:
+                await interrupt()
+            except Exception as exc:
+                logger.warning("SDK interrupt failed after cancel(): %s", exc)
+
+        task = loop.create_task(_safe_interrupt())
+        # Keep a reference so the task isn't garbage-collected mid-flight.
+        self._interrupt_task = task
+        task.add_done_callback(lambda _t: setattr(self, "_interrupt_task", None))
 
     async def cleanup(self) -> None:
         """Disconnect the SDK adapter."""
@@ -212,6 +272,7 @@ class ClaudeCodeRuntime:
 
         Mapping:
         - text_delta -> assistant_delta
+        - thinking_delta -> thinking_delta
         - tool_use_start -> tool_call_started
         - tool_use_result -> tool_call_finished
         - error -> error
@@ -221,6 +282,9 @@ class ClaudeCodeRuntime:
 
         if etype == "text_delta":
             return RuntimeEvent.assistant_delta(stream_event.text)
+
+        if etype == "thinking_delta":
+            return RuntimeEvent.thinking_delta(stream_event.text)
 
         if etype == "tool_use_start":
             return RuntimeEvent.tool_call_started(

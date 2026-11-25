@@ -263,7 +263,7 @@ class TestFactoryUsesRegistry:
         factory = RuntimeFactory()
         # Should resolve runtime name without error
         name = factory.resolve_runtime_name()
-        assert name == "claude_sdk"
+        assert name == "thin"
         # create should work (may return _ErrorRuntime if deps missing, but no crash)
         runtime = factory.create()
         assert runtime is not None

@@ -218,17 +218,18 @@ async for step in manager.execute_plan(plan.id):
 
 ### Agent-Facing Planning Tools
 
-When planning tools are enabled, the agent receives three tools:
+When planning tools are enabled, the agent receives two tools:
 
 ```python
 from swarmline.orchestration.plan_tools import create_plan_tools
 
 tools, executors = create_plan_tools(manager, user_id="u1", topic_id="t1")
-# tools: {"plan_create": ToolSpec, "plan_status": ToolSpec, "plan_execute": ToolSpec}
+# tools: {"plan_create": ToolSpec, "plan_status": ToolSpec}
 
 # Agent flow:
-# 1. plan_create(goal="Complex task", auto_execute=True)
-# 2. LLM generates steps → steps execute → results stream back
+# 1. plan_create(goal="Complex task", auto_execute=True)  # generates + auto-approves the plan
+# 2. plan_status() → inspect steps/approval state
+# Execution is programmatic: async for step in manager.execute_plan(plan_id)
 ```
 
 ### PlanStore Protocol

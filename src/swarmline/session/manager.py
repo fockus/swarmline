@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import threading
 import time
 from collections.abc import AsyncIterator, Awaitable
 from typing import Any
 
+from swarmline.durable.time_travel import fork, get_state_history
+from swarmline.protocols.checkpoint import Checkpoint, Checkpointer
 from swarmline.runtime import StreamEvent
 from swarmline.runtime.types import Message, RuntimeErrorData, RuntimeEvent, ToolSpec
+from swarmline.session._sync_bridge import run_awaitable_sync
 from swarmline.session.backends import SessionBackend
 from swarmline.session.runtime_bridge import run_runtime_turn, stream_runtime_reply
 from swarmline.session.snapshot_store import SessionSnapshotStore
@@ -27,11 +29,13 @@ class _AsyncSessionCore:
         *,
         ttl_seconds: float,
         backend: SessionBackend | None,
+        checkpointer: Checkpointer | None = None,
     ) -> None:
         self._sessions: dict[str, SessionState] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         self._ttl_seconds = ttl_seconds
         self._snapshots = SessionSnapshotStore(backend)
+        self._checkpointer = checkpointer
 
     def key_str(self, key: SessionKey) -> str:
         return str(key)
@@ -105,6 +109,47 @@ class _AsyncSessionCore:
         state.last_activity_at = time.monotonic()
         self._sessions[self.key_str(state.key)] = state
         await self._persist_state(state)
+
+    async def acheckpoint(
+        self, key: SessionKey, *, resource_id: str | None = None
+    ) -> str | None:
+        """Snapshot state (opt-in); None if unconfigured/missing (REQ-014/016)."""
+        if self._checkpointer is None:
+            return None
+        state = await self.aget(key)
+        if state is None:
+            return None
+        payload = self.serialize_state(state)
+        return await self._checkpointer.put(
+            self.key_str(key), payload, resource_id=resource_id or key.user_id
+        )
+
+    async def arestore(
+        self, key: SessionKey, *, checkpoint_id: str | None = None
+    ) -> bool:
+        """Restore session from checkpoint (opt-in); False if unconfigured/missing."""
+        if self._checkpointer is None:
+            return False
+        ks = self.key_str(key)
+        cp = await self._checkpointer.get(ks, checkpoint_id=checkpoint_id)
+        if cp is None:
+            return False
+        await self.aregister(self.deserialize_state(dict(cp.state)))
+        return True
+
+    async def aget_state_history(self, key: SessionKey) -> list[Checkpoint]:
+        """Time-travel: full checkpoint history, oldest-first; [] without a
+        checkpointer configured (backward compat)."""
+        if self._checkpointer is None:
+            return []
+        return await get_state_history(self._checkpointer, self.key_str(key))
+
+    async def afork(self, key: SessionKey, *, checkpoint_id: str) -> str | None:
+        """Time-travel: branch a new checkpoint off ``checkpoint_id``; None
+        without a checkpointer configured (backward compat)."""
+        if self._checkpointer is None:
+            return None
+        return await fork(self._checkpointer, self.key_str(key), checkpoint_id)
 
     async def close(self, key: SessionKey) -> None:
         """Close the session and disconnect the runtime/adapter."""
@@ -236,23 +281,24 @@ class _AsyncSessionCore:
 
 
 class InMemorySessionManager:
-    """Compatibility facade over the async session core.
-
-    Async methods delegate directly to the core. Sync methods keep the legacy
-    bridge for callers that still use the manager from synchronous code.
-    """
+    """Compatibility facade over the async session core: async methods
+    delegate directly; sync methods bridge for synchronous callers."""
 
     def __init__(
         self,
         ttl_seconds: float = 900.0,
         backend: SessionBackend | None = None,
+        checkpointer: Checkpointer | None = None,
     ) -> None:
-        self._core = _AsyncSessionCore(ttl_seconds=ttl_seconds, backend=backend)
+        self._core = _AsyncSessionCore(
+            ttl_seconds=ttl_seconds, backend=backend, checkpointer=checkpointer
+        )
         # Keep legacy attributes for backward compatibility with internal tests.
         self._sessions = self._core._sessions
         self._locks = self._core._locks
         self._ttl_seconds = ttl_seconds
         self._backend = backend
+        self._checkpointer = checkpointer
 
     def _key_str(self, key: SessionKey) -> str:
         return self._core.key_str(key)
@@ -262,32 +308,8 @@ class InMemorySessionManager:
 
     @staticmethod
     def _run_awaitable_sync(awaitable: Awaitable[Any]) -> Any:
-        """Synchronously execute a coroutine from sync manager APIs."""
-
-        async def _await_value() -> Any:
-            return await awaitable
-
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return asyncio.run(_await_value())
-
-        result: dict[str, Any] = {}
-        error: dict[str, BaseException] = {}
-
-        def runner() -> None:
-            try:
-                result["value"] = asyncio.run(_await_value())
-            except BaseException as exc:  # pragma: no cover - defensive bridge
-                error["error"] = exc
-
-        thread = threading.Thread(target=runner, daemon=True)
-        thread.start()
-        thread.join()
-
-        if "error" in error:
-            raise error["error"]
-        return result.get("value")
+        """Sync bridge (body: ``session._sync_bridge``, C1.3 line-cap move)."""
+        return run_awaitable_sync(awaitable)
 
     @staticmethod
     def _serialize_state(state: SessionState) -> dict[str, Any]:
@@ -298,26 +320,36 @@ class InMemorySessionManager:
         return _AsyncSessionCore.deserialize_state(payload)
 
     def get(self, key: SessionKey) -> SessionState | None:
-        """Get an existing session. Returns None if TTL has expired.
-
-        Note: if a backend is configured, this uses a sync bridge that may
-        block the event loop. Prefer :meth:`aget` in async contexts.
-        """
+        """Get an existing session (None if TTL expired). Sync bridge may
+        block the loop if a backend is configured — prefer :meth:`aget`."""
         return self._run_awaitable_sync(self._core.aget(key))
 
     async def aget(self, key: SessionKey) -> SessionState | None:
         return await self._core.aget(key)
 
     def register(self, state: SessionState) -> None:
-        """Register a new session.
-
-        Note: if a backend is configured, this uses a sync bridge that may
-        block the event loop. Prefer :meth:`aregister` in async contexts.
-        """
+        """Register a session. Sync bridge may block the loop if a backend
+        is configured — prefer :meth:`aregister` in async contexts."""
         self._run_awaitable_sync(self._core.aregister(state))
 
     async def aregister(self, state: SessionState) -> None:
         await self._core.aregister(state)
+
+    async def acheckpoint(
+        self, key: SessionKey, *, resource_id: str | None = None
+    ) -> str | None:
+        return await self._core.acheckpoint(key, resource_id=resource_id)
+
+    async def arestore(
+        self, key: SessionKey, *, checkpoint_id: str | None = None
+    ) -> bool:
+        return await self._core.arestore(key, checkpoint_id=checkpoint_id)
+
+    async def aget_state_history(self, key: SessionKey) -> list[Checkpoint]:
+        return await self._core.aget_state_history(key)
+
+    async def afork(self, key: SessionKey, *, checkpoint_id: str) -> str | None:
+        return await self._core.afork(key, checkpoint_id=checkpoint_id)
 
     async def close(self, key: SessionKey) -> None:
         await self._core.close(key)
@@ -352,11 +384,8 @@ class InMemorySessionManager:
         return self._core.list_sessions()
 
     def update_role(self, key: SessionKey, role_id: str, skill_ids: list[str]) -> bool:
-        """Update the session role and skills. Returns True if the session is found.
-
-        Note: if a backend is configured, this uses a sync bridge that may
-        block the event loop. Prefer :meth:`aupdate_role` in async contexts.
-        """
+        """Update role/skills (True if found). Sync bridge may block the
+        loop if a backend is configured — prefer :meth:`aupdate_role`."""
         return self._run_awaitable_sync(
             self._core.aupdate_role(key, role_id, skill_ids)
         )

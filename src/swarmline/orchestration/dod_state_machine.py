@@ -10,6 +10,7 @@ from enum import Enum
 
 from swarmline.orchestration.code_verifier import CodeVerifier
 from swarmline.orchestration.verification_types import VerificationStatus
+from swarmline.orchestration.verifier_registry import VerifierRegistry
 
 
 class DoDStatus(str, Enum):
@@ -36,10 +37,13 @@ class DoDStateMachine:
     If all checks pass -> PASSED. If max_loops exceeded -> MAX_LOOPS_EXCEEDED.
     """
 
-    def __init__(self, max_loops: int = 3) -> None:
+    def __init__(
+        self, max_loops: int = 3, registry: VerifierRegistry | None = None
+    ) -> None:
         if max_loops < 1:
             raise ValueError("max_loops must be >= 1")
         self._max_loops = max_loops
+        self._registry = registry
 
     async def verify_dod(
         self, criteria: tuple[str, ...], verifier: CodeVerifier
@@ -50,6 +54,8 @@ class DoDStateMachine:
                 status=DoDStatus.PASSED, loop_count=0, verification_log="No criteria"
             )
 
+        # registry=None reproduces the legacy hardcoded method_map byte-for-byte.
+        registry = self._registry or VerifierRegistry.default(verifier)
         log_lines: list[str] = []
 
         for loop in range(1, self._max_loops + 1):
@@ -57,7 +63,7 @@ class DoDStateMachine:
             all_passed = True
 
             for criterion in criteria:
-                result = await self._run_criterion(criterion, verifier)
+                result = await self._run_criterion(criterion, registry)
                 log_lines.append(f"  {criterion}: {result.status.value}")
                 if not result.passed:
                     all_passed = False
@@ -76,28 +82,20 @@ class DoDStateMachine:
         )
 
     async def _run_criterion(
-        self, criterion: str, verifier: CodeVerifier
+        self, criterion: str, registry: VerifierRegistry
     ) -> _CriterionResult:
-        """Map criterion name to verifier method and run it."""
+        """Look up the criterion closure in the registry and run it."""
         from swarmline.orchestration.verification_types import VerificationResult
 
-        method_map: dict[str, str] = {
-            "contracts": "verify_contracts",
-            "tests": "verify_tests_substantive",
-            "tdd": "verify_tests_before_code",
-            "linters": "verify_linters",
-            "coverage": "verify_coverage",
-        }
-        method_name = method_map.get(criterion.lower())
-        if method_name is None:
+        fn = registry.fns.get(criterion.lower())
+        if fn is None:
             import logging
 
             logging.getLogger(__name__).warning(
                 "Unknown DoD criterion: %s (skipping)", criterion
             )
             return _CriterionResult(status=VerificationStatus.SKIP, passed=False)
-        method = getattr(verifier, method_name)
-        result: VerificationResult = await method()
+        result: VerificationResult = await fn()
         return _CriterionResult(status=result.status, passed=result.passed)
 
 

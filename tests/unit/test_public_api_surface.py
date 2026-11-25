@@ -1,7 +1,9 @@
-"""Stage 14 (H-1) — verify the public API surface is the curated 12-name core set.
+"""Stage 14 (H-1) — verify the public API surface is the curated core set.
 
 Other names remain *importable* (no breaking change) but they no longer leak
-through ``from swarmline import *``.
+through ``from swarmline import *``. Extended by the code-agent-facade plan
+(Stage 1) to add ``CodeAgent`` as a 13th curated name — a deliberate,
+additive expansion of the surface, not a regression.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ import swarmline
 CORE_NAMES = {
     "Agent",
     "AgentConfig",
+    "CodeAgent",
     "Conversation",
     "Result",
     "tool",
@@ -29,8 +32,8 @@ def test_all_exposes_only_core_names() -> None:
     assert set(swarmline.__all__) == CORE_NAMES
 
 
-def test_all_has_exactly_twelve_names() -> None:
-    assert len(swarmline.__all__) == 12
+def test_all_has_exactly_thirteen_names() -> None:
+    assert len(swarmline.__all__) == 13
 
 
 def test_infrastructure_names_removed_from_all() -> None:

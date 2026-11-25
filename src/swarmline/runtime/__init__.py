@@ -26,7 +26,22 @@ from swarmline.runtime.registry import (
     reset_default_registry,
 )
 from swarmline.runtime.model_registry import ModelRegistry, get_registry, reset_registry
+from swarmline.runtime.model_profile import (
+    UNKNOWN_MODEL_PROFILE,
+    ModelProfile,
+    PromptCacheMode,
+    resolve_model_profile,
+)
 
+from swarmline.runtime.fallback import (
+    ClassifiedError,
+    CooldownStatePort,
+    FallbackChain,
+    FallbackEntry,
+    FallbackResolver,
+    InMemoryCooldownState,
+    RemediationAction,
+)
 
 from swarmline.runtime.ports import BaseRuntimePort
 from swarmline.runtime.ports.base import StreamEvent, convert_event
@@ -51,10 +66,19 @@ from swarmline.runtime.types import (
 __all__ = [
     "DEFAULT_MODEL",
     "ThinRuntime",
+    # Fallback chain / provider cascade (OSS-T5)
+    "ClassifiedError",
+    "CooldownStatePort",
+    "FallbackChain",
+    "FallbackEntry",
+    "FallbackResolver",
+    "InMemoryCooldownState",
+    "RemediationAction",
     "RUNTIME_CAPABILITY_FLAGS",
     "RUNTIME_ERROR_KINDS",
     "RUNTIME_EVENT_TYPES",
     "RUNTIME_TIERS",
+    "UNKNOWN_MODEL_PROFILE",
     "VALID_FEATURE_MODES",
     "VALID_MODEL_NAMES",
     "VALID_RUNTIME_NAMES",
@@ -65,9 +89,11 @@ __all__ = [
     "Message",
     "ModelRequestOptions",
     "ModelPolicy",
+    "ModelProfile",
     "ModelRegistry",
     "PiSdkOptions",
     "PiSdkRuntime",
+    "PromptCacheMode",
     "RuntimeCapabilities",
     "RuntimeConfig",
     "RuntimeErrorData",
@@ -87,6 +113,7 @@ __all__ = [
     "reset_default_registry",
     "reset_registry",
     "resolve_model_name",
+    "resolve_model_profile",
 ]
 
 _OPTIONAL_EXPORTS: dict[str, tuple[str, str, str]] = {
@@ -149,6 +176,16 @@ _OPTIONAL_EXPORTS: dict[str, tuple[str, str, str]] = {
         "swarmline.runtime.sdk_tools",
         "mcp_tool",
         "Install claude-agent-sdk to use mcp_tool.",
+    ),
+    "ClaudeCodeRuntimeAdapter": (
+        "swarmline.runtime.code_runtime.claude",
+        "ClaudeCodeRuntimeAdapter",
+        "ClaudeCodeRuntimeAdapter — CodeRuntimePort for Claude Code.",
+    ),
+    "CodexCodeRuntimeAdapter": (
+        "swarmline.runtime.code_runtime.codex",
+        "CodexCodeRuntimeAdapter",
+        "CodexCodeRuntimeAdapter — CodeRuntimePort for Codex/OpenAI.",
     ),
 }
 

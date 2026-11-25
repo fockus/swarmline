@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import { once } from "node:events";
+import { existsSync } from "node:fs";
 import process from "node:process";
 
 let session = null;
 let fullText = "";
 let finalSent = false;
+let toolCallCount = 0;
+let currentModelId = "";
 const pendingTools = new Map();
 
 function send(payload) {
@@ -86,6 +89,87 @@ function splitModel(rawModel, provider, modelId) {
   return { provider: null, modelId: rawModel };
 }
 
+function firstNumber(...values) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function costFromSource(source) {
+  const cost = source?.cost;
+  if (typeof cost === "number" && Number.isFinite(cost)) return cost;
+  const total = firstNumber(cost?.total, cost?.totalUsd, source?.total_cost_usd, source?.totalCostUsd);
+  return total;
+}
+
+// Aggregate token usage / cost across every usage-bearing source we can find:
+// per-message usage on assistant messages first, session-level aggregates as
+// a fallback. PI (pi-ai) usage objects use {input, output, cost:{total}}; be
+// liberal in accepted key spellings since the SDK API is not pinned here.
+function collectUsage(rawMessages, sessionInstance) {
+  const sources = [];
+  for (const message of Array.isArray(rawMessages) ? rawMessages : []) {
+    if (message && message.role === "assistant" && message.usage && typeof message.usage === "object") {
+      sources.push(message.usage);
+    }
+  }
+  if (sources.length === 0) {
+    const aggregate = sessionInstance?.usage ?? sessionInstance?.stats?.usage ?? null;
+    if (aggregate && typeof aggregate === "object") sources.push(aggregate);
+  }
+
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let totalCostUsd = 0;
+  let sawUsage = false;
+  let sawCost = false;
+  for (const source of sources) {
+    const input = firstNumber(source.input_tokens, source.inputTokens, source.input, source.prompt_tokens);
+    const output = firstNumber(source.output_tokens, source.outputTokens, source.output, source.completion_tokens);
+    if (input !== null) {
+      inputTokens += input;
+      sawUsage = true;
+    }
+    if (output !== null) {
+      outputTokens += output;
+      sawUsage = true;
+    }
+    const cost = costFromSource(source);
+    if (cost !== null) {
+      totalCostUsd += cost;
+      sawCost = true;
+    }
+  }
+  return {
+    usage: sawUsage ? { input_tokens: inputTokens, output_tokens: outputTokens } : null,
+    totalCostUsd: sawCost ? totalCostUsd : null,
+  };
+}
+
+function buildFinalPayload(sessionInstance, rawMessages) {
+  const messages = Array.isArray(rawMessages) ? rawMessages : [];
+  const { usage, totalCostUsd } = collectUsage(messages, sessionInstance);
+  const payload = {
+    type: "final",
+    text: fullText,
+    session_id: sessionInstance.sessionId,
+    new_messages: messages.map(normalizeMessage),
+    native_metadata: { session_file: sessionInstance.sessionFile },
+  };
+  if (usage) {
+    payload.usage = usage;
+    payload.metrics = {
+      input_tokens: usage.input_tokens,
+      output_tokens: usage.output_tokens,
+      tool_calls_count: toolCallCount,
+      model: currentModelId,
+    };
+  }
+  if (totalCostUsd !== null) payload.total_cost_usd = totalCostUsd;
+  return payload;
+}
+
 async function buildModel(modelRegistry, request) {
   const options = request.options || {};
   const runtime = request.runtime || {};
@@ -158,6 +242,7 @@ function wireEvents(sessionInstance) {
         });
         break;
       case "tool_execution_end":
+        toolCallCount += 1;
         send({
           type: "tool_call_finished",
           name: event.toolName || "",
@@ -168,13 +253,7 @@ function wireEvents(sessionInstance) {
         break;
       case "agent_end":
         finalSent = true;
-        send({
-          type: "final",
-          text: fullText,
-          session_id: sessionInstance.sessionId,
-          new_messages: Array.isArray(event.messages) ? event.messages.map(normalizeMessage) : [],
-          native_metadata: { session_file: sessionInstance.sessionFile },
-        });
+        send(buildFinalPayload(sessionInstance, event.messages));
         break;
       case "queue_update":
         send({ type: "status", text: "PI queue updated" });
@@ -197,6 +276,49 @@ function wireEvents(sessionInstance) {
   });
 }
 
+// Resume a persisted session file via whichever opener this pi-coding-agent
+// version exposes. Throws with a descriptive message when the file is missing
+// or the installed SDK has no resume-capable API.
+function resumeSessionManager(pi, sessionFile) {
+  if (!existsSync(sessionFile)) {
+    throw new Error(`Session file not found: ${sessionFile}`);
+  }
+  for (const name of ["open", "load", "resume"]) {
+    if (typeof pi.SessionManager[name] === "function") {
+      return pi.SessionManager[name](sessionFile);
+    }
+  }
+  throw new Error("Installed SessionManager exposes no open/load/resume API");
+}
+
+// Returns {manager} on success, or {error} when resume failed and the request
+// did not opt into resume_fallback (caller must terminate the run).
+function buildSessionManager(pi, request) {
+  const options = request.options || {};
+  const cwd = options.cwd || process.cwd();
+  if (options.session_mode !== "persisted") {
+    return { manager: pi.SessionManager.inMemory() };
+  }
+  const sessionFile = options.session_file || request.session_file || null;
+  if (!sessionFile) {
+    return { manager: pi.SessionManager.create(cwd) };
+  }
+  try {
+    return { manager: resumeSessionManager(pi, sessionFile) };
+  } catch (error) {
+    const resumeFallback = options.resume_fallback === true || request.resume_fallback === true;
+    send({
+      type: "error",
+      kind: "session_not_found",
+      message: `Cannot resume PI session: ${error.message}`,
+      details: { session_file: sessionFile },
+      recoverable: true,
+    });
+    if (!resumeFallback) return { error };
+    return { manager: pi.SessionManager.create(cwd) };
+  }
+}
+
 async function run(request) {
   const options = request.options || {};
   const packageName = options.package_name || "@mariozechner/pi-coding-agent";
@@ -213,19 +335,23 @@ async function run(request) {
 
   const authStorage = options.auth_file ? pi.AuthStorage.create(options.auth_file) : pi.AuthStorage.create();
   const modelRegistry = pi.ModelRegistry.create(authStorage);
-  const sessionManager =
-    options.session_mode === "persisted"
-      ? pi.SessionManager.create(options.cwd || process.cwd())
-      : pi.SessionManager.inMemory();
+  const { manager: sessionManager, error: resumeError } = buildSessionManager(pi, request);
+  if (resumeError) return;
 
+  // project_instructions=false: skip project resource discovery (AGENTS.md
+  // etc.) so the toggle has the same meaning as on the other runtimes.
+  const loadProjectResources = options.project_instructions !== false;
   const loader = new pi.DefaultResourceLoader({
     cwd: options.cwd || process.cwd(),
-    agentDir: options.agent_dir || undefined,
+    agentDir: loadProjectResources ? options.agent_dir || undefined : undefined,
     systemPromptOverride: () => request.system_prompt || "",
   });
-  if (typeof loader.reload === "function") await loader.reload();
+  if (loadProjectResources && typeof loader.reload === "function") {
+    await loader.reload();
+  }
 
   const model = await buildModel(modelRegistry, request);
+  currentModelId = model?.id || options.model_id || (request.runtime || {}).model || "";
   const tools = await buildToolset(pi, options);
   const customTools = buildCustomTools(pi, request.tools || []);
 
@@ -253,13 +379,7 @@ async function run(request) {
       fullText = textFromMessage([...messages].reverse().find(message => message.role === "assistant"));
     }
     finalSent = true;
-    send({
-      type: "final",
-      text: fullText,
-      session_id: session.sessionId,
-      new_messages: Array.isArray(session.messages) ? session.messages.map(normalizeMessage) : [],
-      native_metadata: { session_file: session.sessionFile },
-    });
+    send(buildFinalPayload(session, session.messages));
   } catch (error) {
     fail(`PI SDK prompt failed: ${error.message}`);
   } finally {

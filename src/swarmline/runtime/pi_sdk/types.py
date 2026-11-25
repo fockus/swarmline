@@ -32,6 +32,13 @@ class PiSdkOptions:
     agent_dir: str | None = None
     auth_file: str | None = None
     session_mode: PiSessionMode = "memory"
+    # Path to a persisted PI session file to resume (requires
+    # session_mode="persisted"). Falls back to config.extra["pi_session_file"].
+    resume_session_file: str | None = None
+    # When True, a failed resume (missing file / unsupported SDK) emits a
+    # recoverable session_not_found error and starts a fresh session instead
+    # of terminating the run.
+    resume_fallback: bool = False
     bridge_command: tuple[str, ...] = ()
     package_name: str = "@mariozechner/pi-coding-agent"
     provider: str | None = None

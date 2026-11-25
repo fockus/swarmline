@@ -6,18 +6,40 @@ import json
 import time
 from typing import Any
 
+from swarmline.context.data_envelope import wrap_data
+from swarmline.runtime.thin.tool_result_render import (
+    OFFLOAD_KEY_METADATA,
+    ToolResultRendering,
+)
 from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
     TurnMetrics,
 )
 
+# F-1 (Sprint 1ce): compaction artifacts are built as role="system" messages,
+# but every provider adapter drops non-user/assistant chat turns — so the
+# summary and collapsed placeholders never reached the model. They are
+# rendered here, at the one LM boundary, as a user-role data envelope; the
+# provider filters stay untouched (an arbitrary system message is still dropped).
+COMPACTION_ARTIFACT_NOTE = (
+    "reference only; answer the latest message below, not this summary; "
+    "tools remain fully available; do not repeat actions listed as completed"
+)
+_COMPACTION_ARTIFACT_SOURCES = {
+    "summary": "compaction-summary",
+    "collapsed": "compaction-collapsed",
+}
+_PLAIN = ToolResultRendering()
 
-def _messages_to_lm(messages: list[Message]) -> list[dict[str, Any]]:
-    """Messages to lm."""
+
+def _messages_to_lm(
+    messages: list[Message], *, rendering: ToolResultRendering | None = None
+) -> list[dict[str, Any]]:
+    """Messages to lm (``rendering``: how tool results render, CE-24)."""
     result: list[dict[str, Any]] = []
     for m in messages:
-        d = _message_to_lm(m)
+        d = _message_to_lm(m, rendering=rendering or _PLAIN)
         if m.name:
             d["name"] = m.name
         if m.content_blocks is not None:
@@ -26,7 +48,9 @@ def _messages_to_lm(messages: list[Message]) -> list[dict[str, Any]]:
     return result
 
 
-def _message_to_lm(message: Message) -> dict[str, Any]:
+def _message_to_lm(
+    message: Message, *, rendering: ToolResultRendering = _PLAIN
+) -> dict[str, Any]:
     content = message.content
     role = message.role
 
@@ -50,7 +74,21 @@ def _message_to_lm(message: Message) -> dict[str, Any]:
     if role == "tool":
         role = "user"
         tool_name = message.name or tool_call_name or "tool"
-        content = f"Tool result from {tool_name}: {content}"
+        restore_key = (message.metadata or {}).get(OFFLOAD_KEY_METADATA)
+        content = rendering.render(tool_name, content, restore_key=restore_key)
+
+    artifact = (
+        message.metadata.get("compaction_artifact")
+        if isinstance(message.metadata, dict)
+        else None
+    )
+    if role == "system" and artifact in _COMPACTION_ARTIFACT_SOURCES:
+        role = "user"
+        content = wrap_data(
+            content,
+            source=_COMPACTION_ARTIFACT_SOURCES[artifact],
+            note=COMPACTION_ARTIFACT_NOTE,
+        )
 
     return {"role": role, "content": content}
 

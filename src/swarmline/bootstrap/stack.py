@@ -51,6 +51,7 @@ class SwarmlineStack:
     memory_bank_provider: Any | None = None
     memory_bank_prompt: str | None = None
     tool_budget_config: ToolBudgetConfig | None = None
+    otel_tracer_provider: Any | None = None
 
     @classmethod
     def create(
@@ -74,6 +75,7 @@ class SwarmlineStack:
         thinking_enabled: bool = True,
         allowed_system_tools: set[str] | None = None,
         tool_budget_config: ToolBudgetConfig | None = None,
+        otel_from_env: bool = False,
     ) -> SwarmlineStack:
         """Create all library components from config paths.
 
@@ -95,6 +97,10 @@ class SwarmlineStack:
             thinking_enabled: Enable the thinking tool.
             allowed_system_tools: Whitelist for system tools in ToolPolicy.
             tool_budget_config: Tool budget configuration.
+            otel_from_env: Opt-in (default False). When True, bootstrap calls
+                ``configure_otlp_from_env()`` to configure an OTLP TracerProvider
+                from standard ``OTEL_*`` env vars. Default off -> zero overhead,
+                behavior byte-identical to before this flag existed.
 
         Returns:
             SwarmlineStack with ready-to-use components.
@@ -162,6 +168,15 @@ class SwarmlineStack:
             except OSError:
                 memory_bank_prompt = None
 
+        # OTel bootstrap - opt-in, default False (REQ-013/014). Left uncalled
+        # when False: zero overhead, byte-identical to before this flag
+        # existed (no SDK import, no env var read, no global mutation).
+        otel_tracer_provider: Any | None = None
+        if otel_from_env:
+            from swarmline.observability.otlp_setup import configure_otlp_from_env
+
+            otel_tracer_provider = configure_otlp_from_env()
+
         return cls(
             skill_registry=skill_registry,
             context_builder=context_builder,
@@ -179,4 +194,5 @@ class SwarmlineStack:
             memory_bank_provider=memory_bank_provider,
             memory_bank_prompt=memory_bank_prompt,
             tool_budget_config=tool_budget_config,
+            otel_tracer_provider=otel_tracer_provider,
         )

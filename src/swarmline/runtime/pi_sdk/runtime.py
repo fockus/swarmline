@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from swarmline.runtime._subprocess_env import build_subprocess_env
+from swarmline.runtime.cost import CostBudget
 from swarmline.runtime.pi_sdk.event_mapper import map_pi_bridge_event
 from swarmline.runtime.pi_sdk.types import PiSdkOptions
 from swarmline.runtime.types import (
@@ -74,7 +75,7 @@ class PiSdkRuntime:
                 env=build_subprocess_env(
                     inherit_host_env=self._pi_options.inherit_host_env,
                     env_allowlist=self._pi_options.env_allowlist,
-                    overrides=self._pi_options.env,
+                    overrides=_build_env_overrides(effective_config, self._pi_options),
                 ),
             )
         except FileNotFoundError:
@@ -119,6 +120,21 @@ class PiSdkRuntime:
                         continue
                     if event.is_final:
                         final_seen = True
+                        # I-098a (finding 2): cost_budget was translated into
+                        # RuntimeConfig but never enforced. PI only reports
+                        # total_cost_usd on the final event, so -- unlike
+                        # thin's per-call check (thin/runtime.py:~235/651) --
+                        # enforcement here necessarily fires post-hoc, at run
+                        # end, once the actual cost is known.
+                        budget_error = _budget_exceeded_event(
+                            effective_config.cost_budget, event
+                        )
+                        if budget_error is not None:
+                            yield budget_error
+                            # Suppress the final event but keep draining to
+                            # EOF so the normal post-loop wait() still reaps
+                            # the bridge process (no zombie on early exit).
+                            continue
                     yield event
         except TimeoutError:
             self._terminate_process()
@@ -162,12 +178,30 @@ class PiSdkRuntime:
                     )
                 )
 
+    CANCEL_GRACE_SECONDS = 1.5
+
     def cancel(self) -> None:
-        """Request cooperative cancellation of the active PI bridge."""
+        """Request cooperative cancellation of the active PI bridge.
+
+        Sends the native ``{"type": "cancel"}`` (bridge calls
+        ``session.abort()``) and gives the bridge a short grace period before
+        SIGTERM so the native interrupt actually has time to run; without a
+        running loop the process is terminated immediately.
+        """
         self._cancel_requested = True
+        sent_native_cancel = False
         if self._process and self._process.stdin and self._process.returncode is None:
             self._write_jsonl({"type": "cancel"})
-        self._terminate_process()
+            sent_native_cancel = True
+        if not sent_native_cancel:
+            self._terminate_process()
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._terminate_process()
+            return
+        loop.call_later(self.CANCEL_GRACE_SECONDS, self._terminate_process)
 
     async def cleanup(self) -> None:
         """Release bridge process resources."""
@@ -203,6 +237,18 @@ class PiSdkRuntime:
         """Serialize one run request for the Node bridge."""
         effective_config = config or self._config
         options = self._pi_options
+        session_file = options.resume_session_file or _optional_extra_str(
+            effective_config, "pi_session_file"
+        )
+        if session_file and options.session_mode != "persisted":
+            raise ValueError(
+                "PI resume requires session_mode='persisted': "
+                "resume_session_file/pi_session_file is ignored by the bridge "
+                "in 'memory' mode. Set PiSdkOptions(session_mode='persisted')."
+            )
+        resume_fallback = options.resume_fallback or bool(
+            effective_config.extra.get("pi_resume_fallback", False)
+        )
         return {
             "type": "run",
             "runtime": {
@@ -222,10 +268,19 @@ class PiSdkRuntime:
                 "agent_dir": options.agent_dir,
                 "auth_file": options.auth_file,
                 "session_mode": options.session_mode,
+                "session_file": session_file,
+                "resume_fallback": resume_fallback,
+                "project_instructions": bool(
+                    effective_config.extra.get("project_instructions", True)
+                ),
                 "package_name": options.package_name,
                 "provider": options.provider,
                 "model_id": options.model_id,
-                "thinking_level": options.thinking_level,
+                "thinking_level": (
+                    options.thinking_level
+                    if options.thinking_level is not None
+                    else _thinking_level_from_runtime_config(effective_config)
+                ),
             },
             "system_prompt": system_prompt,
             "messages": [message.to_dict() for message in messages],
@@ -321,6 +376,88 @@ def _loads_json_object(line: str) -> dict[str, Any] | None:
     except (json.JSONDecodeError, ValueError):
         return None
     return data if isinstance(data, dict) else None
+
+
+def _optional_extra_str(config: RuntimeConfig, key: str) -> str | None:
+    """Return a non-empty string value from config.extra, else None."""
+    value = config.extra.get(key) if isinstance(config.extra, dict) else None
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+def _budget_exceeded_event(
+    cost_budget: CostBudget | None, final_event: RuntimeEvent
+) -> RuntimeEvent | None:
+    """Enforce RuntimeConfig.cost_budget against a bridge "final" event.
+
+    PI reports cost only once, on the final event (no per-call usage
+    stream), so -- unlike thin's pre/post-call CostTracker check
+    (thin/runtime.py:~235/651, thin/runtime_support.py budget_exceeded_event)
+    -- this necessarily runs post-hoc at run end.
+
+    Returns a "budget_exceeded" error RuntimeEvent (same ``kind`` as thin's)
+    that must be yielded INSTEAD of ``final_event`` when
+    ``action_on_exceed == "error"`` and the reported cost exceeds the cap;
+    returns None (final_event passes through unchanged) when no budget is
+    configured, the cap is not exceeded, cost was not reported, or
+    ``action_on_exceed == "warn"``.
+    """
+    if cost_budget is None or cost_budget.max_cost_usd is None:
+        return None
+    total_cost_usd = final_event.data.get("total_cost_usd")
+    if not isinstance(total_cost_usd, int | float):
+        return None
+    if total_cost_usd <= cost_budget.max_cost_usd:
+        return None
+    if cost_budget.action_on_exceed != "error":
+        # "warn": no enforcement action here, final_event passes through.
+        return None
+    return RuntimeEvent.error(
+        RuntimeErrorData(
+            kind="budget_exceeded",
+            message=(
+                "Cost budget exceeded: "
+                f"${total_cost_usd:.4f} spent, cap ${cost_budget.max_cost_usd:.4f}"
+            ),
+            recoverable=False,
+        )
+    )
+
+
+def _thinking_level_from_runtime_config(config: RuntimeConfig) -> str | None:
+    """Derive PiSdkOptions.thinking_level from RuntimeConfig.thinking (I-098a).
+
+    Only consulted when PiSdkOptions.thinking_level itself is not explicitly
+    set -- an explicit option always wins over this derivation.
+
+    Mapping (RuntimeConfig.thinking.budget_tokens -> thinking_level):
+      < 4_000   -> "low"
+      < 16_000  -> "medium"
+      otherwise -> "high"
+    RuntimeConfig.thinking is None (disabled / not requested) -> None.
+    """
+    thinking = config.thinking
+    if thinking is None:
+        return None
+    if thinking.budget_tokens < 4_000:
+        return "low"
+    if thinking.budget_tokens < 16_000:
+        return "medium"
+    return "high"
+
+
+def _build_env_overrides(
+    config: RuntimeConfig, options: PiSdkOptions
+) -> dict[str, str]:
+    """Merge portable env forwarding (RuntimeConfig.extra["env"], from
+    AgentConfig.env -- I-098a) under explicit PiSdkOptions.env, which always
+    wins for the same key (documented fallback precedence, mirroring
+    resume_session_file/pi_session_file)."""
+    config_env = config.extra.get("env") if isinstance(config.extra, dict) else None
+    merged: dict[str, str] = dict(config_env) if isinstance(config_env, dict) else {}
+    merged.update(options.env)
+    return merged
 
 
 def _options_from_config(config: RuntimeConfig) -> PiSdkOptions:

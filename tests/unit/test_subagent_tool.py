@@ -10,6 +10,7 @@ import pytest
 
 from swarmline.domain_types import ToolSpec
 from swarmline.orchestration.subagent_types import SubagentResult, SubagentStatus
+from swarmline.policy.toolset_policy import ToolsetPolicy
 from swarmline.runtime.thin.subagent_tool import (
     SUBAGENT_TOOL_SPEC,
     SubagentToolConfig,
@@ -172,16 +173,31 @@ class TestSubagentExecutorHappyPath:
 # ---------------------------------------------------------------------------
 
 
+def _permissive_policy() -> ToolsetPolicy:
+    """A policy granting the whole fixture toolset.
+
+    Sprint D stage 1 made an ABSENT policy deny everything, so these tests —
+    which are about the FILTERING behaviour, not about the default — must wire
+    a policy to have anything to filter. The default-deny itself is covered by
+    `test_toolset_policy_scoped_spawn.py::TestAbsentPolicyDenies`.
+    """
+    return ToolsetPolicy(
+        roles={"default": frozenset({"read_file", "write_file", "search"})}
+    )
+
+
 class TestToolInheritance:
     """LLM requests specific tools — executor filters parent_tools."""
 
-    async def test_all_tools_when_not_specified(
+    async def test_all_policy_tools_when_not_specified(
         self,
         orchestrator: AsyncMock,
         config: SubagentToolConfig,
         parent_tools: list[ToolSpec],
     ) -> None:
-        executor = create_subagent_executor(orchestrator, config, parent_tools)
+        executor = create_subagent_executor(
+            orchestrator, config, parent_tools, toolset_policy=_permissive_policy()
+        )
         await executor({"task": "work"})
 
         spec_arg = orchestrator.spawn.call_args[0][0]
@@ -194,7 +210,9 @@ class TestToolInheritance:
         config: SubagentToolConfig,
         parent_tools: list[ToolSpec],
     ) -> None:
-        executor = create_subagent_executor(orchestrator, config, parent_tools)
+        executor = create_subagent_executor(
+            orchestrator, config, parent_tools, toolset_policy=_permissive_policy()
+        )
         await executor({"task": "work", "tools": ["read_file", "search"]})
 
         spec_arg = orchestrator.spawn.call_args[0][0]
@@ -207,7 +225,9 @@ class TestToolInheritance:
         config: SubagentToolConfig,
         parent_tools: list[ToolSpec],
     ) -> None:
-        executor = create_subagent_executor(orchestrator, config, parent_tools)
+        executor = create_subagent_executor(
+            orchestrator, config, parent_tools, toolset_policy=_permissive_policy()
+        )
         await executor({"task": "work", "tools": ["read_file", "nonexistent"]})
 
         spec_arg = orchestrator.spawn.call_args[0][0]

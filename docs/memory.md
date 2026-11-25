@@ -269,6 +269,48 @@ PostgreSQL requires the `episodes` table. Schema is available as `POSTGRES_EPISO
 
 *Introduced in v1.2.0.* Procedural memory stores learned tool sequences -- multi-step patterns that the agent has used to accomplish tasks. When a similar task appears, the agent can recall proven procedures and apply them, improving over time through reinforcement.
 
+All three core types are re-exported from the top-level `swarmline.memory` package for convenience:
+
+```python
+# Shortcut (recommended)
+from swarmline.memory import InMemoryProceduralMemory, Procedure, ProcedureStep
+
+# Or directly from sub-modules
+from swarmline.memory.procedural import InMemoryProceduralMemory
+from swarmline.memory.procedural_types import Procedure, ProcedureStep
+```
+
+### Reinforcement ranking example
+
+`suggest()` ranks procedures by `overlap + success_rate` — proven procedures float to the top as you call `record_outcome()`:
+
+```python
+from swarmline.memory import InMemoryProceduralMemory, Procedure
+
+memory = InMemoryProceduralMemory()
+
+# Two procedures, same trigger words
+proc_a = Procedure(id="a", name="deploy-a", description="variant a", trigger="deploy to staging")
+proc_b = Procedure(id="b", name="deploy-b", description="variant b", trigger="deploy to staging")
+await memory.store(proc_a)
+await memory.store(proc_b)
+
+# proc_b: 3 successes (rate 1.0); proc_a: 1 success + 1 failure (rate 0.5)
+await memory.record_outcome("b", success=True)
+await memory.record_outcome("b", success=True)
+await memory.record_outcome("b", success=True)
+await memory.record_outcome("a", success=True)
+await memory.record_outcome("a", success=False)
+
+results = await memory.suggest("deploy to staging", top_k=2)
+print(results[0].id)          # "b" — higher success_rate wins (1.0 vs 0.5)
+print(results[0].success_rate) # 1.0
+
+# success_rate = success_count / (success_count + failure_count), 0.0 when unused
+fresh = Procedure(id="new", name="untried", description="untried", trigger="new task")
+print(fresh.success_rate)  # 0.0
+```
+
 ### Data Model
 
 **ProcedureStep** -- a single step in a learned procedure:

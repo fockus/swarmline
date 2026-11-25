@@ -6,6 +6,7 @@ stops after exhausting retries, and preserves backward compatibility.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from swarmline.retry import ExponentialBackoff
@@ -227,3 +228,97 @@ class TestThinRuntimeRetryIntegration:
         assert call_count == 1
         error_events = [e for e in events if e.is_error]
         assert len(error_events) == 1
+
+
+class TestAgentConfigRetryPolicyIntegration:
+    """AgentConfig.retry_policy threaded through runtime_wiring into ThinRuntime.
+
+    Exercises the real facade seam (AgentConfig -> build_portable_runtime_plan ->
+    RuntimeConfig -> ThinRuntime.run) rather than constructing RuntimeConfig by
+    hand, so the wiring change is covered end-to-end. Only the LLM boundary is
+    faked (external service boundary); the tool executor is a real callable so a
+    replay would be observable as a second invocation.
+    """
+
+    async def test_retries_transient_llm_error_without_replaying_completed_tool_call(
+        self,
+    ) -> None:
+        from swarmline.agent.config import AgentConfig
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+
+        tool_invocations: list[dict[str, Any]] = []
+
+        def double(args: dict[str, Any]) -> dict[str, Any]:
+            tool_invocations.append(dict(args))
+            return {"result": args["x"] * 2}
+
+        call_count = 0
+
+        async def flaky_llm(
+            messages: list[dict[str, str]],
+            system_prompt: str,
+            **kwargs: Any,
+        ) -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # Turn 1: LLM asks for a tool call — executed exactly once.
+                return json.dumps(
+                    {
+                        "type": "tool_call",
+                        "tool": {
+                            "name": "double",
+                            "args": {"x": 21},
+                            "correlation_id": "c1",
+                        },
+                        "assistant_message": "",
+                    }
+                )
+            if call_count == 2:
+                # Turn 2 (first attempt after the tool result): transient failure.
+                raise ThinLlmError(
+                    RuntimeErrorData(
+                        kind="runtime_crash",
+                        message="Transient upstream error",
+                        recoverable=True,
+                    )
+                )
+            # Turn 2, retried: succeeds without redoing the tool call.
+            return json.dumps({"type": "final", "final_message": "Answer: 42"})
+
+        policy = ExponentialBackoff(max_retries=2, base_delay=0.01, jitter=False)
+        agent_config = AgentConfig(system_prompt="test", retry_policy=policy)
+
+        plan = build_portable_runtime_plan(agent_config, "thin")
+        assert plan.config.retry_policy is policy
+
+        runtime = ThinRuntime(
+            config=plan.config,
+            llm_call=flaky_llm,
+            local_tools={"double": double},
+        )
+
+        events: list[RuntimeEvent] = []
+        async for event in runtime.run(
+            messages=[Message(role="user", content="double 21")],
+            system_prompt="test",
+            active_tools=[],
+            mode_hint="react",
+        ):
+            events.append(event)
+
+        # The tool executed exactly once — the retried LLM call must not
+        # re-trigger execution of an already-completed tool call.
+        assert tool_invocations == [{"x": 21}]
+        assert call_count == 3
+
+        final_events = [e for e in events if e.type == "final"]
+        assert len(final_events) == 1
+        assert "42" in final_events[0].data["text"]
+
+        retry_statuses = [
+            e
+            for e in events
+            if e.type == "status" and "Retry attempt" in e.data.get("text", "")
+        ]
+        assert len(retry_statuses) >= 1

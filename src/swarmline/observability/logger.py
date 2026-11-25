@@ -17,6 +17,52 @@ from typing import Any
 import structlog
 
 
+class _LazySysStderrLogger:
+    """structlog-compatible logger that resolves sys.stderr at write time.
+
+    Prevents stream-freeze pollution when sys.stderr is temporarily replaced
+    (e.g. by click.testing.CliRunner): each write reads ``sys.stderr`` from the
+    module namespace rather than holding a stale reference to a closed buffer.
+    """
+
+    @property
+    def _file(self) -> Any:
+        """Return the current sys.stderr for test introspection compatibility."""
+        return sys.stderr
+
+    def _write(self, message: str, **_kw: Any) -> None:
+        print(message, file=sys.stderr, flush=True)
+
+    # structlog channels all rendered output through these methods.  The full
+    # method surface mirrors structlog.PrintLogger exactly so that any
+    # wrapper_class (stdlib.BoundLogger, make_filtering_bound_logger) can proxy
+    # every level — including exception and failure — without AttributeError.
+    msg = _write
+    err = _write
+    debug = _write
+    info = _write
+    warning = _write
+    warn = _write
+    error = _write
+    exception = _write
+    failure = _write
+    critical = _write
+    log = _write
+    fatal = _write
+
+
+class _LazyStderrLoggerFactory:
+    """structlog logger factory that produces :class:`_LazySysStderrLogger` instances.
+
+    Use in place of ``structlog.PrintLoggerFactory(file=sys.stderr)`` to avoid
+    the eager stream capture that causes ``ValueError: I/O operation on closed
+    file`` when the stream is replaced between log calls.
+    """
+
+    def __call__(self, *_args: Any) -> _LazySysStderrLogger:
+        return _LazySysStderrLogger()
+
+
 def configure_logging(level: str = "info", fmt: str = "json") -> None:
     """Configure structlog + standard logging to write to stderr.
 
@@ -53,16 +99,20 @@ def configure_logging(level: str = "info", fmt: str = "json") -> None:
     ]
 
     if fmt == "json":
-        processors.append(structlog.processors.JSONRenderer())  # ty: ignore[invalid-argument-type]  # structlog Processor union strict; concrete renderer accepted at runtime
+        processors.append(
+            structlog.processors.JSONRenderer()  # ty: ignore[invalid-argument-type]  # structlog Processor union strict; concrete renderer accepted at runtime
+        )
     else:
-        processors.append(structlog.dev.ConsoleRenderer())  # ty: ignore[invalid-argument-type]  # structlog Processor union strict; concrete renderer accepted at runtime
+        processors.append(
+            structlog.dev.ConsoleRenderer()  # ty: ignore[invalid-argument-type]  # structlog Processor union strict; concrete renderer accepted at runtime
+        )
 
     structlog.configure(
         processors=processors,  # type: ignore[arg-type]
         wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
-        cache_logger_on_first_use=True,
+        logger_factory=_LazyStderrLoggerFactory(),
+        cache_logger_on_first_use=False,
     )
 
 

@@ -15,6 +15,7 @@ from swarmline.runtime.deepagents_builtins import (
 )
 from swarmline.runtime.deepagents_hitl import validate_hitl_config
 from swarmline.runtime.deepagents_langchain import (
+    build_cancelled_event,
     build_langchain_messages,
     check_langchain_available,
     stream_langchain_runtime_events,
@@ -73,6 +74,26 @@ class DeepAgentsRuntime:
         self._config = config or RuntimeConfig(runtime_name="deepagents")
         self._tool_executors = tool_executors or {}
         self._mcp_bridge = McpBridge(mcp_servers) if mcp_servers else None
+        self._cancel_requested = False
+
+    def cancel(self) -> None:
+        """Request cooperative cancellation of the current run.
+
+        Sets the internal flag (checked by both stream loops) and cancels the
+        configured CancellationToken when one is present.
+        """
+        self._cancel_requested = True
+        if self._config.cancellation_token is not None:
+            self._config.cancellation_token.cancel()
+
+    def _make_cancel_check(self, config: RuntimeConfig) -> Callable[[], bool]:
+        """Build a checkpoint callable combining token and internal flag."""
+        token = config.cancellation_token
+
+        def _cancel_check() -> bool:
+            return self._cancel_requested or (token is not None and token.is_cancelled)
+
+        return _cancel_check
 
     async def run(
         self,
@@ -90,6 +111,15 @@ class DeepAgentsRuntime:
             return
 
         effective_config = config or self._config
+        # Reset the per-run flag so a cancelled instance can run again
+        # (parity with cli/openai_agents/pi_sdk). An externally-cancelled
+        # CancellationToken still short-circuits below.
+        self._cancel_requested = False
+        cancel_check = self._make_cancel_check(effective_config)
+        if cancel_check():
+            yield build_cancelled_event()
+            return
+
         effective_system_prompt = append_structured_output_instruction(
             system_prompt,
             effective_config.output_format,
@@ -121,6 +151,11 @@ class DeepAgentsRuntime:
         full_text = ""
         tool_calls: list[dict[str, Any]] = []
         new_messages: list[Message] = []
+        usage_totals: dict[str, int] = {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "native_calls": 0,
+        }
 
         try:
             stream = self._stream_langchain
@@ -188,8 +223,13 @@ class DeepAgentsRuntime:
                 native_config=effective_config.native_config,
                 input_payload=locals().get("input_payload"),
                 run_config=locals().get("run_config"),
+                cancel_check=cancel_check,
+                usage_totals=usage_totals,
             ):
                 yield event
+                if event.type == "error":
+                    # Stream ended abnormally (e.g. cancelled): no final event.
+                    return
                 if event.type == "assistant_delta":
                     full_text += str(event.data.get("text", ""))
                 elif event.type == "tool_call_started":
@@ -246,13 +286,28 @@ class DeepAgentsRuntime:
 
         new_messages.append(Message(role="assistant", content=full_text))
 
+        usage_payload: dict[str, Any] | None = None
+        tokens_in = 0
+        tokens_out = 0
+        if usage_totals["native_calls"] > 0:
+            tokens_in = usage_totals["input_tokens"]
+            tokens_out = usage_totals["output_tokens"]
+            usage_payload = {
+                "input_tokens": tokens_in,
+                "output_tokens": tokens_out,
+                "usage_source": "native",
+            }
+
         yield RuntimeEvent.final(
             text=full_text,
             new_messages=new_messages,
             metrics=TurnMetrics(
                 model=effective_config.model,
                 tool_calls_count=len(tool_calls),
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
             ),
+            usage=usage_payload,
             session_id=final_session_id,
             structured_output=extract_structured_output(
                 full_text,
@@ -293,6 +348,8 @@ class DeepAgentsRuntime:
         native_config: dict[str, Any] | None = None,
         input_payload: Any = None,
         run_config: dict[str, Any] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
+        usage_totals: dict[str, int] | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
         """Stream native."""
         native_config = native_config or {}
@@ -316,6 +373,8 @@ class DeepAgentsRuntime:
             graph=graph,
             input_payload=input_payload or {"messages": []},
             run_config=run_config,
+            cancel_check=cancel_check,
+            usage_totals=usage_totals,
         ):
             yield event
 
@@ -329,6 +388,8 @@ class DeepAgentsRuntime:
         native_config: dict[str, Any] | None = None,
         input_payload: Any = None,
         run_config: dict[str, Any] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
+        usage_totals: dict[str, int] | None = None,
     ) -> AsyncIterator[RuntimeEvent]:
         """Stream langchain."""
         lc_messages = self._build_lc_messages(messages, system_prompt)
@@ -342,6 +403,8 @@ class DeepAgentsRuntime:
         async for event in stream_langchain_runtime_events(
             runnable=runnable,
             lc_messages=lc_messages,
+            cancel_check=cancel_check,
+            usage_totals=usage_totals,
         ):
             yield event
 

@@ -7,6 +7,7 @@ Contract tests (pass for ANY correct HookDispatcher implementation)
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import Any
 
 import pytest
@@ -126,14 +127,19 @@ class TestHookDispatcherProtocol:
         dispatcher = DefaultHookDispatcher(reg)
         assert isinstance(dispatcher, HookDispatcher)
 
-    def test_protocol_has_exactly_four_methods(self) -> None:
-        """ISP: HookDispatcher has exactly 4 public methods."""
+    def test_protocol_has_exactly_five_methods(self) -> None:
+        """ISP: HookDispatcher has exactly 5 public methods.
+
+        4 tool-level (dispatch_pre_tool, dispatch_post_tool, dispatch_stop,
+        dispatch_user_prompt) + 1 generic session event (dispatch_session_event).
+        Protocol stays ≤5 — ISP compliant.
+        """
         public_methods = [
             m
             for m in dir(HookDispatcher)
             if not m.startswith("_") and callable(getattr(HookDispatcher, m, None))
         ]
-        assert len(public_methods) == 4
+        assert len(public_methods) == 5
 
 
 # ===========================================================================
@@ -234,10 +240,13 @@ class TestDispatchPreTool:
         assert result.action == "modify"
         assert result.modified_input == {"original": True, "x": 1, "y": 2}
 
-    async def test_exception_in_pre_hook_is_fail_open(
+    async def test_pretooluse_hook_exception_blocks_execution(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Fail-open: exception in pre-tool hook → log warning, allow."""
+        """Fail-closed (stage 28 / CONF-01 fix): exception in a PreToolUse
+        hook BLOCKS execution — never silently allows it. PreToolUse is an
+        enforcement gate; a broken hook must not be a bypass.
+        """
         reg = HookRegistry()
         reg.on_pre_tool_use(_raising_hook)
         dispatcher = DefaultHookDispatcher(reg)
@@ -245,8 +254,254 @@ class TestDispatchPreTool:
         with caplog.at_level(logging.WARNING):
             result = await dispatcher.dispatch_pre_tool("tool", {})
 
-        assert result.action == "allow"
+        assert result.action == "block"
         assert "hook exploded" in caplog.text
+
+
+# ===========================================================================
+# 3b. PreToolUse fail-closed + quarantine (stage 28 / conformance-audit CONF-01)
+# ===========================================================================
+
+
+class TestPreToolUseFailClosed:
+    """PreToolUse is an enforcement gate, not a fire-and-forget observer.
+
+    An exception or an unrecognized verdict from a PreToolUse hook must
+    BLOCK execution (never silently allow it) — otherwise any enforcement
+    implemented as a hook is bypassable by a single exception. A hook that
+    fails repeatedly is quarantined (excluded from further dispatch) so a
+    persistently broken (non-malicious) hook cannot wedge every tool call
+    forever; every failure and the quarantine event itself are logged for
+    observability.
+
+    Scope: PreToolUse only. dispatch_post_tool / dispatch_stop /
+    dispatch_user_prompt / dispatch_session_event remain fail-open
+    (different track, CONF-02) and are covered by their own tests above.
+    """
+
+    @pytest.mark.parametrize(
+        "verdict",
+        [
+            None,
+            "not-a-verdict",
+            42,
+            {},
+            {"decision": "maybe"},
+            {"unexpected": "shape"},
+        ],
+        ids=[
+            "none",
+            "string",
+            "int",
+            "empty_dict",
+            "unknown_decision",
+            "unknown_dict_shape",
+        ],
+    )
+    async def test_unrecognized_verdict_blocks(
+        self, verdict: Any, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Any verdict shape the dispatcher can't recognize blocks (fail-closed).
+
+        Includes a bare ``None`` return — e.g. a hook that forgot a
+        ``return`` statement — which used to silently coerce to allow.
+        """
+
+        async def weird_hook(**kwargs: Any) -> Any:
+            return verdict
+
+        reg = HookRegistry()
+        reg.on_pre_tool_use(weird_hook)
+        dispatcher = DefaultHookDispatcher(reg)
+
+        with caplog.at_level(logging.WARNING):
+            result = await dispatcher.dispatch_pre_tool("tool", {})
+
+        assert result.action == "block"
+        assert "unrecognized" in caplog.text.lower()
+
+    async def test_repeatedly_failing_hook_quarantined_and_observable(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """After N consecutive failures the hook is quarantined: excluded
+        from further dispatch, with the quarantine event logged.
+        """
+        reg = HookRegistry()
+        reg.on_pre_tool_use(_raising_hook)
+        dispatcher = DefaultHookDispatcher(reg)
+        threshold = DefaultHookDispatcher.PRE_TOOL_QUARANTINE_THRESHOLD
+
+        with caplog.at_level(logging.WARNING):
+            for _ in range(threshold):
+                result = await dispatcher.dispatch_pre_tool("tool", {})
+                assert result.action == "block"
+
+        assert "quarantined" in caplog.text.lower()
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_after_quarantine = await dispatcher.dispatch_pre_tool("tool", {})
+
+        # The quarantined hook is excluded from dispatch entirely — no longer
+        # invoked at all. With no other hooks registered the tool call is
+        # therefore allowed: quarantine excludes the broken hook, it does
+        # not wedge every future tool call.
+        assert result_after_quarantine.action == "allow"
+        assert "hook exploded" not in caplog.text
+
+    async def test_zero_hooks_allows(self) -> None:
+        """Edge case: 0 registered hooks → allow (never block emptiness)."""
+        reg = HookRegistry()
+        dispatcher = DefaultHookDispatcher(reg)
+        result = await dispatcher.dispatch_pre_tool("any_tool", {"a": 1})
+        assert result.action == "allow"
+
+    async def test_healthy_hook_path_unchanged(self) -> None:
+        """Regression guard: allow/block/modify hooks behave exactly as
+        before, and a hook that fails once but recovers (below the
+        quarantine threshold) is never quarantined — the failure counter
+        resets on success and the hook keeps being invoked.
+        """
+        calls: list[int] = []
+
+        async def flaky_then_healthy(**kwargs: Any) -> HookResult:
+            calls.append(1)
+            if len(calls) == 1:
+                raise RuntimeError("transient")
+            return HookResult.allow()
+
+        reg = HookRegistry()
+        reg.on_pre_tool_use(flaky_then_healthy)
+        dispatcher = DefaultHookDispatcher(reg)
+
+        first = await dispatcher.dispatch_pre_tool("tool", {})
+        assert first.action == "block"  # fail-closed on the transient failure
+
+        second = await dispatcher.dispatch_pre_tool("tool", {})
+        assert second.action == "allow"
+        assert len(calls) == 2, "hook must still be invoked — not quarantined"
+
+        # Plain allow / block / modify hooks are unaffected by the new logic.
+        reg_allow = HookRegistry()
+        reg_allow.on_pre_tool_use(_allow_hook)
+        assert (
+            await DefaultHookDispatcher(reg_allow).dispatch_pre_tool("t", {})
+        ).action == "allow"
+
+        reg_block = HookRegistry()
+        reg_block.on_pre_tool_use(_block_hook)
+        blocked = await DefaultHookDispatcher(reg_block).dispatch_pre_tool("t", {})
+        assert blocked.action == "block"
+        assert blocked.message == "blocked by policy"
+
+        reg_modify = HookRegistry()
+        reg_modify.on_pre_tool_use(_modify_hook)
+        modified = await DefaultHookDispatcher(reg_modify).dispatch_pre_tool(
+            "t", {"key": "original"}
+        )
+        assert modified.action == "modify"
+        assert modified.modified_input == {"key": "modified"}
+
+
+# ===========================================================================
+# 3c. Fail-closed block reason must not leak hook repr (GPT-5.5 review, MAJOR)
+# ===========================================================================
+
+
+class TestPreToolUseBlockReasonDoesNotLeakHookRepr:
+    """``HookResult.message`` is caller/model-facing: ``ToolExecutor`` JSON-
+    serializes it straight into the tool result the model sees. It must
+    never embed a hook's ``repr()`` — for a ``functools.partial`` (or any
+    callable instance without ``__name__``), ``_hook_name`` falls back to
+    ``repr(hook)``, which can include bound-argument values (tokens,
+    config, secrets). Full diagnostics (hook identity, repr, exception)
+    must stay in the structured log only.
+    """
+
+    async def test_exception_block_reason_has_no_hook_repr_leak(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        sentinel = "SENTINEL_SECRET_XYZ"
+
+        async def _raises(secret: str, **kwargs: Any) -> HookResult:
+            raise RuntimeError("boom")
+
+        leaking_hook = partial(_raises, secret=sentinel)
+        reg = HookRegistry()
+        reg.on_pre_tool_use(leaking_hook)
+        dispatcher = DefaultHookDispatcher(reg)
+
+        with caplog.at_level(logging.WARNING):
+            result = await dispatcher.dispatch_pre_tool("tool", {})
+
+        assert result.action == "block"
+        assert result.message is not None
+        assert sentinel not in result.message
+
+        # Diagnostics (hook repr + exception detail) still land in the log —
+        # quarantine/failure observability is preserved, only the
+        # caller-facing reason is sanitized.
+        assert sentinel in caplog.text
+        assert "boom" in caplog.text
+
+    async def test_unrecognized_verdict_block_reason_has_no_hook_repr_leak(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        sentinel = "SENTINEL_SECRET_XYZ"
+
+        async def _weird(secret: str, **kwargs: Any) -> Any:
+            return "not-a-verdict"
+
+        leaking_hook = partial(_weird, secret=sentinel)
+        reg = HookRegistry()
+        reg.on_pre_tool_use(leaking_hook)
+        dispatcher = DefaultHookDispatcher(reg)
+
+        with caplog.at_level(logging.WARNING):
+            result = await dispatcher.dispatch_pre_tool("tool", {})
+
+        assert result.action == "block"
+        assert result.message is not None
+        assert sentinel not in result.message
+        assert sentinel in caplog.text
+
+
+# ===========================================================================
+# 3d. Legacy ``continue_=False`` is a recognized (healthy) verdict, not a
+# failure — must not accumulate towards quarantine (GPT-5.5 review, minor)
+# ===========================================================================
+
+
+class TestLegacyContinueFalseIsHealthyNotAFailure:
+    """``{"continue_": False}`` is a recognized legacy verdict that blocks —
+    it is NOT a dispatcher-level failure. A hook that legitimately blocks
+    every call via this format must keep being invoked forever and must
+    never be quarantined.
+    """
+
+    async def test_repeated_continue_false_never_quarantines(self) -> None:
+        calls: list[int] = []
+
+        async def legacy_stop(**kwargs: Any) -> dict[str, Any]:
+            calls.append(1)
+            return {"continue_": False}
+
+        reg = HookRegistry()
+        reg.on_pre_tool_use(legacy_stop)
+        dispatcher = DefaultHookDispatcher(reg)
+        threshold = DefaultHookDispatcher.PRE_TOOL_QUARANTINE_THRESHOLD
+
+        for _ in range(threshold + 2):
+            result = await dispatcher.dispatch_pre_tool("tool", {})
+            assert result.action == "block"
+            assert result.message == "Blocked by hook (continue_=False)"
+
+        # If continue_=False had incremented the failure counter, the hook
+        # would have been quarantined by now and stopped being invoked
+        # (dispatch would silently fall through to allow — no other hooks
+        # registered). Every call still reaching the hook proves it was
+        # never quarantined.
+        assert len(calls) == threshold + 2
 
 
 # ===========================================================================

@@ -145,6 +145,21 @@ class DaemonRunner:
         """Schedule a one-shot task."""
         return self._scheduler.once_at(timestamp, coro_factory, name=name)
 
+    def schedule_cron(
+        self,
+        cron_expr: str,
+        timezone: str,
+        coro_factory: Callable[[], Awaitable[Any]],
+        *,
+        name: str = "",
+    ) -> str:
+        """Schedule a recurring cron task on the scheduler.
+
+        Raises:
+            ValueError: if ``cron_expr`` is invalid or ``timezone`` is unknown.
+        """
+        return self._scheduler.cron_at(cron_expr, timezone, coro_factory, name=name)
+
     async def stop(self) -> None:
         """Request daemon stop. Scheduler will exit on next tick."""
         logger.info("daemon.stop_requested")

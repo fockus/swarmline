@@ -224,6 +224,95 @@ files = await mb.list_files()
 # ["MEMORY.md", "notes/status.md", "progress.md"]
 ```
 
+## Tiered Knowledge (L0/L1/L2)
+
+*Introduced in v1.7.0.* `TieredContextManager` adds automatic summarisation of every file written to a Memory Bank provider. Three tiers are generated and stored alongside the originals:
+
+| Tier | Size | Purpose |
+|------|------|---------|
+| **L0** | ~100 tokens | One-line abstract — fast index / table of contents |
+| **L1** | ~2000 tokens | Overview — decision-making context |
+| **L2** | unlimited | Full original content |
+
+Tiers are stored in a `.tiers/` subfolder inside the provider's namespace and are never written to the originals.
+
+### Quick Start (fully offline — no LLM required)
+
+```python
+from swarmline.memory_bank import TieredContextManager, SimpleTierGenerator
+
+# Minimal dict-backed provider implementing MemoryBankProvider
+class DictProvider:
+    def __init__(self) -> None:
+        self._store: dict[str, str] = {}
+
+    async def read_file(self, path: str) -> str | None:
+        return self._store.get(path)
+
+    async def write_file(self, path: str, content: str) -> None:
+        self._store[path] = content
+
+    async def append_to_file(self, path: str, content: str) -> None:
+        self._store[path] = self._store.get(path, "") + content
+
+    async def list_files(self, prefix: str = "") -> list[str]:
+        return [p for p in self._store if p.startswith(prefix)]
+
+    async def delete_file(self, path: str) -> None:
+        self._store.pop(path, None)
+
+
+provider = DictProvider()
+# SimpleTierGenerator uses truncation — no LLM needed
+manager = TieredContextManager(provider, SimpleTierGenerator())
+
+status = "# Project Status\nPhase: MVP. DB: PostgreSQL. Deploy: Docker."
+
+# Your app writes the original file to the bank first, then notifies the
+# manager — on_file_written is a post-write hook that generates L0/L1 tiers
+# (it does NOT write the original; L2 reads back whatever the app stored).
+await provider.write_file("STATUS.md", status)
+await manager.on_file_written("STATUS.md", status)
+
+# Read a specific tier
+l0 = await manager.get_tiered("STATUS.md", "L0")   # one-line abstract
+l1 = await manager.get_tiered("STATUS.md", "L1")   # full overview
+l2 = await manager.get_tiered("STATUS.md", "L2")   # original file content (== status)
+
+# Build a budget-bounded context string for the agent's system prompt
+context = await manager.build_context(budget_tokens=4000)
+# Returns:
+# "## Memory Bank Index\n- STATUS.md: # Project Status\n\n### STATUS.md\n..."
+```
+
+### Using an LLM-powered generator
+
+Replace `SimpleTierGenerator` with any object that implements:
+
+```python
+class TierGenerator(Protocol):
+    async def generate(self, prompt: str, content: str) -> str: ...
+```
+
+Pass `None` (default) or your custom generator to `TieredContextManager`. When the `generator` argument is omitted, `SimpleTierGenerator` is used automatically — making every deployment safe to start without an LLM.
+
+### Integration with FilesystemMemoryBankProvider
+
+```python
+from pathlib import Path
+from swarmline.memory_bank import TieredContextManager, SimpleTierGenerator
+from swarmline.memory_bank.fs_provider import FilesystemMemoryBankProvider
+from swarmline.memory_bank.types import MemoryBankConfig
+
+config = MemoryBankConfig(enabled=True, root_path=Path("./data/mb"))
+provider = FilesystemMemoryBankProvider(config, user_id="alice", topic_id="proj1")
+manager = TieredContextManager(provider)  # defaults to SimpleTierGenerator
+
+# Called automatically from a PostToolUse hook or after any memory_write tool call
+await manager.on_file_written("plans/sprint1.md", plan_content)
+context = await manager.build_context(budget_tokens=8000)
+```
+
 ## Memory vs Memory Bank
 
 | Aspect | Memory (core) | Memory Bank |

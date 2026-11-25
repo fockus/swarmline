@@ -7,6 +7,7 @@ TDD RED phase: these tests define the contract for policy enforcement in ToolExe
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -182,3 +183,228 @@ class TestToolExecutorPolicy:
         result = await executor.execute("echo", {"original": True})
         data = json.loads(result)
         assert data["echo"] == {"injected": True}
+
+
+# ---------------------------------------------------------------------------
+# I-098b — can_use_tool callback (claude-agent-sdk-compatible permission gate)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _ObjectPermissionAllow:
+    """Object-shaped allow result (mirrors claude_agent_sdk.PermissionResultAllow)."""
+
+    behavior: str = "allow"
+    updated_input: dict[str, Any] | None = None
+
+
+@dataclass
+class _ObjectPermissionDeny:
+    """Object-shaped deny result (mirrors claude_agent_sdk.PermissionResultDeny)."""
+
+    behavior: str = "deny"
+    message: str = ""
+
+
+class TestToolExecutorCanUseTool:
+    """ToolExecutor integration with the AgentConfig.can_use_tool callback."""
+
+    async def test_executor_without_callback_allows_all(self) -> None:
+        """No callback → tool executes normally (backward compat)."""
+        executor = ToolExecutor(local_tools={"echo": _echo_tool})
+        result = await executor.execute("echo", {"msg": "hi"})
+        data = json.loads(result)
+        assert data["echo"]["msg"] == "hi"
+
+    async def test_callback_deny_dict_returns_error_and_skips_execution(self) -> None:
+        """Dict-shaped deny result → JSON error, tool NOT executed."""
+        call_count = 0
+
+        async def counting_tool(args: dict[str, Any]) -> dict[str, Any]:
+            nonlocal call_count
+            call_count += 1
+            return {"ok": True}
+
+        async def deny_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return {"behavior": "deny", "message": "no thanks"}
+
+        executor = ToolExecutor(
+            local_tools={"bash": counting_tool},
+            can_use_tool=deny_callback,
+        )
+        result = await executor.execute("bash", {"cmd": "ls"})
+        data = json.loads(result)
+        assert "error" in data
+        assert "no thanks" in data["error"]
+        assert call_count == 0
+
+    async def test_callback_deny_object_returns_error_and_skips_execution(
+        self,
+    ) -> None:
+        """Object-shaped deny result (``.behavior``/``.message``) is handled too."""
+        call_count = 0
+
+        async def counting_tool(args: dict[str, Any]) -> dict[str, Any]:
+            nonlocal call_count
+            call_count += 1
+            return {"ok": True}
+
+        async def deny_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return _ObjectPermissionDeny(message="object says no")
+
+        executor = ToolExecutor(
+            local_tools={"bash": counting_tool},
+            can_use_tool=deny_callback,
+        )
+        result = await executor.execute("bash", {"cmd": "ls"})
+        data = json.loads(result)
+        assert "error" in data
+        assert "object says no" in data["error"]
+        assert call_count == 0
+
+    async def test_callback_allow_dict_executes_normally(self) -> None:
+        """Dict-shaped allow result → tool executes."""
+
+        async def allow_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return {"behavior": "allow"}
+
+        executor = ToolExecutor(
+            local_tools={"echo": _echo_tool},
+            can_use_tool=allow_callback,
+        )
+        result = await executor.execute("echo", {"msg": "hello"})
+        data = json.loads(result)
+        assert data["echo"]["msg"] == "hello"
+
+    async def test_callback_allow_object_executes_normally(self) -> None:
+        """Object-shaped allow result (``.behavior``) → tool executes."""
+
+        async def allow_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return _ObjectPermissionAllow()
+
+        executor = ToolExecutor(
+            local_tools={"echo": _echo_tool},
+            can_use_tool=allow_callback,
+        )
+        result = await executor.execute("echo", {"msg": "hello"})
+        data = json.loads(result)
+        assert data["echo"]["msg"] == "hello"
+
+    async def test_callback_allow_with_updated_input_substitutes_args_dict(
+        self,
+    ) -> None:
+        """Dict-shaped allow + updated_input → tool receives substituted args."""
+
+        async def allow_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return {"behavior": "allow", "updated_input": {"injected": True}}
+
+        executor = ToolExecutor(
+            local_tools={"echo": _echo_tool},
+            can_use_tool=allow_callback,
+        )
+        result = await executor.execute("echo", {"original": True})
+        data = json.loads(result)
+        assert data["echo"] == {"injected": True}
+
+    async def test_callback_allow_with_updated_input_substitutes_args_object(
+        self,
+    ) -> None:
+        """Object-shaped allow + updated_input → tool receives substituted args."""
+
+        async def allow_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return _ObjectPermissionAllow(updated_input={"injected": True})
+
+        executor = ToolExecutor(
+            local_tools={"echo": _echo_tool},
+            can_use_tool=allow_callback,
+        )
+        result = await executor.execute("echo", {"original": True})
+        data = json.loads(result)
+        assert data["echo"] == {"injected": True}
+
+    async def test_policy_deny_short_circuits_before_callback_is_invoked(
+        self,
+    ) -> None:
+        """Both tool_policy and can_use_tool present, policy denies first →
+        callback must NOT be called at all."""
+        callback_called = False
+
+        async def spy_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            nonlocal callback_called
+            callback_called = True
+            return {"behavior": "allow"}
+
+        policy = DefaultToolPolicy()
+        executor = ToolExecutor(
+            local_tools={"bash": _echo_tool},
+            tool_policy=policy,
+            can_use_tool=spy_callback,
+        )
+        result = await executor.execute("bash", {"cmd": "ls"})
+        data = json.loads(result)
+        assert "error" in data
+        assert not callback_called
+
+    async def test_policy_allow_then_callback_deny_skips_execution(self) -> None:
+        """Policy allows, callback denies → tool still NOT executed."""
+        call_count = 0
+
+        async def counting_tool(args: dict[str, Any]) -> dict[str, Any]:
+            nonlocal call_count
+            call_count += 1
+            return {"ok": True}
+
+        async def deny_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            return {"behavior": "deny", "message": "callback veto"}
+
+        policy = DefaultToolPolicy(allowed_system_tools={"custom_tool"})
+        executor = ToolExecutor(
+            local_tools={"custom_tool": counting_tool},
+            tool_policy=policy,
+            can_use_tool=deny_callback,
+        )
+        result = await executor.execute("custom_tool", {})
+        data = json.loads(result)
+        assert "error" in data
+        assert "callback veto" in data["error"]
+        assert call_count == 0
+
+    async def test_raising_callback_fails_closed_and_skips_execution(self) -> None:
+        """Callback raises → treated as deny (fail-closed), tool NOT executed."""
+        call_count = 0
+
+        async def counting_tool(args: dict[str, Any]) -> dict[str, Any]:
+            nonlocal call_count
+            call_count += 1
+            return {"ok": True}
+
+        async def raising_callback(
+            tool_name: str, tool_input: dict[str, Any], context: Any
+        ) -> Any:
+            raise RuntimeError("permission backend unreachable")
+
+        executor = ToolExecutor(
+            local_tools={"echo": counting_tool},
+            can_use_tool=raising_callback,
+        )
+        result = await executor.execute("echo", {})
+        data = json.loads(result)
+        assert "error" in data
+        assert "permission backend unreachable" in data["error"]
+        assert call_count == 0

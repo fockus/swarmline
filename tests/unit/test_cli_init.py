@@ -138,7 +138,8 @@ class TestInitRuntime:
         with runner.isolated_filesystem(temp_dir=tmp_path):
             _invoke(runner, ["init", "bot", "--runtime", "claude"])
             content = Path("bot/config.yaml").read_text()
-            assert "claude" in content
+            # the short "claude" CLI spelling maps to the canonical runtime name
+            assert "claude_sdk" in content
 
     def test_runtime_invalid_rejected(self, tmp_path: Path) -> None:
         runner = CliRunner()

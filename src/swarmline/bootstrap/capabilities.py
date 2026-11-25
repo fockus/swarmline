@@ -1,7 +1,7 @@
 """Capabilities wiring - assemble tools from independent capabilities.
 
-Six capabilities with separate toggles:
-sandbox, web, todo, memory_bank, planning, thinking.
+Seven capabilities with separate toggles:
+sandbox, web, todo, memory_bank, planning, artifacts, thinking.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ def collect_capability_tools(
     plan_manager: Any | None = None,
     plan_user_id: str = "",
     plan_topic_id: str = "",
+    artifact_root: Any | None = None,
     thinking_enabled: bool = True,
     tool_budget_config: ToolBudgetConfig | None = None,
 ) -> tuple[dict[str, ToolSpec], dict[str, Callable]]:
@@ -32,9 +33,11 @@ def collect_capability_tools(
         web_provider: WebProvider -> web_fetch, web_search.
         todo_provider: TodoProvider -> todo_read, todo_write.
         memory_bank_provider: MemoryBankProvider -> memory_read, memory_write, ...
-        plan_manager: PlanManager -> plan_create, plan_status, plan_execute.
+        plan_manager: PlanManager -> plan_create, plan_status.
         plan_user_id: user_id for the plan namespace.
         plan_topic_id: topic_id for the plan namespace.
+        artifact_root: ArtifactRoot -> artifact.create/load,
+            workspace.read/write/update_todo/update_plan/search/list_files.
         thinking_enabled: -> thinking tool (standalone).
         tool_budget_config: Tool selection budget (optional).
 
@@ -84,6 +87,32 @@ def collect_capability_tools(
         all_specs.update(specs)
         all_executors.update(executors)
 
+    # Artifacts + workspace-file tools
+    if artifact_root is not None:
+        from swarmline.artifacts.file_registry import FileRegistry
+        from swarmline.artifacts.fs_store import FSArtifactStore
+        from swarmline.artifacts.live_files import LiveFilesManager
+        from swarmline.artifacts.registry import ArtifactRegistry
+        from swarmline.artifacts.tools_artifact import create_artifact_tools
+        from swarmline.artifacts.tools_workspace import create_workspace_tools
+
+        file_registry = FileRegistry(artifact_root)
+        live_files = LiveFilesManager(artifact_root)
+        artifact_registry = ArtifactRegistry(artifact_root)
+        store = FSArtifactStore(base_path=artifact_root.path / "tool_outputs")
+
+        specs, executors = create_artifact_tools(
+            store, registry=artifact_registry, file_registry=file_registry
+        )
+        all_specs.update(specs)
+        all_executors.update(executors)
+
+        specs, executors = create_workspace_tools(
+            artifact_root, file_registry, live_files
+        )
+        all_specs.update(specs)
+        all_executors.update(executors)
+
     # Thinking tool (standalone)
     if thinking_enabled:
         from swarmline.tools.thinking import create_thinking_tool
@@ -126,6 +155,8 @@ def _tool_group_for_name(tool_name: str) -> ToolGroup:
     if tool_name == "thinking" or tool_name.startswith("todo_"):
         return ToolGroup.ALWAYS
     if tool_name.startswith("memory_"):
+        return ToolGroup.MEMORY
+    if tool_name.startswith(("artifact.", "workspace.")):
         return ToolGroup.MEMORY
     if tool_name.startswith("plan_"):
         return ToolGroup.PLANNING

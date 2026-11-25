@@ -281,3 +281,123 @@ CostTracker.record → check_budget
     ▼  ok
 Final RuntimeEvent
 ```
+
+## PII Redaction
+
+Swarmline ships a zero-dependency PII guardrail based on a conservative set of
+compiled, ReDoS-safe regular expressions.  All detection and redaction is done
+in pure Python (stdlib only) — no network calls, no ML models, no extra package
+required.
+
+### Supported kinds
+
+| Kind | Pattern notes |
+|---|---|
+| `email` | RFC-5321 local-part + domain; supports subdomains and plus-tags |
+| `phone` | International (+ country code) and domestic with spaces/dashes/parens |
+| `credit_card` | 16-digit (4-4-4-4 Visa/MC/Discover) and 15-digit (4-6-5 Amex); Luhn checksum gate (no false positives) |
+| `ssn` | `xxx-xx-xxxx` dash format only — arbitrary 9-digit runs are ignored |
+| `ip` | IPv4 dotted-quad; each octet constrained to 0–255. **IPv6 is out of scope.** |
+
+`detect_pii()` returns a **non-overlapping** match list — when patterns overlap a
+span, the more-specific kind wins (`credit_card > ssn > ip > email > phone`).
+
+### Redaction strategies
+
+| Strategy | Behaviour | Example result |
+|---|---|---|
+| `"redact"` (default) | Replace with `[REDACTED_<KIND>]` | `[REDACTED_EMAIL]` |
+| `"mask"` | Keep last 4 chars, prefix with `****` | `****1234` |
+| `"hash"` | `[<KIND>:<sha256(salt+value)[:10]>]` — deterministic | `[EMAIL:a1b2c3d4e5]` |
+
+All strategies are **idempotent**: replacement tokens do not match any PII
+pattern, so applying redaction twice yields the same string.
+
+!!! warning "Set a secret `hash_salt` in production"
+    The `"hash"` strategy is irreversible **only** when `hash_salt` is a long
+    random secret. The default `hash_salt=""` is unsalted and brute-forceable for
+    enumerable PII (e.g. phone numbers), and emits a runtime warning. Always pass
+    a secret salt when using `strategy="hash"`.
+
+### Wiring via middleware (prompt + result)
+
+```python
+from swarmline.agent.config import AgentConfig
+from swarmline.agent.middleware import PiiMiddleware
+
+agent = Agent(AgentConfig(
+    system_prompt="You are helpful.",
+    middleware=(
+        PiiMiddleware(
+            strategy="redact",   # "redact" | "mask" | "hash"
+            kinds=["email", "ssn"],  # None = all five kinds
+            redact_input=True,   # redact the user prompt in before_query
+            redact_output=True,  # redact result.text in after_result
+            hash_salt="",        # set to a long random secret when strategy="hash"
+        ),
+    ),
+))
+```
+
+`PiiMiddleware.before_query` redacts the prompt string before it is sent to the
+LLM.  `PiiMiddleware.after_result` redacts `result.text` via
+`dataclasses.replace` (the frozen `Result` is never mutated).
+
+**Note:** `result.structured_output` is intentionally not redacted by the
+middleware — it is a validated domain object.  Apply redaction at the
+application layer if structured fields contain PII.
+
+### Wiring via input filter (full message history + system prompt)
+
+Use `PiiInputFilter` to redact the entire conversation history and system
+prompt before each LLM call.  Wire it through `RuntimeConfig.input_filters`:
+
+```python
+from swarmline.pii import PiiInputFilter
+from swarmline.runtime.types import RuntimeConfig
+
+config = RuntimeConfig(
+    runtime_name="thin",
+    input_filters=[PiiInputFilter(strategy="mask", kinds=["email", "phone"])],
+)
+```
+
+`PiiInputFilter` implements the `InputFilter` protocol and applies
+`dataclasses.replace` on each frozen `Message` object — no mutation.
+
+### Low-level API
+
+```python
+from swarmline.pii import detect_pii, redact_pii
+
+# Detect spans
+matches = detect_pii("Call +1 (800) 555-1234", kinds=["phone"])
+# [PiiMatch(kind='phone', start=5, end=22, value='+1 (800) 555-1234')]
+
+# Redact (default strategy: "redact")
+clean = redact_pii("My SSN is 123-45-6789")
+# "My SSN is [REDACTED_SSN]"
+
+# Mask (keep last 4)
+masked = redact_pii("Card: 4111 1111 1111 1111", strategy="mask", kinds=["credit_card"])
+# "Card: ****1111"
+
+# Hash (deterministic, salted)
+hashed = redact_pii("user@example.com", strategy="hash", hash_salt="secret")
+# "[EMAIL:7a3f9c1d2b]"
+```
+
+### Optional Presidio backend
+
+For higher-recall, ML-assisted detection (names, addresses, custom entities)
+install the `pii` extra:
+
+```bash
+pip install "swarmline[pii]"
+```
+
+This makes `presidio-analyzer` and `presidio-anonymizer` available.  The
+`detect_pii_presidio()` function in `swarmline.pii` is a staged stub that
+raises `ImportError("install swarmline[pii]")` when the packages are absent.
+Full Presidio integration (kind → entity-type mapping) is planned; the stdlib
+regex core remains the default and requires no extra installation.

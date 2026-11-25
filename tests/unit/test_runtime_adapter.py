@@ -154,10 +154,13 @@ def _make_result_msg() -> MagicMock:
 
 def _make_adapter_with_client(
     mock_client: AsyncMock,
+    *,
+    include_partial_messages: bool = False,
 ) -> tuple[RuntimeAdapter, MagicMock]:
     """Create RuntimeAdapter with ClaudeSDKClient mocked. Returns: (adapter, mock_options)"""
     mock_options = MagicMock()
     mock_options.stderr = None
+    mock_options.include_partial_messages = include_partial_messages
     adapter = RuntimeAdapter(mock_options)
     # We substitute the client directly (without real connect)
     adapter._client = mock_client
@@ -448,8 +451,8 @@ class TestStreamReply:
         assert result_event.tool_result == "failed: upstream timeout"
 
     @pytest.mark.asyncio
-    async def test_thinking_block_not_emitted_as_text(self) -> None:
-        """ThinkingBlock is not streamed to the user - it is only logged."""
+    async def test_thinking_block_emitted_as_thinking_delta(self) -> None:
+        """ThinkingBlock is streamed as thinking_delta, never as text_delta."""
         mock_client = AsyncMock()
 
         async def fake_receive_response():
@@ -473,7 +476,52 @@ class TestStreamReply:
         text_events = [e for e in events if e.type == "text_delta"]
         assert len(text_events) == 1
         assert text_events[0].text == "Вот ответ"
+        thinking_events = [e for e in events if e.type == "thinking_delta"]
+        assert len(thinking_events) == 1
+        assert thinking_events[0].text == "Analyzing the question..."
         assert "done" in types
+        # thinking must not leak into the final text
+        done = next(e for e in events if e.type == "done")
+        assert done.text == "Вот ответ"
+
+    @pytest.mark.asyncio
+    async def test_partial_thinking_delta_streamed_and_block_suppressed(self) -> None:
+        """With include_partial_messages, raw thinking deltas stream and the
+        buffered ThinkingBlock does not duplicate them."""
+        mock_client = AsyncMock()
+
+        async def fake_receive_response():
+            yield _make_sdk_stream_event(
+                {
+                    "type": "content_block_delta",
+                    "delta": {"type": "thinking_delta", "thinking": "Шаг 1. "},
+                }
+            )
+            yield _make_sdk_stream_event(
+                {
+                    "type": "content_block_delta",
+                    "delta": {"type": "thinking_delta", "thinking": "Шаг 2."},
+                }
+            )
+            yield _make_assistant_msg(
+                [
+                    _make_thinking_block("Шаг 1. Шаг 2."),
+                    _make_text_block("Ответ"),
+                ]
+            )
+            yield _make_result_msg()
+
+        mock_client.receive_response = fake_receive_response
+        adapter, _ = _make_adapter_with_client(
+            mock_client, include_partial_messages=True
+        )
+
+        events = []
+        async for event in adapter.stream_reply("вопрос"):
+            events.append(event)
+
+        thinking_events = [e for e in events if e.type == "thinking_delta"]
+        assert [e.text for e in thinking_events] == ["Шаг 1. ", "Шаг 2."]
 
     @pytest.mark.asyncio
     async def test_result_message_not_emitted_as_text(self) -> None:

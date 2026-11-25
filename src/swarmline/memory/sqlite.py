@@ -28,9 +28,14 @@ from swarmline.memory.types import (
 )
 
 _USER_ID_SUB = "(SELECT id FROM users WHERE external_id = :user_id)"
+
+# "working_memory" ranks alongside "user" (top): WorkingMemory.aset is
+# deliberate last-write-wins profile maintenance on its own reserved wm.*
+# keys, so it must never be silently blocked by this priority guard.
 _SQLITE_EXISTING_SOURCE_PRIORITY = (
     "CASE source "
     "WHEN 'user' THEN 3 "
+    "WHEN 'working_memory' THEN 3 "
     "WHEN 'ai_inferred' THEN 2 "
     "WHEN 'mcp' THEN 1 "
     "ELSE 0 END"
@@ -38,6 +43,7 @@ _SQLITE_EXISTING_SOURCE_PRIORITY = (
 _SQLITE_INCOMING_SOURCE_PRIORITY = (
     "CASE :source "
     "WHEN 'user' THEN 3 "
+    "WHEN 'working_memory' THEN 3 "
     "WHEN 'ai_inferred' THEN 2 "
     "WHEN 'mcp' THEN 1 "
     "ELSE 0 END"

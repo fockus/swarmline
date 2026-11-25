@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import re
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from swarmline.errors import SwarmlineError
@@ -12,6 +14,7 @@ from swarmline.hooks.registry import HookRegistry
 if TYPE_CHECKING:
     from swarmline.agent.config import AgentConfig
     from swarmline.agent.result import Result
+    from swarmline.pii import PiiKind, PiiStrategy
 
 
 class BudgetExceededError(SwarmlineError, RuntimeError):
@@ -182,3 +185,76 @@ def build_middleware_stack(
     if cost_tracker:
         stack.append(CostTracker(budget_usd=budget_usd))
     return tuple(stack)
+
+
+class PiiMiddleware(Middleware):
+    """Middleware: redact PII from the user prompt and/or the result text.
+
+    Uses the stdlib-only PII core (``swarmline.pii``).  No extra dependencies
+    are required for the default regex-based redaction.
+
+    Applied at two points:
+
+    * ``before_query``: redacts the prompt string before it is sent to the LLM.
+    * ``after_result``: redacts ``result.text`` in the returned ``Result`` via
+      ``dataclasses.replace`` (the ``Result`` frozen dataclass is never mutated).
+
+    Note: ``result.structured_output`` is intentionally **not** redacted — it is
+    a validated domain object.  Callers that need redaction of structured fields
+    should apply it at the application layer.
+
+    Parameters
+    ----------
+    strategy:
+        ``"redact"`` (default) | ``"mask"`` | ``"hash"``
+    kinds:
+        Restrict to these PII kinds (``"email"``, ``"phone"``, ``"credit_card"``,
+        ``"ssn"``, ``"ip"``).  ``None`` redacts all five.
+    redact_input:
+        Redact the prompt in ``before_query``.  Default ``True``.
+    redact_output:
+        Redact ``result.text`` in ``after_result``.  Default ``True``.
+    hash_salt:
+        Extra salt prepended when hashing values (``strategy="hash"``).
+    """
+
+    def __init__(
+        self,
+        *,
+        strategy: PiiStrategy = "redact",
+        kinds: Sequence[PiiKind] | None = None,
+        redact_input: bool = True,
+        redact_output: bool = True,
+        hash_salt: str = "",
+    ) -> None:
+        self._strategy = strategy
+        self._kinds: Sequence[PiiKind] | None = kinds
+        self._redact_input = redact_input
+        self._redact_output = redact_output
+        self._hash_salt = hash_salt
+
+    async def before_query(self, prompt: str, config: AgentConfig) -> str:
+        del config
+        if not self._redact_input:
+            return prompt
+        from swarmline.pii import redact_pii
+
+        return redact_pii(
+            prompt,
+            strategy=self._strategy,
+            kinds=list(self._kinds) if self._kinds is not None else None,
+            hash_salt=self._hash_salt,
+        )
+
+    async def after_result(self, result: Result) -> Result:
+        if not self._redact_output:
+            return result
+        from swarmline.pii import redact_pii
+
+        redacted_text = redact_pii(
+            result.text,
+            strategy=self._strategy,
+            kinds=list(self._kinds) if self._kinds is not None else None,
+            hash_salt=self._hash_salt,
+        )
+        return dataclasses.replace(result, text=redacted_text)

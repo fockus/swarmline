@@ -9,7 +9,7 @@ Closes the final 5 ty diagnostics against `src/swarmline/` after Stage 4
   - `runtime/adapter.py:212` — claude_agent_sdk returns `McpStatusResponse`
     (dict-compatible TypedDict), annotation expects `dict[str, Any]`.
 - 2× `invalid-assignment` — narrowing/optional-stub strictness
-  - `orchestration/thin_subagent.py:153` — `runtime._cwd = ...` after
+  - `orchestration/thin_subagent.py:169` — `runtime._cwd = ...` after
     `hasattr(runtime, "_cwd")` narrow that ty doesn't propagate.
   - `tools/web_providers/duckduckgo.py:19` — Optional Dependency Stub
     pattern: `DDGS = None` after `ImportError` declares-then-rebinds.
@@ -44,15 +44,17 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
         "tempfile.mkdtemp overload returns str|bytes; str when prefix is str",
     ),
     (
+        # Sprint 1ce S3: child_runtime_config added above the class -> 258;
+        # Sprint 1ce S6: "recitation_mode" joined _PARENT_RUN_NATIVE_KEYS -> 259.
         "src/swarmline/orchestration/thin_subagent.py",
-        149,
+        259,
         "# ty: ignore[invalid-assignment]",
         "hasattr",
         "_cwd narrowed via hasattr check above; ty doesn't propagate",
     ),
     (
         "src/swarmline/runtime/adapter.py",
-        217,
+        233,
         "# ty: ignore[invalid-return-type]",
         "McpStatusResponse",
         "claude_agent_sdk McpStatusResponse is dict-compatible at runtime",
@@ -78,7 +80,11 @@ assert len(EXPECTED_FIXES) == 4, (
 
 AFFECTED_FILES_LINE_FIX = sorted({loc[0] for loc in EXPECTED_FIXES})
 GEMINI_PARTS_FILE = "src/swarmline/runtime/thin/llm_providers.py"
-GEMINI_PARTS_LINE = 576
+# Stage 2 (context-engineering-manus-parity) fix-cycle 1 of prompt-caching codex
+# round 1: line shifted again, 778 -> 820 (guarded-decoration helper + TTL kwarg +
+# usage-log normalization added earlier in the file).
+# Sprint 1ce CE-9: per-call usage/cache capture shifted it again, 820 -> 834.
+GEMINI_PARTS_LINE = 834
 
 
 def _read_line(rel_path: str, line_number: int) -> str:

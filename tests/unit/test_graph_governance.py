@@ -66,7 +66,9 @@ class TestGovernanceConfig:
 
         config = GraphGovernanceConfig()
         assert config.max_agents == 50
-        assert config.max_depth == 5
+        # Stage 29 ADR: unified max_depth=3 across every spawn-depth limiter
+        # (was 5; SubagentToolConfig.max_depth already defaulted to 3).
+        assert config.max_depth == 3
         assert config.default_capabilities == AgentCapabilities()
         assert config.allow_dynamic_hiring is True
         assert config.allow_dynamic_delegation is True

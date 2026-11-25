@@ -144,7 +144,7 @@ class TestAnthropicAdapterCall:
                 base_url="https://proxy.example.com",
             )
             mock_module.AsyncAnthropic.assert_called_with(
-                base_url="https://proxy.example.com"
+                base_url="https://proxy.example.com", max_retries=0
             )
 
     @pytest.mark.asyncio
@@ -165,6 +165,24 @@ class TestAnthropicAdapterCall:
                 system_prompt="test",
             )
             assert result == "Hello world"
+
+
+class TestAnthropicAdapterClientRetries:
+    """The SDK-internal retry loop is disabled — swarmline's retry policy owns retries.
+
+    anthropic's default ``max_retries=2`` STACKS with swarmline's own retry policy (and,
+    for taskloom callers, with the caller's own retry-scope guard too): one swarmline
+    attempt silently became up to 3 HTTP attempts x timeout before the caller even saw the
+    error. ``max_retries=0`` keeps retry ownership in exactly one place (parity with
+    ``OpenAICompatAdapter``, see ``TestOpenAICompatAdapterClientRetries``).
+    """
+
+    def test_anthropic_client_constructed_with_max_retries_zero(self) -> None:
+        mock_module = _make_mock_anthropic_module()
+        with patch.dict("sys.modules", {"anthropic": mock_module}):
+            AnthropicAdapter(model="claude-sonnet-4-20250514")
+            call_kwargs = mock_module.AsyncAnthropic.call_args.kwargs
+            assert call_kwargs["max_retries"] == 0
 
 
 # ---------------------------------------------------------------------------

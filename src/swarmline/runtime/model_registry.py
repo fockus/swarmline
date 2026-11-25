@@ -7,8 +7,16 @@ from typing import Any
 
 import yaml
 
+from swarmline.runtime.model_profile import (
+    ModelProfile,
+    normalize_model_id,
+    parse_model_profile,
+)
 
 _DEFAULT_CONFIG_PATH = Path(__file__).parent / "models.yaml"
+
+# Keys extracted separately; everything else is stored as per-model "extras".
+_RESERVED_KEYS: frozenset[str] = frozenset({"aliases", "description"})
 
 
 class ModelRegistry:
@@ -25,6 +33,13 @@ class ModelRegistry:
         self._descriptions: dict[str, str] = {}
 
         self._valid_models: frozenset[str] = frozenset()
+
+        # full_model_id → dict of extra per-model keys (not aliases/description)
+        self._model_extras: dict[str, dict[str, Any]] = {}
+
+        # normalized model id (no routing prefix) → physical limits (CE-21).
+        # Kept apart from providers so a profile never changes provider routing.
+        self._profiles: dict[str, ModelProfile] = {}
 
         self._load()
 
@@ -44,6 +59,7 @@ class ModelRegistry:
         models: dict[str, str] = {}
         aliases: dict[str, str] = {}
         descriptions: dict[str, str] = {}
+        model_extras: dict[str, dict[str, Any]] = {}
 
         providers = data.get("providers", {})
         for provider_name, provider_models in providers.items():
@@ -58,11 +74,33 @@ class ModelRegistry:
                     desc = model_info.get("description", "")
                     if desc:
                         descriptions[model_id] = desc
+                    # Capture optional per-model settings (edit_format, weak_model, etc.)
+                    extras = {
+                        k: v for k, v in model_info.items() if k not in _RESERVED_KEYS
+                    }
+                    if extras:
+                        model_extras[model_id] = extras
 
         self._model_to_provider = models
         self._aliases = aliases
         self._descriptions = descriptions
         self._valid_models = frozenset(models.keys())
+        self._model_extras = model_extras
+        self._profiles = self._load_profiles(data.get("profiles"))
+
+    @staticmethod
+    def _load_profiles(raw_profiles: Any) -> dict[str, ModelProfile]:
+        """Validate the ``profiles:`` section; a bad entry fails the load loudly."""
+        if raw_profiles is None:
+            return {}
+        if not isinstance(raw_profiles, dict):
+            raise ValueError(
+                f"models.yaml 'profiles' must be a mapping, got {type(raw_profiles).__name__}"
+            )
+        return {
+            normalize_model_id(str(model_id)): parse_model_profile(str(model_id), entry)
+            for model_id, entry in raw_profiles.items()
+        }
 
     @property
     def default_model(self) -> str:
@@ -124,6 +162,31 @@ class ModelRegistry:
         """Get description."""
         resolved = self.resolve(model_id)
         return self._descriptions.get(resolved, "")
+
+    def get_model_extras(self, model_id: str) -> dict[str, Any]:
+        """Return optional per-model settings dict for a model.
+
+        Keys ``aliases`` and ``description`` are excluded (returned via dedicated
+        accessors). Unknown keys in models.yaml (edit_format, weak_model, etc.)
+        are stored verbatim and returned here.
+
+        Args:
+            model_id: Raw or canonical model identifier.  Resolved via
+                      ``resolve()`` before lookup so aliases and prefixes work.
+
+        Returns:
+            A copy of the extras dict, or ``{}`` when no extras are declared.
+        """
+        resolved = self.resolve(model_id)
+        return dict(self._model_extras.get(resolved, {}))
+
+    def get_profile(self, model_id: str) -> ModelProfile | None:
+        """Return the profile declared for exactly ``model_id`` (case/space-insensitive).
+
+        No alias or prefix resolution and no default fallback -- see
+        ``swarmline.runtime.model_profile.resolve_model_profile`` for that.
+        """
+        return self._profiles.get(normalize_model_id(model_id))
 
     def list_models(self, provider: str | None = None) -> list[str]:
         """List models."""

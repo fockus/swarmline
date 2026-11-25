@@ -10,6 +10,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+from swarmline.memory.recursive_summary import RecursiveSummarizer
 from swarmline.memory.summarizer import TemplateSummaryGenerator
 from swarmline.memory.types import MemoryMessage
 
@@ -33,22 +34,25 @@ class LlmSummaryGenerator:
 
     Accepts a callable for the LLM call (async str -> str).
     Falls back to TemplateSummaryGenerator on error.
+
+    Args:
+        llm_call: Async ``(prompt: str, messages_text: str) -> str``.
+                  If None, the template fallback is used immediately.
+        fallback_max_messages: Max messages for the fallback summarizer.
+        token_budget: When set, enables recursive history compression via
+                      RecursiveSummarizer before summarizing.  Callers that
+                      do not pass this argument retain the existing behaviour.
     """
 
     def __init__(
         self,
         llm_call: Callable[..., Any] | None = None,
         fallback_max_messages: int = 10,
+        token_budget: int | None = None,
     ) -> None:
-        """Initialize the generator.
-
-        Args:
-            llm_call: async callable(prompt: str, messages_text: str) -> str.
-                      If None, fall back to the template immediately.
-            fallback_max_messages: Max messages for the fallback summarizer.
-        """
         self._llm_call = llm_call
         self._fallback = TemplateSummaryGenerator(max_messages=fallback_max_messages)
+        self._token_budget = token_budget
 
     def summarize(self, messages: list[MemoryMessage]) -> str:
         """Sync wrapper for Protocol compatibility. Delegates to the fallback.
@@ -60,11 +64,14 @@ class LlmSummaryGenerator:
     async def asummarize(self, messages: list[MemoryMessage]) -> str:
         """Async summarization via LLM with fallback.
 
+        When *token_budget* was supplied at construction, compresses *messages*
+        recursively (via RecursiveSummarizer) before the single-LLM-call path.
+
         Args:
             messages: Conversation messages (oldest to newest).
 
         Returns:
-            Summary text (~1000-1500 characters) or the fallback template.
+            Summary text or the fallback template string.
         """
         if not messages:
             return ""
@@ -72,7 +79,17 @@ class LlmSummaryGenerator:
         if not self._llm_call:
             return self._fallback.summarize(messages)
 
-        # Build the conversation text for the LLM
+        # --- Recursive compression path (opt-in via token_budget) ---
+        if self._token_budget is not None:
+            recursive = RecursiveSummarizer(self._llm_call, self._token_budget)
+            compressed = await recursive.asummarize(messages)
+            lines: list[str] = []
+            for msg in compressed:
+                label = "Пользователь" if msg.role == "user" else "Ассистент"
+                lines.append(f"{label}: {msg.content}")
+            return "\n".join(lines)
+
+        # --- Original single-LLM-call path ---
         dialog_lines: list[str] = []
         for msg in messages:
             label = "Пользователь" if msg.role == "user" else "Ассистент"

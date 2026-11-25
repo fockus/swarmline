@@ -154,6 +154,7 @@ class TestRuntimeErrorData:
             "cancelled",
             "guardrail_tripwire",
             "retry",
+            "session_not_found",
         }
         assert expected == RUNTIME_ERROR_KINDS
 
@@ -310,7 +311,7 @@ class TestRuntimeConfig:
 
     def test_defaults(self) -> None:
         cfg = RuntimeConfig()
-        assert cfg.runtime_name == "claude_sdk"
+        assert cfg.runtime_name == "thin"
         assert cfg.max_iterations == 6
         assert cfg.max_tool_calls == 8
         assert cfg.max_model_retries == 2

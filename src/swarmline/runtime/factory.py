@@ -10,6 +10,7 @@ from swarmline.runtime.capabilities import (
     VALID_FEATURE_MODES,
     CapabilityRequirements,
     RuntimeCapabilities,
+    get_runtime_capabilities as get_runtime_capabilities_static,
 )
 from swarmline.runtime.types import (
     VALID_RUNTIME_NAMES,
@@ -67,8 +68,8 @@ class RuntimeFactory:
         if self._is_valid_name(env_runtime):
             return env_runtime
 
-        # 4. Default
-        return "claude_sdk"
+        # 4. Default — unified with the Agent facade default (plan E2)
+        return "thin"
 
     def get_capabilities(
         self,
@@ -89,6 +90,7 @@ class RuntimeFactory:
     ) -> RuntimeErrorData | None:
         """Validate capabilities."""
         caps = self.get_capabilities(config=config, runtime_override=runtime_override)
+        caps = caps.resolve(config)
         requirements = required_capabilities
         if requirements is None and config is not None:
             requirements = config.required_capabilities
@@ -125,16 +127,124 @@ class RuntimeFactory:
                 f"Unknown feature_mode: '{config.feature_mode}'. "
                 f"Allowed: {', '.join(sorted(VALID_FEATURE_MODES))}"
             )
+
+        self._validate_config_against_capabilities(config)
+
         if config.require_capabilities is None:
             return
 
-        caps = self.get_capabilities(runtime_override=config.runtime)
+        caps = self.get_capabilities(runtime_override=config.runtime).resolve(config)
         missing = caps.missing(config.require_capabilities)
         if missing:
             raise ValueError(
                 f"Runtime '{config.runtime}' does not support required capabilities: "
                 f"{', '.join(missing)}"
             )
+
+    def _validate_config_against_capabilities(self, config: AgentConfig) -> None:
+        """No-silent-drop: every config option maps to a runtime capability.
+
+        An option the selected runtime cannot deliver raises ValueError
+        (or warns when ``strict_capabilities=False``). Applies only to the
+        built-in runtimes — custom registry runtimes may not have adopted
+        the fine-grained capability model.
+        """
+        if config.runtime not in VALID_RUNTIME_NAMES:
+            return
+
+        caps = self.get_capabilities(runtime_override=config.runtime).resolve(config)
+
+        thinking_enabled = (
+            isinstance(config.thinking, dict)
+            and dict(config.thinking).get("type") != "disabled"
+        )
+
+        checks: list[tuple[str, str, bool]] = [
+            ("mcp_servers", "mcp", bool(config.mcp_servers)),
+            (
+                "output_format/output_type",
+                "structured_output",
+                config.output_format is not None or config.output_type is not None,
+            ),
+            ("thinking", "thinking_stream", thinking_enabled),
+            ("max_budget_usd", "cost_tracking", config.max_budget_usd is not None),
+            (
+                "resume_session_id",
+                "resume",
+                config.resume_session_id is not None,
+            ),
+            ("can_use_tool", "permissions", config.can_use_tool is not None),
+            (
+                "tool_policy",
+                "permissions",
+                getattr(config, "tool_policy", None) is not None,
+            ),
+            (
+                "base_url/api_key",
+                "provider_override",
+                bool(getattr(config, "base_url", None))
+                or bool(getattr(config, "api_key", None)),
+            ),
+            (
+                "native_agents",
+                "subagents:native",
+                bool(config.native_agents),
+            ),
+            (
+                "subagent_config",
+                "subagents",
+                config.subagent_config is not None,
+            ),
+            (
+                "coding_profile",
+                "builtin_tools",
+                config.coding_profile is not None,
+            ),
+            (
+                "project_instructions",
+                "project_instructions",
+                bool(config.project_instructions),
+            ),
+        ]
+
+        from swarmline.runtime.capabilities import parse_capability_flag
+
+        violations: list[str] = []
+        for option, flag, present in checks:
+            if not present:
+                continue
+            dimension, min_level = parse_capability_flag(flag)
+            actual = caps.level(dimension)
+            order = {"none": 0, "emulated": 1, "native": 2}
+            if order[actual] < order[min_level]:
+                capable = sorted(
+                    name
+                    for name in VALID_RUNTIME_NAMES
+                    if name != "headless"
+                    and order[get_runtime_capabilities_static(name).level(dimension)]
+                    >= order[min_level]
+                )
+                violations.append(
+                    f"'{option}' requires capability '{flag}' which runtime "
+                    f"'{config.runtime}' does not provide"
+                    + (f" (supported by: {', '.join(capable)})" if capable else "")
+                )
+
+        if not violations:
+            return
+
+        message = (
+            f"AgentConfig options unsupported by runtime '{config.runtime}':\n  - "
+            + "\n  - ".join(violations)
+        )
+        if getattr(config, "strict_capabilities", True):
+            raise ValueError(
+                message
+                + "\nSet strict_capabilities=False to degrade with a warning instead."
+            )
+        import warnings
+
+        warnings.warn(message + " — degrading.", UserWarning, stacklevel=3)
 
     def resolve_agent_model(self, config: AgentConfig | str) -> str:
         """Resolve AgentConfig.model or a raw alias to a concrete model name."""
@@ -255,6 +365,7 @@ class RuntimeFactory:
             tool_executors = kwargs.pop("tool_executors", None) or {}
             if tool_executors:
                 local_tools.update(tool_executors)
+            if local_tools:
                 kwargs["local_tools"] = local_tools
 
             return ThinRuntime(config=config, **kwargs)

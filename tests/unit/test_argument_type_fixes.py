@@ -44,14 +44,14 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/observability/logger.py",
-        56,
+        103,
         "# ty: ignore[invalid-argument-type]",
         "structlog",
         "structlog Processor union strict; concrete renderer accepted at runtime",
     ),
     (
         "src/swarmline/observability/logger.py",
-        58,
+        107,
         "# ty: ignore[invalid-argument-type]",
         "structlog",
         "structlog Processor union strict; concrete renderer accepted at runtime",
@@ -72,14 +72,14 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/runtime/codex_adapter.py",
-        103,
+        108,
         "# ty: ignore[invalid-argument-type]",
         "OpenAI",
         "OpenAI ChatCompletionMessageParam strict; runtime dict matches",
     ),
     (
         "src/swarmline/runtime/factory.py",
-        144,
+        254,
         "# ty: ignore[invalid-argument-type]",
         "hasattr",
         "model narrowed by hasattr check above; ty doesn't propagate",
@@ -93,63 +93,91 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     ),
     (
         "src/swarmline/runtime/pi_sdk/runtime.py",
-        259,
+        314,
         "# ty: ignore[invalid-argument-type]",
         "isinstance",
         "args narrowed by isinstance dict check above",
     ),
     (
+        # Stage 2 (context-engineering-manus-parity) fix-cycle 1 of THIS round
+        # (prompt-caching codex round 1): line shifted again, 380 -> 421
+        # (guarded-decoration helper `_apply_prompt_caching` + TTL kwarg added
+        # above this line in llm_providers.py).
+        # Sprint 1ce CE-9: per-call usage/cache capture shifted lines again.
         "src/swarmline/runtime/thin/llm_providers.py",
-        259,
+        433,
         "# ty: ignore[invalid-argument-type]",
         "Anthropic",
         "Anthropic MessageParam strict; runtime dict matches (stream)",
     ),
     (
+        # NEW (MAJOR-6, this round): system= in stream() also needs an ignore —
+        # api_system may be list[dict] (cache_control block form), which the
+        # Anthropic SDK stub's TextBlockParam doesn't structurally accept.
         "src/swarmline/runtime/thin/llm_providers.py",
-        286,
+        432,
+        "# ty: ignore[invalid-argument-type]",
+        "Anthropic",
+        "Anthropic TextBlockParam strict; runtime dict list matches (system, cache_control)",
+    ),
+    (
+        # line shifted 421 -> 462 (see note above).
+        "src/swarmline/runtime/thin/llm_providers.py",
+        474,
         "# ty: ignore[invalid-argument-type]",
         "Anthropic",
         "Anthropic MessageParam strict; runtime dict matches (create)",
     ),
     (
+        # line shifted 422 -> 463 (see note above).
         "src/swarmline/runtime/thin/llm_providers.py",
-        287,
+        475,
         "# ty: ignore[invalid-argument-type]",
         "Anthropic",
         "Anthropic ToolParam strict; runtime dict matches (create tools)",
     ),
     (
+        # line shifted 503 -> 545 (see note above).
         "src/swarmline/runtime/thin/llm_providers.py",
-        364,
+        558,
         "# ty: ignore[no-matching-overload]",
         "OpenAI",
         "OpenAI ChatCompletion overload — runtime dict structure matches (call)",
     ),
     (
+        # line shifted 593 -> 635 (see note above).
         "src/swarmline/runtime/thin/llm_providers.py",
-        386,
-        "# ty: ignore[no-matching-overload]",
-        "OpenAI",
-        "OpenAI ChatCompletion overload — runtime dict structure matches (stream)",
-    ),
-    (
-        "src/swarmline/runtime/thin/llm_providers.py",
-        427,
+        648,
         "# ty: ignore[no-matching-overload]",
         "OpenAI",
         "OpenAI params strict; runtime dicts + kwargs splat match at runtime (call_with_tools)",
     ),
     (
+        # line shifted 765 -> 807 (see note above).
         "src/swarmline/runtime/thin/llm_providers.py",
-        569,
+        821,
         "# ty: ignore[invalid-argument-type]",
         "Google",
         "Google Tool union strict; runtime list matches",
     ),
     (
         "src/swarmline/runtime/thin/react_strategy.py",
-        438,
+        # Stage 3/4/6 (context-engineering-manus-parity): line shifted
+        # 655 -> 669 -> 689 -> 718 -> 823 -> 841 -> 864 -> 879 by tool-schema-
+        # snapshot pinning, stage-based soft masking, fix-cycle 1 (M-1/M-2),
+        # Stage 4's tool-result-offload wiring, Stage 4 fix-cycle 1 (sticky
+        # scratch_read re-add, "Variant A"), Stage 4 fix-cycle 2 (separate
+        # frozen_full_fallbacks map), and Stage 6's compression_history
+        # checkpoint read (load-before-M1-persist-block), all inserted
+        # earlier in run_react(). open-beta-hermes-saas Sprint 1a Stage 2:
+        # line shifted again, 879 -> 962, by the `_soft_landing_call` helper
+        # + `_SOFT_LANDING_INSTRUCTION` constant (REQ-LTK-005) inserted above
+        # `run_react()`.
+        # STD-01: общий finalizer и очистка kwargs сдвинули строку 962 -> 991.
+        # Sprint 1ce CE-9: round refresher + per-call usage wiring -> 1024.
+        # Sprint 1ce CE-24: tool results rendered as labelled data -> 1030.
+        # Sprint 1ce S5: loop guards (stop signals, time budget) -> 1048.
+        1061,
         "# ty: ignore[invalid-argument-type]",
         "hasattr",
         "tc.assistant_message hasattr-narrow not propagated by ty",
@@ -158,7 +186,10 @@ EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
 
 assert len(EXPECTED_FIXES) == 17, (
     f"expected 17 line-anchored fixes (22 errors − 4 covered by event_mapper "
-    f"structural fix − 1 merged call_with_tools overload), got {len(EXPECTED_FIXES)}"
+    f"structural fix − 1 merged call_with_tools overload − 1 stream create "
+    f"moved to a kwargs-splat that needs no suppression + 1 NEW fix-cycle 1 "
+    f"prompt-caching entry: stream()'s system= also needs an ignore now that "
+    f"api_system may be the cache_control block-list form), got {len(EXPECTED_FIXES)}"
 )
 
 # Files where Stage 4 fixes land (used by cleanup invariants).

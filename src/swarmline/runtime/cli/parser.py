@@ -69,8 +69,11 @@ class ClaudeNdjsonParser:
 
     def _parse_result(self, data: dict[str, Any]) -> RuntimeEvent | None:
         """Parse result event into final RuntimeEvent."""
-        result_text = data.get("result", "")
-        return RuntimeEvent.final(text=str(result_text))
+        result_text = str(data.get("result", ""))
+        new_messages = (
+            [Message(role="assistant", content=result_text)] if result_text else []
+        )
+        return RuntimeEvent.final(text=result_text, new_messages=new_messages)
 
 
 class GenericNdjsonParser:

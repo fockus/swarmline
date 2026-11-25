@@ -3,9 +3,12 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from swarmline.embeddings import HashEmbedder
+from swarmline.memory import SemanticRecall
 from swarmline.memory.types import GoalState, MemoryMessage, PhaseState
 from swarmline.session.rehydrator import DefaultSessionRehydrator
 from swarmline.types import TurnContext
+from swarmline.vectorstores import InMemoryVectorStore
 
 
 def _make_ctx(**kwargs) -> TurnContext:
@@ -238,3 +241,56 @@ class TestPartialData:
         assert phase.user_id == "u1"
         assert phase.phase == "savings"
         assert phase.notes == "50% от цели"
+
+
+class TestSemanticRecallWiring:
+    """Stage C2.2: optional semantic_recall -- additive, backward-compatible."""
+
+    @pytest.mark.asyncio
+    async def test_rehydrator_without_semantic_recall_payload_unchanged(self) -> None:
+        """No semantic_recall injected (default None) -> "recalled" key is
+        OMITTED entirely (not None, not []) -- byte-identical to pre-C2.2
+        behavior."""
+        stores = _make_stores()
+        rh = DefaultSessionRehydrator(**stores)
+
+        payload = await rh.build_rehydration_payload(_make_ctx())
+
+        assert "recalled" not in payload
+
+    @pytest.mark.asyncio
+    async def test_rehydrator_with_semantic_recall_adds_recalled(self) -> None:
+        """With semantic_recall injected, the payload gains a "recalled"
+        list, queried from the last user message in the just-rehydrated
+        history."""
+        stores = _make_stores()
+        vector_store = InMemoryVectorStore()
+        recall = SemanticRecall(HashEmbedder(), vector_store)
+        await recall.aindex("какой вклад лучше?", id="prior-question")
+        rh = DefaultSessionRehydrator(**stores, semantic_recall=recall)
+
+        payload = await rh.build_rehydration_payload(_make_ctx())
+
+        assert "recalled" in payload
+        assert isinstance(payload["recalled"], list)
+        assert payload["recalled"]  # the indexed near-duplicate text matches
+        assert payload["recalled"][0].id == "prior-question"
+
+    @pytest.mark.asyncio
+    async def test_rehydrator_empty_query_skips_arecall_entirely(self) -> None:
+        """MINOR 4: an empty/whitespace recall query must short-circuit to
+        "recalled": [] WITHOUT ever awaiting arecall (a fake that raises if
+        called proves the guard sits before the call, not just around its
+        result)."""
+
+        class _RaisesIfCalledRecall:
+            async def arecall(self, query: str, **kwargs) -> list:
+                raise AssertionError("arecall must not be called for an empty query")
+
+        stores = _make_stores()
+        stores["messages"].get_messages.return_value = []  # no user message
+        rh = DefaultSessionRehydrator(**stores, semantic_recall=_RaisesIfCalledRecall())
+
+        payload = await rh.build_rehydration_payload(_make_ctx())
+
+        assert payload["recalled"] == []

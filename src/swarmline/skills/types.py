@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from swarmline.skills.tier import SkillHealthStatus, SkillTier
+
 McpTransport = Literal["url", "http", "sse", "stdio"]
 
 
@@ -34,6 +36,10 @@ class SkillSpec:
     tool_include: list[str] = field(default_factory=list)
     local_tools: list[str] = field(default_factory=list)
     intents: list[str] = field(default_factory=list)
+    tier: SkillTier = SkillTier.T2_ROLE
+    health_status: SkillHealthStatus = SkillHealthStatus.HEALTHY
+    embedding: list[float] | None = None
+    keywords: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

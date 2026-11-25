@@ -268,8 +268,6 @@ def _mock_factory(config: RuntimeConfig | None = None, **_: Any) -> MockRuntime:
 _MOCK_CAPS = RuntimeCapabilities(
     runtime_name="mock",
     tier="light",
-    supports_mcp=False,
-    supports_provider_override=False,
 )
 
 # Register into the global default registry so AgentConfig validation passes.

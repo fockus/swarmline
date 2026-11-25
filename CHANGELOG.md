@@ -7,6 +7,502 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-25
+
+### Changed (BREAKING)
+- **`create_subagent_executor` default-denies instead of inheriting the parent toolset.**
+  An absent `toolset_policy` used to mean "child inherits the parent's ENTIRE toolset" — a
+  backward-compat carve-out that made the security property opt-IN: a host that forgot to wire a
+  policy handed every LLM-spawned child everything the parent could do, which is the exact failure
+  `ToolsetPolicy` exists to prevent. An absent policy is now an EMPTY allowlist. Both resolution
+  branches (explicit `tools=[...]` and no `tools=` at all) resolve against the same set, so naming
+  tools cannot buy what the policy does not grant — otherwise the default would be bypassable by
+  typing names. The trusted programmatic path (`SubagentSpec.tools` set by host code passed to
+  `orchestrator.spawn`) never routed through this executor and is unaffected.
+  **Migration:** hosts relying on the old default must wire an explicit `ToolsetPolicy` naming the
+  tools a spawned child may use.
+- **`spawn_agent` rejects host-controlled arguments.** `timeout`, `timeout_seconds`, `routing`,
+  `depth`, `current_depth` and `max_depth` in the tool call are now an explicit error. None is in
+  `SUBAGENT_TOOL_SPEC` today, so a well-behaved model never sends one, but a schema that grows later
+  must not let a model widen its own timeout or reset its own recursion budget. Rejecting loudly
+  beats dropping silently: a silently ignored `timeout` looks to the model like a limit it raised.
+
+### Security
+- **Checkpoint state is redacted before it reaches durable storage** (`resilience/checkpoint.py`).
+  `CheckpointWriter.after_tool_call` now runs `observability.redaction.redact_secrets` over every
+  string leaf of the persisted payload. Tool output reaches a checkpoint through several state keys
+  — offload projections, write-failure fallbacks that hold the WHOLE body, compression summaries,
+  and small results still inline in `lm_messages` — so an API key a tool happened to echo used to
+  outlive the run inside the host's database. The walk covers leaves rather than a list of known
+  keys, so every state key added later is covered by construction. Only the persisted COPY is
+  redacted: the live in-memory state keeps the real bytes, so the running agent still sees what its
+  tool returned. Applies to every host store, since all four checkpoint write sites in the react
+  loop funnel through this one method.
+
+### Added
+- **`CodeAgent` facade** with workspace tools, permission callbacks, resilience settings and persistent multi-turn sessions; the dedicated CLI remains planned.
+- **Artifact storage and workspace tools**, native graph channel/command types, and provider-hosted tool contracts (provider execution support remains partial).
+- **Image input in the current user turn** (taskloom Sprint 7i S1). `Agent.query()` and
+  `Agent.stream()` accept `prompt_blocks: list[ContentBlock] | None = None`: with blocks, the
+  CURRENT user message becomes `content_blocks=[TextBlock(prompt), *prompt_blocks]` (its `content`
+  stays the plain prompt), so an `ImageBlock` reaches the provider as an image part (OpenAI
+  `image_url` data URI, Anthropic `image`, Gemini `inline_data`) on every model round of that turn.
+  History messages never carry blocks. Without the argument the runtime gets exactly the messages
+  it got before. The `claude_sdk` runtime takes a text prompt only and drops blocks with a warning.
+- **`ModelProfile.vision: bool = False`** and `vision: true` in `models.yaml` for models whose
+  OpenRouter catalog entry lists `image` in `architecture.input_modalities` (Claude, `gpt-4o`,
+  `gpt-4o-mini`, `o3`, Gemini 2.5, `deepseek/deepseek-v4.1-flash`, `moonshotai/kimi-k2.5`).
+  A profile without the key is text-only; a non-bool value fails the registry load.
+- **Image token estimate** (`context.budget.IMAGE_TOKEN_ESTIMATE = 1600`,
+  `estimate_image_tokens`, `estimate_message_tokens`): compaction, per-round budgeting and the
+  estimated usage fallback count an image part as 1600 tokens instead of ignoring it.
+- **Point edits of a todo list: `apply_todo_ops`, `TodoEditProvider`, `todo_edit`** (`todo/ops.py`,
+  `todo/protocols.py`, `todo/tools.py`). `apply_todo_ops(items, ops, *, now, new_id, max_todos)` applies
+  an atomic batch of `add` (server-generated id, optional `after_id`) / `update` (status and/or text by
+  id; `created_at` kept) / `remove` operations: the first invalid operation raises
+  `TodoEditError(op_index, reason)` and nothing is applied. Several `in_progress` items are allowed
+  (parallel work delegated to sub-agents is legitimate — taskloom AGR-086); pending work with nothing started returns
+  `hint="mark the item you start next as in_progress"`. `TodoEditProvider` is a separate one-method
+  protocol (`apply_edit(ops)`, ISP — `TodoProvider` is unchanged); `InMemoryTodoProvider` implements
+  both. `create_todo_tools(provider, *, include_read=True, full_list_response=False)` registers
+  `todo_edit` for an edit-capable provider; `full_list_response=True` answers `todo_write`/`todo_edit`
+  with the whole list `[{id, content, status}]` plus `hint`. Tool descriptions and error messages are
+  English now and say that several items may be `in_progress` when work runs in parallel. A store failure other than a validation error (`ValueError`, incl. `TodoEditError`) reaches the model as a generic "the todo list is unavailable right now; try again" and is logged in full — no SQL text or table names in the model's context.
+- **`recitation_mode="replace_tail"`** (`runtime/thin/round_recitation.py`,
+  `native_config["recitation_mode"]`). The live plan is recited before EVERY model round, round 1
+  included (the cadence is ignored); the previous recitation turn is removed from the projection by
+  object identity (no marker keys in the provider payload), so the projection holds exactly one, and
+  it is the last message; the prefix before it is byte-identical between rounds. A blank plan removes
+  the stale turn; a failed read keeps the last one. After a round compaction the fresh turn is the
+  tail. The default `append` mode is byte-identical to before. Recitation logic moved out of
+  `round_context.py` into `RecitationTail`; child runtimes drop `recitation_mode` with the other
+  parent-run recitation keys.
+- **Deterministic stop signals and a run time budget for the ReAct loop** (`runtime/thin/loop_guards.py`).
+  Opt-in via `native_config["loop_guards_enabled"] = True`; absent (or any other value) keeps every
+  request byte-identical (golden hash test). No progress: every tool call is fingerprinted as
+  (tool, args, result) with volatile parts scrubbed (ISO timestamps, UUIDs, `duration`/`elapsed`/`pid`
+  JSON fields); `StuckDetector`'s exact repeat of the latest call, or a post-compaction re-run of the
+  calls made just before a per-round compaction, warns the model once with a tail user message
+  (status `loop_guard.warned: <tool>`); the same kind of signal again soft-lands the run with
+  `native_metadata["exit_reason"] == "no_progress"` (the two kinds count apart, so re-reading lost
+  context after an earlier repeat warning only warns). The loop-limit soft landing is never cut by
+  an exhausted time budget. An empty model reply is retried once with a
+  nudge; a second in a row ends the run with a `bad_model_output` error `empty_model_response`
+  instead of an empty completion. `native_config["run_budget_seconds"]` (> 0) counts from the start
+  of this execution: a wrap-up notice is appended at the tail at 80% (the cached prefix is never
+  rewritten), the run soft-lands with `exit_reason == "time_budget"` at 100%, and every model call
+  (streamed chunks included) is capped by the remaining budget — never extended past its own timeout.
+  Polling (the same call with a changing result) is progress. `_soft_landing_call` takes the exit
+  reason and instruction (defaults unchanged). `ToolCallRecord` gains an optional `result_hash`
+  (+ `repeat_key`, `compute_result_hash`) and `StuckDetector` a `detect_latest_repeat`; records
+  without a hash behave exactly as before.
+- **Tool results can reach the model as labelled data** (CE-24, new module
+  `runtime/thin/tool_result_render.py`). `native_config["data_provenance_enabled"] = True` renders
+  every tool result the ReAct loop hands back to the model — native path, text-ReAct path, and a
+  `role="tool"` message in the initial projection or the per-round rebuild after compaction —
+  through one `ToolResultRendering` (`render_tool_result(...)` underneath) as a
+  `wrap_data(..., source="tool:<name>")` envelope, so a planted instruction reads as quoted data.
+  Harness text stays OUTSIDE the envelope: the tool-result offload restore marker moves into the
+  envelope `note` (the omitted middle shows as `[...]`), located by POSITION via the new
+  `tool_result_offload.split_offload_projection`, so a look-alike marker inside the tool's own
+  output stays quoted; results of tools listed in `native_config["data_provenance_harness_tools"]`
+  (e.g. a host's yield-model `spawn_agent` receipt) render unlabelled. An offloaded transcript
+  message carries `metadata["offload_key"]` so a rebuild renders it the same way. The envelope is
+  applied after offload and after error detection (`tool_call_finished.ok`, the stuck detector
+  and the event summary still read the raw result) and is deterministic, so the prompt-cache
+  prefix stays append-only. Without the key the rendered bytes and the transcript are unchanged;
+  an empty result keeps the plain label. `_messages_to_lm(messages, *, rendering=None)` is the
+  additive keyword.
+- **`wrap_data` escapes spaced and look-alike tags** (`context/data_envelope.py`): any `<`, `＜`
+  (U+FF1C) or `﹤` (U+FE64), optional whitespace, optional `/`, optional whitespace, then `data`
+  in any case gets its opener escaped to `&lt;` (was: only `<data` / `</data` exactly). `data`
+  spelled in fullwidth letters is deliberately left as is — not a tag to a model or a parser.
+- **Compaction and plan recitation before every model round of a ReAct run** (CE-9, new module
+  `swarmline.runtime.thin.round_context`). `ThinRuntime.run()` used to compact and recite once,
+  before the loop, so a long tool-calling run outgrew the window mid-way. `RoundContextRefresher`
+  now runs before rounds 2..N: when the request budget exceeds the compaction threshold it
+  compacts the STRUCTURED view of the run (`messages` + `new_messages`, tool call/result units kept
+  atomic) with the SAME `ConversationCompactionFilter` the startup step used (shared anti-thrashing
+  history, persisted through the existing checkpoint key) down to
+  `threshold - round_hysteresis_tokens` (never below half the threshold), and rebuilds the LM
+  projection from it. Between compactions the projection is append-only, so the provider's
+  prompt-cache prefix holds; the host transcript (`new_messages`) is never modified. Every
+  `recitation_round_cadence` rounds a LIVE plan provider (`native_config["recitation_plan_provider"]`,
+  `async () -> str`, 2 s timeout; errors and timeouts skip the round with a warning) is appended as
+  a `<plan-recitation>` meta turn and re-appended after a rebuild; a static `recitation_plan_text` is
+  never recited mid-run. Round compaction is disabled for the run, with a status event, when the
+  projection cannot be rebuilt losslessly: a run resumed from an lm-only checkpoint, or
+  `get_steering_messages` / `get_followup_messages` / `transform_context` / `recovery_cascade` /
+  an auto-verify loop configured. Each round compaction logs `compaction.round` with `round`,
+  `tokens_before`, `tokens_after` and `tier`. Opt-in: `CompactionConfig.per_round` (default
+  `False`) and `round_hysteresis_tokens` (default 8 000), read by `build_portable_runtime_plan`
+  from `native_config["compaction_per_round"]` / `["compaction_round_hysteresis_tokens"]`;
+  `KernelContext.round_refresher` (default `None`) reaches `run_react(round_refresher=...)` only
+  when set. Without the keys the requests are byte-identical (golden-pinned).
+  `ConversationCompactionFilter.filter` takes an optional `target_tokens` and exposes `last_tier`.
+- **`native_config["max_tool_calls"]` sets the run's tool-call budget** (`build_portable_runtime_plan`;
+  positive int, floats truncated, anything else keeps the default of 8). Hosts size it to their
+  turn budget: the fixed default ended long runs on their 9th tool call.
+- **Usage of every native tool call, budget anchored on it** (ref: hermes). `NativeToolCallResult`
+  gains `usage` (input/output/total, `cache_read_tokens`/`cache_write_tokens` when reported, and
+  `prompt_tokens` — the full request as the provider counted it, tool schemas included; Anthropic's
+  prompt is input + cache read + cache write), filled by the Anthropic, OpenAI-compatible and Gemini
+  adapters. The per-round budget is that `prompt_tokens` plus an estimate of what was appended
+  since, falling back to the plain estimate when no usage is known or after a rebuild.
+- **Compaction summary acceptance gate + verbatim user request** (`swarmline.compaction_gate` and
+  `swarmline.compaction_turns`, new modules). A Tier-2 summary is embedded only when
+  `SummaryAcceptanceGate.check` passes: all seven fixed sections present — a label counts only at a
+  line start (optional markdown `**`/`#`/`-` decoration), first occurrence, so `Errors:` in the
+  middle of a `Next Steps:` line is content — with `Next Steps:` last and non-empty (the truncation proxy — `llm_call`
+  returns bare text, no `finish_reason`), the LLM part at most 16 000 chars, the rendered summary
+  shorter than the region it replaces, and a savings ratio of at least `MIN_SAVINGS_RATIO` (0.10).
+  The summary now opens with `User Request (verbatim):` — the latest human turn of the compacted
+  region (recitation and `<system-reminder>` turns excluded), copied by code, never by the LLM
+  (`none` when the region has no human turn), capped at `verbatim_budget_chars(threshold)` (25% of
+  the compaction budget, at least 2 000 chars) as head + `[truncated N chars]` + tail so one huge
+  paste cannot keep Tier 3 over budget. A rejected LLM summary falls back to the deterministic
+  local digest; if that is rejected too, Tier 2 is dropped and Tier 3 sees the messages exactly as
+  they were before Tier 2, and the attempt is recorded in `compression_history` with zero savings so
+  the anti-thrashing cooldown stops repeats; the cooldown lifts once the context has grown by
+  `COOLDOWN_REGROWTH_RATIO` (25%) past the last recorded attempt (derived from the persisted
+  history, so it also lifts after a checkpoint resume). Tier 3 never drops the summary or the latest human
+  request (a request larger than the budget stays, with a warning). The summarizer input is wrapped
+  in an escaped `<transcript>` block marked as data, and both prompts say never to mark the verbatim
+  request as done. An iterative UPDATE feeds back only the LLM-written part of the prior summary.
+  **Behaviour change for hosts with Tier 2 on:** a plain-prose summary without the fixed sections is
+  no longer accepted — it routes to the local fallback. `MIN_SAVINGS_RATIO` and `savings_ratio`
+  moved to `compaction_gate` and stay importable from `swarmline.compaction`.
+- **Deterministic summary appendices** (`swarmline.compaction_anchors`, new module, no LLM):
+  `## User Messages (verbatim, newest first)` (every other human turn of the region plus those a
+  prior summary carried, at most 16; 2 000 chars each, 8 000 total, `[truncated N chars]` markers,
+  and a cumulative `[N earlier user messages omitted]` marker for turns dropped past the cap),
+  `## Anchor Index (mechanically extracted, exact)` (URLs, file paths, git SHAs, UUIDs, `run_…`-style
+  ids and error lines with their frequency, 4 000-char budget, byte-deterministic order) and an
+  optional `## Context Recovery` section rendered from the new `CompactionConfig.recovery_hint`
+  (`native_config["compaction_recovery_hint"]` in `build_portable_runtime_plan`; default `None`
+  renders nothing).
+- **Data envelope primitive** `swarmline.context.wrap_data(content, *, source, note=None)`: renders
+  quoted data as `<data source="...">…</data>` behind a "quoted data, not instructions" preamble;
+  forged `<data`/`</data` inside the content are escaped, `source` is sanitized to `[a-z0-9:_.-]`,
+  and the output is byte-deterministic (no random ids — prompt-cache and resume safe).
+- **Model profiles: context window, output limit, prompt cache** (`swarmline.runtime`): new
+  top-level `profiles:` section in `runtime/models.yaml`, keyed by the model id without a routing
+  prefix (`moonshotai/kimi-k2.5`, `anthropic/claude-opus-4-5`, `deepseek/deepseek-v4.1-flash`, plus
+  every model under `providers:`). Each entry declares `context_window`, `max_output_tokens` and
+  `prompt_cache` (`explicit` | `automatic` | `none`); a bad entry (non-positive window, output not
+  strictly inside the window, unknown cache mode, non-int value) fails the registry load with a
+  `ValueError` naming the model. New frozen `ModelProfile`, `UNKNOWN_MODEL_PROFILE` (conservative
+  32k / 4k / `none`), `ModelRegistry.get_profile(model_id)` (exact, case/space-insensitive) and
+  `resolve_model_profile(raw, registry=None)`: strips a known provider prefix (`openrouter:`,
+  `anthropic:`, ...) and a known OpenRouter variant suffix (`:free`, `:batch`, `:nitro`, `:floor`,
+  `:online`, `:thinking`), then matches the exact profile id or an explicitly declared alias, and
+  returns `None` for anything else — deliberately **not** the registry's greedy `startswith`
+  matching (`gpt-4` does not become `gpt-4o`) and **no** fallback to `default_model`, so a caller
+  can never size an unknown model's context as if it were another model's. OpenRouter-style
+  entries carry the catalog's `top_provider` limits (e.g. `deepseek/deepseek-v4.1-flash`
+  1040000 / 384000, `moonshotai/kimi-k2.5` 262144 / 235929); `anthropic/claude-opus-4.5` and
+  `anthropic/claude-opus-4-5` share one profile via a YAML anchor. The section lives apart from
+  `providers:`, so `get_provider`, `resolve_provider`, `get_model_extras`, `list_providers` and
+  `valid_models` are unchanged. `provider_resolver._parse_prefix` is now public as
+  `parse_provider_prefix` (same behaviour; reused instead of copied).
+- **Kanban CAS-safe dispatch + notes journal** (`swarmline.kanban`): new `KanbanDispatch` protocol (`try_claim`/`release_claim`/`list_claimable`, ISP: 3
+  methods) closes the deferral left by `KanbanAssignment.claim_task`, which unconditionally
+  overwrites a claim. `try_claim(task_id, assignee, *, lease_id, stale_before)` claims a card only
+  if it currently has no lease, or its `last_heartbeat_at` is older than `stale_before`, stamping
+  `assignee`/`claimed_at`/`last_heartbeat_at`/`metadata["lease_id"]`/`metadata["dispatched"]=True`
+  on success and returning `None` on a held, live card. `release_claim(task_id, *, lease_id)`
+  clears `metadata["lease_id"]` only when it matches the caller's `lease_id` — a foreign or absent
+  lease is a no-op returning the card unchanged; `assignee`/`claimed_at`/`dispatched` are left as
+  history. `list_claimable(*, statuses, stale_before, limit, include_fresh_claims=False)` returns
+  only leaf cards (no child links) in the requested statuses that are free or stale, ordered by
+  creation time; passing `include_fresh_claims=True` additionally returns leaf cards held under a
+  live (non-stale) lease, for callers that need to reconcile against a lease-holder's liveness —
+  this read grants no ownership and mutates nothing. A new
+  `KanbanNotes` protocol (`append_note`, ISP: 1 method) appends a typed `KanbanNote`
+  (`kind`/`text`/`at`/`run_id`/`outcome`) to `metadata["notes"]` under a FIFO cap that keeps the
+  newest entries — no schema migration, since the `metadata` column already exists on both
+  reference adapters. Both `InMemoryKanbanStore` and `SqliteKanbanStore` implement both protocols;
+  the SQLite adapter's `try_claim` is CAS-safe via a single `UPDATE ... WHERE` (re-checking the
+  free-or-stale condition against the current row's JSON `metadata` at write time) plus
+  `cursor.rowcount`, with the dispatch/notes SQL split into a new sibling module
+  (`kanban/sqlite_dispatch.py`) to keep `sqlite.py` from growing past the SRP line-count
+  guideline. `KanbanAssignment.claim_task` is unchanged (still unconditional, back-compat).
+- **Worker briefing renderer + `kanban_note` tool** (`swarmline.kanban.briefing`):
+  `render_worker_context(card, *, parents, done_children_results, notes,
+  artifact_refs, caps=BriefingCaps())` is a pure, stdlib-only function (no I/O, no wall clock) that
+  renders one deterministic markdown document for a worker picking up a card — a kanban dispatcher
+  run, a spawn child, or an in-run subagent — instead of it having to re-read a transcript to get
+  oriented. Sections render in a fixed order: title+id, body, parent goal, prior attempts (the most
+  recent `caps.max_full_attempts` shown in full, older ones collapsed to one line each), results of
+  done child cards, progress notes, artifact/file references, and a completion instruction pointing
+  at `kanban_complete`/`kanban_note`. Any section with no content is omitted rather than rendered as
+  an empty heading. `BriefingCaps` holds every size cap in one dataclass (`body_bytes=8192`,
+  `field_bytes=2048`, `max_notes=10`, `max_full_attempts=3`, `total_bytes=16384` by default) so a
+  pathological card (huge title/body, many notes/attempts/parents/children/artifacts) still
+  produces a bounded document: the header's byte cost (only `card.title` is ever truncated,
+  hard to `""` if needed — `card.id` itself is not) and the completion instruction are reserved
+  first and survive whenever `total_bytes` holds both (about 215 bytes for a short id; smaller is
+  a degenerate config, not specially guarded beyond not crashing), the remaining sections fill
+  whatever budget is left in canonical order, and the first one that no longer fits is truncated
+  instead of the whole document being blindly cut from the front. Truncation always lands on a UTF-8 character
+  boundary — never splitting a multi-byte character — and appends a `…[truncated N chars]` marker
+  where N is the number of characters (not bytes) dropped. A new opt-in `kanban_note(task_id, text)` tool
+  (`create_kanban_note_tools`, `kanban/tools.py`) appends a `"progress"`-kind `KanbanNote` through
+  `KanbanNotes.append_note`, sharing `BriefingCaps.max_notes` as its FIFO cap; the factory withholds
+  the tool entirely (returns two empty dicts) when the injected store does not implement
+  `KanbanNotes`, so an agent's toolset never advertises a tool call that would fail.
+- **Loop-limit soft landing** (`runtime/thin/react_strategy.py`, open-beta-hermes-saas Sprint 1a
+  Stage 2): opt-in via `RuntimeConfig.native_config["loop_limit_soft_landing"]` (default absent/
+  `False` — byte-identical to before). When the iteration budget is exhausted with the flag on, the
+  loop makes exactly ONE additional LLM call with no tool schemas (raw `system_prompt`, never the
+  react-built prompt or the native tool-calling adapter), asking the model to summarize what it
+  accomplished, what remains, and the next concrete step. The reply becomes a normal `final` event
+  carrying `native_metadata={"exit_reason": "loop_limit"}` instead of the `loop_limit` error, with
+  usage/metrics accounted for through the same `_build_usage`/`_build_metrics` path every other turn
+  uses. Any failure or cancellation of that one extra call falls back to the pre-existing
+  `RuntimeEvent.error(kind="loop_limit")` — no summary is ever fabricated from a partial/failed call.
+- **Kanban assignment + liveness** (`swarmline.kanban`): `KanbanTask` gained optional `assignee` /
+  `claimed_at` / `last_heartbeat_at` fields (default `None`, backward compatible) and a new
+  `KanbanAssignment` protocol (`claim_task`/`heartbeat`, ISP: 2 methods) implemented by both
+  `InMemoryKanbanStore` and `SqliteKanbanStore`. A new, SEPARATE `create_kanban_liveness_tools`
+  factory exposes `kanban_claim`/`kanban_heartbeat` as opt-in model tools — deliberately not merged
+  into `create_kanban_tools` (which stays frozen at exactly six tools; a downstream dispatch-only
+  toolset derives its own frozen tool-count contract from that factory's output). Mirrors hermes'
+  `kanban_claim`/`kanban_heartbeat` semantics: claiming/heartbeating a card is orthogonal to its
+  lifecycle `status`. The `_task_to_dict` tool-response serializer OMITS `assignee`/`claimed_at`/
+  `last_heartbeat_at` entirely (not `null`) for a never-claimed task, so the six pre-existing tools'
+  JSON response shape stays byte-identical to before this fields existed.
+- **Kanban retitle** (`swarmline.kanban`): new `KanbanRetitle` protocol (`update_title`, ISP: 1
+  method) implemented by both reference adapters — replaces a card's `title` without touching
+  `status`, for hosts that mirror external state (e.g. a todo item's changed text) onto a card.
+- **Compaction cascade "cheap -> expensive" (`swarmline.compaction`, context-engineering-manus-parity
+  Stage 6)**: Tier 0 (Ступень A, no-LLM) hash-dedup of tool results >= 200 chars
+  (`DUPLICATE_TOOL_OUTPUT_MARKER`) + templated one-liners for tools declared
+  `CompactionConfig.compactable_tool_names` (reproducible/re-callable — Claude Code
+  `COMPACTABLE_TOOLS` pattern), always attempted first inside `ConversationCompactionFilter.filter()`
+  before the existing Tier 1/2/3 cascade. Tier 2 (LLM summarization) now produces a structured
+  fixed-section digest (Ступень C: Goal / Constraints / Progress / Key Decisions+why / Errors
+  verbatim / Files / Next Steps) with an iterative UPDATE prompt (`<previous-summary>`,
+  PRESERVE/ADD/UPDATE) when an earlier summary ages back into the compaction region. Safe-fail:
+  `SummarizerAbortError` (+ stdlib `TimeoutError`/`ConnectionError`/`OSError`) ABORTS the whole
+  compaction pass (history left untouched, exception propagates) instead of falling back; any
+  other summarizer failure gets a deterministic, non-LLM local fallback summary (same fixed
+  sections) instead of jumping straight to Tier 3. Anti-thrashing cooldown (`ANTI_THRASHING_WINDOW=2`,
+  `MIN_SAVINGS_RATIO=0.10`) — an in-run analog of taskloom's `conversation_distiller.py`
+  `compression_history` algorithm (ported, not imported — zero taskloom coupling; different layer,
+  ephemeral in-run messages vs. persisted cross-run conversation history) — skips the LLM call (not
+  the cheap tiers or the Tier 3 safety net) when the last 2 Tier-2 attempts each saved under 10%;
+  tracked via a caller-owned `compression_history` constructor param + read-only property for
+  checkpoint persistence. `CompactionConfig.effective_threshold_tokens` (`effective = window -
+  max_output_reserve`, floored at `MIN_EFFECTIVE_THRESHOLD_TOKENS`) is opt-in via
+  `context_window_tokens` (`None` default preserves every existing caller's behaviour
+  byte-identically) — regression-tested against the "16k-model perpetual emergency-compaction"
+  pitfall. Cut-point integrity (tool_use/tool_result pairs are ATOMIC across every tier, including
+  under partial/inconsistent `non_compactable` tagging and tier-boundary slicing) is covered by a
+  seeded-`random` property test over synthetic histories (no new `hypothesis` dependency). Wired
+  into `agent/runtime_wiring.py` (Ступень B) via `native_config["compaction_enabled"]` +
+  `compaction_threshold_tokens`/`compaction_context_window_tokens`/
+  `compaction_max_output_reserve_tokens`/`compaction_preserve_recent_pairs`/
+  `compaction_compactable_tool_names` — absent/falsy is a hard no-op (`RuntimeConfig.compaction`
+  stays `None`), closing the same composition-root wiring-gap shape flagged as BL-77 for Stage 4's
+  tool-result offload.
+- **Prompt caching (`swarmline.context.prompt_caching`)**: Anthropic `cache_control`
+  breakpoint placement — Hermes `system_and_3` recipe. `build_cached_system()` splits a flat
+  system prompt on a literal boundary marker (when present) into a CACHED static block +
+  an UNCACHED dynamic block — a host with no static/dynamic split gets the whole prompt
+  cached as one block (fallback). `mark_last_message_breakpoints()` marks the last up-to-3
+  ELIGIBLE (non-system, cacheable-last-block) messages, stripping any pre-existing
+  `cache_control` first so the total never exceeds Anthropic's 4-breakpoint ceiling; every
+  block is deep-copied (no aliasing with caller-owned nested structures, e.g. image
+  `source`). TTL is configurable per call (`"5m"` default — no `ttl` key, Anthropic's own
+  default; `"1h"` — explicit `ttl` key). Wired into `AnthropicAdapter.call()`/`.stream()`
+  (`runtime/thin/llm_providers.py`) behind `_prompt_caching_enabled`/`_prompt_caching_ttl`
+  kwargs — absent/`False` keeps the request payload byte-identical to before; any error
+  building the decoration fails OPEN (falls back to the uncached request, never breaks the
+  underlying LLM call). `default_llm_call` (`runtime/thin/llm_client.py`) threads both from
+  `RuntimeConfig.native_config["prompt_caching_enabled"/"prompt_caching_ttl"]`,
+  Anthropic-only (hard no-op for every other provider). Every completed Anthropic call
+  (`call()`/`.stream()`/`.call_with_tools()`) logs `cache_read_input_tokens`/
+  `cache_creation_input_tokens` (normalized to 0 when absent) from the real provider usage
+  block (KV cache hit-rate is Manus's context-engineering metric #1).
+- **`FileScratchpadProvider`** (`swarmline.scratchpad`): durable, dependency-free scratchpad backed
+  by one JSON file per `base_dir`. Entries survive process restarts, so an agent resuming after a
+  redeploy still sees its own working notes. Model-supplied keys never touch the filesystem (single
+  store file), so path traversal is structurally impossible; a corrupt store — or an individual
+  unreadable entry — is quarantined aside rather than silently overwritten by the next write.
+- **`NamespacedScratchpadProvider`** (`swarmline.scratchpad`): decorator that scopes a SHARED
+  scratchpad provider to an opaque namespace — prefixes entry keys, and filters
+  `read(None)`/`search`/`delete` back to that prefix. For hosts that build one provider per process
+  but serve multiple tenants/sessions: without it, model-supplied keys collide across callers.
+  Knows nothing about any particular identity model.
+- **`OpenVikingScratchpadProvider.with_namespace(uri)`**: returns a provider over a different
+  namespace, reusing the same client. Rebinding (rather than only prefixing keys) also scopes
+  `search`, which passes the namespace as `target_uri`.
+
+- **Temporal durable runtime (experimental)** (`swarmline[temporal]`, `runtime="temporal"`): the agent
+  loop runs as a deterministic Temporal workflow; every LLM/tool call is an activity on a worker
+  fleet with per-activity timeouts and retry policies. A run survives worker crashes/deploys and
+  resumes from the last completed step. Buffered mode needs no extra infra; streaming mode relays
+  RuntimeEvents live through a shared EventBus (Redis/NATS) with deterministic-id dedup. Tools,
+  MCP servers, and LLM credentials live on workers (`swarmline.runtime.temporal.worker`); the
+  client facade implements the standard `AgentRuntime` protocol. Implements phases 1–2 of
+  `docs/proposals/temporal-runtime.md`.
+- **Temporal runtime phase 3 — durable HITL, reattach, worker CLI**:
+  - *Durable approvals*: workers can run with an `ApprovalPolicy` — a gated tool call does not
+    execute; the workflow parks on a Temporal signal (surviving deploys/restarts) with a durable
+    expiry timer (`approval_timeout_seconds`, default 24h, auto-deny). `TemporalApprovalClient`
+    resolves requests from any process (`approve`/`deny`/`pending` by `run_id` + `correlation_id`);
+    approvals can modify tool args; denials/expiries become failed tool results the model reacts
+    to — never run failures. New `approval_requested`/`approval_resolved` events; pending requests
+    are inspectable via a workflow query. `supports_hitl=True`.
+  - *Reattach*: `TemporalAgentRuntime.attach(run_id)` re-joins a running (or finished) run from
+    any process and yields events like `run()`. `supports_resume=True`.
+  - *Worker CLI*: `swarmline temporal-worker` bootstraps a worker (`--task-queue`,
+    `--tools module:attr`, `--event-bus redis://…|nats://…`, `--require-approval <tool>`
+    repeatable, `--api-key-env` for Temporal Cloud).
+- **Temporal runtime phase 4 — scale hardening**:
+  - *Reference-based history* (`use_reference_history=True`): the conversation lives in a
+    worker-side `HistoryStore` (`MessageStoreHistoryAdapter` bridges Postgres/SQLite
+    `MessageStore`s; `InMemoryHistoryStore` for tests); workflow payloads carry revision
+    numbers instead of the growing message list; per-turn deltas append through an idempotent
+    activity (retry-safe via expected-revision guard).
+  - *Continue-as-new* (`continue_as_new_after_iterations`): long runs roll workflow history
+    over per N-iteration segments — same run id, reattach/signals/queries keep working,
+    `max_iterations`/`max_tool_calls` stay global across segments.
+  - *Compaction at materialization*: worker-side `CompactionConfig` collapses old tool pairs
+    and drops oldest messages when referenced history crosses the token threshold; the store
+    is never rewritten. CLI: `--history-store module:attr`, `--compaction-threshold N`.
+  - *Redaction PayloadCodec* (`redact_payloads`, **on by default**): secret patterns
+    (Bearer/sk-*/userinfo/KEY=value) are scrubbed from every JSON payload before it reaches
+    server-side Temporal history; decode is passthrough so mixed deployments degrade safely.
+  - *OpenTelemetry interceptor* (`otel_interceptor=True`): temporalio `TracingInterceptor` on
+    the connection — client → workflow → activity spans join one trace.
+  - *Eval trace export* (`runtime.temporal.eval_export`): fetch completed run results from
+    Temporal and score them with `eval` module scorers offline (`run_to_eval_result`,
+    `score_run_results`) — production runs, no re-execution.
+- **Langfuse integration** (`swarmline[langfuse]`): `LangfuseExporter` bridges EventBus events to
+  Langfuse — LLM calls as generations (model, token usage, latency, errors), tool calls as spans,
+  optional session grouping. Duck-typed client injection for tests / client sharing.
+- **LangSmith integration** (`swarmline[langsmith]`): `LangSmithExporter` bridges EventBus events to
+  LangSmith runs (`llm` / `tool` run types) with inputs/outputs, timing, error status, and project
+  targeting.
+- **Enriched LLM call events**: `llm_call_start`/`llm_call_end` now carry a per-call
+  `correlation_id` (concurrent calls pair correctly in every exporter — previously OTelExporter
+  fell back to guessing), `duration_ms`, and `error_message` (redacted) on failure.
+- **Opt-in LLM content capture**: `RuntimeConfig(extra={"capture_llm_content": True})` adds
+  redacted, truncated prompts (`messages`) and completions (`response`) to LLM call events for
+  observability platforms. Off by default (default-secure).
+
+### Changed
+
+- **BREAKING — scratchpad writes must be confirmed.** `OpenVikingAgfsClient.write` (the Protocol
+  `OpenVikingScratchpadProvider` delegates to) changed from `-> None` to `-> bool`, and
+  `OpenVikingScratchpadProvider.write` now raises the new `ScratchpadWriteError` unless the client
+  returns `True`.
+
+  *Why:* the provider previously constructed and returned a `ScratchpadEntry` unconditionally, so a
+  rejected AGFS write still looked like a stored note. The `scratch_write` tool reported
+  `status: ok` to the model for data that did not exist, and the next `scratch_read` came back
+  empty — an agent planning around memory it was told it had is worse off than one with no
+  scratchpad at all. `create_scratchpad_tools`' write executor now returns
+  `{"status": "error", "key": ..., "stored": false, "error": ...}` instead of a false success.
+
+  *Migration for third-party `OpenVikingAgfsClient` implementations:* return `True` at the end of
+  `write` when the entry was stored, and `False` (or raise) when it was not. Anything other than
+  `True` — including the `None` that the old `-> None` annotation implied — is now treated as an
+  unconfirmed write and fails closed, deliberately: silently accepting `None` would reinstate the
+  bug for exactly the implementations most likely to still have it.
+
+  *No migration needed* for `InMemoryScratchpadProvider` or `FileScratchpadProvider` — neither goes
+  through this Protocol.
+
+- **New export:** `ScratchpadWriteError` from `swarmline.scratchpad`.
+
+- **`orchestration/plan_tools.py` descriptions translated to English.** `plan_create`/`plan_status`
+  `ToolSpec.description`, their JSON-schema property descriptions, and the `plan_create` "goal is
+  required" error message were Russian; translated to English (non-breaking — behavior, field
+  names, and schema shape are unchanged). `plan_create`'s description also now states the real
+  mechanic: plan steps advance automatically as the caller works through them, with no separate
+  step-update tool.
+
+### Fixed
+- Native ReAct calls now honor the run deadline, and soft landing preserves accumulated custom-adapter token usage without double-counting built-in adapters.
+- Compaction preserves images in the current user request through summary and fallback paths.
+- **`todo_write` no longer resets `created_at`** of items already on the list (bulk replace used to
+  stamp every item with the call time); unchanged items keep `updated_at` too.
+- **A run nested inside a tool wiped its parent's usage totals.** The per-run usage accumulator
+  is a ContextVar shared by every run in the task; each `ThinRuntime` run reset it at start and its
+  finalization consumed it, so a nested run (a tool that runs an agent) erased what the parent had
+  accumulated and the parent's final usage undercounted. Each run now opens its own scope
+  (`begin_native_usage_scope` / `end_native_usage_scope`) and the caller's totals come back when it
+  ends, on every exit path.
+- **Spawned subagents inherited the parent run's plan recitation.** `ThinSubagentOrchestrator`
+  handed its runtime config to children unchanged, including `native_config`'s live
+  `recitation_plan_provider` and the recitation settings around it, so a child recited the
+  parent's todo list. `child_runtime_config` strips those keys; everything else is inherited as
+  before.
+- **Run usage reported the cache counters of the last call only, and the native ReAct path none**
+  (BL-89, BL-98). The per-run usage accumulator now sums `cache_read_tokens`/`cache_write_tokens`
+  over every adapter-backed call (Anthropic `cache_*_input_tokens`, OpenAI-compatible
+  `prompt_tokens_details.cached_tokens`, Gemini `cached_content_token_count`), and `_build_usage`
+  prefers those sums; the native ReAct loop sums `NativeToolCallResult.usage` across its calls and
+  passes it as `provider_usage` to finalization, so a user-supplied native adapter is covered too.
+- **Compaction summaries and collapsed tool placeholders never reached the model** (F-1). Tier 1
+  and Tier 2 build their artifacts as `role="system"` messages, and every provider adapter
+  (`_filter_chat_messages` for Anthropic, `OpenAICompatAdapter._prepare`, `GoogleAdapter._prepare`)
+  drops non-user/assistant chat turns — so compaction silently degraded to truncation. Artifacts are
+  now tagged `metadata["compaction_artifact"] = "summary" | "collapsed"` and rendered by
+  `runtime/thin/helpers._message_to_lm` as a user-role data envelope
+  (`source="compaction-summary" | "compaction-collapsed"`) with the note "reference only; answer the
+  latest message below, not this summary; tools remain fully available; do not repeat actions
+  listed as completed". Provider filters are unchanged: any other system message is still dropped.
+  `_merge_adjacent_system_messages` never merges a compaction artifact with a non-artifact system
+  message, so protected system text is never re-rendered as quoted data.
+- **A lease-staleness cutoff is normalized before it is compared** (new `kanban/_time.py`).
+  `KanbanDispatch.try_claim`/`list_claimable` decide lease liveness by comparing `stale_before`
+  against a card's `last_heartbeat_at`, and on every adapter that is a plain STRING comparison
+  (on SQLite it happens inside the `UPDATE ... WHERE` itself). Lexicographic order matches
+  chronological order only while both sides are canonical UTC — which nothing stated publicly,
+  and which a caller has no reason to guess. An hour-old cutoff spelled `...T05:00:00+03:00`
+  sorts ABOVE the `...T03:00:00+00:00` heartbeat it is an hour BEHIND, so a live lease read as
+  stale and its card could be handed to a second worker and executed twice; the `Z` spelling of
+  an equal instant failed the same way at the boundary, since `+` sorts before `Z`. Cutoffs are
+  now normalized to canonical UTC on entry to both dispatch paths on both adapters, a value that
+  is not an instant raises `ValueError` instead of silently deciding liveness from arbitrary
+  text, and one writer of the canonical form (`now_iso`) replaces four copies of
+  `datetime.now(UTC).isoformat()`. The format contract is stated on the `KanbanDispatch`
+  protocol itself, so the next adapter inherits it.
+
+## [1.7.0] - 2026-06-23
+
+### Added
+- **Coding-agent stack merged from the April prototype line into the v1.6.x release line.** All new modules are opt-in and backward-compatible — the new `RuntimeConfig` fields default to `None`/`False`, so existing callers are unaffected.
+  - `code_runtime_types` — `CodeRuntimePort` unified coding-runtime contract (events, sessions, capabilities).
+  - `workspace/` — git ops, mutation policy, conflict detection, verification.
+  - `code_intel/` — repo map, impact analysis, language seams, edit planning, coverage checks.
+  - `governance/` — permissions, approval gates, audit trail, secrets.
+  - `evolution/` — self-evolution engine (stuck detection + recovery cascade), wired into the thin react loop via `RuntimeConfig.evolution_enabled` / `stuck_detector` / `recovery_cascade`.
+  - `eval/` coding extensions — golden tasks, coding scorer, provider comparison, regression gate.
+  - `scratchpad/` — in-memory + OpenViking scratchpad providers and tools.
+  - Orchestration: SGR `NextStep` schema, `ContextBridge`, `spawn_research`; semantic skill discovery (BM25 + hybrid retriever) with `search()` / health / tier management on `SkillRegistry`.
+- **Empty-aware structured retry (universal, provider-agnostic, opt-in).** `finalize_with_validation`
+  previously retried only when structured output failed to parse/validate; a response that was
+  **schema-valid but semantically empty** (e.g. a selection schema whose `picks` list parses to `[]`)
+  was passed through as a successful final result, so consumers shipped "nothing found". A structured
+  output may now opt into emptiness detection by implementing `is_empty_result(self) -> bool`. When it
+  reports itself empty, the engine treats it as the **same retryable miss as a parse failure** —
+  re-asked within the existing `max_model_retries` budget (with a distinct retry instruction), then
+  surfaced as a `bad_model_output` error instead of a silently-empty success. Schemas that do **not**
+  implement the method behave byte-for-byte as before, and a buggy predicate that raises is fail-safe
+  (treated as "not empty"). No provider/model knowledge and no new config knob — it reuses
+  `max_model_retries`. This lets every consumer drop its bespoke empty-retry wrapper.
+
+### Fixed
+- **MCP server now works with FastMCP 3.x.** `create_server()` passed the removed `FastMCP(description=...)` kwarg, which raises `TypeError` on `fastmcp>=3.0`. Switched to the canonical `instructions=` field (present in both FastMCP 2.x and 3.x), so the STDIO MCP server starts on either major line. `@mcp.tool()` and `server.run(transport="stdio")` were already 3.x-compatible.
+
+### Internal
+- Merge resolved 5 additive conflicts (subagent types, thin subagent orchestrator, thin react strategy, runtime config, skill registry) as unions — no behavior dropped. Two line-pinned `ty:ignore` guard tests re-aligned after line shifts. Offline unit suite gains +720 passing tests with no new failures versus the 1.6.10 baseline.
+
 ## [1.6.10] - 2026-06-22
 
 ### Security

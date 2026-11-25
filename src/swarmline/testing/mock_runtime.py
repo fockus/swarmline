@@ -134,8 +134,6 @@ class MockRuntime:
             capabilities=RuntimeCapabilities(
                 runtime_name=cls.NAME,
                 tier="light",
-                supports_mcp=False,
-                supports_provider_override=False,
             ),
         )
 

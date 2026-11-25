@@ -102,32 +102,21 @@ class TestPlanStatus:
         assert data["plans"] == []
 
 
-class TestPlanExecute:
-    async def test_execute(self, tools) -> None:
-        _specs, executors = tools
-        create_result = await executors["plan_create"](
-            {"goal": "g", "auto_execute": True}
-        )
-        plan_id = json.loads(create_result)["plan"]["id"]
-        result = await executors["plan_execute"]({"plan_id": plan_id})
-        data = json.loads(result)
-        assert data["status"] == "ok"
-        assert len(data["completed_steps"]) == 2
-
-    async def test_execute_missing(self, tools) -> None:
-        _specs, executors = tools
-        result = await executors["plan_execute"]({"plan_id": "missing"})
-        data = json.loads(result)
-        assert data["status"] == "error"
-
-
 class TestToolSpecs:
     def test_all_specs(self, tools) -> None:
         specs, executors = tools
         assert "plan_create" in specs
         assert "plan_status" in specs
-        assert "plan_execute" in specs
         assert set(specs.keys()) == set(executors.keys())
+
+    def test_plan_execute_removed(self, tools) -> None:
+        """REQ-ORC-001: plan_execute's executor lies (always NotImplementedError
+        via TaskLoomLLMPlannerMode.execute_step) — the tool must not be exposed."""
+        specs, executors = tools
+        assert set(specs.keys()) == {"plan_create", "plan_status"}
+        assert set(executors.keys()) == {"plan_create", "plan_status"}
+        assert "plan_execute" not in specs
+        assert "plan_execute" not in executors
 
     def test_plan_create_schema(self, tools) -> None:
         specs, _ = tools

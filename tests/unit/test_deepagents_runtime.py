@@ -1356,3 +1356,240 @@ class TestDeepAgentsCleanup:
         await runtime.cleanup()
         await runtime.cleanup()
         await runtime.cleanup()
+
+
+# ---------------------------------------------------------------------------
+# Cooperative cancellation (C8)
+# ---------------------------------------------------------------------------
+
+
+class TestDeepAgentsCancellation:
+    """Cooperative cancellation via CancellationToken and cancel()."""
+
+    @pytest.mark.asyncio
+    async def test_run_with_pre_cancelled_token_yields_cancelled(self) -> None:
+        """A pre-cancelled token -> single cancelled error event, no final."""
+        from swarmline.runtime.cancellation import CancellationToken
+
+        token = CancellationToken()
+        token.cancel()
+        cfg = RuntimeConfig(runtime_name="deepagents", cancellation_token=token)
+        runtime = DeepAgentsRuntime(config=cfg)
+
+        with patch(
+            "swarmline.runtime.deepagents._check_langchain_available",
+            return_value=None,
+        ):
+            events = []
+            async for ev in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="test",
+                active_tools=[],
+            ):
+                events.append(ev)
+
+        assert len(events) == 1
+        assert events[0].type == "error"
+        assert events[0].data["kind"] == "cancelled"
+        assert events[0].data["recoverable"] is False
+
+    @pytest.mark.asyncio
+    async def test_run_stops_on_mid_stream_token_cancellation(self) -> None:
+        """Token cancelled mid-stream -> cancelled error, stream stops, no final."""
+        from swarmline.runtime.cancellation import CancellationToken
+
+        token = CancellationToken()
+        cfg = RuntimeConfig(runtime_name="deepagents", cancellation_token=token)
+        runtime = DeepAgentsRuntime(config=cfg)
+
+        chunk1 = MagicMock()
+        chunk1.content = "part1"
+        chunk2 = MagicMock()
+        chunk2.content = "part2"
+
+        mock_runnable = AsyncMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk1}}
+            token.cancel()
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk2}}
+
+        mock_runnable.astream_events = fake_astream_events
+
+        with (
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(runtime, "_build_llm", return_value=mock_runnable),
+        ):
+            events = []
+            async for ev in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="test",
+                active_tools=[],
+            ):
+                events.append(ev)
+
+        types = [e.type for e in events]
+        assert types == ["assistant_delta", "error"]
+        assert events[0].data["text"] == "part1"
+        assert events[-1].data["kind"] == "cancelled"
+        assert "final" not in types
+
+    @pytest.mark.asyncio
+    async def test_cancel_method_without_token_stops_stream(self) -> None:
+        """cancel() works via the internal flag when no token is configured."""
+        runtime = DeepAgentsRuntime()
+
+        chunk = MagicMock()
+        chunk.content = "part1"
+
+        mock_runnable = AsyncMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk}}
+            runtime.cancel()
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk}}
+
+        mock_runnable.astream_events = fake_astream_events
+
+        with (
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(runtime, "_build_llm", return_value=mock_runnable),
+        ):
+            events = []
+            async for ev in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="test",
+                active_tools=[],
+            ):
+                events.append(ev)
+
+        types = [e.type for e in events]
+        assert types == ["assistant_delta", "error"]
+        assert events[-1].data["kind"] == "cancelled"
+
+    def test_cancel_method_cancels_configured_token(self) -> None:
+        """cancel() propagates to the configured CancellationToken."""
+        from swarmline.runtime.cancellation import CancellationToken
+
+        token = CancellationToken()
+        cfg = RuntimeConfig(runtime_name="deepagents", cancellation_token=token)
+        runtime = DeepAgentsRuntime(config=cfg)
+
+        runtime.cancel()
+
+        assert token.is_cancelled
+
+
+# ---------------------------------------------------------------------------
+# Usage metadata (D2)
+# ---------------------------------------------------------------------------
+
+
+class TestDeepAgentsUsage:
+    """usage_metadata from on_chat_model_end -> TurnMetrics + usage payload."""
+
+    @pytest.mark.asyncio
+    async def test_usage_metadata_accumulated_into_final(self) -> None:
+        """usage_metadata from several LLM calls is summed into the final event."""
+        from types import SimpleNamespace
+
+        runtime = DeepAgentsRuntime()
+
+        chunk = MagicMock()
+        chunk.content = "hi"
+        end1 = SimpleNamespace(
+            content="",
+            usage_metadata={
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "total_tokens": 15,
+            },
+        )
+        end2 = SimpleNamespace(
+            content="",
+            usage_metadata={
+                "input_tokens": 7,
+                "output_tokens": 3,
+                "total_tokens": 10,
+            },
+        )
+
+        mock_runnable = AsyncMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk}}
+            yield {"event": "on_chat_model_end", "data": {"output": end1}}
+            yield {"event": "on_chat_model_end", "data": {"output": end2}}
+
+        mock_runnable.astream_events = fake_astream_events
+
+        with (
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(runtime, "_build_llm", return_value=mock_runnable),
+        ):
+            events = []
+            async for ev in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="test",
+                active_tools=[],
+            ):
+                events.append(ev)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert final.data["usage"] == {
+            "input_tokens": 17,
+            "output_tokens": 8,
+            "usage_source": "native",
+        }
+        assert final.data["metrics"]["tokens_in"] == 17
+        assert final.data["metrics"]["tokens_out"] == 8
+
+    @pytest.mark.asyncio
+    async def test_no_usage_metadata_keeps_zero_tokens_and_no_usage(self) -> None:
+        """Without usage_metadata the final event has no usage and zero tokens."""
+        from types import SimpleNamespace
+
+        runtime = DeepAgentsRuntime()
+
+        chunk = MagicMock()
+        chunk.content = "hi"
+        end = SimpleNamespace(content="")  # no usage_metadata attribute
+
+        mock_runnable = AsyncMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk}}
+            yield {"event": "on_chat_model_end", "data": {"output": end}}
+
+        mock_runnable.astream_events = fake_astream_events
+
+        with (
+            patch(
+                "swarmline.runtime.deepagents._check_langchain_available",
+                return_value=None,
+            ),
+            patch.object(runtime, "_build_llm", return_value=mock_runnable),
+        ):
+            events = []
+            async for ev in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="test",
+                active_tools=[],
+            ):
+                events.append(ev)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert "usage" not in final.data
+        assert final.data["metrics"]["tokens_in"] == 0
+        assert final.data["metrics"]["tokens_out"] == 0

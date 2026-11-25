@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "swarmline"
-version = "1.6.10"
+version = "2.0.0"
 description = "LLM-agnostic framework for building AI agents with pluggable runtimes, memory, tools, and observability"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -139,6 +139,18 @@ otel = [
     "opentelemetry-api>=1.29",
     "opentelemetry-sdk>=1.29",
 ]
+# Logfire (Pydantic's managed OTLP backend)
+logfire = ["logfire>=3.0"]
+# Temporal durable runtime (experimental)
+temporal = ["temporalio>=1.8"]
+# DBOS durable-agent backend (opt-in orchestrator, not in [all] -- C-DP1)
+dbos = ["dbos>=2.0"]
+# Prefect durable-agent backend (opt-in orchestrator, not in [all] -- C-DP1)
+prefect = ["prefect>=3.0"]
+# Langfuse (LLM observability export)
+langfuse = ["langfuse>=3.0"]
+# LangSmith (LLM observability export)
+langsmith = ["langsmith>=0.3"]
 # MCP server (FastMCP STDIO)
 mcp = ["fastmcp>=2.0"]
 # CLI (click-based)
@@ -157,13 +169,18 @@ serve = [
 ]
 # Daemon (long-running process manager) — stdlib only, no extra deps
 daemon = []
+# PII redaction: Presidio ML backend (the stdlib regex core needs no extra)
+pii = [
+    "presidio-analyzer",
+    "presidio-anonymizer",
+]
 # NATS event bus backend
 nats = ["nats-py>=2.0"]
 # Redis event bus backend
 redis = ["redis>=5.0"]
 # All runtimes + all storage + web (for development)
 all = [
-    "swarmline[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,mcp,cli,a2a,serve,daemon]",
+    "swarmline[claude,thin,deepagents,openai-agents,all-providers,postgres,sqlite,web,web-duckduckgo,otel,langfuse,langsmith,temporal,mcp,cli,a2a,serve,daemon]",
 ]
 dev = [
     "pytest>=8.0",

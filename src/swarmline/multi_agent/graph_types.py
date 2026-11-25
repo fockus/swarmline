@@ -6,20 +6,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from swarmline.domain_types import LifecycleMode
 from swarmline.multi_agent.registry_types import AgentStatus
 
-
-class LifecycleMode(str, Enum):
-    """Agent lifecycle mode — how the agent lives and dies.
-
-    EPHEMERAL: self-terminates after goal completion (default).
-    SUPERVISED: creator decides when to terminate.
-    PERSISTENT: only orchestrator/user can remove; stays alive across goals.
-    """
-
-    EPHEMERAL = "ephemeral"
-    SUPERVISED = "supervised"
-    PERSISTENT = "persistent"
+# LifecycleMode moved to swarmline.domain_types (pure Domain); re-exported here
+# for backward compatibility with `from ...multi_agent.graph_types import LifecycleMode`.
 
 
 class EdgeType(str, Enum):

@@ -42,8 +42,13 @@ _PROVIDER_SDK_MAP: dict[str, SdkType] = {
 }
 
 
-def _parse_prefix(raw: str) -> tuple[str | None, str]:
-    """Parse prefix."""
+def parse_provider_prefix(raw: str) -> tuple[str | None, str]:
+    """Split a known provider prefix off a model string.
+
+    ``"openrouter:moonshotai/kimi-k2.5"`` → ``("openrouter", "moonshotai/kimi-k2.5")``.
+    A string without a colon, or whose prefix is not a known provider, is returned
+    unchanged with ``None`` (``"vendor/model:free"`` keeps its variant suffix).
+    """
     if ":" not in raw:
         return None, raw
 
@@ -97,7 +102,7 @@ def resolve_provider(
             api_key=api_key,
         )
 
-    explicit_provider, model_part = _parse_prefix(raw_model.strip())
+    explicit_provider, model_part = parse_provider_prefix(raw_model.strip())
 
     if explicit_provider is not None:
         model_id = model_part

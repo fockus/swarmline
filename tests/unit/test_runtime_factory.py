@@ -22,9 +22,9 @@ def factory() -> RuntimeFactory:
 class TestResolveRuntimeName:
     """RuntimeFactory.resolve_runtime_name - selection priority."""
 
-    def test_default_is_claude_sdk(self, factory: RuntimeFactory) -> None:
-        """Without parameters - cloud_sdk."""
-        assert factory.resolve_runtime_name() == "claude_sdk"
+    def test_default_is_thin(self, factory: RuntimeFactory) -> None:
+        """Without parameters — thin, unified with the Agent facade default."""
+        assert factory.resolve_runtime_name() == "thin"
 
     def test_config_overrides_default(self, factory: RuntimeFactory) -> None:
         """config.runtime_name overrides default."""
@@ -55,7 +55,7 @@ class TestResolveRuntimeName:
     def test_invalid_env_ignored(self, factory: RuntimeFactory) -> None:
         """Invalid env - is ignored, uses default."""
         with patch.dict(os.environ, {"SWARMLINE_RUNTIME": "invalid_runtime"}):
-            assert factory.resolve_runtime_name() == "claude_sdk"
+            assert factory.resolve_runtime_name() == "thin"
 
     def test_invalid_override_ignored(self, factory: RuntimeFactory) -> None:
         """Invalid override - is ignored, uses config."""
@@ -137,23 +137,138 @@ class TestCreate:
         assert kwargs["local_tools"] == tool_exec
         assert "tool_executors" not in kwargs
 
-    def test_create_cli_ignores_facade_only_kwargs(
+    def test_create_thin_preserves_local_tools_without_tool_executors(
         self,
         factory: RuntimeFactory,
     ) -> None:
-        """CLI runtime path drops tool_executors/local_tools before constructor."""
+        """Regression: local_tools must survive when tool_executors is empty/
+        absent. RuntimeFactory.create() consults the registry FIRST, so this
+        exercises registry.py::_create_thin (the production path). Before the
+        fix, local_tools was popped off kwargs and only restored inside
+        `if tool_executors:`, so a caller passing ONLY local_tools (e.g.
+        HarnessBuilder().supervisor(...).build()) silently lost every tool."""
+        cfg = RuntimeConfig(runtime_name="thin")
+        fake_runtime = object()
+        fake_cls = MagicMock(return_value=fake_runtime)
+        local = {"foo": object()}
+
+        with patch("swarmline.runtime.thin.ThinRuntime", fake_cls):
+            runtime = factory.create(config=cfg, local_tools=local)
+
+        assert runtime is fake_runtime
+        kwargs = fake_cls.call_args.kwargs
+        assert kwargs["local_tools"] == local
+        assert "tool_executors" not in kwargs
+
+    def test_create_thin_merges_local_tools_and_tool_executors_when_both_present(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
+        """Backcompat: the pre-existing merge behavior (both kwargs present)
+        stays unchanged by the fix (registry path)."""
+        cfg = RuntimeConfig(runtime_name="thin")
+        fake_runtime = object()
+        fake_cls = MagicMock(return_value=fake_runtime)
+        local = {"foo": object()}
+        tool_exec = {"calc": object()}
+
+        with patch("swarmline.runtime.thin.ThinRuntime", fake_cls):
+            runtime = factory.create(
+                config=cfg, local_tools=local, tool_executors=tool_exec
+            )
+
+        assert runtime is fake_runtime
+        kwargs = fake_cls.call_args.kwargs
+        assert kwargs["local_tools"] == {**local, **tool_exec}
+
+    def test_factory_create_thin_fallback_preserves_local_tools_without_tool_executors(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
+        """Same regression, exercised directly against the legacy fallback
+        method (factory.py::RuntimeFactory._create_thin), used when the
+        registry is unavailable."""
+        cfg = RuntimeConfig(runtime_name="thin")
+        fake_runtime = object()
+        fake_cls = MagicMock(return_value=fake_runtime)
+        local = {"foo": object()}
+
+        with patch("swarmline.runtime.thin.ThinRuntime", fake_cls):
+            runtime = factory._create_thin(cfg, local_tools=local)
+
+        assert runtime is fake_runtime
+        kwargs = fake_cls.call_args.kwargs
+        assert kwargs["local_tools"] == local
+        assert "tool_executors" not in kwargs
+
+    def test_factory_create_thin_fallback_merges_when_both_present(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
+        """Backcompat: the pre-existing merge behavior (both kwargs present)
+        stays unchanged by the fix (legacy fallback path)."""
+        cfg = RuntimeConfig(runtime_name="thin")
+        fake_runtime = object()
+        fake_cls = MagicMock(return_value=fake_runtime)
+        local = {"foo": object()}
+        tool_exec = {"calc": object()}
+
+        with patch("swarmline.runtime.thin.ThinRuntime", fake_cls):
+            runtime = factory._create_thin(
+                cfg, local_tools=local, tool_executors=tool_exec
+            )
+
+        assert runtime is fake_runtime
+        kwargs = fake_cls.call_args.kwargs
+        assert kwargs["local_tools"] == {**local, **tool_exec}
+
+    def test_create_cli_rejects_local_tools(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
+        """CLI runtime fails fast on tool_executors/local_tools instead of
+        silently dropping them (RUNTIME-PARITY-PLAN E2)."""
+        cfg = RuntimeConfig(runtime_name="cli")
+        fake_cls = MagicMock(return_value=object())
+        cli_config = MagicMock()
+
+        with patch("swarmline.runtime.cli.runtime.CliAgentRuntime", fake_cls):
+            with pytest.raises(ValueError, match="does not support custom @tool"):
+                factory.create(
+                    config=cfg,
+                    tool_executors={"calc": object()},
+                    local_tools={"calc": object()},
+                    cli_config=cli_config,
+                )
+
+    def test_create_cli_rejects_mcp_servers(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
+        """CLI runtime fails fast on mcp_servers instead of silently dropping."""
+        cfg = RuntimeConfig(runtime_name="cli")
+        fake_cls = MagicMock(return_value=object())
+
+        with patch("swarmline.runtime.cli.runtime.CliAgentRuntime", fake_cls):
+            with pytest.raises(
+                ValueError, match="does not support AgentConfig.mcp_servers"
+            ):
+                factory.create(
+                    config=cfg,
+                    mcp_servers={"srv": {"url": "http://localhost:1"}},
+                )
+
+    def test_create_cli_without_tools_succeeds(
+        self,
+        factory: RuntimeFactory,
+    ) -> None:
         cfg = RuntimeConfig(runtime_name="cli")
         fake_runtime = object()
         fake_cls = MagicMock(return_value=fake_runtime)
         cli_config = MagicMock()
 
         with patch("swarmline.runtime.cli.runtime.CliAgentRuntime", fake_cls):
-            runtime = factory.create(
-                config=cfg,
-                tool_executors={"calc": object()},
-                local_tools={"calc": object()},
-                cli_config=cli_config,
-            )
+            runtime = factory.create(config=cfg, cli_config=cli_config)
 
         assert runtime is fake_runtime
         kwargs = fake_cls.call_args.kwargs
@@ -274,3 +389,174 @@ class TestErrorRuntime:
         err = RuntimeErrorData(kind="dependency_missing", message="x")
         runtime = _ErrorRuntime(err)
         await runtime.cleanup()  # shouldn't quit
+
+
+class TestConfigCapabilityValidation:
+    """E1: AgentConfig options unsupported by the runtime fail fast."""
+
+    def _factory(self) -> RuntimeFactory:
+        return RuntimeFactory()
+
+    def test_structured_output_on_cli_passes_via_dispatch_emulation(self) -> None:
+        """cli structured output is emulated at the dispatch layer (D1)."""
+        from swarmline.agent.config import AgentConfig
+
+        config = AgentConfig(
+            system_prompt="x",
+            runtime="cli",
+            output_format={"type": "object", "properties": {}},
+        )
+        self._factory().validate_agent_config(config)
+
+    def test_permissions_callback_on_cli_raises(self) -> None:
+        from swarmline.agent.config import AgentConfig
+
+        async def _cb(tool_name, input_data, context):  # pragma: no cover
+            return None
+
+        config = AgentConfig(
+            system_prompt="x",
+            runtime="cli",
+            can_use_tool=_cb,
+            permission_mode="default",
+        )
+        with pytest.raises(ValueError, match="permissions"):
+            self._factory().validate_agent_config(config)
+
+    def test_permissions_callback_on_cli_warns_when_not_strict(self) -> None:
+        import warnings
+
+        from swarmline.agent.config import AgentConfig
+
+        async def _cb(tool_name, input_data, context):  # pragma: no cover
+            return None
+
+        config = AgentConfig(
+            system_prompt="x",
+            runtime="cli",
+            can_use_tool=_cb,
+            permission_mode="default",
+            strict_capabilities=False,
+        )
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            self._factory().validate_agent_config(config)
+        assert any("permissions" in str(w.message) for w in caught)
+
+    def test_resume_session_on_thin_raises(self) -> None:
+        from swarmline.agent.config import AgentConfig
+
+        config = AgentConfig(system_prompt="x", runtime="thin", resume_session_id="s-1")
+        with pytest.raises(ValueError, match="resume"):
+            self._factory().validate_agent_config(config)
+
+    def test_project_instructions_on_cli_raises(self) -> None:
+        from swarmline.agent.config import AgentConfig
+
+        config = AgentConfig(
+            system_prompt="x", runtime="cli", project_instructions=True
+        )
+        with pytest.raises(ValueError, match="project_instructions"):
+            self._factory().validate_agent_config(config)
+
+    def test_project_instructions_supported_everywhere_else(self) -> None:
+        from swarmline.agent.config import AgentConfig
+
+        for runtime in ("thin", "claude_sdk", "deepagents", "openai_agents", "pi_sdk"):
+            config = AgentConfig(
+                system_prompt="x", runtime=runtime, project_instructions=True
+            )
+            self._factory().validate_agent_config(config)
+
+    def test_thinking_on_pi_sdk_passes_and_on_cli_raises(self) -> None:
+        from swarmline.agent.config import AgentConfig
+        from swarmline.runtime.types import ThinkingConfig
+
+        ok = AgentConfig(
+            system_prompt="x",
+            runtime="pi_sdk",
+            thinking=ThinkingConfig(budget_tokens=1024),
+        )
+        self._factory().validate_agent_config(ok)
+
+        bad = AgentConfig(
+            system_prompt="x",
+            runtime="cli",
+            thinking=ThinkingConfig(budget_tokens=1024),
+        )
+        with pytest.raises(ValueError, match="thinking_stream"):
+            self._factory().validate_agent_config(bad)
+
+    def test_error_message_lists_capable_runtimes(self) -> None:
+        from swarmline.agent.config import AgentConfig
+        from swarmline.runtime.types import ThinkingConfig
+
+        config = AgentConfig(
+            system_prompt="x",
+            runtime="cli",
+            thinking=ThinkingConfig(budget_tokens=1024),
+        )
+        with pytest.raises(ValueError, match="supported by:"):
+            self._factory().validate_agent_config(config)
+
+
+class TestCreateTemporalFacade:
+    """I-096: the Agent facade path to temporal must fail loud, never TypeError
+    (runtime-parity re-audit 2026-07-04, blocker finding)."""
+
+    def _factory(self) -> RuntimeFactory:
+        return RuntimeFactory()
+
+    def test_create_temporal_tolerates_empty_tool_executors(self) -> None:
+        """build_portable_runtime_plan always emits tool_executors={} — the
+        temporal factory must swallow the empty wiring artifact."""
+        from swarmline.runtime.temporal.runtime import TemporalAgentRuntime
+
+        cfg = RuntimeConfig(runtime_name="temporal")
+        runtime = self._factory().create(config=cfg, tool_executors={})
+        assert isinstance(runtime, TemporalAgentRuntime)
+
+    def test_create_temporal_rejects_nonempty_tool_executors(self) -> None:
+        cfg = RuntimeConfig(runtime_name="temporal")
+        with pytest.raises(ValueError, match="worker"):
+            self._factory().create(config=cfg, tool_executors={"calc": object()})
+
+    def test_create_temporal_rejects_hook_registry_loudly(self) -> None:
+        cfg = RuntimeConfig(runtime_name="temporal")
+        with pytest.raises(ValueError, match="temporal"):
+            self._factory().create(config=cfg, hook_registry=object())
+
+    def test_create_temporal_rejects_command_registry_loudly(self) -> None:
+        cfg = RuntimeConfig(runtime_name="temporal")
+        with pytest.raises(ValueError, match="temporal"):
+            self._factory().create(config=cfg, command_registry=object())
+
+    def test_portable_plan_to_temporal_creates_runtime(self) -> None:
+        """THE blocker repro: Agent(config) facade path end-to-end."""
+        from swarmline.agent.config import AgentConfig
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+        from swarmline.runtime.temporal.runtime import TemporalAgentRuntime
+
+        plan = build_portable_runtime_plan(
+            AgentConfig(system_prompt="s", runtime="temporal"), "temporal"
+        )
+        runtime = self._factory().create(config=plan.config, **plan.create_kwargs)
+        assert isinstance(runtime, TemporalAgentRuntime)
+
+    def test_portable_plan_forwards_mcp_servers_to_temporal_fail_fast(self) -> None:
+        """mcp_servers must reach the temporal factory so its documented
+        'tools live on workers' guard actually fires (was: silent drop)."""
+        from swarmline.agent.config import AgentConfig
+        from swarmline.agent.runtime_wiring import build_portable_runtime_plan
+
+        plan = build_portable_runtime_plan(
+            AgentConfig(
+                system_prompt="s",
+                runtime="temporal",
+                mcp_servers={"srv": {"url": "https://mcp.example.com/sse"}},
+            ),
+            "temporal",
+        )
+        assert "mcp_servers" in plan.create_kwargs
+        with pytest.raises(ValueError, match="worker"):
+            self._factory().create(config=plan.config, **plan.create_kwargs)

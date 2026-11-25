@@ -26,10 +26,28 @@ When `event_bus` is set in `RuntimeConfig`, ThinRuntime emits these events autom
 
 | Event | When | Data fields |
 |-------|------|-------------|
-| `llm_call_start` | Before LLM request | `model` |
-| `llm_call_end` | After LLM response | `model`, `error` (if failed) |
+| `llm_call_start` | Before LLM request | `model`, `correlation_id`, `messages`* |
+| `llm_call_end` | After LLM response | `model`, `correlation_id`, `duration_ms`, `error` + `error_message` (if failed), `response`* |
 | `tool_call_start` | Before tool execution | `name`, `correlation_id` |
 | `tool_call_end` | After tool execution | `name`, `ok`, `correlation_id` |
+
+`correlation_id` pairs each `llm_call_start` with its `llm_call_end`, so
+concurrent LLM calls are tracked separately by every exporter.
+
+\* `messages` / `response` are **opt-in content capture** for LLM
+observability platforms. Off by default (default-secure). Enable per config:
+
+```python
+config = RuntimeConfig(
+    runtime_name="thin",
+    event_bus=bus,
+    extra={"capture_llm_content": True},
+)
+```
+
+Captured content is passed through `redact_secrets()` and truncated to
+4000 chars per field before it reaches the bus. Streaming responses are
+not captured (only the final text of buffered calls).
 
 ### EventBus Protocol
 
@@ -243,6 +261,75 @@ Every span created by `OTelExporter` includes standardized attributes:
 | `session.id` | all | Session identifier (when configured) |
 | `tool.name` | Tool | Tool name (e.g. `"web_search"`) |
 
+### Vendor-neutral OTLP (Logfire / Langfuse / SigNoz / Arize)
+
+Any backend that accepts OpenTelemetry Protocol (OTLP) — Logfire, Langfuse, SigNoz, Arize Phoenix, Grafana Tempo, Jaeger, Datadog, and others — can receive Swarmline spans with zero code changes via environment variables.
+
+#### Zero-code env-var route (recommended)
+
+Set these standard OTEL variables before starting your process:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT="https://ingest.logfire.dev"        # your backend
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer <token>"        # auth header
+export OTEL_SERVICE_NAME="my-agent"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"                      # or "grpc"
+```
+
+Then call `configure_otlp_from_env()` once at startup:
+
+```python
+from swarmline.observability import configure_otlp_from_env
+
+# Reads OTEL_* env vars automatically; returns None when endpoint is unset.
+provider = configure_otlp_from_env(set_global=True)
+```
+
+`configure_otlp_from_env()` is a **no-op** when `OTEL_EXPORTER_OTLP_ENDPOINT` is absent or empty, so it is safe to call unconditionally in library code.
+
+#### Python helper (programmatic control)
+
+```python
+from swarmline.observability import configure_otlp_from_env
+
+provider = configure_otlp_from_env(
+    service_name="my-agent",        # overrides OTEL_SERVICE_NAME
+    set_global=True,                # register as the global TracerProvider
+)
+```
+
+Or supply a custom exporter factory (useful in tests or for exotic backends):
+
+```python
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
+def my_factory(*, endpoint, headers, protocol):
+    return OTLPSpanExporter(endpoint=endpoint, headers=headers)
+
+configure_otlp_from_env(exporter_factory=my_factory, set_global=True)
+```
+
+#### Installation
+
+```bash
+pip install swarmline[otel]                   # OTel SDK (required)
+pip install opentelemetry-exporter-otlp       # OTLP gRPC + HTTP exporters
+pip install swarmline[logfire]                # optional: Logfire client extras
+```
+
+#### Backend quick-reference
+
+| Backend | Endpoint | Protocol | Extra install |
+|---------|----------|----------|---------------|
+| **Logfire** | `https://ingest.logfire.dev` | `http/protobuf` | `swarmline[logfire]` |
+| **Langfuse** | `https://cloud.langfuse.com/api/public/otel` | `http/protobuf` | — |
+| **SigNoz** | `http://<host>:4317` | `grpc` | — |
+| **Arize Phoenix** | `http://localhost:6006/v1/traces` | `http/protobuf` | — |
+| **Grafana Tempo** | `http://<tempo>:4317` | `grpc` | — |
+| **Datadog Agent** | `http://localhost:4317` | `grpc` | — |
+
+---
+
 ### Exporting to Observability Backends
 
 **Datadog** -- Use the OTLP exporter. Datadog Agent (v6.32+/v7.32+) accepts OTLP over gRPC on port 4317 by default:
@@ -289,6 +376,126 @@ otel.detach()    # unsubscribes, ends any orphaned spans
 ```
 
 `attach()` / `detach()` mirror the `TracingSubscriber` API. The exporter can be reattached after detaching.
+
+---
+
+## Langfuse Integration
+
+`LangfuseExporter` bridges EventBus events to [Langfuse](https://langfuse.com): LLM calls become Langfuse **generations** (model, token usage, latency, errors), tool calls become **spans**. Works with Langfuse Cloud and self-hosted.
+
+### Installation
+
+```bash
+pip install swarmline[langfuse]
+export LANGFUSE_PUBLIC_KEY=pk-lf-...
+export LANGFUSE_SECRET_KEY=sk-lf-...
+export LANGFUSE_HOST=https://cloud.langfuse.com   # or your self-hosted URL
+```
+
+### Quick Start
+
+```python
+from swarmline.observability import InMemoryEventBus, LangfuseExporter
+from swarmline.runtime.types import RuntimeConfig
+
+bus = InMemoryEventBus()
+
+langfuse = LangfuseExporter(bus, runtime_name="thin", session_id="chat-42")
+langfuse.attach()
+
+config = RuntimeConfig(
+    runtime_name="thin",
+    event_bus=bus,
+    # opt-in: send prompts/completions (redacted + truncated) to Langfuse
+    extra={"capture_llm_content": True},
+)
+# ... run your agent ...
+langfuse.detach()   # ends open observations and flushes the client
+```
+
+Without `capture_llm_content`, generations carry model, timing, token usage
+(when available), and error status — but no prompt/completion text.
+`session_id` is promoted to the Langfuse trace session, so all calls of one
+conversation group together in the Langfuse UI.
+
+### Configuration
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `bus` | `EventBus` | `None` | EventBus; can also be passed to `attach()` |
+| `client` | Langfuse client | `None` | Pre-built client (else built from env / keys) |
+| `public_key` / `secret_key` / `host` | `str \| None` | env vars | Explicit credentials |
+| `runtime_name` | `str \| None` | `None` | Added to observation metadata |
+| `session_id` | `str \| None` | `None` | Langfuse trace session + metadata |
+
+Export failures are logged and swallowed — a Langfuse outage never breaks an agent run.
+
+---
+
+## LangSmith Integration
+
+`LangSmithExporter` bridges EventBus events to [LangSmith](https://smith.langchain.com): LLM calls become runs of type `llm`, tool calls become runs of type `tool`, each with inputs/outputs, timing, and error status.
+
+### Installation
+
+```bash
+pip install swarmline[langsmith]
+export LANGSMITH_API_KEY=lsv2_...
+export LANGSMITH_PROJECT=my-agent     # optional, or pass project_name=
+```
+
+### Quick Start
+
+```python
+from swarmline.observability import InMemoryEventBus, LangSmithExporter
+from swarmline.runtime.types import RuntimeConfig
+
+bus = InMemoryEventBus()
+
+langsmith = LangSmithExporter(
+    bus,
+    project_name="my-agent",
+    runtime_name="thin",
+    session_id="chat-42",
+)
+langsmith.attach()
+
+config = RuntimeConfig(
+    runtime_name="thin",
+    event_bus=bus,
+    extra={"capture_llm_content": True},  # opt-in content capture
+)
+# ... run your agent ...
+langsmith.detach()
+```
+
+`session_id` and `runtime_name` land in run metadata, so runs of one session
+are filterable in the LangSmith UI.
+
+### Configuration
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `bus` | `EventBus` | `None` | EventBus; can also be passed to `attach()` |
+| `client` | LangSmith client | `None` | Pre-built client (else built from env / keys) |
+| `api_key` / `api_url` | `str \| None` | env vars | Explicit credentials |
+| `project_name` | `str \| None` | SDK default | Target LangSmith project |
+| `runtime_name` | `str \| None` | `None` | Added to run metadata |
+| `session_id` | `str \| None` | `None` | Added to run metadata |
+
+Export failures are logged and swallowed — a LangSmith outage never breaks an agent run.
+
+### Running Multiple Exporters
+
+All exporters are independent EventBus subscribers — OTel, Langfuse, LangSmith,
+and `TracingSubscriber` can run simultaneously on the same bus:
+
+```python
+bus = InMemoryEventBus()
+OTelExporter(bus, tracer_provider=provider).attach()
+LangfuseExporter(bus).attach()
+LangSmithExporter(bus).attach()
+```
 
 ---
 

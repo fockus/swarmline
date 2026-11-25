@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -236,6 +237,7 @@ class TestWorktreeLifecycle:
         from types import SimpleNamespace
 
         from swarmline.orchestration import thin_subagent as thin_subagent_module
+        from swarmline.runtime.thin.coding_profile import CodingProfileConfig
         from swarmline.tools.types import SandboxConfig
 
         parent_read = object()
@@ -243,6 +245,7 @@ class TestWorktreeLifecycle:
         preserved_tool = object()
         rebound_read = object()
         rebound_write = object()
+        parent_coding_profile = CodingProfileConfig(edit_strategy="search_replace")
         captured: dict[str, object] = {}
 
         class _FakeRuntime:
@@ -260,12 +263,21 @@ class TestWorktreeLifecycle:
             captured["sandbox_config"] = config
             return SimpleNamespace(config=config)
 
-        def _fake_build_coding_toolpack(_sandbox: object) -> object:
+        def _fake_build_coding_toolpack(
+            _sandbox: object, *, config: object = None
+        ) -> object:
+            captured["coding_profile"] = config
+            # specs and executors must have matching keys so the F5 rebind
+            # intersection (set(coding_pack.specs) & set(local_tools)) works.
             return SimpleNamespace(
+                specs={
+                    "read": SimpleNamespace(name="read"),
+                    "write": SimpleNamespace(name="write"),
+                },
                 executors={
                     "read": rebound_read,
                     "write": rebound_write,
-                }
+                },
             )
 
         monkeypatch.setattr(
@@ -302,12 +314,15 @@ class TestWorktreeLifecycle:
             },
             mcp_servers=None,
             runtime_config=thin_subagent_module.RuntimeConfig(runtime_name="thin"),
+            coding_profile=parent_coding_profile,
         )
         runtime._cwd = "/tmp/wt/isolated"
 
         result = await runtime.run("task")
 
         assert result == "result"
+        # Parent coding profile must propagate into the worktree toolpack build.
+        assert captured["coding_profile"] is parent_coding_profile
         sandbox_config = captured["sandbox_config"]
         assert isinstance(sandbox_config, SandboxConfig)
         assert sandbox_config.root_path == "/tmp/wt/isolated"
@@ -407,3 +422,83 @@ class TestWorktreeBranchNaming:
         # spec.name is passed as agent_name to workspace.create
         agent_name_arg = mock_workspace.create.call_args[0][1]
         assert agent_name_arg == "researcher"
+
+
+# ---------------------------------------------------------------------------
+# F5 — worktree subagent rebinds multi_file_edit when non-legacy profile
+# ---------------------------------------------------------------------------
+
+
+class TestWorktreeRebindsMultiFileEdit:
+    def test_worktree_rebinds_multi_file_edit_when_enabled(self, tmp_path: Any) -> None:
+        """_ThinWorkerRuntime._build_runtime_local_tools rebinds multi_file_edit
+        from the worktree-bound pack when edit_strategy != 'legacy' (F5 fix).
+
+        Verifies that the rebound executor was built from the WORKTREE sandbox
+        (not the parent), and that the key is present in the resulting tools dict.
+        """
+        from unittest.mock import MagicMock
+        from swarmline.orchestration.thin_subagent import _ThinWorkerRuntime
+        from swarmline.orchestration.subagent_types import SubagentSpec
+        from swarmline.runtime.thin.coding_profile import CodingProfileConfig
+        from swarmline.tools.types import SandboxConfig
+
+        # Build a real sandbox config that the worker will use to create its
+        # worktree-scoped LocalSandboxProvider.
+        sandbox_cfg = SandboxConfig(
+            root_path=str(tmp_path),
+            user_id="test",
+            topic_id="wt",
+            max_file_size_bytes=1024 * 1024,
+            timeout_seconds=5,
+            allow_host_execution=False,
+        )
+
+        # Parent's local_tools: legacy multi_file_edit would be absent; but for
+        # the test we inject a sentinel executor representing the "parent" binding
+        # so we can prove it was replaced, plus the 8 canonical sandbox tools.
+        sentinel_parent_executor = MagicMock(name="parent_multi_file_edit")
+        parent_local_tools: dict[str, Any] = {
+            name: MagicMock(name=f"parent_{name}")
+            for name in (
+                "bash",
+                "read",
+                "write",
+                "edit",
+                "multi_edit",
+                "ls",
+                "glob",
+                "grep",
+            )
+        }
+        parent_local_tools["multi_file_edit"] = sentinel_parent_executor
+
+        coding_profile = CodingProfileConfig(edit_strategy="search_replace")
+        spec = SubagentSpec(
+            name="worker",
+            system_prompt="p",
+            isolation="worktree",
+            sandbox_config=sandbox_cfg,
+        )
+
+        worker = _ThinWorkerRuntime(
+            spec=spec,
+            llm_call=None,
+            local_tools=parent_local_tools,
+            mcp_servers=None,
+            runtime_config=MagicMock(),
+            coding_profile=coding_profile,
+        )
+        # Set cwd to the tmp_path so rebinding triggers.
+        worker._cwd = str(tmp_path)
+
+        rebound = worker._build_runtime_local_tools()
+
+        # multi_file_edit must be present (non-legacy strategy enables it).
+        assert "multi_file_edit" in rebound, (
+            "multi_file_edit not rebound for non-legacy edit_strategy"
+        )
+        # Rebound executor must NOT be the parent sentinel.
+        assert rebound["multi_file_edit"] is not sentinel_parent_executor, (
+            "multi_file_edit still bound to parent executor after rebind"
+        )

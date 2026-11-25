@@ -11,7 +11,7 @@ Quick start::
     agent = Agent(AgentConfig(system_prompt="You add numbers.", tools=(add,)))
     result = await agent.query("What is 2 + 2?")
 
-Public API (``__all__``) is intentionally narrow — only the 12 names most
+Public API (``__all__``) is intentionally narrow — only the 13 names most
 users need. Other names (protocols, runtime types, infrastructure) are still
 importable explicitly::
 
@@ -29,9 +29,10 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.0-dev"
 
-# Public API — exposed via ``__all__`` (curated 12-name surface).
+# Public API — exposed via ``__all__`` (curated 13-name surface).
 from swarmline.agent import Agent, AgentConfig, Conversation, Result, tool
 from swarmline.bootstrap import SwarmlineStack
+from swarmline.code_agent import CodeAgent
 from swarmline.runtime.types import Message, RuntimeEvent, ToolSpec
 from swarmline.types import ContextPack, SkillSet, TurnContext
 
@@ -87,12 +88,13 @@ from swarmline.system_reminder_filter import (  # noqa: F401
     SystemReminderFilter,
 )
 
-# Curated 12-name public API. Everything else is still importable via
+# Curated 13-name public API. Everything else is still importable via
 # `from swarmline import X` or its sub-package, but does not leak through
 # `from swarmline import *` and is not advertised by docs generators.
 __all__ = [
     "Agent",
     "AgentConfig",
+    "CodeAgent",
     "ContextPack",
     "Conversation",
     "Message",

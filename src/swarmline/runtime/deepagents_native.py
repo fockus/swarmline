@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 
@@ -125,12 +126,22 @@ async def stream_deepagents_graph_events(
     graph: Any,
     input_payload: Any,
     run_config: dict[str, Any] | None = None,
+    cancel_check: Callable[[], bool] | None = None,
+    usage_totals: dict[str, int] | None = None,
 ) -> AsyncIterator[RuntimeEvent]:
     """Normalize upstream graph events into RuntimeEvent."""
     from swarmline.runtime.deepagents_hitl import build_interrupt_events
+    from swarmline.runtime.deepagents_langchain import (
+        accumulate_usage,
+        build_cancelled_event,
+    )
 
     tool_correlation: dict[str, str] = {}
     saw_text = False
+
+    if cancel_check is not None and cancel_check():
+        yield build_cancelled_event()
+        return
 
     stream = (
         graph.astream_events(input_payload, run_config, version="v2")
@@ -139,21 +150,35 @@ async def stream_deepagents_graph_events(
     )
 
     async for event in stream:
+        if cancel_check is not None and cancel_check():
+            with suppress(Exception):
+                await stream.aclose()
+            yield build_cancelled_event()
+            return
+
         kind = event.get("event", "")
 
-        if kind == "on_chat_model_stream":
+        if kind == "on_chat_model_start":
+            # Each model turn streams (or not) independently: reset the flag
+            # so a later non-streaming turn still gets the end-text fallback.
+            saw_text = False
+
+        elif kind == "on_chat_model_stream":
             chunk = event.get("data", {}).get("chunk")
             text = _extract_chunk_text(getattr(chunk, "content", None))
             if text:
                 saw_text = True
                 yield RuntimeEvent.assistant_delta(text)
 
-        elif kind == "on_chat_model_end" and not saw_text:
+        elif kind == "on_chat_model_end":
             output = event.get("data", {}).get("output")
-            text = _extract_chunk_text(getattr(output, "content", None))
-            if text:
-                saw_text = True
-                yield RuntimeEvent.assistant_delta(text)
+            if usage_totals is not None:
+                accumulate_usage(usage_totals, output)
+            if not saw_text:
+                text = _extract_chunk_text(getattr(output, "content", None))
+                if text:
+                    saw_text = True
+                    yield RuntimeEvent.assistant_delta(text)
 
         elif kind == "on_chain_stream":
             chunk = event.get("data", {}).get("chunk")

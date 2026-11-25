@@ -29,9 +29,9 @@ Swarmline covers the full spectrum: **simple single-agent assistants** that you 
 - Human-in-the-Loop — approval patterns at tool, plan, and output level
 
 **For both:**
-- 6 public runtimes — `thin`, `claude_sdk`, `deepagents`, `cli`, `openai_agents`, `pi_sdk` — same business code
-- Clean Architecture with 20+ ISP-compliant protocols — swap any component without touching the rest
-- Default-secure — deny-all tool policy, host execution is opt-in, input validation
+- 6 public runtimes — `thin`, `claude_sdk`, `deepagents`, `cli`, `openai_agents`, `pi_sdk` — same business code, with a generated per-runtime capability matrix (native/emulated/none) enforced by cross-runtime conformance tests
+- Clean Architecture with ISP-compliant protocols — swap any component without touching the rest
+- Safety-minded defaults — unsupported config options fail fast instead of degrading silently, sandbox host execution is opt-in, input validation; note: the `claude_sdk` runtime defaults to `permission_mode="bypassPermissions"` — set `permission_mode="default"` plus `can_use_tool`/`tool_policy` for gated tool use
 
 ### Key Differentiators
 
@@ -248,6 +248,34 @@ results = await searcher.search("REST API versioning")
 print(results[0].path)
 ```
 
+### Tiered knowledge & procedural memory
+
+```python
+# Tiered Memory Bank — automatic L0/L1/L2 summaries (no LLM required)
+from swarmline.memory_bank import TieredContextManager, SimpleTierGenerator
+
+class _P:  # minimal dict-backed MemoryBankProvider
+    def __init__(self): self._s = {}
+    async def read_file(self, p): return self._s.get(p)
+    async def write_file(self, p, c): self._s[p] = c
+    async def append_to_file(self, p, c): self._s[p] = self._s.get(p, "") + c
+    async def list_files(self, prefix=""): return [k for k in self._s if k.startswith(prefix)]
+    async def delete_file(self, p): self._s.pop(p, None)
+
+manager = TieredContextManager(_P(), SimpleTierGenerator())
+await manager.on_file_written("STATUS.md", "# Status\nPhase: MVP.")
+context = await manager.build_context(budget_tokens=4000)  # index + L1 details
+
+# Procedural memory — reinforce learned tool sequences
+from swarmline.memory import InMemoryProceduralMemory, Procedure
+
+memory = InMemoryProceduralMemory()
+await memory.store(Procedure(id="p1", name="deploy", description="deploy pipeline",
+                             trigger="deploy to staging"))
+await memory.record_outcome("p1", success=True)
+results = await memory.suggest("deploy to staging")  # ranked by success_rate
+```
+
 ### Pipeline (multi-phase execution)
 
 ```python
@@ -325,6 +353,7 @@ print(result.status)
 | **Procedural Memory** | Learn from repeated tool use patterns — automatic tool sequence recognition |
 | **Memory Consolidation** | Pipeline from episodic memory to long-term knowledge bank |
 | **Memory Bank** | Long-term file-based memory across sessions (filesystem or database backend) |
+| **Tiered Memory Bank** | L0/L1/L2 auto-summaries for every Memory Bank file — fast index + budget-bounded context (LLM-free fallback via `SimpleTierGenerator`) |
 | **Auto-summarization** | Template-based or LLM-powered conversation summarization |
 
 ### Capabilities (toggle independently)
@@ -335,7 +364,7 @@ print(result.status)
 | **Web** | Internet access with pluggable providers | `web_fetch`, `web_search` |
 | **Todo** | Structured task tracking | `todo_read`, `todo_write` |
 | **Memory Bank** | Persistent knowledge across sessions | `memory_read`, `memory_write`, `memory_list`, `memory_delete` |
-| **Planning** | Step-by-step task decomposition and execution | `plan_create`, `plan_status`, `plan_execute` |
+| **Planning** | Step-by-step task decomposition and execution | `plan_create`, `plan_status` |
 | **Thinking** | Chain-of-thought reasoning | `thinking` |
 
 ### Advanced
@@ -621,6 +650,9 @@ Supported providers: **Anthropic** (Claude), **OpenAI** (GPT-4o, o3), **Google**
 | `e2b` | e2b | E2B cloud sandbox |
 | `docker` | docker | Docker sandbox |
 | `otel` | opentelemetry-api, opentelemetry-sdk | OpenTelemetry tracing export |
+| `temporal` | temporalio | Temporal durable runtime (experimental) |
+| `langfuse` | langfuse | Langfuse LLM observability export |
+| `langsmith` | langsmith | LangSmith LLM observability export |
 | `a2a` | starlette, httpx | Agent-to-Agent protocol |
 | `mcp` | fastmcp | MCP server for code agents |
 | `redis` | redis | Redis EventBus + Graph Communication |
@@ -701,7 +733,7 @@ Legend: ✅ Built-in  ⚠️ Partial/manual  ❌ Not available  CP = Checkpointe
 ### Advanced
 - [Orchestration](docs/orchestration.md) — planning, subagents, team mode
 - [Evaluation](docs/evaluation.md) — agent quality measurement framework
-- [Observability](docs/observability.md) — EventBus, tracing, OpenTelemetry, ActivityLog
+- [Observability](docs/observability.md) — EventBus, tracing, OpenTelemetry, Langfuse, LangSmith, ActivityLog
 - [Architecture](docs/architecture.md) — layers, protocols, packages
 - [Web Tools](docs/web-tools.md) — search and fetch providers
 - [Advanced](docs/advanced.md) — hooks, circuit breaker, context builder

@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable
 
 import structlog
 
+from swarmline.daemon.cron import next_schedule_due_at, validate_cron_expression
 from swarmline.daemon.types import ScheduledTaskInfo
 
 logger = structlog.get_logger(component="daemon.scheduler")
@@ -21,12 +23,14 @@ class _Task:
 
     name: str
     coro_factory: Callable[[], Awaitable[Any]]
-    interval: float | None  # None = one-shot
+    interval: float | None  # None = one-shot or cron
     next_run: float  # monotonic
     last_run: float | None = None  # monotonic
     last_run_wall: float | None = None  # wall-clock for external use
     run_count: int = 0
     active: bool = True
+    cron_expr: str | None = None  # Set for cron tasks; None for interval/once
+    timezone: str = field(default="UTC")
 
 
 class Scheduler:
@@ -43,6 +47,7 @@ class Scheduler:
         sched = Scheduler()
         sched.every(60, my_health_check, name="health")
         sched.once_at(time.time() + 10, one_time_init, name="init")
+        sched.cron_at("0 9 * * *", "UTC", morning_report, name="morning")
         await sched.run_until(stop_event)
     """
 
@@ -91,13 +96,48 @@ class Scheduler:
     ) -> str:
         """Schedule a one-shot task at a unix timestamp."""
         task_name = name or f"once-{uuid.uuid4().hex[:8]}"
-        # Convert wall-clock to monotonic offset
+        # Convert wall-clock to monotonic offset (mirrors once_at wall→monotonic)
         offset = timestamp - time.time()
         self._tasks[task_name] = _Task(
             name=task_name,
             coro_factory=coro_factory,
             interval=None,
             next_run=time.monotonic() + max(offset, 0),
+        )
+        return task_name
+
+    def cron_at(
+        self,
+        cron_expr: str,
+        timezone: str,
+        coro_factory: Callable[[], Awaitable[Any]],
+        *,
+        name: str = "",
+    ) -> str:
+        """Schedule a recurring cron task. Returns task name.
+
+        The task fires at each cron-matching wall-clock minute and is
+        automatically rescheduled to the next occurrence after every fire.
+
+        Wall→monotonic conversion mirrors ``once_at``:
+        ``seconds_until = (next_wall - now_wall).total_seconds()``
+        ``next_run = monotonic() + max(0, seconds_until)``
+
+        Raises:
+            ValueError: if ``cron_expr`` is invalid or ``timezone`` is unknown.
+        """
+        validate_cron_expression(cron_expr)
+        task_name = name or f"cron-{uuid.uuid4().hex[:8]}"
+        now_wall = datetime.now(UTC)
+        next_wall = next_schedule_due_at(cron_expr, timezone, now_wall)
+        seconds_until = (next_wall - now_wall).total_seconds()
+        self._tasks[task_name] = _Task(
+            name=task_name,
+            coro_factory=coro_factory,
+            interval=None,
+            next_run=time.monotonic() + max(0.0, seconds_until),
+            cron_expr=cron_expr,
+            timezone=timezone,
         )
         return task_name
 
@@ -122,6 +162,7 @@ class Scheduler:
                     last_run_at=t.last_run_wall,
                     run_count=t.run_count,
                     is_active=t.active,
+                    cron_expr=t.cron_expr,
                 )
             )
         return result
@@ -193,6 +234,14 @@ class Scheduler:
                 if task.interval is not None:
                     # Reschedule periodic
                     task.next_run = now + task.interval
+                elif task.cron_expr is not None:
+                    # Reschedule cron: compute next fire strictly AFTER current wall-now
+                    now_wall = datetime.now(UTC)
+                    next_wall = next_schedule_due_at(
+                        task.cron_expr, task.timezone, now_wall
+                    )
+                    seconds_until = (next_wall - now_wall).total_seconds()
+                    task.next_run = now + max(0.0, seconds_until)
                 else:
                     # One-shot done
                     task.active = False

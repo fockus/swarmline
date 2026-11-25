@@ -107,20 +107,37 @@ def _make_sdk_task_notification_msg(
 def _make_sdk_tool_use_block(
     name: str = "calc",
     input_data: dict[str, Any] | None = None,
+    tool_use_id: str = "tool-1",
 ) -> MagicMock:
     from claude_agent_sdk import ToolUseBlock
 
     block = MagicMock(spec=ToolUseBlock)
     block.name = name
     block.input = input_data or {"expr": "2+2"}
+    block.id = tool_use_id
     return block
 
 
-def _make_sdk_tool_result_block(content: Any = "4") -> MagicMock:
+def _make_sdk_tool_result_block(
+    content: Any = "4",
+    tool_use_id: str = "tool-1",
+    is_error: bool = False,
+) -> MagicMock:
     from claude_agent_sdk import ToolResultBlock
 
     block = MagicMock(spec=ToolResultBlock)
     block.content = content
+    block.tool_use_id = tool_use_id
+    block.is_error = is_error
+    return block
+
+
+def _make_sdk_thinking_block(thinking: str = "Думаю...") -> MagicMock:
+    from claude_agent_sdk import ThinkingBlock
+
+    block = MagicMock(spec=ThinkingBlock)
+    block.thinking = thinking
+    block.signature = "sig"
     return block
 
 
@@ -404,7 +421,37 @@ class TestStreamOneShotQuery:
         ]
         assert events[0].tool_name == "calc"
         assert events[0].tool_input == {"expr": "2+2"}
+        assert events[0].correlation_id == "tool-1"
         assert events[1].tool_result == "4"
+        assert events[1].tool_name == "calc"
+        assert events[1].correlation_id == "tool-1"
+        assert events[1].tool_error is False
+
+    @pytest.mark.asyncio
+    async def test_stream_emits_thinking_delta(self) -> None:
+        """ThinkingBlock streams as thinking_delta and stays out of final text."""
+
+        async def fake_query(**kwargs):
+            yield _make_sdk_assistant_msg(
+                [
+                    _make_sdk_thinking_block("Анализирую..."),
+                    _make_sdk_text_block("Ответ"),
+                ]
+            )
+            yield _make_sdk_result_msg()
+
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
+            events = []
+            async for event in stream_one_shot_query("think test"):
+                events.append(event)
+
+        assert [event.type for event in events] == [
+            "thinking_delta",
+            "text_delta",
+            "done",
+        ]
+        assert events[0].text == "Анализирую..."
+        assert events[-1].text == "Ответ"
 
     @pytest.mark.asyncio
     async def test_stream_without_result_message_emits_error(self) -> None:
@@ -420,3 +467,89 @@ class TestStreamOneShotQuery:
 
         assert [event.type for event in events] == ["text_delta", "error"]
         assert "final ResultMessage" in events[-1].text
+
+
+class TestStreamOneShotQueryParityOptions:
+    """I-099 — stream_one_shot_query gains thinking/sandbox/max_thinking_tokens
+    and resolves them into ClaudeAgentOptions identically to the conversation
+    path's ClaudeOptionsBuilder.build (see test_options_builder.py for the
+    conversation-path equivalents of these cases)."""
+
+    @staticmethod
+    async def _capture(**kwargs: Any) -> dict[str, Any]:
+        captured_options: dict[str, Any] = {}
+
+        async def fake_query(**query_kwargs):
+            captured_options.update(query_kwargs)
+            yield _make_sdk_assistant_msg([_make_sdk_text_block("ok")])
+            yield _make_sdk_result_msg()
+
+        with patch("swarmline.runtime.sdk_query._sdk_query", side_effect=fake_query):
+            async for _ in stream_one_shot_query("test", **kwargs):
+                pass
+
+        return captured_options
+
+    @pytest.mark.asyncio
+    async def test_thinking_dict_reaches_options(self) -> None:
+        """thinking config peredaetsya in ClaudeAgentOptions (enabled)."""
+        captured = await self._capture(
+            thinking={"type": "enabled", "budget_tokens": 16000}
+        )
+
+        opts = captured["options"]
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "enabled"
+        assert opts.thinking["budget_tokens"] == 16000
+
+    @pytest.mark.asyncio
+    async def test_thinking_adaptive_reaches_options(self) -> None:
+        """thinking adaptive config works, same as ClaudeOptionsBuilder.build."""
+        captured = await self._capture(thinking={"type": "adaptive"})
+
+        assert captured["options"].thinking["type"] == "adaptive"
+
+    @pytest.mark.asyncio
+    async def test_deprecated_max_thinking_tokens_converts_to_thinking_config(
+        self,
+    ) -> None:
+        """Deprecated max_thinking_tokens converts to thinking config."""
+        captured = await self._capture(max_thinking_tokens=16000)
+
+        opts = captured["options"]
+        assert opts.thinking is not None
+        assert opts.thinking["type"] == "enabled"
+        assert opts.thinking["budget_tokens"] == 16000
+
+    @pytest.mark.asyncio
+    async def test_thinking_dict_takes_priority_over_max_thinking_tokens(self) -> None:
+        """thinking dict takes priority over deprecated max_thinking_tokens."""
+        captured = await self._capture(
+            thinking={"type": "adaptive"},
+            max_thinking_tokens=16000,
+        )
+
+        assert captured["options"].thinking["type"] == "adaptive"
+
+    @pytest.mark.asyncio
+    async def test_thinking_invalid_type_raises(self) -> None:
+        """Invalid thinking type raises ValueError (fail-fast), same as builder."""
+        with pytest.raises(ValueError, match="Unknown thinking type"):
+            await self._capture(thinking={"type": "turbo"})
+
+    @pytest.mark.asyncio
+    async def test_sandbox_reaches_options(self) -> None:
+        """sandbox settings are passed through to ClaudeAgentOptions."""
+        sandbox = {"enabled": True, "autoAllowBashIfSandboxed": True}
+        captured = await self._capture(sandbox=sandbox)
+
+        assert captured["options"].sandbox == sandbox
+
+    @pytest.mark.asyncio
+    async def test_no_thinking_or_sandbox_defaults_to_none(self) -> None:
+        """Without thinking/sandbox, ClaudeAgentOptions keeps its own defaults."""
+        captured = await self._capture()
+
+        opts = captured["options"]
+        assert opts.thinking is None
+        assert opts.sandbox is None

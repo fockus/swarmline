@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 from typing import Any
 
 import click
 import structlog
 
 from swarmline.cli._output import format_output
+from swarmline.observability.logger import _LazyStderrLoggerFactory
 
 
 def _configure_logging_to_stderr() -> None:
@@ -21,8 +21,8 @@ def _configure_logging_to_stderr() -> None:
             structlog.dev.ConsoleRenderer(),
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
-        cache_logger_on_first_use=True,
+        logger_factory=_LazyStderrLoggerFactory(),
+        cache_logger_on_first_use=False,
     )
 
 
@@ -63,6 +63,7 @@ from swarmline.cli._commands_agent import agent  # noqa: E402
 from swarmline.cli._commands_run import run  # noqa: E402
 from swarmline.cli._commands_mcp import mcp_serve  # noqa: E402
 from swarmline.cli._commands_status import status  # noqa: E402
+from swarmline.cli._commands_temporal import temporal_worker  # noqa: E402
 from swarmline.cli.init_cmd import init_command  # noqa: E402
 
 cli.add_command(memory)
@@ -72,6 +73,7 @@ cli.add_command(agent)
 cli.add_command(run)
 cli.add_command(mcp_serve)
 cli.add_command(status)
+cli.add_command(temporal_worker)
 cli.add_command(init_command, name="init")
 
 

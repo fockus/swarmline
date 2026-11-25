@@ -74,6 +74,22 @@ def _extract_partial_text_delta(message: SdkStreamEvent) -> str | None:
     return text if isinstance(text, str) and text else None
 
 
+def _extract_partial_thinking_delta(message: SdkStreamEvent) -> str | None:
+    """Extract thinking delta from raw SDK StreamEvent."""
+    raw_event = getattr(message, "event", None)
+    if not isinstance(raw_event, dict):
+        return None
+    if raw_event.get("type") != "content_block_delta":
+        return None
+    delta = raw_event.get("delta")
+    if not isinstance(delta, dict):
+        return None
+    if delta.get("type") != "thinking_delta":
+        return None
+    thinking = delta.get("thinking")
+    return thinking if isinstance(thinking, str) and thinking else None
+
+
 def _format_system_message(message: SystemMessage) -> str | None:
     """Format system message."""
     message_type = message.__class__.__name__
@@ -258,6 +274,7 @@ class RuntimeAdapter:
         msg_count = 0
         result_meta: dict[str, Any] = {}
         saw_partial_text = False
+        saw_partial_thinking = False
         saw_result_message = False
         self._tool_names_by_id.clear()
         try:
@@ -286,11 +303,16 @@ class RuntimeAdapter:
                         saw_partial_text = True
                         full_text += partial_text
                         yield StreamEvent(type="text_delta", text=partial_text)
+                    partial_thinking = _extract_partial_thinking_delta(message)
+                    if partial_thinking:
+                        saw_partial_thinking = True
+                        yield StreamEvent(type="thinking_delta", text=partial_thinking)
                     continue
 
                 async for event in self._process_message(
                     message,
                     suppress_text=saw_partial_text,
+                    suppress_thinking=saw_partial_thinking,
                 ):
                     if event.type == "text_delta":
                         full_text += event.text
@@ -348,6 +370,7 @@ class RuntimeAdapter:
         message: Message,
         *,
         suppress_text: bool = False,
+        suppress_thinking: bool = False,
     ) -> AsyncIterator[StreamEvent]:
         """Process message."""
         if isinstance(message, AssistantMessage):
@@ -356,10 +379,8 @@ class RuntimeAdapter:
                     if not suppress_text:
                         yield StreamEvent(type="text_delta", text=block.text)
                 elif isinstance(block, ThinkingBlock):
-                    logger.debug(
-                        "ThinkingBlock (len=%d)",
-                        len(block.thinking),
-                    )
+                    if not suppress_thinking and block.thinking:
+                        yield StreamEvent(type="thinking_delta", text=block.thinking)
                 elif isinstance(block, ToolUseBlock):
                     correlation_id = (
                         getattr(block, "id", "")

@@ -86,10 +86,15 @@ class CodexAdapter:
             ) from None
 
         try:
+            # Этап 25c (taskloom parity check): no swarmline-level retry_policy wraps
+            # send_task (this is a multi_agent HostAdapter, not the react_strategy/
+            # run_buffered_llm_call seam) — max_retries=0 so the SDK's own opaque retry
+            # loop never runs blind underneath it, same invariant as
+            # runtime/thin/llm_providers.py's AnthropicAdapter/OpenAICompatAdapter (25b).
             client = (
-                openai.AsyncOpenAI(api_key=self._api_key)
+                openai.AsyncOpenAI(api_key=self._api_key, max_retries=0)
                 if self._api_key
-                else openai.AsyncOpenAI()
+                else openai.AsyncOpenAI(max_retries=0)
             )
 
             messages = [

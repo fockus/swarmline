@@ -6,30 +6,41 @@ import asyncio
 import contextlib
 import uuid
 from collections.abc import Awaitable, Callable
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
+from swarmline.domain_types import RuntimeEvent
 from swarmline.multi_agent.workspace_types import (
     WorkspaceHandle,
     WorkspaceSpec,
     WorkspaceStrategy,
 )
-
-from swarmline.domain_types import RuntimeEvent
+from swarmline.orchestration.context_bridge import ContextBridgeBuilder
 from swarmline.orchestration.runtime_helpers import collect_runtime_output
 from swarmline.orchestration.subagent_types import (
     SubagentResult,
     SubagentSpec,
     SubagentStatus,
 )
+from swarmline.runtime.registry import RuntimeRegistry
 from swarmline.runtime.thin.runtime import ThinRuntime
 from swarmline.runtime.types import Message, RuntimeConfig
 
 if TYPE_CHECKING:
+    from swarmline.governance.protocols import SecretBoundaryPort
     from swarmline.hooks.registry import HookRegistry
     from swarmline.multi_agent.workspace import ExecutionWorkspace
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.thin.coding_profile import CodingProfileConfig
+
+
+def _build_system_prompt(spec: SubagentSpec) -> str:
+    """Build system prompt, prepending context bridge if present."""
+    if spec.context_bridge is not None:
+        bridge_section = ContextBridgeBuilder.format_for_prompt(spec.context_bridge)
+        return f"{bridge_section}\n\n{spec.system_prompt}"
+    return spec.system_prompt
 
 
 class _SubagentRuntime(Protocol):
@@ -38,11 +49,47 @@ class _SubagentRuntime(Protocol):
     async def run(self, task: str) -> str: ...
 
 
+# Parent-run bound native_config keys a spawned child must not inherit: the live
+# plan provider (and the recitation settings around it) describe the PARENT's
+# plan — a child reciting it would work on someone else's todo list.
+_PARENT_RUN_NATIVE_KEYS = frozenset(
+    {
+        "recitation_plan_provider",
+        "recitation_round_cadence",
+        "recitation_mode",
+        "recitation_plan_text",
+        "recitation_plan_summary_text",
+        "recitation_cadence",
+    }
+)
+
+
+def child_runtime_config(config: RuntimeConfig) -> RuntimeConfig:
+    """The parent's runtime config minus its plan recitation: the parent-run bound
+    ``native_config`` keys and the ``RecitationInputFilter`` built from them."""
+    from swarmline.context.recitation_input_filter import RecitationInputFilter
+
+    filters = [
+        f for f in config.input_filters if not isinstance(f, RecitationInputFilter)
+    ]
+    if len(filters) == len(config.input_filters) and not (
+        _PARENT_RUN_NATIVE_KEYS & config.native_config.keys()
+    ):
+        return config
+    native = {
+        k: v
+        for k, v in config.native_config.items()
+        if k not in _PARENT_RUN_NATIVE_KEYS
+    }
+    return replace(config, native_config=native, input_filters=filters)
+
+
 class ThinSubagentOrchestrator:
     """Orchestrate subagents as asyncio.Tasks.
 
     SRP: manages lifecycle (spawn/cancel/wait), delegates LLM execution
-    to per-worker ThinRuntime instances.
+    to per-worker ThinRuntime instances. When given llm_call — creates a
+    per-worker ThinRuntime automatically.
     """
 
     def __init__(
@@ -60,8 +107,14 @@ class ThinSubagentOrchestrator:
         coding_profile: CodingProfileConfig | None = None,
         tool_policy: DefaultToolPolicy | None = None,
         hook_registry: HookRegistry | None = None,
+        can_use_tool: Callable[..., Awaitable[Any]] | None = None,
         on_background_complete: Callable[[RuntimeEvent], Awaitable[None]] | None = None,
         background_timeout: float | None = None,
+        on_result_callback: Callable[[str, SubagentResult], None] | None = None,
+        lessons_extractor: Any | None = None,
+        lessons_store: Any | None = None,
+        registry: RuntimeRegistry | None = None,
+        secret_boundary: SecretBoundaryPort | None = None,
     ) -> None:
         self._max_concurrent = max_concurrent
         self._max_worktrees = max_worktrees
@@ -74,12 +127,26 @@ class ThinSubagentOrchestrator:
         self._llm_call = llm_call
         self._local_tools: dict[str, Callable[..., Any]] = dict(local_tools or {})
         self._mcp_servers = mcp_servers
-        self._runtime_config = runtime_config or RuntimeConfig(runtime_name="thin")
+        self._runtime_config = child_runtime_config(
+            runtime_config or RuntimeConfig(runtime_name="thin")
+        )
         self._coding_profile = coding_profile
         self._tool_policy = tool_policy
         self._hook_registry = hook_registry
+        self._can_use_tool = can_use_tool
         self._on_background_complete = on_background_complete
         self._background_timeout = background_timeout
+        self._on_result_callback = on_result_callback
+        self._lessons_extractor = lessons_extractor
+        self._lessons_store = lessons_store
+        self._registry = registry
+        # REQ-ORC-044 (fix-cycle 2): scans background-complete events and the
+        # SubagentResult handed to on_result_callback — the foreground JSON
+        # return (create_subagent_executor) and monitor_agent
+        # (create_monitor_executor) each carry their OWN secret_boundary at
+        # the wrapper level; this one covers the two paths that have no
+        # wrapper of their own. Default None preserves legacy raw passthrough.
+        self._secret_boundary = secret_boundary
         self._tasks: dict[str, asyncio.Task[str]] = {}
         self._specs: dict[str, SubagentSpec] = {}
         self._results: dict[str, SubagentResult] = {}
@@ -92,9 +159,19 @@ class ThinSubagentOrchestrator:
     def _create_runtime(self, spec: SubagentSpec) -> _SubagentRuntime:
         """Create runtime.
 
+        When spec.runtime_name is set, resolves the runtime ONLY through the
+        RuntimeRegistry (REQ-RCA-050/051). An unknown name fails fast with an
+        error naming the missing runtime (REQ-RCA-052).
+
+        When runtime_name is None (default), the current _ThinWorkerRuntime
+        path is used byte-identical to the pre-Task-7 behaviour.
+
         When parent has an active coding_profile, validates that the child
         spec has a sandbox_config (CSUB-03: fail fast on incompatible state).
         """
+        if spec.runtime_name is not None:
+            return self._create_registry_runtime(spec)
+
         if (
             self._coding_profile is not None
             and self._coding_profile.enabled
@@ -114,6 +191,39 @@ class ThinSubagentOrchestrator:
             runtime_config=self._runtime_config,
             tool_policy=self._tool_policy,
             hook_registry=self._hook_registry,
+            can_use_tool=self._can_use_tool,
+            coding_profile=self._coding_profile,
+        )
+
+    def _create_registry_runtime(self, spec: SubagentSpec) -> _SubagentRuntime:
+        """Resolve runtime_name through the RuntimeRegistry and return a worker.
+
+        Fail-fast (REQ-RCA-052): raises ValueError naming the missing runtime
+        when runtime_name is not registered. NEVER falls back to a default.
+        """
+        from swarmline.runtime.registry import get_default_registry
+
+        registry = (
+            self._registry if self._registry is not None else get_default_registry()
+        )
+        assert (
+            spec.runtime_name is not None
+        )  # invariant: only called when runtime_name is set
+        name: str = spec.runtime_name
+        factory_fn = registry.get(name)
+        if factory_fn is None:
+            available = set(registry.list_available())
+            raise ValueError(f"Unknown runtime '{name}'; registered: {available}")
+        return _RegistryWorkerRuntime(
+            spec=spec,
+            factory_fn=factory_fn,
+            runtime_config=self._runtime_config,
+            llm_call=self._llm_call,
+            local_tools=self._local_tools,
+            mcp_servers=self._mcp_servers,
+            tool_policy=self._tool_policy,
+            hook_registry=self._hook_registry,
+            can_use_tool=self._can_use_tool,
         )
 
     async def spawn(self, spec: SubagentSpec, task: str) -> str:
@@ -167,7 +277,7 @@ class ThinSubagentOrchestrator:
         started = datetime.now(tz=UTC)
         try:
             output = await runtime.run(task)
-            self._results[agent_id] = SubagentResult(
+            result = SubagentResult(
                 agent_id=agent_id,
                 status=SubagentStatus(
                     state="completed",
@@ -177,9 +287,11 @@ class ThinSubagentOrchestrator:
                 ),
                 output=output,
             )
+            self._results[agent_id] = result
+            self._fire_callback(agent_id, result)
             return output
         except asyncio.CancelledError:
-            self._results[agent_id] = SubagentResult(
+            result = SubagentResult(
                 agent_id=agent_id,
                 status=SubagentStatus(
                     state="cancelled",
@@ -188,9 +300,11 @@ class ThinSubagentOrchestrator:
                 ),
                 output="",
             )
+            self._results[agent_id] = result
+            self._fire_callback(agent_id, result)
             return ""
         except Exception as e:
-            self._results[agent_id] = SubagentResult(
+            result = SubagentResult(
                 agent_id=agent_id,
                 status=SubagentStatus(
                     state="failed",
@@ -200,6 +314,8 @@ class ThinSubagentOrchestrator:
                 ),
                 output="",
             )
+            self._results[agent_id] = result
+            self._fire_callback(agent_id, result)
             return ""
         finally:
             handle = self._worktree_handles.pop(agent_id, None)
@@ -280,8 +396,18 @@ class ThinSubagentOrchestrator:
         result: str | None = None,
         error: str | None = None,
     ) -> None:
-        """Emit background_complete event via callback if registered."""
+        """Emit background_complete event via callback if registered.
+
+        `result`/`error` are scanned via `secret_boundary` before being
+        embedded in the event (REQ-ORC-044) — the background path has no
+        `create_subagent_executor`-style wrapper of its own to redact at.
+        """
         if self._on_background_complete is not None:
+            if self._secret_boundary is not None:
+                if result is not None:
+                    result = self._secret_boundary.redact(result)
+                if error is not None:
+                    error = self._secret_boundary.redact(error)
             event = RuntimeEvent.background_complete(
                 agent_id=agent_id, result=result, error=error
             )
@@ -334,6 +460,64 @@ class ThinSubagentOrchestrator:
         except Exception:  # noqa: BLE001
             pass  # fire-and-forget, must not crash orchestrator
 
+    def _scan_result(self, result: SubagentResult) -> SubagentResult:
+        """Return a secret-boundary-scanned COPY of `result` (REQ-ORC-044).
+
+        Redacts `.output`, `.status.error`, AND `.status.result` — all three
+        fields that carry the untrusted child's free-text content
+        (`_run_agent`'s success branch sets `status=SubagentStatus(result=output)`
+        alongside the top-level `.output`, so `.status.result` carries the
+        SAME raw text as `.output` and must be scanned too — round-3 review
+        finding). Shared by every LLM/host-facing exit point that reads a
+        `SubagentResult` off this orchestrator: `_fire_callback`
+        (`on_result_callback`) and `wait()` (consumed by
+        `create_subagent_executor`'s own JSON scan, but ALSO directly by
+        `supervisor/tools.py::_spawn_and_wait` → `Report.summary` →
+        `read_reports`, `supervisor/replan.py::plan_via_subagent`, and
+        `tools/research.py::spawn_research` — none of which re-scan). No-op
+        (returns `result` unchanged) when no boundary is configured.
+        """
+        if self._secret_boundary is None:
+            return result
+        return replace(
+            result,
+            output=self._secret_boundary.redact(result.output),
+            status=replace(
+                result.status,
+                error=(
+                    self._secret_boundary.redact(result.status.error)
+                    if result.status.error is not None
+                    else None
+                ),
+                result=(
+                    self._secret_boundary.redact(result.status.result)
+                    if result.status.result is not None
+                    else None
+                ),
+            ),
+        )
+
+    def _fire_callback(self, agent_id: str, result: SubagentResult) -> None:
+        """Fire on_result_callback if registered, then extract lessons.
+
+        `on_result_callback` receives a secret-boundary-scanned COPY of
+        `result` (REQ-ORC-044) — the untrusted child's raw output/error must
+        not reach a host-supplied callback unredacted. Lessons extraction
+        below still reads the ORIGINAL `result.output` (internal-only, never
+        re-enters an LLM context directly through this path).
+        """
+        if self._on_result_callback is not None:
+            self._on_result_callback(agent_id, self._scan_result(result))
+        if (
+            self._lessons_extractor is not None
+            and self._lessons_store is not None
+            and result.output
+        ):
+            spec = self._specs.get(agent_id)
+            goal = spec.system_prompt if spec else "unknown"
+            for lesson in self._lessons_extractor.extract(result.output, goal):
+                self._lessons_store.add(lesson)
+
     async def get_status(self, agent_id: str) -> SubagentStatus:
         """Get status."""
         if agent_id in self._results:
@@ -359,14 +543,23 @@ class ThinSubagentOrchestrator:
                 await task
 
     async def wait(self, agent_id: str) -> SubagentResult:
-        """Wait for the subagent to complete."""
+        """Wait for the subagent to complete.
+
+        Returns a secret-boundary-scanned COPY when a boundary is configured
+        (REQ-ORC-044, fix-cycle 3): `wait()` is the LLM/host-facing exit
+        point for `supervisor/tools.py`, `supervisor/replan.py`, and
+        `tools/research.py` — none of which re-scan the result themselves.
+        `self._results` keeps the RAW value internally (read by
+        `get_status()`/`_fire_callback`'s lessons-extraction branch); only
+        the value handed back to the CALLER of `wait()` is scanned.
+        """
         task = self._tasks.get(agent_id)
         if task:
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await task
 
         if agent_id in self._results:
-            return self._results[agent_id]
+            return self._scan_result(self._results[agent_id])
 
         return SubagentResult(
             agent_id=agent_id,
@@ -392,6 +585,8 @@ class _ThinWorkerRuntime:
         runtime_config: RuntimeConfig,
         tool_policy: DefaultToolPolicy | None = None,
         hook_registry: HookRegistry | None = None,
+        can_use_tool: Callable[..., Awaitable[Any]] | None = None,
+        coding_profile: CodingProfileConfig | None = None,
     ) -> None:
         self._spec = spec
         self._llm_call = llm_call
@@ -400,6 +595,8 @@ class _ThinWorkerRuntime:
         self._runtime_config = runtime_config
         self._tool_policy = tool_policy
         self._hook_registry = hook_registry
+        self._can_use_tool = can_use_tool
+        self._coding_profile = coding_profile
         self._cwd: str | None = None
 
     def _build_runtime_local_tools(self) -> dict[str, Callable[..., Any]]:
@@ -407,16 +604,9 @@ class _ThinWorkerRuntime:
         if self._cwd is None or self._spec.sandbox_config is None:
             return self._local_tools
 
-        from swarmline.runtime.thin.coding_toolpack import (
-            CODING_SANDBOX_TOOL_NAMES,
-            build_coding_toolpack,
-        )
+        from swarmline.runtime.thin.coding_toolpack import build_coding_toolpack
         from swarmline.tools.sandbox_local import LocalSandboxProvider
         from swarmline.tools.types import SandboxConfig
-
-        tool_names_to_rebind = CODING_SANDBOX_TOOL_NAMES & set(self._local_tools)
-        if not tool_names_to_rebind:
-            return self._local_tools
 
         sandbox_template = self._spec.sandbox_config
         worktree_sandbox_config = SandboxConfig(
@@ -430,7 +620,20 @@ class _ThinWorkerRuntime:
             allow_host_execution=sandbox_template.allow_host_execution,
         )
         worktree_sandbox = LocalSandboxProvider(worktree_sandbox_config)
-        coding_pack = build_coding_toolpack(worktree_sandbox)
+        # F5 fix: build the worktree pack first so its tool surface (which includes
+        # multi_file_edit when edit_strategy != "legacy") defines exactly which tools
+        # to rebind — not the hard-coded CODING_SANDBOX_TOOL_NAMES constant that
+        # predates the opt-in tools added in Task 1.
+        coding_pack = build_coding_toolpack(
+            worktree_sandbox, config=self._coding_profile
+        )
+
+        # Rebind every tool the worktree pack provides AND the parent has registered.
+        # This naturally includes multi_file_edit (non-legacy) and excludes todo/MCP
+        # tools that the pack doesn't provide.
+        tool_names_to_rebind = set(coding_pack.specs) & set(self._local_tools)
+        if not tool_names_to_rebind:
+            return self._local_tools
 
         rebound_local_tools = dict(self._local_tools)
         for tool_name in tool_names_to_rebind:
@@ -457,14 +660,94 @@ class _ThinWorkerRuntime:
             kwargs["tool_policy"] = self._tool_policy
         if self._hook_registry is not None:
             kwargs["hook_registry"] = self._hook_registry
+        # REQ-ORC-043: thread the child's own recursion depth (set by
+        # create_subagent_executor to parent_current_depth + 1) so the
+        # depth-guard is real across a spawn hop, not hardcoded 0. Inert
+        # when this worker has no subagent_config of its own (the common
+        # case today — no working spawn_agent executor is registered, so
+        # nothing ever reads current_depth on the child).
+        kwargs["current_depth"] = self._spec.depth
+        if self._can_use_tool is not None:
+            kwargs["can_use_tool"] = self._can_use_tool
 
         runtime = ThinRuntime(**kwargs)
+        system_prompt = _build_system_prompt(self._spec)
         return await collect_runtime_output(
             runtime.run(
                 messages=[Message(role="user", content=task)],
-                system_prompt=self._spec.system_prompt,
+                system_prompt=system_prompt,
                 active_tools=self._spec.tools,
                 mode_hint="react",
             ),
             error_prefix="ThinRuntime subagent error",
+        )
+
+
+class _RegistryWorkerRuntime:
+    """Adapts a RuntimeRegistry-resolved factory to the _SubagentRuntime interface.
+
+    Created by ThinSubagentOrchestrator._create_registry_runtime when
+    SubagentSpec.runtime_name is set (REQ-RCA-050/051).  The factory is called
+    fresh on each run() invocation so the runtime object is never shared across
+    concurrent workers.
+    """
+
+    def __init__(
+        self,
+        *,
+        spec: SubagentSpec,
+        factory_fn: Callable[..., Any],
+        runtime_config: RuntimeConfig,
+        llm_call: Callable[..., Any] | None,
+        local_tools: dict[str, Callable[..., Any]],
+        mcp_servers: dict[str, Any] | None,
+        tool_policy: Any | None,
+        hook_registry: Any | None,
+        can_use_tool: Any | None = None,
+    ) -> None:
+        self._spec = spec
+        self._factory_fn = factory_fn
+        self._runtime_config = runtime_config
+        self._llm_call = llm_call
+        self._local_tools = local_tools
+        self._mcp_servers = mcp_servers
+        self._tool_policy = tool_policy
+        self._hook_registry = hook_registry
+        self._can_use_tool = can_use_tool
+        self._cwd: str | None = None
+
+    async def run(self, task: str) -> str:
+        """Instantiate the registered runtime and collect its output stream."""
+        kwargs: dict[str, Any] = {}
+        if self._llm_call is not None:
+            kwargs["llm_call"] = self._llm_call
+        if self._local_tools:
+            kwargs["local_tools"] = dict(self._local_tools)
+        if self._mcp_servers is not None:
+            kwargs["mcp_servers"] = self._mcp_servers
+        if self._tool_policy is not None:
+            kwargs["tool_policy"] = self._tool_policy
+        if self._hook_registry is not None:
+            kwargs["hook_registry"] = self._hook_registry
+        if self._can_use_tool is not None:
+            # Mirrors the existing (ungated) tool_policy forwarding above: the
+            # registry path already forwards tool_policy to whatever runtime
+            # is resolved by name, regardless of whether that runtime's
+            # constructor understands it (a pre-existing, unfixed gap of the
+            # same shape — I-100-adjacent). can_use_tool follows the SAME
+            # precedent rather than inventing new per-runtime-name gating;
+            # a registered factory that doesn't accept this kwarg fails the
+            # same way tool_policy already would.
+            kwargs["can_use_tool"] = self._can_use_tool
+
+        runtime = self._factory_fn(self._runtime_config, **kwargs)
+        system_prompt = _build_system_prompt(self._spec)
+        return await collect_runtime_output(
+            runtime.run(
+                messages=[Message(role="user", content=task)],
+                system_prompt=system_prompt,
+                active_tools=self._spec.tools,
+                mode_hint="react",
+            ),
+            error_prefix=f"registry subagent (runtime='{self._spec.runtime_name}')",
         )

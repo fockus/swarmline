@@ -304,3 +304,11 @@ class TestClaudeCodeRuntimeConvert:
         event = FakeStreamEvent(type="done")
         result = ClaudeCodeRuntime._convert_event(event)
         assert result is None
+
+    def test_thinking_delta_maps_to_thinking_delta(self) -> None:
+        """thinking_delta StreamEvent -> RuntimeEvent.thinking_delta."""
+        event = FakeStreamEvent(type="thinking_delta", text="Рассуждаю...")
+        result = ClaudeCodeRuntime._convert_event(event)
+        assert result is not None
+        assert result.type == "thinking_delta"
+        assert result.data["text"] == "Рассуждаю..."

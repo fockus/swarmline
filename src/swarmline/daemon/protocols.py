@@ -90,3 +90,14 @@ class RunnableScheduler(TaskScheduler, Protocol):
     ) -> str:
         """Schedule a one-shot task at a unix timestamp."""
         ...
+
+    def cron_at(
+        self,
+        cron_expr: str,
+        timezone: str,
+        coro_factory: Callable[[], Awaitable[Any]],
+        *,
+        name: str = "",
+    ) -> str:
+        """Schedule a recurring cron task. Returns task name."""
+        ...

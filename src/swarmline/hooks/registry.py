@@ -44,6 +44,22 @@ class HookRegistry:
         """Register a hook when a prompt is submitted."""
         self._add("UserPromptSubmit", callback)
 
+    # ------------------------------------------------------------------
+    # Session-level hooks (REQ-RCA-030)
+    # ------------------------------------------------------------------
+
+    def on_file_edited(self, callback: HookCallback) -> None:
+        """Register a hook fired after an edit/write/multi_edit/multi_file_edit tool completes."""
+        self._add("file.edited", callback)
+
+    def on_session_idle(self, callback: HookCallback) -> None:
+        """Register a hook fired at end-of-turn (after the run loop, after Stop hook)."""
+        self._add("session.idle", callback)
+
+    def on_session_compacted(self, callback: HookCallback) -> None:
+        """Register a hook fired after the conversation compaction filter runs."""
+        self._add("session.compacted", callback)
+
     def _add(self, event: str, callback: HookCallback, matcher: str = "") -> None:
         if event not in self._hooks:
             self._hooks[event] = []

@@ -5,7 +5,11 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv-harness/
 venv/
+
+# Isolated development checkouts
+.worktrees/
 
 # Testing
 .pytest_cache/
@@ -62,3 +66,6 @@ claude-talk-to-figma-mcp/
 
 # memsearch plugin cache (local index, regeneratable)
 .memsearch/
+
+# Memory Bank semantic-search cache (regenerable)
+.memory-bank/.index/

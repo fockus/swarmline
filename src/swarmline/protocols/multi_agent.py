@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from swarmline.multi_agent.task_types import TaskFilter, TaskItem
-
 if TYPE_CHECKING:
     from swarmline.domain_types import ToolSpec
     from swarmline.multi_agent.registry_types import (
@@ -17,6 +15,7 @@ if TYPE_CHECKING:
         AgentRecord,
         AgentStatus,
     )
+    from swarmline.multi_agent.task_types import TaskFilter, TaskItem
 
 
 @runtime_checkable

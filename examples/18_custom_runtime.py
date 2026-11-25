@@ -67,8 +67,6 @@ async def main() -> None:
     echo_capabilities = RuntimeCapabilities(
         runtime_name="echo",
         tier="light",
-        supports_mcp=False,
-        supports_provider_override=False,
     )
     registry.register("echo", echo_factory, capabilities=echo_capabilities)
     print(f"Registered runtimes: {registry.list_available()}")

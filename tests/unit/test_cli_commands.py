@@ -178,7 +178,9 @@ class TestStatusCommand:
         result = runner.invoke(cli, ["--format", "json", "status"])
 
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        # result.stdout is clean stdout only (Click 8.2+); result.output mixes
+        # stderr log lines which would corrupt json.loads if status ever logs.
+        data = json.loads(result.stdout)
         assert data["ok"] is True
         assert "pi_sdk" in data["data"]["public_runtimes"]
         assert data["data"]["internal_modes"] == ["headless"]
@@ -195,20 +197,22 @@ class TestJsonOutput:
             cli, ["--format", "json", "memory", "upsert", "u1", "k1", "v1"]
         )
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        # result.stdout is clean stdout only (Click 8.2+); result.output mixes
+        # stderr log lines which corrupt json.loads.
+        data = json.loads(result.stdout)
         assert data["ok"] is True
 
     def test_json_format_team_agents(self, runner: CliRunner) -> None:
         result = runner.invoke(cli, ["--format", "json", "team", "agents"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["ok"] is True
         assert isinstance(data["data"], list)
 
     def test_json_format_plan_list(self, runner: CliRunner) -> None:
         result = runner.invoke(cli, ["--format", "json", "plan", "list"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["ok"] is True
 
 

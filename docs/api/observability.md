@@ -1,6 +1,6 @@
 # Observability
 
-Event bus, tracing, and OpenTelemetry integration.
+Event bus, tracing, OpenTelemetry, Langfuse, and LangSmith integration.
 
 ## EventBus Protocol
 
@@ -21,3 +21,11 @@ Event bus, tracing, and OpenTelemetry integration.
 ## OTelExporter
 
 ::: swarmline.observability.otel_exporter.OTelExporter
+
+## LangfuseExporter
+
+::: swarmline.observability.langfuse_exporter.LangfuseExporter
+
+## LangSmithExporter
+
+::: swarmline.observability.langsmith_exporter.LangSmithExporter

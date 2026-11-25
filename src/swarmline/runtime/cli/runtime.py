@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from typing import Any
 
 from swarmline.observability.redaction import redact_secrets
@@ -33,16 +33,25 @@ from swarmline.runtime.types import (
 logger = logging.getLogger(__name__)
 
 
-def _build_subprocess_env(cli_config: CliConfig) -> dict[str, str]:
+def _build_subprocess_env(
+    cli_config: CliConfig, config_env: Mapping[str, str] | None = None
+) -> dict[str, str]:
     """Build subprocess env via shared helper (Stage 2 of security audit DRY).
 
     Thin wrapper retained for callers that still depend on the CliConfig-typed
     signature. New code should call ``build_subprocess_env`` directly.
+
+    ``config_env`` (I-098a) is the portable ``AgentConfig.env`` forwarded via
+    ``RuntimeConfig.extra["env"]``: it is merged in under ``cli_config.env``,
+    which always wins for the same key -- the explicit, runtime-specific
+    override. ``config_env=None`` (the default) reproduces today's behavior
+    byte-for-byte.
     """
+    overrides = {**(config_env or {}), **cli_config.env}
     return build_subprocess_env(
         inherit_host_env=cli_config.inherit_host_env,
         env_allowlist=cli_config.env_allowlist,
-        overrides=cli_config.env,
+        overrides=overrides,
     )
 
 
@@ -168,7 +177,13 @@ class CliAgentRuntime:
             self._cli_config.command,
             self._cli_config.output_format,
         )
-        env = _build_subprocess_env(self._cli_config)
+        effective_config = config or self._config
+        config_env = (
+            effective_config.extra.get("env")
+            if isinstance(effective_config.extra, dict)
+            else None
+        )
+        env = _build_subprocess_env(self._cli_config, config_env=config_env)
 
         total_bytes = 0
         max_bytes = self._cli_config.max_output_bytes

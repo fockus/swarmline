@@ -174,3 +174,171 @@ class TestThinSubagentToolsInherited:
 
         assert result.status.state == "completed"
         assert tool_was_called, "Tool из spec должен был быть вызван worker'ом"
+
+
+class TestThinSubagentCanUseTool:
+    """The parent's can_use_tool callback must govern child worker tool calls
+    too (I-098b regression fix): subagents were previously a side door around
+    the permission gate -- a denied tool was silently inherited and executed
+    unchecked in the child ThinRuntime."""
+
+    async def test_parent_can_use_tool_denies_inherited_child_tool(self) -> None:
+        """Callback denies 'danger' but allows everything else -> the child
+        worker must NEVER execute 'danger', and the deny reaches the child's
+        conversation (fed back into the next llm_call as a tool result)."""
+        danger_called = False
+
+        async def danger_tool(args: dict) -> dict:
+            nonlocal danger_called
+            danger_called = True
+            return {"boom": True}
+
+        async def gate(tool_name: str, tool_input: dict, context: object) -> object:
+            if tool_name == "danger":
+                return {"behavior": "deny", "message": "danger is not permitted"}
+            return {"behavior": "allow"}
+
+        call_count = 0
+        second_call_messages: list = []
+
+        async def tool_calling_llm(
+            messages: list, system_prompt: str, **kwargs: object
+        ) -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return json.dumps(
+                    {
+                        "type": "tool_call",
+                        "tool": {"name": "danger", "args": {}},
+                    }
+                )
+            second_call_messages.extend(messages)
+            return json.dumps({"type": "final", "final_message": "done"})
+
+        tool_spec = ToolSpec(
+            name="danger",
+            description="Dangerous tool",
+            parameters={"type": "object", "properties": {}},
+        )
+
+        orch = ThinSubagentOrchestrator(
+            max_concurrent=2,
+            llm_call=tool_calling_llm,
+            local_tools={"danger": danger_tool},
+            can_use_tool=gate,
+        )
+        spec = SubagentSpec(
+            name="worker",
+            system_prompt="You are a worker.",
+            tools=[tool_spec],
+        )
+        agent_id = await orch.spawn(spec, "do something dangerous")
+        result = await orch.wait(agent_id)
+
+        assert result.status.state == "completed"
+        assert not danger_called, "denied tool must NEVER execute in the child worker"
+        combined = " ".join(str(getattr(m, "content", m)) for m in second_call_messages)
+        assert "danger is not permitted" in combined
+
+    async def test_parent_can_use_tool_allow_everything_child_executes_normally(
+        self,
+    ) -> None:
+        """A permissive callback must not regress normal subagent tool
+        execution (no callback wired = same behavior as before this fix)."""
+        tool_called = False
+
+        async def safe_tool(args: dict) -> dict:
+            nonlocal tool_called
+            tool_called = True
+            return {"ok": True}
+
+        async def allow_all(
+            tool_name: str, tool_input: dict, context: object
+        ) -> object:
+            return {"behavior": "allow"}
+
+        call_count = 0
+
+        async def tool_calling_llm(
+            messages: list, system_prompt: str, **kwargs: object
+        ) -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return json.dumps(
+                    {
+                        "type": "tool_call",
+                        "tool": {"name": "safe_tool", "args": {}},
+                    }
+                )
+            return json.dumps({"type": "final", "final_message": "done"})
+
+        tool_spec = ToolSpec(
+            name="safe_tool",
+            description="Safe tool",
+            parameters={"type": "object", "properties": {}},
+        )
+
+        orch = ThinSubagentOrchestrator(
+            max_concurrent=2,
+            llm_call=tool_calling_llm,
+            local_tools={"safe_tool": safe_tool},
+            can_use_tool=allow_all,
+        )
+        spec = SubagentSpec(
+            name="worker",
+            system_prompt="You are a worker.",
+            tools=[tool_spec],
+        )
+        agent_id = await orch.spawn(spec, "do something safe")
+        result = await orch.wait(agent_id)
+
+        assert result.status.state == "completed"
+        assert tool_called, "allowed tool must execute normally in the child worker"
+
+
+class TestThinSubagentCanUseToolRegistryPath:
+    """Registry-worker path (SubagentSpec.runtime_name set): can_use_tool must
+    reach the resolved factory the SAME (ungated) way tool_policy already
+    does -- no new cross-runtime semantics invented, just consistency with
+    the existing forwarding pattern."""
+
+    async def test_registry_worker_receives_can_use_tool_in_kwargs(self) -> None:
+        """A registered runtime factory sees can_use_tool in its kwargs,
+        mirroring the existing (unconditional) tool_policy forwarding."""
+        from swarmline.domain_types import RuntimeEvent
+        from swarmline.runtime.registry import RuntimeRegistry
+        from swarmline.runtime.types import RuntimeConfig
+
+        captured_kwargs: list[dict] = []
+
+        class _FakeRuntime:
+            def run(self, **kwargs: object):
+                async def _gen():
+                    yield RuntimeEvent.final("registry worker done")
+
+                return _gen()
+
+        def factory(config: RuntimeConfig, **kwargs: object) -> _FakeRuntime:
+            captured_kwargs.append(kwargs)
+            return _FakeRuntime()
+
+        registry = RuntimeRegistry()
+        registry.register("fake_thin", factory)
+
+        async def gate(tool_name: str, tool_input: dict, context: object) -> object:
+            return {"behavior": "allow"}
+
+        orch = ThinSubagentOrchestrator(
+            registry=registry,
+            max_concurrent=2,
+            can_use_tool=gate,
+        )
+        spec = SubagentSpec(name="w", system_prompt="p", runtime_name="fake_thin")
+        agent_id = await orch.spawn(spec, "task")
+        result = await orch.wait(agent_id)
+
+        assert result.status.state == "completed"
+        assert captured_kwargs, "factory must have been called"
+        assert captured_kwargs[0]["can_use_tool"] is gate

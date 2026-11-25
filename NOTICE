@@ -1,0 +1,151 @@
+NOTICE — Third-Party Attributions
+==================================
+
+This software incorporates adapted algorithms and techniques from the following
+open-source projects. All adaptations are clearly marked with per-file header
+comments (see "Per-File Attribution Convention" section below).
+
+------------------------------------------------------------------------------
+1. aider — AI pair programming in your terminal
+   Copyright (c) Paul Gauthier and contributors
+   License: Apache License, Version 2.0
+
+   Source repository: https://github.com/paul-gauthier/aider
+
+   Portions of this software (specifically: repo-map graph-ranking algorithm,
+   search/replace fuzzy-match cascade, and editblock strategies) are adapted
+   from aider's codebase under the terms of the Apache License, Version 2.0.
+
+   A copy of the Apache License, Version 2.0 is available at:
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   APACHE LICENSE 2.0 — NOTICE REQUIREMENT:
+   This product includes software developed by Paul Gauthier
+   (https://aider.chat/). The original aider source code is licensed under
+   the Apache License, Version 2.0. Modifications made for this project are
+   documented in each adapted file via per-file attribution headers.
+
+   Adapted components:
+   - Repo-map reference-graph construction and PageRank-based symbol ranking
+     (upstream: aider/repomap.py)
+   - Search/replace editblock fuzzy-match strategies (exact, whitespace-
+     normalized, indentation-flexible, block-anchor cascade)
+     (upstream: aider/coders/editblock_coder.py, aider/coders/editblock_fenced_coder.py)
+   - Linter.lint tree-context output formatting and run_one re-inject
+     convergence-loop pattern, adapted for the AutoVerifyLoop bounded-budget
+     lint/test re-injection convergence loop (RCA Task 1)
+     (upstream: aider/linter.py, aider/coders/base_coder.py)
+     (local file: src/swarmline/runtime/thin/auto_verify_loop.py)
+   - Per-model edit_format + weak/editor model tiering concept (RCA Task 2):
+     the idea of declaring a per-model weak_model and editor_model for auxiliary
+     task routing; reimplemented from scratch as ModelSettings + ModelSettingsResolver
+     (no verbatim copy of aider source)
+     (upstream: aider/models.py, aider/model_settings.yml)
+     (local file: src/swarmline/runtime/model_settings.py)
+   - Architect/editor two-model split concept (RCA Task 3): the plan-then-edit
+     split where a main model produces a natural-language plan (repo-map
+     suppressed) and a separate editor model applies edits in its own format;
+     reimplemented from scratch as ArchitectCoordinator + ArchitectOutcome;
+     no verbatim copy of aider source.
+     (upstream: aider/coders/architect_coder.py)
+     (local file: src/swarmline/runtime/thin/architect.py)
+   - Recursive split-and-summarize algorithm (RCA Task 4): the ChatSummary
+     concept of recursively splitting history at an assistant-message boundary
+     and summarizing the HEAD; adapted into RecursiveSummarizer with bounded
+     depth-3 recursion, a code-anchor-preserving prompt (file paths, stack
+     traces, symbol names), and swarmline context/budget token counting;
+     no verbatim copy of aider source.
+     (upstream: aider/history.py)
+     (local file: src/swarmline/memory/recursive_summary.py)
+
+------------------------------------------------------------------------------
+2. hermes — Fast, accurate AI code editing
+   Copyright (c) Nous Research and contributors
+   License: MIT License
+
+   Source repository: https://github.com/NousResearch/hermes
+
+   Portions of this software (specifically: V4A patch strategy, lint-delta
+   baseline-subtraction, and fuzzy-match strategies) are adapted from hermes
+   under the terms of the MIT License.
+
+   MIT License Permission Notice:
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the "Software"),
+   to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+   Adapted components:
+   - V4A transactional patch strategy with dry-run-then-apply semantics
+     (upstream: hermes/patch_parser.py)
+   - Lint-delta baseline-subtraction: filtering pre-existing errors so only
+     edit-introduced diagnostics are surfaced
+     (upstream: hermes/lint_delta.py)
+   - Fuzzy-match strategies for tolerant search/replace
+     (upstream: hermes/fuzzy_match.py)
+   - Command-risk classifier: HARDLINE/dangerous shell-command pattern corpora,
+     sudo-stdin guard, and anti-obfuscation normalization (ANSI strip, NFKC,
+     quote/backslash stripping, home-path rewrite)
+     (upstream: tools/approval.py, tools/ansi_strip.py)
+     (local files: src/swarmline/command_safety.py,
+      src/swarmline/command_safety_patterns.py,
+      src/swarmline/command_safety_dangerous.py)
+   - Model usage-pricing corpus: per-(provider, model) input/output token rates,
+     adapted into a dependency-free cents-keyed table feeding the fail-closed
+     cost-ceiling enforcement layer
+     (upstream: agent/usage_pricing.py)
+     (local file: src/swarmline/runtime/cost_ceiling.py)
+   - Iteration-budget turn-cap VO: immutable frozen+slots dataclass tracking
+     used/max iterations for agent run loops
+     (upstream: agent/iteration_budget.py)
+     (local file: src/swarmline/runtime/iteration_budget.py)
+   - Fallback cascade walk: skip-cooled + dedup + FAILOVER/ABORT/COMPRESS/
+     unknown-action routing for provider cascade resolution
+     (upstream: agent/chat_completion_helpers.py)
+     (local file: src/swarmline/runtime/fallback/_resolver.py)
+
+------------------------------------------------------------------------------
+
+Per-File Attribution Convention
+================================
+
+Any source file in this project that adapts, ports, or derives logic from the
+above third-party projects carries a header comment block in the following form:
+
+    # Attribution: adapted from <project> (<license>)
+    # Upstream file: <upstream/path/to/file.py>
+    # Copyright: <copyright holder>
+    # Changes: <brief description of modifications>
+
+Example (for a file adapting aider's editblock logic under Apache-2.0):
+
+    # Attribution: adapted from aider (Apache-2.0)
+    # Upstream file: aider/coders/editblock_coder.py
+    # Copyright: (c) Paul Gauthier and contributors
+    # Changes: refactored into Protocol-based strategy, added HunkResult VO,
+    #          removed REPL-specific output, integrated with SandboxProvider
+
+Example (for a file adapting hermes's patch parser under MIT):
+
+    # Attribution: adapted from hermes (MIT)
+    # Upstream file: hermes/patch_parser.py
+    # Copyright: (c) Nous Research and contributors
+    # Changes: rewritten as async EditStrategy, integrated with PathLock,
+    #          transactional dry-run added
+
+Files that implement ideas inspired by a project but contain NO copied or
+directly ported code carry no attribution header (independent reimplementation
+requires no notice beyond this NOTICE file).

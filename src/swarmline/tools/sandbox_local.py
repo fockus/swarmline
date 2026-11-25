@@ -13,6 +13,7 @@ from pathlib import Path
 
 import structlog
 
+from swarmline.command_safety import AccessDecision, CommandGuard
 from swarmline.observability.security import log_security_decision
 from swarmline.tools.types import ExecutionResult, SandboxConfig, SandboxViolation
 
@@ -31,9 +32,29 @@ class LocalSandboxProvider:
     - Denied command blocking
     """
 
-    def __init__(self, config: SandboxConfig) -> None:
+    def __init__(
+        self,
+        config: SandboxConfig,
+        command_risk_policy: CommandGuard | None = None,
+        *,
+        command_risk_interactive: bool = False,
+    ) -> None:
+        """Create a local sandbox provider.
+
+        Args:
+            config: Sandbox isolation configuration.
+            command_risk_policy: OPTIONAL pre-exec guard. When ``None`` (the
+                default) the exec path is byte-identical to before — no
+                classification ever runs. When supplied, ``execute()`` classifies
+                and gates each command before spawning a subprocess.
+            command_risk_interactive: Whether the session can prompt for approval.
+                Defaults to ``False`` (automated sandbox): APPROVAL_REQUIRED then
+                resolves to DENY. Ignored when no guard is supplied.
+        """
         self._config = config
         self._workspace = Path(config.workspace_path)
+        self._command_risk_policy = command_risk_policy
+        self._command_risk_interactive = command_risk_interactive
 
     def _resolve_safe_path(self, path: str) -> Path:
         """Resolve a path inside the workspace while blocking traversal.
@@ -97,6 +118,32 @@ class LocalSandboxProvider:
                 raise SandboxViolation(
                     f"Command '{cmd_name}' is denied", path=raw_command
                 )
+
+    def _check_command_risk(self, command: str) -> None:
+        """Gate *command* through the optional command-risk guard.
+
+        No-op when no guard was supplied (byte-identical default path). When a
+        guard is present, classify + decide; raise SandboxViolation on anything
+        other than ALLOW so the command never reaches a subprocess.
+        """
+        policy = self._command_risk_policy
+        if policy is None:
+            return
+        level, reason = policy.classify(command)
+        decision = policy.decide(level, interactive=self._command_risk_interactive)
+        if decision is AccessDecision.ALLOW:
+            return
+        log_security_decision(
+            _log,
+            component="sandbox_local",
+            event_name="security.command_risk_denied",
+            reason=reason or level.value,
+            target="execute",
+        )
+        raise SandboxViolation(
+            f"Command blocked by risk guard ({level.value}): {reason or 'risky command'}",
+            path=command,
+        )
 
     @staticmethod
     def _validate_glob_pattern(pattern: str) -> None:
@@ -165,6 +212,7 @@ class LocalSandboxProvider:
 
         argv = self._parse_command(command)
         self._check_denied_command(argv, command)
+        self._check_command_risk(command)
 
         # Create the workspace if it does not exist
         self._workspace.mkdir(parents=True, exist_ok=True)

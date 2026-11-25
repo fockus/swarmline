@@ -216,6 +216,45 @@ class TestCliRuntimeEnvironment:
 
         assert env["SECRET_TOKEN"] == "top-secret"
 
+    def test_build_subprocess_env_merges_agent_config_env_under_cli_config_env(
+        self,
+    ) -> None:
+        """I-098a: AgentConfig.env (forwarded via RuntimeConfig.extra["env"])
+        is merged in, but explicit CliConfig.env always wins for the same key."""
+        from swarmline.runtime.cli.runtime import _build_subprocess_env
+
+        cli_config = CliConfig(
+            command=["claude"], env={"EXPLICIT_TOKEN": "cli-config-wins"}
+        )
+        with patch.dict("os.environ", {"PATH": "/usr/bin"}, clear=True):
+            env = _build_subprocess_env(
+                cli_config,
+                config_env={
+                    "EXPLICIT_TOKEN": "agent-config-loses",
+                    "FROM_AGENT_CONFIG": "forwarded",
+                },
+            )
+
+        assert env["PATH"] == "/usr/bin"
+        assert env["FROM_AGENT_CONFIG"] == "forwarded"
+        assert env["EXPLICIT_TOKEN"] == "cli-config-wins"
+
+    def test_build_subprocess_env_without_config_env_is_byte_identical(self) -> None:
+        """Regression guard: no config_env argument -> identical to today's
+        cli_config-only behaviour (I-098a DoD)."""
+        from swarmline.runtime.cli.runtime import _build_subprocess_env
+
+        cli_config = CliConfig(command=["claude"], env={"EXPLICIT_TOKEN": "ok"})
+        with patch.dict(
+            "os.environ", {"PATH": "/usr/bin", "HOME": "/tmp/home"}, clear=True
+        ):
+            baseline = _build_subprocess_env(cli_config)
+            without_config_env = _build_subprocess_env(cli_config, config_env=None)
+            with_empty_config_env = _build_subprocess_env(cli_config, config_env={})
+
+        assert without_config_env == baseline
+        assert with_empty_config_env == baseline
+
 
 class TestCliRuntimeRun:
     """CliAgentRuntime.run() subprocess interaction."""
@@ -411,6 +450,76 @@ class TestCliRuntimeRun:
         assert events[-1].type == "error"
         assert events[-1].data["kind"] == "bad_model_output"
         assert "without a final" in events[-1].data["message"]
+
+    async def test_cli_runtime_run_forwards_config_extra_env_to_subprocess(
+        self,
+    ) -> None:
+        """I-098a: RuntimeConfig.extra["env"] (AgentConfig.env translation)
+        reaches asyncio.create_subprocess_exec's env kwarg."""
+        from swarmline.runtime.cli.runtime import CliAgentRuntime
+
+        config = RuntimeConfig(
+            runtime_name="cli",
+            extra={"env": {"SWARMLINE_CONTRACT_PROBE": "1"}},
+        )
+        cli_config = CliConfig(command=["my-agent", "--json"])
+        rt = CliAgentRuntime(config=config, cli_config=cli_config)
+
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+        mock_process.stdin = MagicMock()
+        mock_process.stdin.write = MagicMock()
+        mock_process.stdin.drain = AsyncMock()
+        mock_process.stdin.close = MagicMock()
+        mock_process.stdout = _make_async_lines(b'{"type":"result","result":"done"}\n')
+        mock_process.stderr = AsyncMock()
+        mock_process.stderr.read = AsyncMock(return_value=b"")
+        mock_process.wait = AsyncMock(return_value=0)
+
+        with patch(
+            "asyncio.create_subprocess_exec", return_value=mock_process
+        ) as create_proc:
+            async for _ in rt.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="",
+                active_tools=[],
+            ):
+                pass
+
+        env = create_proc.call_args.kwargs["env"]
+        assert env.get("SWARMLINE_CONTRACT_PROBE") == "1"
+
+    async def test_cli_runtime_run_without_config_env_matches_today(self) -> None:
+        """Regression guard: RuntimeConfig without extra["env"] produces the
+        exact same subprocess env as before I-098a (byte-identical default)."""
+        from swarmline.runtime.cli.runtime import CliAgentRuntime, _build_subprocess_env
+
+        cli_config = CliConfig(command=["my-agent", "--json"])
+        config = RuntimeConfig(runtime_name="cli")
+        rt = CliAgentRuntime(config=config, cli_config=cli_config)
+
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+        mock_process.stdin = MagicMock()
+        mock_process.stdin.write = MagicMock()
+        mock_process.stdin.drain = AsyncMock()
+        mock_process.stdin.close = MagicMock()
+        mock_process.stdout = _make_async_lines(b'{"type":"result","result":"done"}\n')
+        mock_process.stderr = AsyncMock()
+        mock_process.stderr.read = AsyncMock(return_value=b"")
+        mock_process.wait = AsyncMock(return_value=0)
+
+        with patch(
+            "asyncio.create_subprocess_exec", return_value=mock_process
+        ) as create_proc:
+            async for _ in rt.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="",
+                active_tools=[],
+            ):
+                pass
+
+        assert create_proc.call_args.kwargs["env"] == _build_subprocess_env(cli_config)
 
 
 class TestCliRuntimeCancel:

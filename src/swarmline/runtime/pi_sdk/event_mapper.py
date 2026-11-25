@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from swarmline.runtime.types import Message, RuntimeErrorData, RuntimeEvent, TurnMetrics
+from swarmline.runtime.types import (
+    RUNTIME_ERROR_KINDS,
+    Message,
+    RuntimeErrorData,
+    RuntimeEvent,
+    TurnMetrics,
+)
 
 
 def map_pi_bridge_event(data: dict[str, Any]) -> RuntimeEvent | None:
@@ -45,12 +51,20 @@ def map_pi_bridge_event(data: dict[str, Any]) -> RuntimeEvent | None:
             },
         )
     if event_type == "error":
+        kind = str(data.get("kind") or "runtime_crash")
+        details = _ensure_dict(data.get("details"))
+        if kind not in RUNTIME_ERROR_KINDS:
+            # Safety net for future bridge-native kinds outside the portable
+            # RUNTIME_ERROR_KINDS contract (every kind the bridge emits today,
+            # including "session_not_found", is already portable): preserve
+            # the native kind so callers can still branch on it.
+            details = {**details, "native_error_kind": kind}
         return RuntimeEvent.error(
             RuntimeErrorData(
-                kind=str(data.get("kind") or "runtime_crash"),
+                kind=kind,
                 message=str(data.get("message") or "PI SDK runtime error"),
                 recoverable=bool(data.get("recoverable", False)),
-                details=_ensure_dict(data.get("details")),
+                details=details,
             )
         )
     return None
@@ -69,8 +83,11 @@ def _optional_str(value: Any) -> str | None:
 
 
 def _extract_cost(data: dict[str, Any]) -> float | None:
-    value = data.get("total_cost_usd") or data.get("cost")
+    value = data.get("total_cost_usd")
+    if value is None:
+        value = data.get("cost")
     if isinstance(value, int | float):
+        # A genuine 0.0 is a legitimate reported cost, not "absent".
         return float(value)
     return None
 

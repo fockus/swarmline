@@ -276,3 +276,110 @@ class TestStreamDeepAgentsGraphEvents:
         assert len(events) == 1
         assert events[0].type == "assistant_delta"
         assert events[0].data["text"] == "final text"
+
+    @pytest.mark.asyncio
+    async def test_stream_pre_cancelled_yields_only_cancelled(self) -> None:
+        """cancel_check true before the stream -> only cancelled error event."""
+        graph = MagicMock()
+
+        events = []
+        async for event in stream_deepagents_graph_events(
+            graph=graph,
+            input_payload={"messages": []},
+            cancel_check=lambda: True,
+        ):
+            events.append(event)
+
+        assert len(events) == 1
+        assert events[0].type == "error"
+        assert events[0].data["kind"] == "cancelled"
+        assert events[0].data["recoverable"] is False
+        graph.astream_events.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_stream_mid_stream_cancellation_stops_stream(self) -> None:
+        """cancel_check flips mid-stream -> cancelled error, remaining events dropped."""
+        cancelled = {"flag": False}
+        chunk = MagicMock()
+        chunk.content = "part1"
+        graph = MagicMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk}}
+            cancelled["flag"] = True
+            yield {"event": "on_chat_model_stream", "data": {"chunk": chunk}}
+
+        graph.astream_events = fake_astream_events
+
+        events = []
+        async for event in stream_deepagents_graph_events(
+            graph=graph,
+            input_payload={"messages": []},
+            cancel_check=lambda: cancelled["flag"],
+        ):
+            events.append(event)
+
+        assert [event.type for event in events] == ["assistant_delta", "error"]
+        assert events[-1].data["kind"] == "cancelled"
+
+    @pytest.mark.asyncio
+    async def test_stream_accumulates_usage_totals(self) -> None:
+        """usage_metadata from on_chat_model_end is accumulated into usage_totals."""
+        from types import SimpleNamespace
+
+        output = SimpleNamespace(
+            content=[{"type": "text", "text": "final text"}],
+            usage_metadata={
+                "input_tokens": 4,
+                "output_tokens": 2,
+                "total_tokens": 6,
+            },
+        )
+        graph = MagicMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_end", "data": {"output": output}}
+            yield {"event": "on_chat_model_end", "data": {"output": output}}
+
+        graph.astream_events = fake_astream_events
+
+        usage_totals: dict[str, int] = {}
+        events = []
+        async for event in stream_deepagents_graph_events(
+            graph=graph,
+            input_payload={"messages": []},
+            usage_totals=usage_totals,
+        ):
+            events.append(event)
+
+        assert usage_totals == {
+            "input_tokens": 8,
+            "output_tokens": 4,
+            "native_calls": 2,
+        }
+        # Fallback text extraction from the first end-event still works.
+        assert len(events) == 1
+        assert events[0].type == "assistant_delta"
+        assert events[0].data["text"] == "final text"
+
+    @pytest.mark.asyncio
+    async def test_stream_output_without_usage_leaves_totals_untouched(self) -> None:
+        """Outputs without a usage_metadata mapping do not pollute totals."""
+        output = MagicMock()  # usage_metadata attr is a MagicMock, not a Mapping
+        output.content = "text"
+        graph = MagicMock()
+
+        async def fake_astream_events(*args, **kwargs):
+            yield {"event": "on_chat_model_end", "data": {"output": output}}
+
+        graph.astream_events = fake_astream_events
+
+        usage_totals: dict[str, int] = {}
+        async for _event in stream_deepagents_graph_events(
+            graph=graph,
+            input_payload={"messages": []},
+            usage_totals=usage_totals,
+        ):
+            pass
+
+        assert usage_totals == {}

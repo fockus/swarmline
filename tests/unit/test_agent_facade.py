@@ -281,7 +281,7 @@ class TestAgentRuntimeCapabilities:
         caps = RuntimeCapabilities(
             runtime_name="custom_caps_rt",
             tier="light",
-            supports_provider_override=True,
+            provider_override="native",
         )
         registry.register(
             "custom_caps_rt", lambda config, **kwargs: object(), capabilities=caps
@@ -450,39 +450,20 @@ class TestAgentRuntimeFactoryWiring:
         create_kwargs = fake_factory.create.call_args.kwargs
         assert create_kwargs["mcp_servers"] == agent.config.mcp_servers
 
-    @pytest.mark.asyncio
-    async def test_execute_agent_runtime_omits_mcp_servers_for_cli(self) -> None:
+    def test_cli_with_mcp_servers_fails_fast_at_construction(self) -> None:
+        """cli cannot deliver MCP: capability validation rejects the config
+        at Agent construction instead of silently dropping it (plan E1/E2)."""
         from swarmline.skills.types import McpServerSpec
 
-        agent = Agent(
-            _make_config(
-                runtime="cli",
-                mcp_servers={"iss": McpServerSpec(name="iss", url="http://iss.test")},
+        with pytest.raises(ValueError, match="requires capability 'mcp'"):
+            Agent(
+                _make_config(
+                    runtime="cli",
+                    mcp_servers={
+                        "iss": McpServerSpec(name="iss", url="http://iss.test")
+                    },
+                )
             )
-        )
-
-        class FakeRuntime:
-            async def run(self, **kwargs: Any):
-                from swarmline.runtime.types import RuntimeEvent
-
-                yield RuntimeEvent.final("ok")
-
-            async def cleanup(self) -> None:
-                return None
-
-        fake_factory = MagicMock()
-        fake_factory.create.return_value = FakeRuntime()
-
-        with patch(
-            "swarmline.runtime.factory.RuntimeFactory", return_value=fake_factory
-        ):
-            events = []
-            async for event in agent._execute_agent_runtime("hello", "cli"):
-                events.append(event)
-
-        assert events[-1].type == "done"
-        create_kwargs = fake_factory.create.call_args.kwargs
-        assert "mcp_servers" not in create_kwargs
 
     @pytest.mark.asyncio
     async def test_execute_agent_runtime_cli_query_works_with_mocked_subprocess(

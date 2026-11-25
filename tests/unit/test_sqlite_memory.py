@@ -10,6 +10,7 @@ aiosqlite = pytest.importorskip("aiosqlite", reason="aiosqlite не устано
 
 from swarmline.memory.sqlite import SQLiteMemoryProvider  # noqa: E402
 from swarmline.memory.types import GoalState, ToolEvent  # noqa: E402
+from swarmline.memory.working import WorkingMemory  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # noqa: E402
 
@@ -301,6 +302,23 @@ class TestSQLiteFacts:
         facts = await provider.get_facts("u1")
 
         assert facts["status"] == "ai"
+
+    @pytest.mark.asyncio
+    async def test_working_memory_aset_overwrites_preexisting_user_sourced_row(
+        self, provider: SQLiteMemoryProvider
+    ) -> None:
+        """WorkingMemory writes with source="working_memory", which must
+        rank alongside "user" (top) in the source-priority CASE (r1 review
+        MAJOR) -- otherwise an unranked source defaults to priority 0 and
+        the provider's `existing <= incoming` guard silently no-ops every
+        aset() once ANY row exists under that key, provider-divergent from
+        InMemoryMemoryProvider's plain dict overwrite."""
+        await provider.upsert_fact("u1", "wm.name", "old", source="user")
+        wm = WorkingMemory(provider, resource_id="u1")
+
+        await wm.aset("name", "new")
+
+        assert (await wm.aget())["name"] == "new"
 
 
 class TestSQLiteSummaryAndGoal:

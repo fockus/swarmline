@@ -24,6 +24,19 @@ def _reset_root_logger() -> Any:
         root.removeHandler(h)
 
 
+@pytest.fixture(autouse=True)
+def _isolate_code_agent_sessions(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Force `CodeAgent`'s session persistence (code-agent-facade plan, Stage 5)
+    into a per-test tmp dir -- never the developer's real
+    `~/.swarmline/code-sessions/`. Any test that calls `CodeAgent.run()` now
+    triggers a real (but isolated) filesystem write; without this override,
+    every such test across the whole suite would silently write session
+    files to the real home directory."""
+    monkeypatch.setenv("SWARMLINE_SESSIONS_DIR", str(tmp_path / "swarmline-sessions"))
+
+
 @pytest.fixture()
 def coding_sandbox(tmp_path: Any) -> LocalSandboxProvider:
     """Create a real LocalSandboxProvider in a temp directory for coding tests."""

@@ -8,8 +8,11 @@ ISP/DIP: depends on small Protocols (<=5 methods each), not a monolithic provide
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
+from swarmline.memory.semantic_recall import SemanticRecall
+from swarmline.memory.types import MemoryMessage
 from swarmline.protocols import (
     GoalStore,
     MessageStore,
@@ -42,6 +45,7 @@ class DefaultSessionRehydrator:
         sessions: SessionStateStore,
         phases: PhaseStore,
         last_n_messages: int = 10,
+        semantic_recall: SemanticRecall | None = None,
     ) -> None:
         self._messages = messages
         self._summaries = summaries
@@ -49,6 +53,7 @@ class DefaultSessionRehydrator:
         self._sessions = sessions
         self._phases = phases
         self._last_n = last_n_messages
+        self._semantic_recall = semantic_recall
 
     async def build_rehydration_payload(self, ctx: TurnContext) -> dict[str, Any]:
         """Build the full rehydration payload (§8.4).
@@ -90,7 +95,7 @@ class DefaultSessionRehydrator:
         # 5. Phase state
         phase_state = await self._phases.get_phase_state(ctx.user_id)
 
-        return {
+        payload: dict[str, Any] = {
             "role_id": role_id,
             "active_skill_ids": active_skill_ids,
             "prompt_hash": prompt_hash,
@@ -99,3 +104,29 @@ class DefaultSessionRehydrator:
             "goal": goal,
             "phase_state": phase_state,
         }
+
+        # 6. Semantic recall (Stage C2.2, opt-in) -- additive: the "recalled"
+        # key is present ONLY when a semantic_recall was injected, so the
+        # default (None) payload stays byte-identical to pre-C2.2 behavior.
+        if self._semantic_recall is not None:
+            recall_query = self._extract_last_user_text(last_messages).strip()
+            # Guard at the wiring boundary: an empty/whitespace query short-
+            # circuits to [] WITHOUT awaiting arecall (SemanticRecall.arecall
+            # already guards this internally too, but skipping the call here
+            # avoids an unnecessary embed/store round-trip on a blank turn).
+            if recall_query:
+                payload["recalled"] = await self._semantic_recall.arecall(recall_query)
+            else:
+                payload["recalled"] = []
+
+        return payload
+
+    @staticmethod
+    def _extract_last_user_text(messages: Sequence[MemoryMessage]) -> str:
+        """Last user-role message's content in ``messages`` (the query
+        source for semantic recall) -- "" if none (empty query -> arecall
+        returns [] without embedding/querying, see SemanticRecall.arecall)."""
+        for msg in reversed(messages):
+            if msg.role == "user" and msg.content:
+                return msg.content
+        return ""

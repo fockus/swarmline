@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from swarmline.agent.middleware import Middleware
     from swarmline.agent.tool import ToolDefinition
     from swarmline.commands.registry import CommandRegistry
+    from swarmline.domain_types import ProviderTool
     from swarmline.hooks.registry import HookRegistry
     from swarmline.policy.tool_policy import DefaultToolPolicy
     from swarmline.runtime.capabilities import CapabilityRequirements
@@ -104,6 +105,30 @@ class AgentConfig:
     permission_mode: str = "bypassPermissions"
     setting_sources: tuple[str, ...] = ()
 
+    #: Permission callback (claude_sdk + thin runtimes). Async callable with
+    #: the claude-agent-sdk ``CanUseTool`` signature:
+    #:   ``async (tool_name: str, input: dict, context) -> PermissionResult``
+    #: claude_sdk: requires ``permission_mode`` != "bypassPermissions" (the SDK
+    #: never consults the callback when permissions are bypassed).
+    #: thin: ALWAYS enforced when set (I-098b security fix -- thin has no
+    #: permission_mode concept, and gating on the claude-specific knob would
+    #: silently no-op the callback under the default mode); consulted after
+    #: tool_policy (policy deny wins), fail-closed on callback errors.
+    can_use_tool: Any | None = None
+
+    #: Native subagent definitions (claude_sdk runtime only): name ->
+    #: claude-agent-sdk ``AgentDefinition``. Passed straight through to
+    #: ``ClaudeAgentOptions.agents``.
+    native_agents: dict[str, Any] | None = None
+
+    #: Resume an existing claude_sdk session by id (conversation path). When set,
+    #: the adapter passes ``resume=<id>`` and does not force continue_conversation.
+    resume_session_id: str | None = None
+
+    #: Fork the resumed session into a new session id instead of continuing it
+    #: in place (claude_sdk runtime, used together with resume_session_id).
+    fork_session: bool = False
+
     # Tool policy (default-deny enforcement)
     tool_policy: DefaultToolPolicy | None = None
 
@@ -116,6 +141,14 @@ class AgentConfig:
     # Coding profile (opt-in coding-agent tool surface + policy)
     coding_profile: CodingProfileConfig | None = None
 
+    #: Load project instruction files into the system prompt (opt-in).
+    #: One switch, same effect on every runtime that supports it:
+    #: claude_sdk maps it to setting_sources=["project"] (native CLAUDE.md),
+    #: pi_sdk loads project resources natively, portable runtimes get
+    #: AGENTS.md/RULES.md/CLAUDE.md/GEMINI.md prepended via
+    #: ProjectInstructionFilter. Runtimes without support fail validation.
+    project_instructions: bool = False
+
     # Runtime convergence / capability negotiation
     feature_mode: str = "portable"
     require_capabilities: CapabilityRequirements | None = None
@@ -123,14 +156,41 @@ class AgentConfig:
     native_config: dict[str, Any] = field(default_factory=dict)
     runtime_options: Any | None = None
 
+    #: Capability validation mode. True (default): configuration options that
+    #: the selected runtime cannot deliver raise ValueError at Agent
+    #: construction. False: they emit a warning and degrade (legacy behavior).
+    strict_capabilities: bool = True
+
     #: Native tool-calling override (advanced). None = derive from ``structured_mode``
     #: (native when "native"/"auto"); set True/False to force native tools on/off
     #: independently of structured output.
     use_native_tools: bool | None = None
 
+    #: Retry policy for per-LLM-call failures inside the react loop (e.g.
+    #: ``swarmline.retry.ExponentialBackoff``). Must satisfy the
+    #: ``swarmline.retry.RetryPolicy`` Protocol. None (default) keeps the
+    #: pre-passthrough behaviour: no retry on LLM call failure.
+    retry_policy: Any | None = None  # RetryPolicy
+
+    #: Provider-executed (hosted) tools: passthrough tool specs serialized untouched
+    #: into the provider request and run server-side (Epic E). Empty tuple (default)
+    #: is a no-op -- byte-identical to pre-Epic-E behavior. Non-empty forces the
+    #: native tool-calling path (``use_native_tools``) unless explicitly overridden
+    #: to False (see ``runtime_wiring.build_portable_runtime_plan``).
+    provider_tools: tuple[ProviderTool, ...] = ()
+
     def __post_init__(self) -> None:
         if not self.system_prompt or not self.system_prompt.strip():
             raise ValueError("system_prompt must not be empty")
+
+        if self.resume_session_id is not None and (
+            not isinstance(self.resume_session_id, str)
+            or not self.resume_session_id.strip()
+        ):
+            raise ValueError("resume_session_id must be a non-empty string")
+
+        if self.can_use_tool is not None and not callable(self.can_use_tool):
+            raise ValueError("can_use_tool must be an async callable")
 
         # Accept both dict (deprecated) and the typed ThinkingConfig dataclass.
         # Internally we always store the dict form, which downstream consumers

@@ -6,6 +6,7 @@ import asyncio
 import io
 import json
 import logging
+import math
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -18,33 +19,64 @@ from swarmline.runtime.types import RuntimeConfig, RuntimeErrorData, RuntimeEven
 
 logger = logging.getLogger(__name__)
 
+# Этап 25c fix-cycle 1 MINOR: absolute retry-attempt ceiling for `run_buffered_llm_call`,
+# independent of whatever `retry_policy` is injected — the last line of defense against a
+# misconfigured/buggy policy that never says "stop" (see the guard in the except-block
+# below for the companion NaN/inf/negative-delay hardening).
+_MAX_RETRY_ATTEMPTS_HARD_CAP = 10
+
 
 @dataclass(frozen=True)
 class LlmCallResult:
-    """Result of a single LLM call with optional thinking content."""
+    """Result of a single LLM call with optional thinking content.
+
+    ``usage`` — the REAL provider-reported token usage for THIS call (input/output/
+    total, optionally cache token counts), when the adapter surfaces it. ``None`` by
+    default (back-compat; no adapter populates this yet) — callers fall back to the
+    honest heuristic estimate in ``finalization._build_usage`` rather than fabricate it.
+    """
 
     text: str
     thinking: str | None = None
+    usage: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
 class BufferedLlmAttempt:
-    """Buffered Llm Attempt implementation."""
+    """Buffered Llm Attempt implementation.
+
+    ``attempts`` — how many provider-level HTTP attempts ``run_buffered_llm_call`` made
+    for this ONE logical call (1 = succeeded first try; N>1 = ``retry_policy`` retried
+    N-1 transient failures before succeeding). Reconciliation signal (Fable-gate rider,
+    Этап 26): a provider MAY bill tokens for a partially-generated failed attempt (e.g.
+    a mid-stream timeout) that never reaches swarmline's usage accounting — an
+    attempts>1 cost-event is a flag that the billed tokens could undercount the
+    provider's actual usage across the whole logical call, not just the winning attempt.
+    """
 
     raw: str
     chunks: list[str]
     used_stream: bool
     thinking: str | None = None
+    usage: dict[str, Any] | None = None
+    attempts: int = 1
 
 
 @dataclass(frozen=True)
 class StreamingLlmAttempt:
-    """Streaming LLM attempt with semantic deltas emitted during iteration."""
+    """Streaming LLM attempt with semantic deltas emitted during iteration.
+
+    ``attempts`` is always 1 here — ``stream_llm_call`` has no ``retry_policy`` loop of
+    its own (unlike ``run_buffered_llm_call``); kept for API symmetry with
+    ``BufferedLlmAttempt`` so callers can thread ``attempts=`` uniformly either way.
+    """
 
     raw: str
     used_stream: bool
     emitted_text_delta: bool = False
     thinking: str | None = None
+    usage: dict[str, Any] | None = None
+    attempts: int = 1
 
 
 class FinalMessageDeltaExtractor:
@@ -246,6 +278,7 @@ async def stream_llm_call(
             used_stream=False,
             emitted_text_delta=False,
             thinking=result.thinking,
+            usage=result.usage,
         )
         return
 
@@ -321,8 +354,12 @@ async def run_buffered_llm_call(
                         chunks=[],
                         used_stream=False,
                         thinking=raw.thinking,
+                        usage=raw.usage,
+                        attempts=attempt + 1,
                     )
-                return BufferedLlmAttempt(raw=raw, chunks=[], used_stream=False)
+                return BufferedLlmAttempt(
+                    raw=raw, chunks=[], used_stream=False, attempts=attempt + 1
+                )
 
             if isinstance(result, LlmCallResult):
                 return BufferedLlmAttempt(
@@ -330,17 +367,24 @@ async def run_buffered_llm_call(
                     chunks=[result.text],
                     used_stream=False,
                     thinking=result.thinking,
+                    usage=result.usage,
+                    attempts=attempt + 1,
                 )
 
             if isinstance(result, str):
-                return BufferedLlmAttempt(raw=result, chunks=[result], used_stream=True)
+                return BufferedLlmAttempt(
+                    raw=result, chunks=[result], used_stream=True, attempts=attempt + 1
+                )
 
             if hasattr(result, "__aiter__"):
                 chunks: list[str] = []
                 async for chunk in result:
                     chunks.append(chunk)
                 return BufferedLlmAttempt(
-                    raw="".join(chunks), chunks=chunks, used_stream=True
+                    raw="".join(chunks),
+                    chunks=chunks,
+                    used_stream=True,
+                    attempts=attempt + 1,
                 )
 
             raw = await llm_call(lm_messages, prompt, **llm_kwargs)
@@ -350,15 +394,35 @@ async def run_buffered_llm_call(
                     chunks=[],
                     used_stream=False,
                     thinking=raw.thinking,
+                    usage=raw.usage,
+                    attempts=attempt + 1,
                 )
-            return BufferedLlmAttempt(raw=raw, chunks=[], used_stream=False)
+            return BufferedLlmAttempt(
+                raw=raw, chunks=[], used_stream=False, attempts=attempt + 1
+            )
         except ThinLlmError as exc:
             if retry_policy is None or exc.error.kind == "cancelled":
+                raise
+
+            # Этап 25c fix-cycle 1 MINOR: hard cap independent of `retry_policy` — a
+            # misconfigured/buggy injectable policy with no `max_retries` of its own
+            # (e.g. always returns `(True, 0.0)`) must not retry forever.
+            if attempt >= _MAX_RETRY_ATTEMPTS_HARD_CAP:
                 raise
 
             should_retry, delay = retry_policy.should_retry(exc, attempt)
             if not should_retry:
                 raise
+
+            # Fail CLOSED on a non-finite delay (NaN/inf) from a misbehaving policy:
+            # `asyncio.sleep(nan)` never fires (a NaN deadline never compares >= "now" in
+            # the event loop's timer heap) — a silent, CPU-spinning infinite hang, not a
+            # slow retry. Do not retry rather than trust a delay we cannot act on safely.
+            if not math.isfinite(delay):
+                raise
+            # A negative delay is a "sleep 0" bug in the policy, not "never retry" —
+            # clamp instead of failing closed.
+            delay = max(delay, 0.0)
 
             logger.info(
                 "Retry attempt %d, delay %.1fs during buffered stream: %s",
@@ -413,6 +477,25 @@ async def default_llm_call(
     if config.thinking is not None and resolved.sdk_type == "anthropic":
         use_stream = False  # thinking API is non-streaming
         kwargs["_thinking_config"] = config.thinking
+
+    # Stage 2 (context-engineering-manus-parity): prompt caching (cache_control
+    # breakpoints, Hermes system_and_3 recipe) is Anthropic-native only. Opt-in via
+    # RuntimeConfig.native_config["prompt_caching_enabled"] (generic passthrough —
+    # see agent/runtime_wiring.py's native_config=dict(agent_config.native_config)).
+    # Absent/False (default) never adds the kwarg at all, so the request shape stays
+    # byte-identical to pre-Stage-2 behaviour; every other provider is a hard no-op
+    # regardless of the flag (the kwarg is simply never forwarded).
+    if resolved.sdk_type == "anthropic" and config.native_config.get(
+        "prompt_caching_enabled", False
+    ):
+        kwargs["_prompt_caching_enabled"] = True
+        # Fix-cycle 1 (MAJOR-4): TTL 5m (default) / 1h, threaded the same way as the
+        # enabled flag — RuntimeConfig.native_config["prompt_caching_ttl"]. An
+        # invalid/absent value falls back to "5m" (AnthropicAdapter's own default),
+        # never raises here.
+        kwargs["_prompt_caching_ttl"] = config.native_config.get(
+            "prompt_caching_ttl", "5m"
+        )
 
     logger.info(
         "LLM запрос: model=%s, provider=%s, sdk=%s, stream=%s",

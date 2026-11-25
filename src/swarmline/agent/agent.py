@@ -19,11 +19,18 @@ from swarmline.agent.runtime_dispatch import (
     run_portable_runtime,
     stream_claude_one_shot,
 )
+from swarmline.domain_types import ContentBlock, TextBlock
 from swarmline.runtime.types import Message
 
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
+
+
+def _blocks_kwargs(prompt_blocks: list[ContentBlock] | None) -> dict[str, Any]:
+    """``{"prompt_blocks": [...]}`` only when there are blocks: without them every internal
+    call keeps its pre-``prompt_blocks`` signature (subclasses/test doubles keep working)."""
+    return {"prompt_blocks": list(prompt_blocks)} if prompt_blocks else {}
 
 
 class Agent:
@@ -68,6 +75,7 @@ class Agent:
         prompt: str,
         *,
         messages: list[Message] | None = None,
+        prompt_blocks: list[ContentBlock] | None = None,
     ) -> Result:
         """One-shot request -> Result.
 
@@ -79,8 +87,15 @@ class Agent:
             Optional conversation history to prepend before the current prompt.
             Each message is a ``Message(role, content, ...)``.
             If None or empty, behaves as a standalone one-shot query.
+        prompt_blocks:
+            Optional extra content blocks (e.g. ``ImageBlock``) of the CURRENT user
+            message only: it becomes ``content_blocks=[TextBlock(prompt), *prompt_blocks]``
+            while ``content`` stays the plain prompt. History messages never get blocks.
+            Portable runtimes only; the Claude SDK path drops them with a warning.
         """
-        return await self._query_with_config(prompt, self._config, messages=messages)
+        return await self._query_with_config(
+            prompt, self._config, messages=messages, **_blocks_kwargs(prompt_blocks)
+        )
 
     async def _query_with_config(
         self,
@@ -88,6 +103,7 @@ class Agent:
         config: AgentConfig,
         *,
         messages: list[Message] | None = None,
+        prompt_blocks: list[ContentBlock] | None = None,
     ) -> Result:
         """One-shot request -> Result.
 
@@ -104,10 +120,13 @@ class Agent:
         )
 
         # 2. Execute + collect
+        blocks = _blocks_kwargs(prompt_blocks)
         stream = (
-            self._execute_stream(effective_prompt, messages=messages)
+            self._execute_stream(effective_prompt, messages=messages, **blocks)
             if config is self._config
-            else self._execute_stream(effective_prompt, config, messages=messages)
+            else self._execute_stream(
+                effective_prompt, config, messages=messages, **blocks
+            )
         )
         collected = await collect_stream_result(stream)
         result_payload = dict(collected)
@@ -205,12 +224,37 @@ class Agent:
             f"Raw text: {result.text[:200]}"
         )
 
-    async def stream(self, prompt: str) -> AsyncIterator[Any]:
-        async for event in self._stream_with_config(prompt, self._config):
+    async def stream(
+        self,
+        prompt: str,
+        *,
+        messages: list[Message] | None = None,
+        prompt_blocks: list[ContentBlock] | None = None,
+    ) -> AsyncIterator[Any]:
+        """Streaming request -> AsyncIterator[StreamEvent].
+
+        Parameters
+        ----------
+        prompt:
+            The user prompt.
+        messages:
+            Optional conversation history to prepend before the current prompt.
+            Mirrors the ``messages`` parameter on ``query()``.  Default None (no history).
+        prompt_blocks:
+            Extra content blocks of the current user message; see ``query()``.
+        """
+        async for event in self._stream_with_config(
+            prompt, self._config, messages=messages, **_blocks_kwargs(prompt_blocks)
+        ):
             yield event
 
     async def _stream_with_config(
-        self, prompt: str, config: AgentConfig
+        self,
+        prompt: str,
+        config: AgentConfig,
+        *,
+        messages: list[Message] | None = None,
+        prompt_blocks: list[ContentBlock] | None = None,
     ) -> AsyncIterator[Any]:
         """Streaming request -> AsyncIterator[StreamEvent].
 
@@ -222,10 +266,13 @@ class Agent:
             config,
         )
 
+        blocks = _blocks_kwargs(prompt_blocks)
         stream = (
-            self._execute_stream(effective_prompt)
+            self._execute_stream(effective_prompt, messages=messages, **blocks)
             if config is self._config
-            else self._execute_stream(effective_prompt, config)
+            else self._execute_stream(
+                effective_prompt, config, messages=messages, **blocks
+            )
         )
         async for event in stream:
             yield event
@@ -259,6 +306,7 @@ class Agent:
         config: AgentConfig | None = None,
         *,
         messages: list[Message] | None = None,
+        prompt_blocks: list[ContentBlock] | None = None,
     ) -> AsyncIterator[Any]:
         """Execute the prompt via the selected runtime.
 
@@ -267,16 +315,24 @@ class Agent:
         - thin/deepagents → RuntimeFactory → AgentRuntime.run()
         """
         effective_config = config or self._config
+
+        def _claude_sdk() -> AsyncIterator[Any]:
+            if prompt_blocks:
+                logger.warning(
+                    "prompt_blocks dropped: the claude_sdk runtime takes a text prompt only (%d block(s))",
+                    len(prompt_blocks),
+                )
+            return self._execute_claude_sdk(prompt, effective_config, messages=messages)
+
         async for event in dispatch_runtime(
             effective_config.runtime,
-            lambda: self._execute_claude_sdk(
-                prompt, effective_config, messages=messages
-            ),
+            _claude_sdk,
             lambda runtime_name: self._execute_agent_runtime(
                 prompt,
                 runtime_name,
                 effective_config,
                 messages=messages,
+                **_blocks_kwargs(prompt_blocks),
             ),
         ):
             yield event
@@ -310,6 +366,7 @@ class Agent:
         config: AgentConfig | None = None,
         *,
         messages: list[Message] | None = None,
+        prompt_blocks: list[ContentBlock] | None = None,
     ) -> AsyncIterator[Any]:
         """Execute via AgentRuntime (thin/deepagents)."""
         from swarmline.runtime.types import Message as RuntimeMessage
@@ -320,7 +377,16 @@ class Agent:
             api_messages.extend(
                 RuntimeMessage(role=m.role, content=m.content) for m in messages
             )
-        api_messages.append(RuntimeMessage(role="user", content=prompt))
+        if prompt_blocks:
+            api_messages.append(
+                RuntimeMessage(
+                    role="user",
+                    content=prompt,
+                    content_blocks=[TextBlock(text=prompt), *prompt_blocks],
+                )
+            )
+        else:
+            api_messages.append(RuntimeMessage(role="user", content=prompt))
         async for event in run_portable_runtime(
             agent_config=effective_config,
             runtime_name=runtime_name,

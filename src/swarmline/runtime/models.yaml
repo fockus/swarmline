@@ -21,10 +21,17 @@ providers:
     claude-sonnet-4-20250514:
       aliases: [sonnet, sonnet-4, claude-sonnet]
       description: "Быстрая и дешёвая модель для большинства задач"
+      # Per-model settings (RCA Task 2): optional edit_format, weak/editor model tier.
+      edit_format: "diff"
+      weak_model: "claude-haiku-3-20250307"
+      editor_model: "claude-opus-4-20250514"
+      use_repo_map: true
 
     claude-opus-4-20250514:
       aliases: [opus, opus-4, claude-opus]
       description: "Мощная модель для сложных задач"
+      edit_format: "whole"
+      use_repo_map: true
 
     claude-haiku-3-20250307:
       aliases: [haiku, haiku-3, claude-haiku]
@@ -68,3 +75,120 @@ providers:
     deepseek-reasoner:
       aliases: [deepseek-r1, ds-r1, r1]
       description: "DeepSeek R1 reasoning модель"
+
+# ---------------------------------------------------------------------------
+# Model profiles (CE-21): physical limits used to size context compaction.
+#
+#   profiles:
+#     <model_id without routing prefix>:     # e.g. moonshotai/kimi-k2.5, not openrouter:...
+#       context_window: <int>                # total tokens (prompt + output)
+#       max_output_tokens: <int>             # 0 < max_output_tokens < context_window
+#       prompt_cache: explicit|automatic|none
+#       vision: true                         # optional; accepts image input (default false)
+#
+# Kept apart from `providers:` on purpose: an OpenRouter-style id listed under a
+# provider would change how get_provider()/resolve_provider() route that string.
+# Every model under `providers:` must have a profile (pinned by a unit test).
+# A model without a profile is "unknown": callers fall back to a conservative
+# default instead of the default model's profile.
+# Sources: provider docs for native ids; for OpenRouter-style ids (vendor/model)
+# the OpenRouter catalog, GET https://openrouter.ai/api/v1/models, top_provider
+# context_length / max_completion_tokens, fetched 2026-09-27. Lookups strip a
+# routing prefix (openrouter:) and a variant suffix (:free, :nitro, ...) first.
+# `vision: true` follows the same catalog (architecture.input_modalities contains
+# "image", fetched 2026-09-28) or the provider's docs for native ids (every Claude
+# model accepts images); a model without the key is treated as text-only.
+# ---------------------------------------------------------------------------
+profiles:
+  # Anthropic models overview (docs.anthropic.com/en/docs/about-claude/models).
+  claude-sonnet-4-20250514:
+    context_window: 200000
+    max_output_tokens: 64000
+    prompt_cache: explicit
+    vision: true
+  claude-opus-4-20250514:
+    context_window: 200000
+    max_output_tokens: 32000
+    prompt_cache: explicit
+    vision: true
+  claude-haiku-3-20250307:
+    context_window: 200000
+    max_output_tokens: 4096
+    prompt_cache: explicit
+    vision: true
+  # Claude Opus 4.5. OpenRouter catalog id is `anthropic/claude-opus-4.5` (200000 / 64000);
+  # `anthropic/claude-opus-4-5` is taskloom's max-tier default spelling of the same model.
+  anthropic/claude-opus-4.5: &claude_opus_4_5
+    context_window: 200000
+    max_output_tokens: 64000
+    prompt_cache: explicit
+    vision: true
+  anthropic/claude-opus-4-5: *claude_opus_4_5
+
+  # OpenAI model cards (platform.openai.com/docs/models); prompt caching is automatic.
+  gpt-4o:
+    context_window: 128000
+    max_output_tokens: 16384
+    prompt_cache: automatic
+    vision: true
+  gpt-4o-mini:
+    context_window: 128000
+    max_output_tokens: 16384
+    prompt_cache: automatic
+    vision: true
+  openai/gpt-4o-mini:
+    context_window: 128000
+    max_output_tokens: 16384
+    prompt_cache: automatic
+    vision: true
+  o3:
+    context_window: 200000
+    max_output_tokens: 100000
+    prompt_cache: automatic
+    vision: true
+  o3-mini:
+    context_window: 200000
+    max_output_tokens: 100000
+    prompt_cache: automatic
+  codex-mini:
+    context_window: 200000
+    max_output_tokens: 100000
+    prompt_cache: automatic
+
+  # Google Gemini model cards (ai.google.dev/gemini-api/docs/models); implicit caching.
+  gemini-2.5-pro:
+    context_window: 1048576
+    max_output_tokens: 65536
+    prompt_cache: automatic
+    vision: true
+  gemini-2.5-flash:
+    context_window: 1048576
+    max_output_tokens: 65536
+    prompt_cache: automatic
+    vision: true
+
+  # DeepSeek API docs (api-docs.deepseek.com/quick_start/pricing); context caching on disk is automatic.
+  deepseek-chat:
+    context_window: 128000
+    max_output_tokens: 8192
+    prompt_cache: automatic
+  deepseek-reasoner:
+    context_window: 128000
+    max_output_tokens: 64000
+    prompt_cache: automatic
+  # Dev/canary model via OpenRouter (taskloom AGR-071). OpenRouter catalog: model
+  # context_length 1048576, top_provider 1040000 / 384000 -- the routed provider's
+  # limit is what a request actually gets. Implicit caching only when routed to
+  # the native DeepSeek provider.
+  deepseek/deepseek-v4.1-flash:
+    context_window: 1040000
+    max_output_tokens: 384000
+    prompt_cache: automatic
+    vision: true
+
+  # Moonshot Kimi K2.5 via OpenRouter. OpenRouter catalog: 262144 / 235929.
+  moonshotai/kimi-k2.5:
+    context_window: 262144
+    max_output_tokens: 235929
+    prompt_cache: automatic
+    vision: true

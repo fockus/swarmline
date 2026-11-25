@@ -5,8 +5,9 @@ Bulk write API is compatible with Claude Code TodoRead/TodoWrite.
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
+from swarmline.todo.ops import TodoEditResult
 from swarmline.todo.types import TodoItem
 
 
@@ -34,5 +35,22 @@ class TodoProvider(Protocol):
 
         Raises:
             ValueError: max_todos limit exceeded.
+        """
+        ...
+
+
+@runtime_checkable
+class TodoEditProvider(Protocol):
+    """Point edits of a todo list (separate from ``TodoProvider`` - ISP).
+
+    One method: apply an atomic batch of ``add``/``update``/``remove`` operations
+    (see ``swarmline.todo.ops.apply_todo_ops``) and return the resulting list.
+    """
+
+    async def apply_edit(self, ops: list[dict[str, Any]]) -> TodoEditResult:
+        """Apply ``ops`` all-or-nothing.
+
+        Raises:
+            TodoEditError: an operation is invalid; nothing was changed.
         """
         ...

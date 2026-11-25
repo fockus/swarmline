@@ -21,7 +21,7 @@ Swarmline provides 6 independent capabilities. Each is enabled with a separate t
 | **Web** | `web_provider=` | web_fetch, web_search | `swarmline[web]` |
 | **Todo** | `todo_provider=` | todo_read, todo_write | -- |
 | **Memory Bank** | `memory_bank_provider=` | memory_read, memory_write, memory_append, memory_list, memory_delete | -- |
-| **Planning** | `plan_manager=` | plan_create, plan_status, plan_execute | -- |
+| **Planning** | `plan_manager=` | plan_create, plan_status | -- |
 | **Thinking** | `thinking_enabled=True` | thinking | -- |
 
 ---

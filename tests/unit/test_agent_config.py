@@ -7,6 +7,7 @@ import dataclasses
 import pytest
 from swarmline.agent import Agent
 from swarmline.agent.config import AgentConfig
+from swarmline.retry import ExponentialBackoff
 from swarmline.runtime.capabilities import CapabilityRequirements, RuntimeCapabilities
 from swarmline.runtime.types import resolve_model_name
 
@@ -40,6 +41,35 @@ class TestAgentConfigDefaults:
         assert cfg.native_config == {}
         assert cfg.runtime_options is None
         assert cfg.setting_sources == ()
+        assert cfg.retry_policy is None
+        assert cfg.can_use_tool is None
+        assert cfg.native_agents is None
+        assert cfg.resume_session_id is None
+        assert cfg.fork_session is False
+
+
+class TestAgentConfigClaudeNativeFields:
+    """New claude_sdk-native fields: can_use_tool / native_agents / resume."""
+
+    def test_accepts_native_fields(self) -> None:
+        async def cb(tool_name: str, input_data: dict, context: object) -> dict:
+            _ = (tool_name, input_data, context)
+            return {"behavior": "allow"}
+
+        agents = {"helper": {"description": "d", "prompt": "p"}}
+        cfg = AgentConfig(
+            system_prompt="test",
+            runtime="claude_sdk",
+            permission_mode="default",
+            can_use_tool=cb,
+            native_agents=agents,
+            resume_session_id="sess-42",
+            fork_session=True,
+        )
+        assert cfg.can_use_tool is cb
+        assert cfg.native_agents == agents
+        assert cfg.resume_session_id == "sess-42"
+        assert cfg.fork_session is True
 
 
 class TestAgentConfigFull:
@@ -71,6 +101,7 @@ class TestAgentConfigFull:
             native_config={"deepagents": {"use_native_todo": True}},
             runtime_options={"kind": "custom"},
             setting_sources=("project", "user"),
+            retry_policy=ExponentialBackoff(max_retries=5),
         )
         assert cfg.model == "opus"
         assert cfg.runtime == "claude_sdk"
@@ -89,6 +120,7 @@ class TestAgentConfigFull:
         assert cfg.native_config == {"deepagents": {"use_native_todo": True}}
         assert cfg.runtime_options == {"kind": "custom"}
         assert cfg.setting_sources == ("project", "user")
+        assert cfg.retry_policy == ExponentialBackoff(max_retries=5)
 
 
 class TestAgentConfigImmutable:
@@ -118,6 +150,21 @@ class TestAgentConfigValidation:
         """Tolko probely -> ValueError."""
         with pytest.raises(ValueError, match="system_prompt"):
             AgentConfig(system_prompt="   ")
+
+    def test_empty_resume_session_id_raises(self) -> None:
+        """Empty resume_session_id -> ValueError."""
+        with pytest.raises(ValueError, match="resume_session_id"):
+            AgentConfig(system_prompt="test", resume_session_id="")
+
+    def test_whitespace_resume_session_id_raises(self) -> None:
+        """Whitespace-only resume_session_id -> ValueError."""
+        with pytest.raises(ValueError, match="resume_session_id"):
+            AgentConfig(system_prompt="test", resume_session_id="   ")
+
+    def test_non_callable_can_use_tool_raises(self) -> None:
+        """can_use_tool must be callable."""
+        with pytest.raises(ValueError, match="can_use_tool"):
+            AgentConfig(system_prompt="test", can_use_tool="not-a-callable")
 
     def test_invalid_runtime_is_allowed_at_dto_layer(self) -> None:
         """Runtime validation now happens at runtime/bootstrap boundary."""

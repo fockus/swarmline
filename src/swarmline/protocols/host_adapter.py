@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
-from swarmline.multi_agent.graph_types import LifecycleMode
+from swarmline.domain_types import LifecycleMode
 
 
 @dataclass(frozen=True)

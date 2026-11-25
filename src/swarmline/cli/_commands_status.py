@@ -9,7 +9,15 @@ import click
 
 from swarmline.cli._app import _print_result
 
-PUBLIC_RUNTIMES = ["thin", "claude_sdk", "deepagents", "cli", "openai_agents", "pi_sdk"]
+PUBLIC_RUNTIMES = [
+    "thin",
+    "claude_sdk",
+    "deepagents",
+    "cli",
+    "openai_agents",
+    "pi_sdk",
+    "temporal",
+]
 INTERNAL_MODES = ["headless"]
 
 

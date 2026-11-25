@@ -11,10 +11,23 @@ from swarmline.multi_agent.graph_types import AgentCapabilities
 
 @dataclass(frozen=True)
 class GraphGovernanceConfig:
-    """Global limits and defaults for the agent graph."""
+    """Global limits and defaults for the agent graph.
+
+    `max_depth` default (ADR-015, `.memory-bank/BACKLOG.md`): the global
+    ThinRuntime spawn-depth ceilings — this config and
+    `runtime/thin/subagent_tool.py::SubagentToolConfig.max_depth` — are
+    unified at 3, per `docs/VISION.md` R12 ("оркестратор→саб→саб→саб, 3
+    уровня"). This config previously defaulted to 5;
+    `SubagentToolConfig.max_depth` already defaulted to 3.
+
+    `protocols/host_adapter.py::AgentAuthority.max_depth` (default 1) is a
+    SEPARATE, intentionally stricter per-adapter authority axis (agent SDK /
+    codex adapters) — it is NOT part of this unification and is left
+    untouched by ADR-015.
+    """
 
     max_agents: int = 50
-    max_depth: int = 5
+    max_depth: int = 3
     default_capabilities: AgentCapabilities = field(default_factory=AgentCapabilities)
     allow_dynamic_hiring: bool = True
     allow_dynamic_delegation: bool = True

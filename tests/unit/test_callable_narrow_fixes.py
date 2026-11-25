@@ -28,8 +28,28 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 # Sourced directly from `ty check src/swarmline/` after Stage 2 (baseline=36).
 EXPECTED_FIXES: list[tuple[str, int, str, str, str]] = [
     (
+        # Line shifted 167 -> 408 -> 449 -> 492 -> 491 -> 553 -> 593 -> 689
+        # -> 738 -> 758 -> 773 -> 790 -> 804 (Stage 6, context-engineering-
+        # manus-parity: Ступень A / threshold-floor / anti-thrashing /
+        # Ступень C / pair-safe-boundary hardening / compression_history
+        # checkpoint read helper / codex R1 fix-cycle [1 CRITICAL] native
+        # tool-groups + [2 MAJOR] Tier1 merge-runs + [5 MAJOR] position-
+        # preserving reassembly / codex R2 fix-cycle [1]
+        # _find_contiguous_tool_units + [3b] summary validation + [5]
+        # _merge_adjacent_system_messages / codex R3 fix-cycle [3]
+        # word-count validator + [4] metadata-preserving merge + [1]
+        # over-group intentionality comment / codex R4 fix-cycle [4]
+        # redesigned _merge_adjacent_system_messages to never merge the
+        # summary into a neighbor / codex R5 fix-cycle preserved-tail
+        # prior-summary search in _split_for_summarization / codex R6
+        # fix-cycle non_compactable guard on tail-removal + symmetric
+        # region-path guard (R6b), all above _summarize_oldest, pushed the
+        # ignore-comment down further; Sprint 1ce CE-15/19 moved the
+        # summary sections/savings arithmetic into compaction_gate -> 796;
+        # its verifier fixes (cooldown regrowth, artifact-aware merge) -> 811;
+        # Sprint 1ce CE-9 per-round fields + target_tokens/last_tier -> 836).
         "src/swarmline/compaction.py",
-        167,
+        849,
         "# ty: ignore[call-non-callable]",
         "Optional Callable",
         "Optional Callable hook (replaces dead # type: ignore[misc])",

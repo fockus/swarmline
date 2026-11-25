@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import types
 from dataclasses import dataclass
@@ -10,9 +11,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from swarmline.runtime.openai_agents.event_mapper import map_run_error, map_stream_event
-from swarmline.runtime.openai_agents.types import OpenAIAgentsConfig
-from swarmline.runtime.types import Message
+_AGENTS_AVAILABLE = importlib.util.find_spec("agents") is not None
+
+from swarmline.runtime.openai_agents.event_mapper import (  # noqa: E402
+    StreamEventMapper,
+    map_run_error,
+    map_stream_event,
+)
+from swarmline.runtime.openai_agents.types import OpenAIAgentsConfig  # noqa: E402
+from swarmline.runtime.types import Message  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +113,55 @@ class TestEventMapper:
         assert result is not None
         assert result.type == "tool_call_finished"
         assert result.data["ok"] is True
+
+    def test_tool_output_carries_tool_name_via_stateful_mapper(self) -> None:
+        """tool_call_finished carries the tool name recorded at tool_called."""
+        mapper = StreamEventMapper()
+        called = FakeRunItemEvent(
+            name="tool_called",
+            item=FakeItem(raw_item=FakeRawItem(name="calc", call_id="c7")),
+        )
+        finished = FakeRunItemEvent(
+            name="tool_output",
+            item=FakeItem(raw_item=FakeRawItem(output="42", call_id="c7")),
+        )
+
+        mapper.map_event(called)
+        result = mapper.map_event(finished)
+        assert result is not None
+        assert result.type == "tool_call_finished"
+        assert result.data["name"] == "calc"
+        assert result.data["correlation_id"] == "c7"
+        assert result.data["ok"] is True
+
+    def test_tool_output_error_contract_sets_ok_false(self) -> None:
+        """Bridge error JSON ({"error": ...}) surfaces as ok=False."""
+        raw = FakeRawItem(output='{"error": "boom"}', call_id="c1")
+        event = FakeRunItemEvent(name="tool_output", item=FakeItem(raw_item=raw))
+
+        result = map_stream_event(event)
+        assert result is not None
+        assert result.type == "tool_call_finished"
+        assert result.data["ok"] is False
+
+    def test_tool_output_plain_json_is_not_error(self) -> None:
+        raw = FakeRawItem(output='{"result": 4}', call_id="c1")
+        event = FakeRunItemEvent(name="tool_output", item=FakeItem(raw_item=raw))
+
+        result = map_stream_event(event)
+        assert result is not None
+        assert result.data["ok"] is True
+
+    def test_raw_reasoning_delta_maps_to_thinking_delta(self) -> None:
+        data = FakeRawDelta(
+            type="response.reasoning_summary_text.delta", delta="Думаю..."
+        )
+        event = FakeRawResponseEvent(data=data)
+
+        result = map_stream_event(event)
+        assert result is not None
+        assert result.type == "thinking_delta"
+        assert result.data["text"] == "Думаю..."
 
     def test_handoff_requested(self) -> None:
         """handoff_requested maps to status."""
@@ -215,7 +271,11 @@ class TestOpenAIAgentsRegistration:
         caps = get_runtime_capabilities("openai_agents")
         assert caps.runtime_name == "openai_agents"
         assert caps.tier == "full"
-        assert caps.supports_mcp is True
+        assert caps.level("mcp") == "native"
+        assert caps.level("interrupt") == "emulated"
+        assert caps.level("provider_override") == "native"
+        assert caps.level("structured_output") == "native"
+        assert caps.level("usage_reporting") == "native"
 
     def test_registry_has_factory(self) -> None:
         """openai_agents factory is in the default registry."""
@@ -360,6 +420,10 @@ class TestOpenAIAgentsRuntime:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    not _AGENTS_AVAILABLE,
+    reason="openai-agents not installed (pip install swarmline[openai-agents])",
+)
 class TestToolBridge:
     """Tests for tool_bridge.py."""
 
@@ -573,12 +637,617 @@ class TestOpenAIAgentsFactory:
         assert runtime is fake_runtime
         assert fake_cls.call_args.kwargs["tool_executor"] is not None
 
-    def test_factory_rejects_mcp_servers_until_bridge_is_implemented(self) -> None:
+    def test_factory_passes_mcp_servers_to_runtime(self) -> None:
+        """B2: mcp_servers reach OpenAIAgentsRuntime instead of raising."""
         from swarmline.runtime.registry import _create_openai_agents
         from swarmline.runtime.types import RuntimeConfig
 
-        with pytest.raises(ValueError, match="mcp_servers"):
-            _create_openai_agents(
-                RuntimeConfig(runtime_name="openai_agents"),
-                mcp_servers={"srv": "https://mcp.test"},
-            )
+        runtime = _create_openai_agents(
+            RuntimeConfig(runtime_name="openai_agents"),
+            mcp_servers={"srv": "https://mcp.test"},
+        )
+        assert runtime._mcp_servers == {"srv": "https://mcp.test"}
+
+    def test_wiring_treats_openai_agents_as_portable_mcp_runtime(self) -> None:
+        """B2: runtime_wiring passes mcp_servers through the portable path."""
+        from swarmline.agent.runtime_wiring import (
+            _FAIL_FAST_MCP_RUNTIMES,
+            _PORTABLE_MCP_RUNTIMES,
+        )
+
+        assert "openai_agents" in _PORTABLE_MCP_RUNTIMES
+        assert "openai_agents" not in _FAIL_FAST_MCP_RUNTIMES
+
+
+# ---------------------------------------------------------------------------
+# Fake agents SDK for run() tests (B1/B2/D1/D2)
+# ---------------------------------------------------------------------------
+
+
+class _FakeAgent:
+    def __init__(self, **kwargs: Any) -> None:
+        self.kwargs = kwargs
+
+
+class _FakeChatModel:
+    """Stand-in for agents.OpenAIChatCompletionsModel."""
+
+    def __init__(self, model: str, openai_client: Any) -> None:
+        self.model = model
+        self.openai_client = openai_client
+
+
+class _FakeStreamResult:
+    def __init__(
+        self,
+        events: list[Any] | None = None,
+        final_output: Any = None,
+        usage: Any = None,
+    ) -> None:
+        self._events = list(events or [])
+        self.final_output = final_output
+        self.context_wrapper = types.SimpleNamespace(usage=usage)
+
+    async def stream_events(self):
+        for event in self._events:
+            yield event
+
+
+class _FakeModelSettings:
+    """Stand-in for agents.ModelSettings (finding 3: thinking -> reasoning)."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.kwargs = kwargs
+
+    def __getattr__(self, name: str) -> Any:
+        return self.kwargs.get(name)
+
+
+def _make_fake_agents_module(
+    result: _FakeStreamResult,
+    runner_calls: list[dict[str, Any]],
+) -> types.SimpleNamespace:
+    class _Runner:
+        @staticmethod
+        def run_streamed(**kwargs: Any) -> _FakeStreamResult:
+            runner_calls.append(kwargs)
+            return result
+
+    return types.SimpleNamespace(
+        Agent=_FakeAgent,
+        Runner=_Runner,
+        OpenAIChatCompletionsModel=_FakeChatModel,
+        ModelSettings=_FakeModelSettings,
+    )
+
+
+async def _collect_events(rt: Any, **overrides: Any) -> list[Any]:
+    kwargs: dict[str, Any] = {
+        "messages": [Message(role="user", content="hello")],
+        "system_prompt": "test",
+        "active_tools": [],
+    }
+    kwargs.update(overrides)
+    return [event async for event in rt.run(**kwargs)]
+
+
+# ---------------------------------------------------------------------------
+# B1: provider override tests
+# ---------------------------------------------------------------------------
+
+
+class TestProviderOverride:
+    """RuntimeConfig.base_url/api_key and provider:model slugs are honored."""
+
+    @pytest.mark.asyncio
+    async def test_base_url_and_api_key_wrap_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents",
+            model="gpt-4o-mini",
+            base_url="https://proxy.test/v1",
+            api_key="sk-test-override",
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        agent = runner_calls[0]["starting_agent"]
+        model = agent.kwargs["model"]
+        assert isinstance(model, _FakeChatModel)
+        assert model.model == "gpt-4o-mini"
+        assert model.openai_client.api_key == "sk-test-override"
+        assert str(model.openai_client.base_url).startswith("https://proxy.test/v1")
+
+    @pytest.mark.asyncio
+    async def test_provider_slug_resolves_base_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents",
+            model="openrouter:qwen/qwen-2.5-72b-instruct",
+            api_key="sk-or-test",
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        model = runner_calls[0]["starting_agent"].kwargs["model"]
+        assert isinstance(model, _FakeChatModel)
+        assert model.model == "qwen/qwen-2.5-72b-instruct"
+        assert "openrouter.ai" in str(model.openai_client.base_url)
+        assert model.openai_client.api_key == "sk-or-test"
+
+    @pytest.mark.asyncio
+    async def test_provider_slug_uses_env_api_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-deepseek-env")
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents",
+            model="deepseek:deepseek-chat",
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        model = runner_calls[0]["starting_agent"].kwargs["model"]
+        assert model.openai_client.api_key == "sk-deepseek-env"
+        assert "deepseek.com" in str(model.openai_client.base_url)
+
+    @pytest.mark.asyncio
+    async def test_anthropic_slug_yields_capability_unsupported(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents",
+            model="anthropic:claude-sonnet-4-20250514",
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert [event.type for event in events] == ["error"]
+        assert events[0].data["kind"] == "capability_unsupported"
+        assert "anthropic" in events[0].data["message"]
+        assert runner_calls == []
+
+    @pytest.mark.asyncio
+    async def test_plain_model_without_override_passes_string(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(runtime_name="openai_agents", model="gpt-4.1")
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        assert runner_calls[0]["starting_agent"].kwargs["model"] == "gpt-4.1"
+
+
+# ---------------------------------------------------------------------------
+# B2: generic MCP bridge tests
+# ---------------------------------------------------------------------------
+
+
+class _FakeMcpServer:
+    """Base fake for agents.mcp server classes with connect/cleanup tracking."""
+
+    lifecycle: list[str] = []
+
+    def __init__(self, name: str, params: Any, **kwargs: Any) -> None:
+        self.name = name
+        self.params = params
+        self.kwargs = kwargs
+
+    async def connect(self) -> None:
+        type(self).lifecycle.append(f"connect:{self.name}")
+
+    async def cleanup(self) -> None:
+        type(self).lifecycle.append(f"cleanup:{self.name}")
+
+
+def _make_fake_mcp_module() -> tuple[types.SimpleNamespace, list[str]]:
+    lifecycle: list[str] = []
+
+    class _Stdio(_FakeMcpServer):
+        pass
+
+    class _Sse(_FakeMcpServer):
+        pass
+
+    class _Http(_FakeMcpServer):
+        pass
+
+    for cls in (_Stdio, _Sse, _Http):
+        cls.lifecycle = lifecycle
+
+    module = types.SimpleNamespace(
+        MCPServerStdio=_Stdio,
+        MCPServerSse=_Sse,
+        MCPServerStreamableHttp=_Http,
+    )
+    return module, lifecycle
+
+
+class TestGenericMcp:
+    """Swarmline MCP specs map to SDK MCP servers with connect/cleanup lifecycle."""
+
+    @pytest.mark.asyncio
+    async def test_stdio_spec_maps_to_mcp_server_stdio(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        fake_mcp, lifecycle = _make_fake_mcp_module()
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+        monkeypatch.setitem(sys.modules, "agents.mcp", fake_mcp)
+
+        rt = OpenAIAgentsRuntime(
+            mcp_servers={
+                "files": {"command": "npx", "args": ["-y", "srv"], "env": {"A": "B"}}
+            }
+        )
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        servers = runner_calls[0]["starting_agent"].kwargs["mcp_servers"]
+        assert len(servers) == 1
+        assert isinstance(servers[0], fake_mcp.MCPServerStdio)
+        assert servers[0].params == {
+            "command": "npx",
+            "args": ["-y", "srv"],
+            "env": {"A": "B"},
+        }
+        assert lifecycle == ["connect:files", "cleanup:files"]
+
+    @pytest.mark.asyncio
+    async def test_http_sse_and_bare_url_specs(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        fake_mcp, _lifecycle = _make_fake_mcp_module()
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+        monkeypatch.setitem(sys.modules, "agents.mcp", fake_mcp)
+
+        rt = OpenAIAgentsRuntime(
+            mcp_servers={
+                "http_srv": {"type": "http", "url": "https://mcp.test/http"},
+                "sse_srv": {"type": "sse", "url": "https://mcp.test/sse"},
+                "bare": "https://mcp.test/bare",
+            }
+        )
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        servers = runner_calls[0]["starting_agent"].kwargs["mcp_servers"]
+        by_name = {server.name: server for server in servers}
+        assert isinstance(by_name["http_srv"], fake_mcp.MCPServerStreamableHttp)
+        assert isinstance(by_name["sse_srv"], fake_mcp.MCPServerSse)
+        assert isinstance(by_name["bare"], fake_mcp.MCPServerStreamableHttp)
+        assert by_name["sse_srv"].params == {"url": "https://mcp.test/sse"}
+
+    @pytest.mark.asyncio
+    async def test_unsafe_insecure_url_yields_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        fake_mcp, _lifecycle = _make_fake_mcp_module()
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+        monkeypatch.setitem(sys.modules, "agents.mcp", fake_mcp)
+
+        rt = OpenAIAgentsRuntime(mcp_servers={"bad": {"url": "http://mcp.test"}})
+        events = await _collect_events(rt)
+
+        assert [event.type for event in events] == ["error"]
+        assert "Unsafe MCP server URL" in events[0].data["message"]
+        assert runner_calls == []
+
+    @pytest.mark.asyncio
+    async def test_spec_without_command_or_url_yields_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        fake_mcp, _lifecycle = _make_fake_mcp_module()
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+        monkeypatch.setitem(sys.modules, "agents.mcp", fake_mcp)
+
+        rt = OpenAIAgentsRuntime(mcp_servers={"empty": {}})
+        events = await _collect_events(rt)
+
+        assert [event.type for event in events] == ["error"]
+        assert "must define 'command'" in events[0].data["message"]
+        assert runner_calls == []
+
+    @pytest.mark.asyncio
+    async def test_connect_failure_yields_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        fake_mcp, _lifecycle = _make_fake_mcp_module()
+
+        async def _boom(self: Any) -> None:
+            raise RuntimeError("connection refused")
+
+        fake_mcp.MCPServerStreamableHttp.connect = _boom
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+        monkeypatch.setitem(sys.modules, "agents.mcp", fake_mcp)
+
+        rt = OpenAIAgentsRuntime(mcp_servers={"srv": "https://mcp.test"})
+        events = await _collect_events(rt)
+
+        assert [event.type for event in events] == ["error"]
+        assert "Failed to connect MCP server" in events[0].data["message"]
+        assert runner_calls == []
+
+
+# ---------------------------------------------------------------------------
+# D1: structured output tests
+# ---------------------------------------------------------------------------
+
+
+class TestStructuredOutput:
+    """output_type/output_format are honored and structured_output lands in final."""
+
+    @pytest.mark.asyncio
+    async def test_output_type_passed_natively_and_final_output_used(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from pydantic import BaseModel
+
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        class Answer(BaseModel):
+            value: int
+
+        answer = Answer(value=7)
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(
+            _FakeStreamResult(final_output=answer), runner_calls
+        )
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents", model="gpt-4.1", output_type=Answer
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert final.data["structured_output"] is answer
+        assert runner_calls[0]["starting_agent"].kwargs["output_type"] is Answer
+
+    @pytest.mark.asyncio
+    async def test_output_format_falls_back_to_prompt_and_parses_json(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        delta = FakeRawDelta(delta='{"a": 1}')
+        event = FakeRawResponseEvent(data=delta)
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(
+            _FakeStreamResult(events=[event]), runner_calls
+        )
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        schema = {"type": "object", "properties": {"a": {"type": "integer"}}}
+        config = RuntimeConfig(
+            runtime_name="openai_agents", model="gpt-4.1", output_format=schema
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert final.data["structured_output"] == {"a": 1}
+        instructions = runner_calls[0]["starting_agent"].kwargs["instructions"]
+        assert "Structured output" in instructions
+        assert '"properties"' in instructions
+        # output_type must NOT be forced when only a schema dict is given
+        assert "output_type" not in runner_calls[0]["starting_agent"].kwargs
+
+    @pytest.mark.asyncio
+    async def test_output_type_falls_back_to_text_parsing(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from pydantic import BaseModel
+
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        class Answer(BaseModel):
+            value: int
+
+        delta = FakeRawDelta(delta='{"value": 42}')
+        event = FakeRawResponseEvent(data=delta)
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(
+            _FakeStreamResult(events=[event], final_output=None), runner_calls
+        )
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents", model="gpt-4.1", output_type=Answer
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert isinstance(final.data["structured_output"], Answer)
+        assert final.data["structured_output"].value == 42
+
+
+# ---------------------------------------------------------------------------
+# D2: usage reporting tests
+# ---------------------------------------------------------------------------
+
+
+class TestUsageReporting:
+    """context_wrapper.usage populates TurnMetrics and final usage payload."""
+
+    @pytest.mark.asyncio
+    async def test_usage_populates_metrics_and_final_event(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        usage = types.SimpleNamespace(
+            input_tokens=11, output_tokens=7, total_tokens=18, requests=2
+        )
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(
+            _FakeStreamResult(usage=usage), runner_calls
+        )
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(runtime_name="openai_agents", model="gpt-4.1")
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert final.data["usage"] == {
+            "input_tokens": 11,
+            "output_tokens": 7,
+            "total_tokens": 18,
+            "requests": 2,
+        }
+        assert final.data["metrics"]["tokens_in"] == 11
+        assert final.data["metrics"]["tokens_out"] == 7
+        assert final.data["metrics"]["model"] == "gpt-4.1"
+
+    @pytest.mark.asyncio
+    async def test_missing_usage_is_defensive(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(runtime_name="openai_agents", model="gpt-4.1")
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        final = events[-1]
+        assert final.type == "final"
+        assert "usage" not in final.data
+        assert final.data["metrics"]["tokens_in"] == 0
+        assert final.data["metrics"]["tokens_out"] == 0
+
+
+# ---------------------------------------------------------------------------
+# I-098a fix round (finding 3) — RuntimeConfig.thinking -> reasoning effort.
+# Mirrors pi_sdk._thinking_level_from_runtime_config's thresholds.
+# ---------------------------------------------------------------------------
+
+
+class TestThinkingToReasoningEffort:
+    """RuntimeConfig.thinking must reach agent_kwargs as model_settings.reasoning."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("budget_tokens", "expected_effort"),
+        [(1024, "low"), (8000, "medium"), (32000, "high")],
+    )
+    async def test_thinking_budget_maps_to_reasoning_effort(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        budget_tokens: int,
+        expected_effort: str,
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig, ThinkingConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(
+            runtime_name="openai_agents",
+            model="gpt-4.1",
+            thinking=ThinkingConfig(budget_tokens=budget_tokens),
+        )
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        agent_kwargs = runner_calls[0]["starting_agent"].kwargs
+        assert "model_settings" in agent_kwargs
+        model_settings = agent_kwargs["model_settings"]
+        assert model_settings.kwargs["reasoning"].effort == expected_effort
+
+    @pytest.mark.asyncio
+    async def test_no_thinking_omits_model_settings(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from swarmline.runtime.openai_agents.runtime import OpenAIAgentsRuntime
+        from swarmline.runtime.types import RuntimeConfig
+
+        runner_calls: list[dict[str, Any]] = []
+        fake_agents = _make_fake_agents_module(_FakeStreamResult(), runner_calls)
+        monkeypatch.setitem(sys.modules, "agents", fake_agents)
+
+        config = RuntimeConfig(runtime_name="openai_agents", model="gpt-4.1")
+        rt = OpenAIAgentsRuntime(config=config)
+        events = await _collect_events(rt)
+
+        assert events[-1].type == "final"
+        agent_kwargs = runner_calls[0]["starting_agent"].kwargs
+        assert "model_settings" not in agent_kwargs

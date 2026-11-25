@@ -5,15 +5,29 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from swarmline.runtime.thin.mcp_client import (
     McpClient,
+    McpStdioServerSpec,
     parse_mcp_tool_name,
-    resolve_mcp_server_url,
+    resolve_mcp_server_spec,
 )
 from swarmline.runtime.types import ToolSpec
+
+#: claude-agent-sdk-compatible permission callback signature. ``context`` is
+#: accepted for signature parity with ``claude_agent_sdk``'s ``CanUseTool``
+#: (see options_builder.CanUseToolFn / claude_agent_sdk.ToolPermissionContext)
+#: but ThinRuntime has no equivalent native context object, so it is always
+#: invoked with ``None`` here -- callbacks written for the claude_sdk path
+#: already tolerate an opaque/ignored context (see
+#: agent.runtime_dispatch._can_use_tool / _tool_policy_to_sdk_callback).
+#: The return value is duck-typed (dict or object, see ``_permission_fields``
+#: below) so both plain dicts and claude-agent-sdk's
+#: ``PermissionResultAllow``/``PermissionResultDeny`` dataclasses work
+#: unchanged.
+CanUseToolCallback = Callable[[str, dict[str, Any], Any], Awaitable[Any]]
 
 READ_MCP_RESOURCE_SPEC = ToolSpec(
     name="read_mcp_resource",
@@ -39,6 +53,29 @@ if TYPE_CHECKING:
     from swarmline.policy.tool_policy import DefaultToolPolicy
 
 
+def _permission_fields(result: Any) -> tuple[Any, Any, Any]:
+    """Duck-type a claude-agent-sdk-style PermissionResult: a dict
+    (``{"behavior": ..., "message": ..., "updated_input": ...}``) or an
+    object with the same attributes (``claude_agent_sdk.PermissionResultAllow``
+    / ``PermissionResultDeny``). Returns ``(behavior, message, updated_input)``.
+
+    Fail-closed duck-typing: any ``behavior`` other than the literal string
+    ``"allow"`` (missing key/attribute, ``"deny"``, or an unrecognized value)
+    is treated as a deny by the caller -- only an explicit allow proceeds.
+    """
+    if isinstance(result, dict):
+        return (
+            result.get("behavior"),
+            result.get("message"),
+            result.get("updated_input"),
+        )
+    return (
+        getattr(result, "behavior", None),
+        getattr(result, "message", None),
+        getattr(result, "updated_input", None),
+    )
+
+
 class ToolExecutor:
     """Tool Executor implementation."""
 
@@ -50,6 +87,7 @@ class ToolExecutor:
         timeout_seconds: float = 30.0,
         hook_dispatcher: HookDispatcher | None = None,
         tool_policy: DefaultToolPolicy | None = None,
+        can_use_tool: CanUseToolCallback | None = None,
     ) -> None:
         self._local_tools = dict(local_tools or {})
         self._mcp_servers = mcp_servers or {}
@@ -57,6 +95,7 @@ class ToolExecutor:
         self._mcp_client = mcp_client or McpClient(timeout_seconds=timeout_seconds)
         self._hook_dispatcher = hook_dispatcher
         self._tool_policy = tool_policy
+        self._can_use_tool = can_use_tool
 
         # Register read_mcp_resource tool when MCP servers are configured
         if self._mcp_servers and "read_mcp_resource" not in self._local_tools:
@@ -66,8 +105,45 @@ class ToolExecutor:
         """Close resources owned by this executor."""
         await self._mcp_client.aclose()
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> str:
-        """Execute."""
+    async def execute(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+        masked_tool_names: frozenset[str] | None = None,
+    ) -> str:
+        """Execute.
+
+        Args:
+            tool_name: Name of the tool to invoke.
+            args: Tool arguments.
+            masked_tool_names: Stage 3 (context-engineering-manus-parity,
+                AGR-004) soft masking — the set of tool names ENABLED for
+                THIS turn/stage. ``None`` (default) means no masking is
+                configured: byte-identical to the pre-Stage-3 executor.
+                When set, ``tool_name`` not being a member is a soft deny
+                (distinct from the hard security ``tool_policy`` deny below)
+                — the tool's SCHEMA is never touched by this; masking only
+                ever narrows which of the ALREADY-pinned tool names may run,
+                it can never widen availability to a name outside the pinned
+                tool-schema snapshot. Uses ``context.stable_prefix.mask_tools``
+                as the kernel masking primitive (Stage 1), never re-implemented
+                ad hoc here.
+        """
+        # Stage 3: stage-based soft masking (opt-in, default None = no-op).
+        if masked_tool_names is not None:
+            from swarmline.context.stable_prefix import mask_tools
+
+            masked = mask_tools({"tools": [tool_name]}, list(masked_tool_names))
+            # ty cannot recover element types from mask_tools()'s dict[str, object]
+            # return shape; cast to the documented descriptor shape it always
+            # produces (`{"name": str, "enabled": bool}` per tool, one per input).
+            masked_tools_list = cast("list[dict[str, object]]", masked["tools"])
+            if not masked_tools_list[0]["enabled"]:
+                return json.dumps(
+                    {"error": f"Инструмент '{tool_name}' недоступен на этом этапе"},
+                    ensure_ascii=False,
+                )
+
         # Pre-tool hooks
         if self._hook_dispatcher is not None:
             hook_result = await self._hook_dispatcher.dispatch_pre_tool(tool_name, args)
@@ -104,6 +180,37 @@ class ToolExecutor:
                 and decision.updated_input is not None
             ):
                 args = decision.updated_input
+
+        # can_use_tool callback (AgentConfig.can_use_tool, I-098b): consulted
+        # AFTER tool_policy (a policy deny above already returned, so the
+        # callback is never invoked when policy denies first) and BEFORE
+        # local/mcp dispatch. A raising callback fails CLOSED: it is treated
+        # as a deny with the exception message surfaced in the error result,
+        # never as an allow -- an unavailable/broken permission backend must
+        # not silently open the gate.
+        if self._can_use_tool is not None:
+            try:
+                permission_result = await self._can_use_tool(tool_name, args, None)
+            except Exception as exc:  # fail closed: exception == deny
+                return json.dumps(
+                    {
+                        "error": (
+                            f"can_use_tool callback raised {type(exc).__name__}: {exc}"
+                        )
+                    },
+                    ensure_ascii=False,
+                )
+            behavior, message, updated_input = _permission_fields(permission_result)
+            if behavior != "allow":
+                return json.dumps(
+                    {
+                        "error": message
+                        or f"Инструмент '{tool_name}' запрещён can_use_tool колбэком"
+                    },
+                    ensure_ascii=False,
+                )
+            if updated_input is not None:
+                args = updated_input
 
         # Local tool
         if tool_name in self._local_tools:
@@ -255,9 +362,9 @@ class ToolExecutor:
         """Parse MCP__server__tool -> (server, tool)."""
         return parse_mcp_tool_name(tool_name)
 
-    def _resolve_server_url(self, server_id: str) -> str | None:
-        """Resolve server url."""
-        return resolve_mcp_server_url(self._mcp_servers, server_id)
+    def _resolve_server_url(self, server_id: str) -> str | McpStdioServerSpec | None:
+        """Resolve server transport spec: HTTP URL string or stdio spec."""
+        return resolve_mcp_server_spec(self._mcp_servers, server_id)
 
     def has_tool(self, tool_name: str) -> bool:
         """Has tool."""

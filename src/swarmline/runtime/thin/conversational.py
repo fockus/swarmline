@@ -100,6 +100,8 @@ async def run_conversational(
                 start_time,
                 checkpoint=checkpoint,
                 llm_call_kwargs=llm_call_kwargs,
+                provider_usage=attempt.usage,
+                attempts=attempt.attempts,
             ):
                 yield event
             return
@@ -115,6 +117,8 @@ async def run_conversational(
                 checkpoint=checkpoint,
                 assistant_metadata=thinking_metadata,
                 llm_call_kwargs=llm_call_kwargs,
+                provider_usage=attempt.usage,
+                attempts=attempt.attempts,
             ):
                 yield event
             return
@@ -137,6 +141,8 @@ async def run_conversational(
                 checkpoint=checkpoint,
                 assistant_metadata=thinking_metadata,
                 llm_call_kwargs=llm_call_kwargs,
+                provider_usage=attempt.usage,
+                attempts=attempt.attempts,
             ):
                 yield event
             return
@@ -223,6 +229,8 @@ async def run_conversational(
                 start_time,
                 checkpoint=checkpoint,
                 llm_call_kwargs=llm_call_kwargs,
+                provider_usage=stream_result.usage,
+                attempts=stream_result.attempts,
             ):
                 yield event
             return
@@ -241,6 +249,8 @@ async def run_conversational(
                 start_time,
                 checkpoint=checkpoint,
                 llm_call_kwargs=llm_call_kwargs,
+                provider_usage=stream_result.usage,
+                attempts=stream_result.attempts,
             ):
                 yield event
             return
@@ -257,6 +267,8 @@ async def run_conversational(
                 start_time,
                 checkpoint=checkpoint,
                 llm_call_kwargs=llm_call_kwargs,
+                provider_usage=stream_result.usage,
+                attempts=stream_result.attempts,
             ):
                 yield event
             return

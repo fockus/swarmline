@@ -8,8 +8,18 @@ RuntimeConfig remains here as it depends on infrastructure (CancellationToken, e
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+from swarmline.observability.journal import EventJournal  # noqa: TC001
+from swarmline.resilience.checkpoint import CheckpointWriter  # noqa: TC001
+
+if TYPE_CHECKING:
+    from swarmline.domain_types import ProviderTool
+    from swarmline.protocols.external_signal import ExternalSignal
+    from swarmline.protocols.verification import Verifier
+    from swarmline.types import KernelContext, VerificationLedger
 
 # Re-export domain types for backward compatibility
 from swarmline.domain_types import (  # noqa: F401
@@ -214,7 +224,7 @@ class RuntimeConfig:
     Priority: runtime_override > runtime_name > env SWARMLINE_RUNTIME > default.
     """
 
-    runtime_name: str = "claude_sdk"
+    runtime_name: str = "thin"
 
     # Budgets for ThinRuntime
     max_iterations: int = 6
@@ -272,6 +282,9 @@ class RuntimeConfig:
     input_guardrails: list[Any] = field(default_factory=list)  # list[InputGuardrail]
     output_guardrails: list[Any] = field(default_factory=list)  # list[OutputGuardrail]
 
+    # SGR (Structured Generation + Reasoning) mode
+    sgr_enabled: bool = False
+
     # Pre-LLM input filters - applied to messages/system_prompt before the turn
     input_filters: list[Any] = field(default_factory=list)  # list[InputFilter]
 
@@ -290,6 +303,11 @@ class RuntimeConfig:
     # Native tool calling: opt-in for provider-native tool APIs (Strangler Fig)
     use_native_tools: bool = False
 
+    # Iteration budget: opt-in VO-driven loop cap (REQ-OSS-052/053, OSS-T3).
+    # Default False keeps the plain ``iterations < max_iterations`` guard so
+    # the default path is byte-identical to pre-OSS-T3 behaviour.
+    use_iteration_budget: bool = False
+
     # Web tool domain filtering (applied to HttpxWebProvider)
     web_allowed_domains: list[str] | None = None
     web_blocked_domains: list[str] | None = None
@@ -299,6 +317,68 @@ class RuntimeConfig:
 
     # Extended thinking / chain-of-thought configuration
     thinking: ThinkingConfig | None = None
+
+    # Self-evolution: stuck detection + recovery cascade (opt-in)
+    evolution_enabled: bool = False
+    stuck_detector: Any | None = None  # StuckDetector
+    recovery_cascade: Any | None = None  # RecoveryCascade
+
+    # OSS-T4: durable checkpoint (opt-in — default None keeps loop byte-identical).
+    # When checkpoint_writer is set together with run_id, the react loop:
+    #   (a) on start: loads any prior checkpoint and emits a "resumed" status event;
+    #   (b) after each tool call: persists a checkpoint via after_tool_call().
+    checkpoint_writer: CheckpointWriter | None = None  # CheckpointWriter
+    run_id: str | None = None
+
+    # observability-events Task 2 (REQ-007/014): opt-in event journal tap.
+    # Default None keeps ThinRuntime.run() byte-identical (REQ-014); when set,
+    # every RuntimeEvent yielded by the run is also appended as a side-channel
+    # (see runtime/thin/runtime.py -- the tap never filters or delays the stream).
+    event_journal: EventJournal | None = None  # EventJournal
+
+    # kernel-patterns H4 Task 1 (REQ-010): generic mid-run control hooks,
+    # optional / default None so every kernel's loop stays byte-identical
+    # until a hook is set. Reachable by any kernel through ``ctx.config.*``
+    # (KernelContext already carries ``config`` — no duplicate fields there).
+    # should_stop_after_turn: called after a turn; True ends the loop gracefully.
+    should_stop_after_turn: Callable[[KernelContext], bool] | None = None
+    # get_steering_messages: messages injected between turns (loop continues).
+    get_steering_messages: Callable[[KernelContext], list] | None = None
+    # get_followup_messages: follow-up messages queued once the loop would
+    # otherwise end (agent_end) — declared for REQ-010 completeness; wiring
+    # into a concrete continuation path is deferred to a later kernel task.
+    get_followup_messages: Callable[[KernelContext], list] | None = None
+    # transform_context: applied to the LM-facing message list before each
+    # model call (tail injection/steering only — see contract below).
+    # Contract (conformance-audit Basket 1 item 6 / plan stage 30): the
+    # callable may ONLY append new entries to the TAIL of the message list —
+    # every entry already present before the call must come back
+    # byte-identical, in the same order. This protects build-once / KV-cache
+    # prompt-prefix stability; enforced at call time by
+    # ``swarmline.runtime.thin.mid_run_hooks.apply_transform_context``, which
+    # raises ``TransformContextContractError`` on violation.
+    transform_context: Callable[[list], list] | None = None
+
+    external_signal: ExternalSignal | None = None  # H4 Task 6: "reflection" grounding
+
+    # verify-before-done spec, Task 4 (REQ-004/005/008/009): opt-in finalize gate.
+    # Active iff BOTH fields are set AND verification_ledger.criteria is non-empty
+    # (REQ-008/009: None/empty/either-missing -> finalize unchanged, no-op by default).
+    # verification_ledger = the acceptance-criteria contract fixed before execution.
+    # verifier = the Verifier run at finalize time (typically a LedgerCodeVerifier, or
+    # a caller-composed code+judge verifier) — always against a FRESH criteria-only
+    # copy of verification_ledger, never its stored results (see
+    # swarmline.verification.gate for the fresh-re-verify rationale, I-027).
+    verification_ledger: VerificationLedger | None = None
+    verifier: Verifier | None = None
+
+    # Provider-executed (hosted) tools: passthrough tool specs serialized untouched
+    # into the provider request and run server-side (Epic E). Empty tuple (default)
+    # is a no-op -- byte-identical to pre-Epic-E behavior. Only consumed by the thin
+    # runtime's native react path in this Epic; other runtimes carry it, unused.
+    # MUST stay the LAST field: RuntimeConfig is not frozen and existing positional
+    # constructions must keep binding to the same fields (I-major fix review finding).
+    provider_tools: tuple[ProviderTool, ...] = ()
 
     @staticmethod
     def _get_valid_names() -> frozenset[str]:
@@ -337,7 +417,7 @@ class RuntimeConfig:
         if self.required_capabilities is not None:
             from swarmline.runtime.registry import resolve_runtime_capabilities
 
-            caps = resolve_runtime_capabilities(self.runtime_name)
+            caps = resolve_runtime_capabilities(self.runtime_name).resolve(self)
             missing = caps.missing(self.required_capabilities)
             if missing:
                 raise ValueError(

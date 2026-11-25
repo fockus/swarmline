@@ -257,6 +257,20 @@ class TestResumeToolTranscript:
             def resolve_agent_model(self, config: AgentConfig) -> str:
                 return config.model
 
+            def get_capabilities(
+                self, config: Any = None, runtime_override: str | None = None
+            ) -> Any:
+                # Delegate to the real factory: build_portable_runtime_plan
+                # (I-098a round 2) resolves the thinking_stream capability
+                # via RuntimeFactoryPort.get_capabilities, so this minimal
+                # test double must honor the full port surface, not just the
+                # subset it used to call.
+                from swarmline.runtime.factory import RuntimeFactory
+
+                return RuntimeFactory().get_capabilities(
+                    config=config, runtime_override=runtime_override
+                )
+
             def create(self, **kwargs: Any) -> ThinRuntime:
                 return ThinRuntime(config=kwargs["config"], llm_call=llm_call)
 

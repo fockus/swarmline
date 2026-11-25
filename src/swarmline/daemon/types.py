@@ -79,8 +79,9 @@ class ScheduledTaskInfo:
     """Descriptor for a registered scheduled task."""
 
     name: str
-    interval_seconds: float | None  # None = one-shot
+    interval_seconds: float | None  # None = one-shot or cron
     next_run_at: float
     last_run_at: float | None = None
     run_count: int = 0
     is_active: bool = True
+    cron_expr: str | None = None  # Set for cron tasks; None for interval/once

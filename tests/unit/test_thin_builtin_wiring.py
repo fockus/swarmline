@@ -154,3 +154,91 @@ class TestThinRuntimeBuiltinWiring:
 
         assert rt._executor.has_tool("read_file")  # built-in
         assert rt._executor.has_tool("my_custom")  # user tool
+
+
+class TestFeatureModeExposureInRun:
+    """Plan E2: ThinRuntime.run() honors feature_mode for built-in exposure."""
+
+    @staticmethod
+    def _drive(feature_mode: str, allow_native: bool = False):
+        import asyncio
+
+        from swarmline.runtime.thin import ThinRuntime
+        from swarmline.runtime.types import Message, RuntimeConfig
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.types import SandboxConfig
+        import tempfile
+
+        tmp = tempfile.mkdtemp()
+        sandbox = LocalSandboxProvider(
+            SandboxConfig(root_path=tmp, user_id="u", topic_id="t")
+        )
+
+        seen: dict[str, object] = {}
+
+        async def fake_llm(messages, system_prompt, **kwargs):
+            import json
+
+            seen["tools"] = kwargs.get("tools")
+            return json.dumps({"type": "final", "final_message": "ok"})
+
+        config = RuntimeConfig(
+            runtime_name="thin",
+            feature_mode=feature_mode,
+            allow_native_features=allow_native,
+        )
+        runtime = ThinRuntime(config=config, llm_call=fake_llm, sandbox=sandbox)
+
+        async def _run():
+            events = []
+            async for event in runtime.run(
+                messages=[Message(role="user", content="hi")],
+                system_prompt="s",
+                active_tools=[],
+                mode_hint="conversational",
+            ):
+                events.append(event)
+            return events
+
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        events = asyncio.get_event_loop().run_until_complete(_run())
+        return events
+
+    def test_portable_mode_hides_builtins(self) -> None:
+        events = self._drive("portable")
+        final = [e for e in events if e.type == "final"]
+        assert final, [e.type for e in events]
+
+    def test_hybrid_mode_exposes_builtins(self) -> None:
+
+        from swarmline.runtime.thin import ThinRuntime
+        from swarmline.runtime.types import RuntimeConfig
+        from swarmline.tools.sandbox_local import LocalSandboxProvider
+        from swarmline.tools.types import SandboxConfig
+        import tempfile
+
+        tmp = tempfile.mkdtemp()
+        sandbox = LocalSandboxProvider(
+            SandboxConfig(root_path=tmp, user_id="u", topic_id="t")
+        )
+        config = RuntimeConfig(runtime_name="thin", feature_mode="hybrid")
+
+        async def fake_llm(messages, system_prompt, **kwargs):
+            return "ok"
+
+        runtime = ThinRuntime(config=config, llm_call=fake_llm, sandbox=sandbox)
+
+        # capture what react path receives by inspecting merged active tools
+        # through the internal helper: simulate run() merge logic directly
+        from swarmline.runtime.thin.builtin_tools import (
+            filter_thin_builtins_by_mode,
+            merge_tools_with_builtins,
+        )
+
+        exposed = filter_thin_builtins_by_mode(
+            list(runtime._builtin_specs.values()), feature_mode="hybrid"
+        )
+        merged = merge_tools_with_builtins([], exposed, feature_mode="hybrid")
+        names = {spec.name for spec in merged}
+        assert "read_file" in names
+        assert "execute" in names

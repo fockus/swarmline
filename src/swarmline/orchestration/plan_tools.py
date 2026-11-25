@@ -20,11 +20,14 @@ _CREATE_SCHEMA: dict[str, Any] = {
     "properties": {
         "goal": {
             "type": "string",
-            "description": "Цель плана — что нужно сделать. Описание задачи для декомпозиции.",
+            "description": "The plan's goal — what needs to be done. Task description for decomposition.",
         },
         "auto_execute": {
             "type": "boolean",
-            "description": "Автоматически одобрить и начать выполнение (default: false).",
+            "description": (
+                "Automatically approve the generated plan (default: false). "
+                "Execution is started separately via PlanManager.execute_plan."
+            ),
             "default": False,
         },
     },
@@ -34,17 +37,6 @@ _CREATE_SCHEMA: dict[str, Any] = {
 _STATUS_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {},
-}
-
-_EXECUTE_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "plan_id": {
-            "type": "string",
-            "description": "ID плана для выполнения.",
-        },
-    },
-    "required": ["plan_id"],
 }
 
 
@@ -61,10 +53,10 @@ def create_plan_tools(
     """Create plan tools."""
 
     async def plan_create(args: dict) -> str:
-        """Create a plan for a complex taskand."""
+        """Create a plan for a complex task."""
         goal = args.get("goal", "")
         if not goal:
-            return json.dumps({"status": "error", "message": "goal обязателен"})
+            return json.dumps({"status": "error", "message": "goal is required"})
         auto_execute = args.get("auto_execute", False)
         try:
             plan = await manager.create_plan(
@@ -118,48 +110,26 @@ def create_plan_tools(
         except Exception as e:
             return json.dumps({"status": "error", "message": str(e)})
 
-    async def plan_execute(args: dict) -> str:
-        """Plan execute."""
-        plan_id = args.get("plan_id", "")
-        if not plan_id:
-            return json.dumps({"status": "error", "message": "plan_id обязателен"})
-        try:
-            completed: list[dict[str, str]] = []
-            async for step in manager.execute_plan(plan_id):
-                completed.append(
-                    {
-                        "id": step.id,
-                        "description": step.description,
-                        "status": step.status,
-                        "result": step.result or "",
-                    }
-                )
-            return json.dumps({"status": "ok", "completed_steps": completed})
-        except Exception as e:
-            return json.dumps({"status": "error", "message": str(e)})
-
     specs = {
         "plan_create": ToolSpec(
             name="plan_create",
-            description="Создать пошаговый план для сложной задачи. Используй когда задача требует >3 шагов.",
+            description=(
+                "Create a step-by-step plan for a complex task. Use when the task requires "
+                "more than 3 steps. Steps advance automatically as you work through them — "
+                "there is no separate step-update tool to call."
+            ),
             parameters=_CREATE_SCHEMA,
         ),
         "plan_status": ToolSpec(
             name="plan_status",
-            description="Показать текущие планы и их прогресс.",
+            description="Show your current plans and their progress.",
             parameters=_STATUS_SCHEMA,
-        ),
-        "plan_execute": ToolSpec(
-            name="plan_execute",
-            description="Выполнить одобренный план по шагам.",
-            parameters=_EXECUTE_SCHEMA,
         ),
     }
 
     executors: dict[str, Callable] = {
         "plan_create": plan_create,
         "plan_status": plan_status,
-        "plan_execute": plan_execute,
     }
 
     return specs, executors

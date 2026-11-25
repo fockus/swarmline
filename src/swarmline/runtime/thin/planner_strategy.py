@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 
@@ -18,6 +19,8 @@ from swarmline.runtime.thin.prompts import (
     build_planner_prompt,
 )
 from swarmline.runtime.thin.react_strategy import run_react
+from swarmline.runtime.thin.schemas import PlanSchema
+from swarmline.runtime.thin.verification_capture import ledger_from_plan
 from swarmline.runtime.types import (
     Message,
     RuntimeConfig,
@@ -25,6 +28,34 @@ from swarmline.runtime.types import (
     RuntimeEvent,
     ToolSpec,
 )
+
+
+def _capture_plan_ledger(config: RuntimeConfig, plan: PlanSchema) -> RuntimeConfig:
+    """Return a config carrying a plan-derived verification ledger, or *config* unchanged.
+
+    kernel-wiring spec, Task 2 (I-034, REQ-005..008). Wires the previously
+    orphaned :func:`~swarmline.runtime.thin.verification_capture.ledger_from_plan`
+    into the planner's FINAL-assembly finalize path so a caller who opted
+    into verification (``config.verifier`` set) gets a ledger derived from
+    the plan's own ``success_criteria`` without hand-authoring one.
+
+    Returns *config* unchanged (same object, no-op) when:
+
+    * ``config.verifier is None`` (REQ-007) — verify-before-done stays
+      opt-in; we never populate a ledger the gate would act on unless the
+      caller also supplied a verifier.
+    * ``config.verification_ledger is not None`` (REQ-006) — a
+      caller-supplied ledger is never overridden.
+
+    Otherwise returns ``dataclasses.replace(config,
+    verification_ledger=ledger_from_plan(plan))`` — a NEW ``RuntimeConfig``
+    instance; the caller's *config* is never mutated (REQ-005/REQ-008).
+    """
+    if config.verifier is None:
+        return config
+    if config.verification_ledger is not None:
+        return config
+    return dataclasses.replace(config, verification_ledger=ledger_from_plan(plan))
 
 
 async def run_planner(
@@ -83,6 +114,10 @@ async def run_planner(
             )
         )
         return
+
+    # Convergence point: `plan` is now guaranteed non-None regardless of
+    # whether it parsed on the first attempt or the retry above (REQ-005).
+    finalize_config = _capture_plan_ledger(config, plan)
 
     yield RuntimeEvent.status(f"План: {plan.goal} ({len(plan.steps)} шагов)")
     steps_preview = " -> ".join(
@@ -208,7 +243,7 @@ async def run_planner(
     yield RuntimeEvent.assistant_delta(final_text)
     async for event in finalize_with_validation(
         final_text,
-        config,
+        finalize_config,
         lm_messages,
         assembly_prompt,
         llm_call,

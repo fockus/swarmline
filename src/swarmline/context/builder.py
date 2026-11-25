@@ -2,44 +2,34 @@
 
 from __future__ import annotations
 
-import hashlib
-from dataclasses import dataclass, field
 from pathlib import Path
 
-from swarmline.context.budget import ContextBudget, estimate_tokens, truncate_to_budget
+from swarmline.context.adaptive_layers import (
+    apply_optional_cap,
+    category_actuals,
+    compute_present_layers,
+    derive_layer_caps,
+)
+from swarmline.context.budget import estimate_tokens, truncate_to_budget
+from swarmline.context.builder_types import (
+    BuiltContext,
+    ContextInput,
+    compute_prompt_hash,
+)
+from swarmline.context.message_filters import is_error_message
+from swarmline.context.saturation import SaturationCalculator
 from swarmline.memory.types import (
     MemoryMessage,
     UserProfile,
 )
 from swarmline.skills.types import LoadedSkill
 
-
-def compute_prompt_hash(prompt: str) -> str:
-    """Compute the SHA256 hash of system_prompt (R-300, §12.1)."""
-    return hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:16]
-
-
-@dataclass(frozen=True)
-class ContextInput:
-    """Input data for context assembly."""
-
-    user_id: str
-    topic_id: str
-    role_id: str
-    user_text: str
-    active_skill_ids: list[str]
-    budget: ContextBudget = field(default_factory=ContextBudget)
-
-
-@dataclass(frozen=True)
-class BuiltContext:
-    """Result of context assembly."""
-
-    system_prompt: str
-    prompt_hash: str  # SHA256 hash of system_prompt (§12.1)
-    tool_budget: int  # how many tools can be given to the context
-    truncated_packs: list[str]  # which packets were truncated
-    notes: dict[str, str] = field(default_factory=dict)
+__all__ = [
+    "BuiltContext",
+    "ContextInput",
+    "DefaultContextBuilder",
+    "compute_prompt_hash",
+]
 
 
 class DefaultContextBuilder:
@@ -53,9 +43,15 @@ class DefaultContextBuilder:
     P2: Skill instructions (tool hints)
     P3: Memory recall (cross-topic facts)
     P4: User profile
+    P4.5: Available Files (FileRegistry injection, artifacts Stage P1)
     P5: Summary (dropped first on overflow, §10.3)
 
     Hot-reload: prompt files are automatically re-read when changed on disk.
+
+    Adaptive budget (opt-in, ``adaptive-budget`` spec Task 4): when
+    ``inp.budget.adaptive`` is set, ``build()`` runs a two-pass feedback loop
+    (REQ-007/REQ-008). ``adaptive is None`` (the default) is fully inert -
+    byte-identical to the pre-Task-4 behavior.
     """
 
     def __init__(self, prompts_dir: str | Path) -> None:
@@ -64,6 +60,9 @@ class DefaultContextBuilder:
         self._guardrails: str = ""
         self._roles: dict[str, str] = {}
         self._file_mtimes: dict[Path, float] = {}
+        # ponytail: per-instance saturation state; add per-conversation keying
+        # if builders get shared across concurrent turns
+        self._last_saturation: dict[str, float] | None = None
         self._reload()
 
     # ---------- Hot-reload ----------
@@ -107,6 +106,28 @@ class DefaultContextBuilder:
         if self._files_changed():
             self._reload()
 
+    # ---------- Hibernate/rehydrate saturation snapshot (REQ-010) ----------
+
+    def export_saturation(self) -> dict[str, float] | None:
+        """Return a copy of the last recorded adaptive saturation state.
+
+        ``None`` when no adaptive ``build()`` has run yet on this instance -
+        never fabricated. Used by ``observability.hibernate`` to snapshot the
+        builder's steering state for a later ``import_saturation()``.
+        """
+        if self._last_saturation is None:
+            return None
+        return dict(self._last_saturation)
+
+    def import_saturation(self, data: dict[str, float] | None) -> None:
+        """Seed ``_last_saturation`` from a previously exported snapshot.
+
+        A fresh builder that imports an exported saturation steers its next
+        ``allocate()`` call (via ``build()``) identically to the builder the
+        snapshot was exported from (REQ-010).
+        """
+        self._last_saturation = dict(data) if data is not None else None
+
     # ---------- File loading ----------
 
     def _load_file(self, filename: str) -> str:
@@ -138,6 +159,9 @@ class DefaultContextBuilder:
         last_messages: list[MemoryMessage] | None = None,
         memory_bank_content: str | None = None,
         memory_bank_prompt: str | None = None,
+        available_files: str | None = None,
+        mode: str = "default",
+        step_progress: float = 0.0,
     ) -> BuiltContext:
         """Build system_prompt with budget awareness (§10.1-10.3).
 
@@ -146,16 +170,42 @@ class DefaultContextBuilder:
         Guardrails and Role are never dropped.
 
         Hot-reload: before building, we check whether files changed on disk.
+
+        ``mode``/``step_progress`` (Task 4) only matter when
+        ``inp.budget.adaptive`` is set; ignored on the static path.
         """
         self._maybe_reload()
         budget = inp.budget
+        adaptive = budget.adaptive
         truncated: list[str] = []
         packs: list[str] = []
+        layer_tokens: dict[str, int] = {}
+        layer_caps: dict[str, int] = {}
+        allocated: dict[str, int] = {}
+
+        if adaptive is not None:
+            # REQ-007/008: previous saturation steers this allocate(); None
+            # on the very first compile ever -> base+temporal only.
+            allocated = adaptive.allocate(mode, step_progress, self._last_saturation)
+            present_layers = compute_present_layers(
+                role_text=self._roles.get(inp.role_id, ""),
+                memory_bank_prompt=memory_bank_prompt,
+                goal_text=goal_text,
+                phase_text=phase_text,
+                skills=skills,
+                last_messages=last_messages,
+                recall_facts=recall_facts,
+                user_profile_facts=user_profile.facts if user_profile else None,
+                summary=summary,
+                available_files=available_files,
+            )
+            layer_caps = derive_layer_caps(allocated, present_layers)
 
         # P0: Guardrails (never dropped)
         guardrails_pack = f"{self._identity}\n\n{self._guardrails}"
         guardrails_tokens = estimate_tokens(guardrails_pack)
         packs.append(guardrails_pack)
+        layer_tokens["guardrails"] = guardrails_tokens
         remaining = budget.total_tokens - guardrails_tokens
 
         # P0.5: Role (never dropped, but counted in remaining - GAP-7)
@@ -164,6 +214,7 @@ class DefaultContextBuilder:
             role_pack = f"\n## Текущая роль: {inp.role_id}\n{role_text}"
             remaining -= estimate_tokens(role_pack)
             packs.append(role_pack)
+            layer_tokens["role"] = estimate_tokens(role_pack)
 
         # P_MEMORY: Memory Bank prompt + auto-loaded MEMORY.md (between Role and Goal)
         if memory_bank_prompt and remaining > 0:
@@ -172,32 +223,40 @@ class DefaultContextBuilder:
                 mem_pack += (
                     f"\n\n## Текущий банк памяти (MEMORY.md)\n{memory_bank_content}"
                 )
-            mem_tokens = estimate_tokens(mem_pack)
-            if mem_tokens > remaining:
-                mem_pack = truncate_to_budget(mem_pack, remaining)
+            mem_cap = min(remaining, layer_caps.get("memory_bank", remaining))
+            mem_pack, was_truncated = apply_optional_cap(mem_pack, mem_cap)
+            if was_truncated:
                 truncated.append("memory_bank")
             remaining -= estimate_tokens(mem_pack)
             packs.append(mem_pack)
+            layer_tokens["memory_bank"] = estimate_tokens(mem_pack)
         elif memory_bank_prompt:
             truncated.append("memory_bank")
 
         # P1: Goal text (drop when remaining <= 0)
         if goal_text and remaining > 0:
             goal_pack = f"\n## Текущая цель\n{goal_text.strip()}"
-            goal_tokens = estimate_tokens(goal_pack)
-            if goal_tokens > budget.goal_max:
-                goal_pack = truncate_to_budget(goal_pack, budget.goal_max)
+            goal_cap = layer_caps.get("goal", budget.goal_max)
+            goal_pack, was_truncated = apply_optional_cap(goal_pack, goal_cap)
+            if was_truncated:
                 truncated.append("active_goal")
             remaining -= estimate_tokens(goal_pack)
             packs.append(goal_pack)
+            layer_tokens["goal"] = estimate_tokens(goal_pack)
         elif goal_text:
             truncated.append("active_goal")
 
         # P1.5: Phase text
         if phase_text and remaining > 0:
             phase_pack = f"\n## Текущая фаза\n{phase_text.strip()}"
+            phase_pack, was_truncated = apply_optional_cap(
+                phase_pack, layer_caps.get("phase")
+            )
+            if was_truncated:
+                truncated.append("phase")
             remaining -= estimate_tokens(phase_pack)
             packs.append(phase_pack)
+            layer_tokens["phase"] = estimate_tokens(phase_pack)
         elif phase_text:
             truncated.append("phase")
 
@@ -211,12 +270,13 @@ class DefaultContextBuilder:
                     )
             if instructions:
                 tool_pack = "\n## Доступные инструменты\n" + "\n\n".join(instructions)
-                tool_tokens = estimate_tokens(tool_pack)
-                if tool_tokens > budget.tools_max:
-                    tool_pack = truncate_to_budget(tool_pack, budget.tools_max)
+                tools_cap = layer_caps.get("tool_hints", budget.tools_max)
+                tool_pack, was_truncated = apply_optional_cap(tool_pack, tools_cap)
+                if was_truncated:
                     truncated.append("tool_hints")
                 remaining -= estimate_tokens(tool_pack)
                 packs.append(tool_pack)
+                layer_tokens["tool_hints"] = estimate_tokens(tool_pack)
         elif skills:
             truncated.append("tool_hints")
 
@@ -229,7 +289,7 @@ class DefaultContextBuilder:
                 if not content:
                     continue
                 # Skip MCP error / runtime error messages
-                if _is_error_message(content):
+                if is_error_message(content):
                     continue
                 role_label = "user" if msg.role == "user" else "assistant"
                 # Truncate overly long messages (max 500 chars)
@@ -237,12 +297,15 @@ class DefaultContextBuilder:
                     content = content[:500] + "..."
                 msg_lines.append(f"- [{role_label}]: {content}")
             messages_pack = "\n## Последние сообщения диалога\n" + "\n".join(msg_lines)
-            msg_tokens = estimate_tokens(messages_pack)
-            if msg_tokens > budget.messages_max:
-                messages_pack = truncate_to_budget(messages_pack, budget.messages_max)
+            messages_cap = layer_caps.get("last_messages", budget.messages_max)
+            messages_pack, was_truncated = apply_optional_cap(
+                messages_pack, messages_cap
+            )
+            if was_truncated:
                 truncated.append("last_messages")
             remaining -= estimate_tokens(messages_pack)
             packs.append(messages_pack)
+            layer_tokens["last_messages"] = estimate_tokens(messages_pack)
         elif last_messages:
             truncated.append("last_messages")
 
@@ -252,12 +315,13 @@ class DefaultContextBuilder:
             recall_pack = "\n## Воспоминания из прошлых диалогов\n" + "\n".join(
                 facts_lines
             )
-            recall_tokens = estimate_tokens(recall_pack)
-            if recall_tokens > budget.memory_max:
-                recall_pack = truncate_to_budget(recall_pack, budget.memory_max)
+            memory_cap = layer_caps.get("memory_recall", budget.memory_max)
+            recall_pack, was_truncated = apply_optional_cap(recall_pack, memory_cap)
+            if was_truncated:
                 truncated.append("memory_recall")
             remaining -= estimate_tokens(recall_pack)
             packs.append(recall_pack)
+            layer_tokens["memory_recall"] = estimate_tokens(recall_pack)
         elif recall_facts:
             truncated.append("memory_recall")
 
@@ -265,29 +329,52 @@ class DefaultContextBuilder:
         if user_profile and user_profile.facts and remaining > 0:
             facts_str = "\n".join(f"- {k}: {v}" for k, v in user_profile.facts.items())
             profile_pack = f"\n## Профиль пользователя\n{facts_str}"
-            profile_tokens = estimate_tokens(profile_pack)
-            if profile_tokens > budget.profile_max:
-                profile_pack = truncate_to_budget(profile_pack, budget.profile_max)
+            profile_cap = layer_caps.get("user_profile", budget.profile_max)
+            profile_pack, was_truncated = apply_optional_cap(profile_pack, profile_cap)
+            if was_truncated:
                 truncated.append("user_profile")
             remaining -= estimate_tokens(profile_pack)
             packs.append(profile_pack)
+            layer_tokens["user_profile"] = estimate_tokens(profile_pack)
         elif user_profile and user_profile.facts:
             truncated.append("user_profile")
+
+        # P4.5: Available Files (FileRegistry injection - artifacts Stage P1)
+        if available_files and remaining > 0:
+            files_pack = f"\n## Available Files\n{available_files.strip()}"
+            files_cap = layer_caps.get("available_files", budget.artifacts_max)
+            files_pack, was_truncated = apply_optional_cap(files_pack, files_cap)
+            if was_truncated:
+                truncated.append("available_files")
+            remaining -= estimate_tokens(files_pack)
+            packs.append(files_pack)
+            layer_tokens["available_files"] = estimate_tokens(files_pack)
+        elif available_files:
+            truncated.append("available_files")
 
         # P5: Summary (dropped first on overflow, §10.3)
         if summary and remaining > 100:
             summary_pack = f"\n## Контекст диалога (summary)\n{summary}"
             summary_tokens = estimate_tokens(summary_pack)
+            summary_cap = layer_caps.get("summary", budget.summary_max)
             if remaining < summary_tokens:
                 summary_pack = truncate_to_budget(summary_pack, remaining)
                 truncated.append("summary")
-            elif summary_tokens > budget.summary_max:
-                summary_pack = truncate_to_budget(summary_pack, budget.summary_max)
+            elif summary_tokens > summary_cap:
+                summary_pack = truncate_to_budget(summary_pack, summary_cap)
                 truncated.append("summary")
             remaining -= estimate_tokens(summary_pack)
             packs.append(summary_pack)
+            layer_tokens["summary"] = estimate_tokens(summary_pack)
         elif summary:
             truncated.append("summary")
+
+        if adaptive is not None:
+            # REQ-007: saturation of this compile feeds the NEXT allocate().
+            actual_by_category = category_actuals(layer_tokens)
+            self._last_saturation = SaturationCalculator.calculate(
+                actual_by_category, allocated
+            )
 
         system_prompt = "\n".join(packs)
         p_hash = compute_prompt_hash(system_prompt)
@@ -304,31 +391,3 @@ class DefaultContextBuilder:
                 "prompt_hash": p_hash,
             },
         )
-
-
-# ---------- Message filtering utilities ----------
-
-# Markers for error messages that do not provide useful context to the model.
-_ERROR_MARKERS = (
-    '{"error"',
-    "MCP error",
-    "Таймаут при вызове",
-    "HTTP ошибка MCP",
-    "Runtime не ответил вовремя",
-    "Не удалось получить ответ",
-    "SDK subprocess упал",
-    "Ошибка SDK",
-    "Client error",
-)
-
-
-def _is_error_message(content: str) -> bool:
-    """Check whether a message is an error/noise that should not be added to context."""
-    if not content:
-        return True
-    # Quick check by the first characters
-    if content.startswith(('{"error"', "⚠️")):
-        return True
-    # Check markers (within the first 200 characters for speed)
-    prefix = content[:200]
-    return any(marker in prefix for marker in _ERROR_MARKERS)

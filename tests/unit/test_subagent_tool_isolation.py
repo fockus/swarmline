@@ -17,6 +17,7 @@ import pytest
 
 from swarmline.domain_types import ToolSpec
 from swarmline.orchestration.subagent_types import SubagentResult, SubagentStatus
+from swarmline.policy.toolset_policy import ToolsetPolicy
 from swarmline.runtime.thin.subagent_tool import (
     SUBAGENT_TOOL_SPEC,
     SubagentToolConfig,
@@ -144,7 +145,15 @@ class TestExecutorIsolationPassthrough:
         parent_tools: list[ToolSpec],
     ) -> None:
         mock_spec_cls.return_value = MagicMock()
-        executor = create_subagent_executor(orchestrator, config, parent_tools)
+        # Sprint D stage 1: an absent policy denies every tool, so this test —
+        # which is about isolation/system_prompt/tools travelling together into
+        # the spec — needs a policy for `tools` to be non-empty at all.
+        executor = create_subagent_executor(
+            orchestrator,
+            config,
+            parent_tools,
+            toolset_policy=ToolsetPolicy(roles={"default": frozenset({"read_file"})}),
+        )
         await executor(
             {
                 "task": "complex work",

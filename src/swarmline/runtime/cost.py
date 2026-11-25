@@ -12,7 +12,7 @@ from __future__ import annotations
 import importlib.resources
 import json
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 BudgetStatus = Literal["ok", "warning", "exceeded"]
 
@@ -111,6 +111,35 @@ class CostTracker:
         self._total_input_tokens = 0
         self._total_output_tokens = 0
         self._total_cost = 0.0
+
+    def snapshot(self) -> dict[str, object]:
+        """Return a plain, JSON-serializable snapshot of accumulated usage.
+
+        Only the counters that change with usage (REQ-009, ``hibernate``
+        primitives) - NOT ``_budget``/``_pricing``, which are constructor
+        config restored by construction, not by this snapshot.
+        """
+        return {
+            "total_input_tokens": self._total_input_tokens,
+            "total_output_tokens": self._total_output_tokens,
+            "total_cost": self._total_cost,
+        }
+
+    def restore(self, data: dict[str, object]) -> None:
+        """Restore accumulated usage counters from a ``snapshot()`` mapping.
+
+        Mutates this instance in place. Requires all three counter keys (no
+        silent tolerance of a partial snapshot); budget/pricing are left
+        untouched. All three keys are read into locals BEFORE any mutation,
+        so a missing key raises ``KeyError`` atomically - leaving this
+        instance's counters unchanged rather than half-restored.
+        """
+        total_input_tokens = cast(int, data["total_input_tokens"])
+        total_output_tokens = cast(int, data["total_output_tokens"])
+        total_cost = cast(float, data["total_cost"])
+        self._total_input_tokens = total_input_tokens
+        self._total_output_tokens = total_output_tokens
+        self._total_cost = total_cost
 
 
 def load_pricing() -> dict[str, ModelPricing]:

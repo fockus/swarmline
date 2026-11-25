@@ -377,10 +377,14 @@ def _scaffold_project(
         extra_deps.append('    "swarmline[sqlite]",')
     extra_deps_str = "\n".join(extra_deps)
 
+    # The CLI accepts the short "claude" spelling; generated configs must use
+    # the canonical runtime name understood by RuntimeConfig/AgentConfig.
+    canonical_runtime = "claude_sdk" if runtime == "claude" else runtime
+
     tpl_vars = dict(
         project_name=project_name,
         project_slug=project_slug,
-        runtime=runtime,
+        runtime=canonical_runtime,
         memory_backend=memory_effective,
         memory_enabled=memory_enabled,
         extra_deps=extra_deps_str,
